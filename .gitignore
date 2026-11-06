@@ -26,3 +26,8 @@ pnpm-debug.log*
 # wrangler files
 .wrangler
 .dev.vars
+
+# local env files must never be committed (public/ is served as-is)
+.env*
+!.env.example
+public/backup/
