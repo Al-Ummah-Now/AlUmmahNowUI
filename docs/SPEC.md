@@ -160,4 +160,5 @@ never printed).
   axe on desktop and mobile; screenshots stored as artifacts.
 - Release: the same shape as AlUmmahNowAuth `release.yml`: build once → stage (deploy, smoke, E2E) →
   production (candidate at 0 %, smoke through `Cloudflare-Workers-Version-Overrides`, 100 %, smoke,
-  auto-rollback) → rollback dry run. QA deploys from `main` on every push. Details in `docs/PLAN.md`.
+  auto-rollback) → rollback dry run, started by a `vYYYY.MM.DD` tag on `main` (a manual run is stage
+  only). QA deploys from `main` on every push. Details in `docs/PLAN.md`.
