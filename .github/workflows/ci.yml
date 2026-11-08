@@ -1,0 +1,71 @@
+name: CI
+
+# Every PR and push: lint, typecheck, unit, config check, build, dry-run bundles for
+# each env, and the Playwright suite against local `wrangler dev` (no CMS running, so
+# pages render from built-in content: the "CMS down" path is exercised on every run).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint, typecheck, unit, build, E2E (local)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck (astro check + scripts)
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: wrangler config check
+        run: npm run check:config
+
+      - name: Build
+        run: npm run build
+
+      # Bundles only, no Cloudflare credentials needed
+      - name: Dry-run bundles (production, stage, qa)
+        run: |
+          npx wrangler deploy --dry-run -c wrangler.jsonc --outdir dist-dry/production
+          npx wrangler deploy --dry-run -c wrangler.jsonc --env stage --outdir dist-dry/stage
+          npx wrangler deploy --dry-run -c wrangler.jsonc --env qa --outdir dist-dry/qa
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      # playwright.config.ts starts `wrangler dev` (scripts/dev-vars.ts writes a throwaway .dev.vars)
+      - name: E2E against local wrangler dev
+        run: npx playwright test
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots-local
+          path: |
+            e2e-artifacts/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14

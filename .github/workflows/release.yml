@@ -1,0 +1,213 @@
+name: Release
+
+# Stage-then-promote, the same shape as AlUmmahNowAuth release.yml:
+#   build once → stage (secrets check, promote with 0% override smoke, E2E)
+#   → production (head-of-main guard, secrets check, 0% + override smoke, 100%,
+#     smoke incl. apex → www, auto-rollback, release-result.json, rollback dry run).
+# Rollback: .github/workflows/rollback.yml or `npm run release:rollback -- --env production`.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One release at a time, never cancelled half-way through a promote
+concurrency:
+  group: www-release
+  cancel-in-progress: false
+
+# The Cloudflare token is set only on steps that call Cloudflare, never on install/build
+# steps (dependency lifecycle scripts run there).
+
+jobs:
+  build:
+    name: Build once
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Checks (lint, typecheck, unit, wrangler config)
+        run: |
+          npm run lint
+          npm run typecheck
+          npm test
+          npm run check:config
+
+      # The Astro build is env-independent (env comes from vars at runtime):
+      # the same dist/ is uploaded to stage and production.
+      - name: Build
+        run: npm run build
+
+      - name: Dry-run bundles per env
+        run: |
+          npx wrangler deploy --dry-run -c wrangler.jsonc --outdir dist-dry/production
+          npx wrangler deploy --dry-run -c wrangler.jsonc --env stage --outdir dist-dry/stage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-bundle
+          path: dist/
+          include-hidden-files: true
+          retention-days: 30
+
+  stage:
+    name: Stage (promote, E2E)
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: stage
+      url: https://www.stage.alummahnow.net
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-bundle
+          path: dist
+
+      - name: Secrets check (stage)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set +e
+          npm run --silent check:secrets -- --env stage | tee secrets-check.txt
+          status=${PIPESTATUS[0]}
+          { echo '### Secrets check (stage)'; echo '```'; cat secrets-check.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+      # Same mechanics as production, so every release rehearses the promote
+      - name: Promote to stage (0% + override smoke → 100% → smoke)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run release:promote -- --env stage --message "release ${GITHUB_SHA::7}"
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: E2E against stage
+        env:
+          WWW_URL: https://www.stage.alummahnow.net
+          E2E_AUTH_URL: https://auth.stage.alummahnow.net
+          E2E_CLIENT_ID: d34701ed-03de-43f8-95a8-91cd1e1874bb
+          STAGE_SEED_PASSWORD: ${{ secrets.STAGE_SEED_PASSWORD }}
+        run: npx playwright test
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots-stage
+          path: |
+            e2e-artifacts/
+            playwright-report/
+            release-result.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+  production:
+    name: Production (0% smoke, promote, auto-rollback)
+    needs: stage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://www.alummahnow.net
+    steps:
+      - uses: actions/checkout@v6
+
+      # A newer commit on main means a newer release is queued behind this one; never
+      # promote a stale candidate. The newer run releases instead.
+      - name: Still the head of main?
+        id: head
+        run: |
+          head=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$head" != "$GITHUB_SHA" ]; then
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::main moved to ${head::7} while releasing ${GITHUB_SHA::7}; not promoting."
+            echo "### Superseded: main is at ${head::7}; ${GITHUB_SHA::7} was not promoted" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v6
+        if: steps.head.outputs.current == 'true'
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+        if: steps.head.outputs.current == 'true'
+
+      - uses: actions/download-artifact@v4
+        if: steps.head.outputs.current == 'true'
+        with:
+          name: release-bundle
+          path: dist
+
+      - name: Secrets check (production)
+        if: steps.head.outputs.current == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set +e
+          npm run --silent check:secrets -- --env production | tee secrets-check.txt
+          status=${PIPESTATUS[0]}
+          { echo '### Secrets check (production)'; echo '```'; cat secrets-check.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+      # Smoke includes apex → www (301, path and query kept) and both hosts over HTTPS
+      - name: Promote (0% + override smoke → 100% → smoke, auto-rollback)
+        if: steps.head.outputs.current == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run release:promote -- --env production --message "release ${GITHUB_SHA::7}"
+
+      - name: Summary
+        if: always() && steps.head.outputs.current == 'true'
+        run: |
+          if [ -f release-result.json ]; then
+            { echo '### Production release'; echo '```json'; cat release-result.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # Proves the rollback path resolves (target version, command) without moving traffic
+      - name: Rollback dry run
+        if: success() && steps.head.outputs.current == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if jq -e '.released[0].previous' release-result.json > /dev/null; then
+            npm run --silent release:rollback -- --env production --dry-run --from-result release-result.json | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "First deploy: nothing to roll back to" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.head.outputs.current == 'true'
+        with:
+          name: release-result
+          path: release-result.json
+          if-no-files-found: ignore
+          retention-days: 90
