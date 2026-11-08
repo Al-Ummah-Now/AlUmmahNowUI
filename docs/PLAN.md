@@ -21,7 +21,9 @@ prod only via stage-then-promote; out-of-scope work becomes `queue` issues.
    per www Worker. GitHub: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `QA_SEED_PASSWORD`,
    `STAGE_SEED_PASSWORD` in both repos.
 6. **QA** deploys on merge to main (`deploy-qa.yml`) → QA E2E.
-7. **Release** (`release.yml`): stage → prod for both. www before CMS is fine (www falls back).
+7. **Release** (`release.yml`, from a `vYYYY.MM.DD` tag): stage → prod for both. Content-wise www
+   tolerates a CMS outage (it falls back), but www binds the CMS Worker, so a brand-new env needs
+   the CMS Worker released first.
    Verify that the apex and www resolve over HTTPS.
 
 ## CMS tasks
@@ -60,7 +62,9 @@ prod only via stage-then-promote; out-of-scope work becomes `queue` issues.
   env (the Astro build is env-independent; env comes from vars), uploaded as an artifact.
 - `stage` job: CMS migrate stage → `scripts/release/promote.ts --env stage` (upload version,
   0 % + override smoke, 100 %, smoke) → Playwright against stage.
-- `production` job (environment `production`): a "still the head of main?" guard → migrate prod
+- `resolve` job: a tag push must be a valid `vYYYY.MM.DD` tag on a commit on `main` (production run);
+  a dispatch on `main` is stage only; anything else is refused.
+- `production` job (environment `production`, tag runs only): a "tag still points at this commit?" guard → migrate prod
   (expand-only) → promote prod with auto-rollback → summary + `release-result.json`.
 - `rollback-dry-run` step: `scripts/release/rollback.ts --dry-run` resolves the previous version
   from `release-result.json` and prints the command without running it.

@@ -104,10 +104,14 @@ Against another env set `E2E_AUTH_URL` and `E2E_CLIENT_ID`.
   per env, Playwright against local `wrangler dev`, screenshots as an artifact.
 - **QA** (`deploy-qa.yml`, every push to main): secrets check, `wrangler deploy --env qa`, smoke,
   Playwright against QA.
-- **Stage → production** (`release.yml`, every push to main, modelled on AlUmmahNowAuth): build once
+- **Stage → production** (`release.yml`, from a release tag `vYYYY.MM.DD` on `main`; a manual run on
+  `main` is stage only): resolve (valid tag on `main`?) → build once
   → stage (`scripts/release/promote.ts --env stage`: upload a version, 0 % traffic, smoke through
   `Cloudflare-Workers-Version-Overrides`, 100 %, smoke; then Playwright against stage) →
-  production (environment `production`, still-head-of-main guard, the same promote with automatic
+  production (environment `production`, tag-still-on-this-commit guard, the same promote with automatic
   rollback, smoke including apex → www, `release-result.json`, rollback dry run).
+- **Deploy rules:** production is released only by CI, only from `main`, only from a `vYYYY.MM.DD`
+  tag (`vYYYY.MM.DD.N` for a later release that day). Merging to `main` deploys QA only. No hand
+  deploys to stage or production; if CI blocks, fix CI. Never move a tag: re-run its run or cut a new one.
 - **Rollback** (`rollback.yml`, manual): previous or given version, then smoke. Locally:
   `npm run release:rollback -- --env production [--to <version-id>] [--dry-run]`.
