@@ -1,0 +1,11 @@
+# Local overrides for `wrangler dev` (wrangler's top-level config is production).
+# `npm run preview` writes .dev.vars for you (scripts/dev-vars.ts). Never commit .dev.vars.
+SESSION_SECRET=   # 64 hex chars: openssl rand -hex 32
+APP_ENV=local
+SITE_URL=http://localhost:4321
+AUTH_URL=https://auth.qa.alummahnow.net
+WWW_CLIENT_ID=ecda6f18-89cb-415c-b746-7e77184d75a2
+VIDEOS_WEB_URL=https://videos.qa.alummahnow.net
+VIDEOS_API_URL=https://videos.api.qa.alummahnow.net
+PROFILE_URL=https://profile.auth.qa.alummahnow.net
+CMS_PUBLIC_URL=http://localhost:8585

@@ -1,0 +1,77 @@
+// www.alummahnow.net. Top level = production; env.qa and env.stage below.
+// Secrets (wrangler secret put, never committed): SESSION_SECRET (64 hex, `openssl rand -hex 32`).
+// See scripts/secrets-manifest.ts and README.md.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "al-ummah-now-www",
+  "main": "./dist/_worker.js/index.js",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Every request goes through src/worker.ts (apex redirect, security headers)
+    "run_worker_first": true
+  },
+  "observability": { "enabled": true },
+  "upload_source_maps": true,
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
+  "routes": [
+    { "pattern": "www.alummahnow.net", "custom_domain": true },
+    { "pattern": "alummahnow.net", "custom_domain": true }
+  ],
+  "vars": {
+    "APP_ENV": "production",
+    "SITE_URL": "https://www.alummahnow.net",
+    "AUTH_URL": "https://auth.alummahnow.net",
+    "WWW_CLIENT_ID": "d34701ed-03de-43f8-95a8-91cd1e1874bb",
+    "VIDEOS_WEB_URL": "https://videos.alummahnow.net",
+    "VIDEOS_API_URL": "https://videos.api.alummahnow.net",
+    "PROFILE_URL": "https://profile.auth.alummahnow.net",
+    "CMS_PUBLIC_URL": "https://cms.alummahnow.net"
+  },
+  "services": [{ "binding": "CMS", "service": "al-ummah-now-cms" }],
+  "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "bb7463036880446abdc652a56f0b6509" }],
+  "env": {
+    "qa": {
+      "name": "al-ummah-now-www-qa",
+      "workers_dev": false,
+      "preview_urls": false,
+      "routes": [{ "pattern": "www.qa.alummahnow.net", "custom_domain": true }],
+      "vars": {
+        "APP_ENV": "qa",
+        "SITE_URL": "https://www.qa.alummahnow.net",
+        "AUTH_URL": "https://auth.qa.alummahnow.net",
+        "WWW_CLIENT_ID": "ecda6f18-89cb-415c-b746-7e77184d75a2",
+        "VIDEOS_WEB_URL": "https://videos.qa.alummahnow.net",
+        "VIDEOS_API_URL": "https://videos.api.qa.alummahnow.net",
+        "PROFILE_URL": "https://profile.auth.qa.alummahnow.net",
+        "CMS_PUBLIC_URL": "https://cms.qa.alummahnow.net"
+      },
+      "services": [{ "binding": "CMS", "service": "al-ummah-now-cms-qa" }],
+      "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "2784164e06164e99bb5e837733dd38a2" }],
+      "version_metadata": { "binding": "CF_VERSION_METADATA" }
+    },
+    "stage": {
+      "name": "al-ummah-now-www-stage",
+      "workers_dev": false,
+      "preview_urls": false,
+      "routes": [{ "pattern": "www.stage.alummahnow.net", "custom_domain": true }],
+      "vars": {
+        "APP_ENV": "stage",
+        "SITE_URL": "https://www.stage.alummahnow.net",
+        "AUTH_URL": "https://auth.stage.alummahnow.net",
+        "WWW_CLIENT_ID": "d34701ed-03de-43f8-95a8-91cd1e1874bb",
+        "VIDEOS_WEB_URL": "https://videos.stage.alummahnow.net",
+        "VIDEOS_API_URL": "https://videos.api.stage.alummahnow.net",
+        "PROFILE_URL": "https://profile.auth.stage.alummahnow.net",
+        "CMS_PUBLIC_URL": "https://cms.stage.alummahnow.net"
+      },
+      "services": [{ "binding": "CMS", "service": "al-ummah-now-cms-stage" }],
+      "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "9a4d7ee84d43427dad2e73e5904a21c7" }],
+      "version_metadata": { "binding": "CF_VERSION_METADATA" }
+    }
+  }
+}

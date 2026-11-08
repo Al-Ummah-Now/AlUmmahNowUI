@@ -1,8 +1,10 @@
 {
   "extends": "astro/tsconfigs/strict",
-  "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist"],
+  "include": [".astro/types.d.ts", "src/**/*", "tests/**/*", "e2e/**/*", "*.config.*"],
+  "exclude": ["dist", "scripts"],
   "compilerOptions": {
-    "strictNullChecks": true
+    "types": ["node"],
+    "noUncheckedIndexedAccess": true,
+    "verbatimModuleSyntax": true
   }
 }
