@@ -1,8 +1,9 @@
 /**
  * The ONLY place that builds URLs into the videos site (SPEC §6).
  *
- * Embed paths and parameter names are placeholders until AlUmmahNow
- * `docs/embeds/README.md` (the embed player contract) lands; change them here only.
+ * Embed paths and parameters follow the embed contract, AlUmmahNow
+ * `docs/embeds/README.md` §2 (`/embed/v/{id}`, `/embed/p/{id}`; `lang`, `start`,
+ * `autoplay` which always starts muted). Change them here only.
  * Watch and channel URLs follow apps/web today:
  *   /{locale}/video/{id}, /{locale}/playlist/{id}, /{locale}/@{handle} or /{locale}/channels/{id}.
  */
@@ -32,7 +33,7 @@ function assertId(id: string): string {
 }
 
 export function embedUrl(videosWebUrl: string, t: EmbedTarget): string {
-  const path = t.kind === 'playlist' ? `/embed/playlist/${assertId(t.id)}` : `/embed/${assertId(t.id)}`;
+  const path = t.kind === 'playlist' ? `/embed/p/${assertId(t.id)}` : `/embed/v/${assertId(t.id)}`;
   const url = new URL(base(videosWebUrl) + path);
   url.searchParams.set('lang', t.lang);
   if (t.kind === 'video' && t.start && Number.isInteger(t.start) && t.start > 0) url.searchParams.set('start', String(t.start));

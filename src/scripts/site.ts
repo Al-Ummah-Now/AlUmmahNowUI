@@ -17,7 +17,7 @@ function rememberLocale() {
   document.querySelectorAll<HTMLAnchorElement>('[data-set-locale]').forEach((a) => {
     a.addEventListener('click', () => {
       const l = a.dataset.setLocale;
-      if (l === 'en' || l === 'ar') document.cookie = `aun_locale=${l}; Path=/; Max-Age=31536000; SameSite=Lax; Secure`;
+      if (l === 'en' || l === 'ar') document.cookie = `aun_locale=${l}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
     });
   });
 }

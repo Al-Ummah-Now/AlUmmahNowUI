@@ -8,9 +8,9 @@ const ID = '0216ba7e-bcca-4f16-841e-97c87a48e301';
 
 describe('embeds adapter', () => {
   it('builds video and playlist embed URLs with lang and start', () => {
-    expect(embedUrl(BASE, { kind: 'video', id: ID, lang: 'ar' })).toBe(`https://videos.qa.alummahnow.net/embed/${ID}?lang=ar`);
-    expect(embedUrl(BASE, { kind: 'video', id: ID, lang: 'en', start: 90 })).toBe(`https://videos.qa.alummahnow.net/embed/${ID}?lang=en&start=90`);
-    expect(embedUrl(BASE, { kind: 'playlist', id: 'pl_1', lang: 'en' })).toBe('https://videos.qa.alummahnow.net/embed/playlist/pl_1?lang=en');
+    expect(embedUrl(BASE, { kind: 'video', id: ID, lang: 'ar' })).toBe(`https://videos.qa.alummahnow.net/embed/v/${ID}?lang=ar`);
+    expect(embedUrl(BASE, { kind: 'video', id: ID, lang: 'en', start: 90 })).toBe(`https://videos.qa.alummahnow.net/embed/v/${ID}?lang=en&start=90`);
+    expect(embedUrl(BASE, { kind: 'playlist', id: 'pl_1', lang: 'en' })).toBe('https://videos.qa.alummahnow.net/embed/p/pl_1?lang=en');
   });
   it('drops invalid start values and start on playlists', () => {
     expect(embedUrl(BASE, { kind: 'video', id: ID, lang: 'en', start: -5 })).not.toContain('start');
@@ -42,7 +42,7 @@ describe('facade', () => {
     const html = facadeHtml(item, { videosWebUrl: BASE, lang: 'en' });
     expect(html).toContain('<button type="button" class="facade-play" aria-label="Play: Tafsir &quot;Al-Fatiha&quot; &lt;1&gt;">');
     expect(html).not.toContain('<iframe');
-    expect(html).toContain(`data-embed-src="https://videos.qa.alummahnow.net/embed/${ID}?lang=en&amp;autoplay=1"`);
+    expect(html).toContain(`data-embed-src="https://videos.qa.alummahnow.net/embed/v/${ID}?lang=en&amp;autoplay=1"`);
     expect(html).toContain('2:05');
   });
   it('localizes the play label', () => {
