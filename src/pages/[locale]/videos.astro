@@ -11,7 +11,7 @@ if (!locale) return new Response(null, { status: 404 });
 const rc = requestContext(Astro, locale);
 const { cfg, t } = rc;
 const [chrome, videos] = await Promise.all([loadChrome(rc), rc.cms.videos(locale, 'videos')]);
-const curated = await resolveCurated(rc.videos, videos.status === 'ok' ? videos.data.items : []);
+const curated = await resolveCurated(rc.videos, videos.status === 'ok' ? videos.data.items : [], locale);
 markSource(Astro, rc);
 const embeds = curated.filter((c) => c.item.kind !== 'channel');
 const channels = curated.filter((c) => c.item.kind === 'channel');

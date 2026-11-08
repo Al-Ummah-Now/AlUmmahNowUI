@@ -30,6 +30,24 @@ describe('videos API mapping', () => {
   });
 });
 
+describe('localized titles', () => {
+  const body = { title: 'Intro', titleLocalized: { en: 'Intro', ar: 'مقدمة' }, descriptionLocalized: { ar: 'وصف' }, description: 'Desc' };
+  it('picks the page language and falls back to the default title', async () => {
+    const { localizeItem } = await import('../src/lib/videos');
+    const item = toVideoItem('video', 'v', body)!;
+    expect(localizeItem(item, 'ar')).toMatchObject({ title: 'مقدمة', description: 'وصف' });
+    expect(localizeItem(item, 'en')).toMatchObject({ title: 'Intro', description: 'Desc' });
+    expect(localizeItem(toVideoItem('video', 'v', { title: 'Only' })!, 'ar').title).toBe('Only');
+    expect(localizeItem(toVideoItem('channel', 'c', { name: 'Ch', nameLocalized: { ar: 'قناة' } })!, 'ar').title).toBe('قناة');
+  });
+  it('resolveCurated localizes, and an editor override still wins', async () => {
+    const deps: VideosDeps = { apiUrl: 'https://api', cacheKeyBase: 'https://w/__v', waitUntil: () => undefined, fetchImpl: (async () => new Response(JSON.stringify(body))) as unknown as typeof fetch };
+    const c = (id: number, title_override: string | null): CuratedVideo => ({ id, kind: 'video', ref_id: 'v' + id, title_override, snapshot: null, sort: id });
+    const out = await resolveCurated(deps, [c(1, null), c(2, 'Override')], 'ar');
+    expect(out.map((r) => r.item.title)).toEqual(['مقدمة', 'Override']);
+  });
+});
+
 describe('resolveCurated', () => {
   it('keeps CMS order, applies title overrides and silently drops non-public or failing items', async () => {
     const logs: string[] = [];

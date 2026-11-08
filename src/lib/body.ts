@@ -3,20 +3,21 @@ import { facadeHtml } from './facade';
 import type { RequestContext } from './context';
 import type { Locale } from './locale';
 import { extractVideoIds, renderMarkdown } from './markdown';
-import { fetchVideoItem, type VideoItem } from './videos';
+import { fetchVideoItem, localizeItem, type VideoItem } from './videos';
 import type { Alternate } from './cms-types';
 
 export async function renderBody(rc: RequestContext, markdown: string, lang: Locale): Promise<{ html: string; videos: VideoItem[] }> {
   const ids = extractVideoIds(markdown).slice(0, 12);
   const items = await Promise.all(ids.map((id) => fetchVideoItem(rc.videos, 'video', id)));
-  const byId = new Map(ids.map((id, i) => [id, items[i] ?? null]));
+  const shown = items.map((v) => (v ? localizeItem(v, lang) : null));
+  const byId = new Map(ids.map((id, i) => [id, shown[i]]));
   const html = renderMarkdown(markdown, {
     renderVideo: (id) => {
       const item = byId.get(id);
       return item ? facadeHtml(item, { videosWebUrl: rc.cfg.videosWebUrl, lang, headingLevel: 3 }) : '';
     },
   });
-  return { html, videos: items.filter((v): v is VideoItem => v !== null) };
+  return { html, videos: shown.filter((v): v is VideoItem => v !== null) };
 }
 
 /** Paths of a CMS document in every locale it is published in. */
