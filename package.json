@@ -1,41 +1,48 @@
 {
-  "name": "al-ummah-now-ui",
-  "description": "Build a personal website, blog, or portfolio with Astro.",
-  "cloudflare": {
-    "label": "Astro Framework Starter",
-    "products": [
-      "Workers"
-    ],
-    "categories": [],
-    "icon_urls": [
-      "https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/5ca0ca32-e897-4699-d4c1-6b680512f000/public"
-    ],
-    "preview_image_url": "https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/33bbbf02-eda2-4d3f-b244-c27a280f3900/public",
-    "dash": true
-  },
-  "dependencies": {
-    "@astrojs/cloudflare": "12.4.0",
-    "@astrojs/mdx": "4.2.3",
-    "@astrojs/rss": "4.0.11",
-    "@astrojs/sitemap": "3.3.0",
-    "@astrojs/tailwind": "^6.0.2",
-    "astro": "5.6.0",
-    "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.3",
-    "tailwindcss": "^3.4.17",
-    "typescript": "5.8.2"
-  },
-  "devDependencies": {
-    "wrangler": "4.7.0"
+  "name": "al-ummah-now-www",
+  "description": "www.alummahnow.net: the public site of Al Ummah Now (Astro on Cloudflare Workers).",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
   },
   "scripts": {
-    "astro": "astro",
-    "build": "astro build",
-    "check": "astro build && tsc && wrangler deploy --dry-run",
-    "deploy": "astro build && wrangler deploy",
     "dev": "astro dev",
-    "preview": "astro build && wrangler dev",
-    "types": "wrangler types"
+    "build": "astro build",
+    "preview": "node --experimental-strip-types --no-warnings scripts/dev-vars.ts && wrangler dev --port 4321",
+    "lint": "eslint .",
+    "typecheck": "astro check && tsc --noEmit -p tsconfig.scripts.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "check:config": "node --experimental-strip-types --no-warnings scripts/check-wrangler-config.ts",
+    "check:secrets": "node --experimental-strip-types --no-warnings scripts/release/check-secrets.ts",
+    "release:promote": "node --experimental-strip-types --no-warnings scripts/release/promote.ts",
+    "release:smoke": "node --experimental-strip-types --no-warnings scripts/release/smoke.ts",
+    "release:rollback": "node --experimental-strip-types --no-warnings scripts/release/rollback.ts"
   },
-  "type": "module"
+  "dependencies": {
+    "@astrojs/cloudflare": "12.6.13",
+    "@fontsource/noto-naskh-arabic": "5.3.0",
+    "@tailwindcss/vite": "4.3.5",
+    "astro": "5.18.2",
+    "jose": "6.2.15",
+    "markdown-it": "15.0.3",
+    "tailwindcss": "4.3.5"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.12",
+    "@axe-core/playwright": "4.14.0",
+    "@cloudflare/workers-types": "5.20261108.1",
+    "@eslint/js": "9.39.5",
+    "@playwright/test": "1.65.0",
+    "@types/markdown-it": "14.2.0",
+    "@types/node": "22.20.5",
+    "eslint": "9.39.5",
+    "eslint-plugin-astro": "1.7.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1",
+    "vitest": "3.2.7",
+    "wrangler": "4.158.0"
+  }
 }

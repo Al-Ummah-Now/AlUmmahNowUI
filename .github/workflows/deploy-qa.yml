@@ -1,0 +1,81 @@
+name: Deploy QA
+
+# Every push to main deploys www to QA (https://www.qa.alummahnow.net), smokes it and
+# runs the Playwright suite against it.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: www-qa
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy, smoke, E2E (QA)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: qa
+      url: https://www.qa.alummahnow.net
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Secrets check (qa)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run check:secrets -- --env qa
+
+      - name: Deploy to QA
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy -c wrangler.jsonc --env qa --message "qa ${GITHUB_SHA::7}"
+
+      - name: Smoke /healthz
+        run: |
+          for _ in $(seq 1 20); do
+            if body=$(curl -fsS https://www.qa.alummahnow.net/healthz); then echo "$body"; exit 0; fi
+            sleep 3
+          done
+          echo "::error::QA /healthz did not answer"; exit 1
+
+      - name: Release smoke (qa)
+        run: npm run release:smoke -- --env qa
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: E2E against QA
+        env:
+          WWW_URL: https://www.qa.alummahnow.net
+          E2E_AUTH_URL: https://auth.qa.alummahnow.net
+          E2E_CLIENT_ID: ecda6f18-89cb-415c-b746-7e77184d75a2
+          E2E_EXPECT_TITLE: ${{ vars.E2E_EXPECT_TITLE }}
+          QA_SEED_PASSWORD: ${{ secrets.QA_SEED_PASSWORD }}
+        run: npx playwright test
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots-qa
+          path: |
+            e2e-artifacts/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14

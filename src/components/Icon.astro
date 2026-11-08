@@ -1,0 +1,17 @@
+---
+/** Small inline icons. `dir` icons flip in RTL (.dir-icon). */
+interface Props { name: 'chevron' | 'arrow' | 'star' | 'caret'; class?: string }
+const { name, class: className } = Astro.props;
+---
+{name === 'arrow' && (
+  <svg class:list={['dir-icon', className]} viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+)}
+{name === 'chevron' && (
+  <svg class:list={['dir-icon', className]} viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+)}
+{name === 'caret' && (
+  <svg class={className} viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 6 8 10.5 12.5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+)}
+{name === 'star' && (
+  <svg class={className} viewBox="0 0 36 36" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="1.5"><rect x="9" y="9" width="18" height="18" /><rect x="9" y="9" width="18" height="18" transform="rotate(45 18 18)" /><circle cx="18" cy="18" r="3.5" /></g></svg>
+)}

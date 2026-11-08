@@ -1,0 +1,88 @@
+---
+import '../styles/global.css';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { strings } from '../i18n';
+import type { NavItem, SiteSettings } from '../lib/cms-types';
+import type { Config } from '../lib/env';
+import { dir, otherLocale, type Locale } from '../lib/locale';
+import { absolute, hreflangLinks, jsonLdText, type Alternates } from '../lib/seo';
+
+interface Props {
+  cfg: Config;
+  locale: Locale;
+  title: string;
+  description?: string | null;
+  /** Path of this page in each locale that exists (for canonical, hreflang and the switcher). */
+  alternates: Alternates;
+  nav: { header: NavItem[]; footer: NavItem[] };
+  settings?: SiteSettings | null;
+  ogImage?: string | null;
+  ogType?: 'website' | 'article';
+  jsonLd?: unknown[];
+  noindex?: boolean;
+  /** Notice shown above the content (e.g. "not yet available in Arabic"). */
+  notice?: string | null;
+  /** Language of the main content when it differs from the UI (missing translation). */
+  contentLocale?: Locale;
+}
+
+const { cfg, locale, title, description, alternates, nav, settings, ogImage, ogType = 'website', jsonLd = [], noindex, notice, contentLocale } = Astro.props;
+const t = strings(locale);
+const siteName = settings?.site_title || t.meta.siteName;
+const fullTitle = title === siteName ? siteName : `${title} | ${siteName}`;
+const desc = (description || settings?.tagline || t.meta.defaultDescription).slice(0, 300);
+const canonical = absolute(cfg, alternates[contentLocale ?? locale] ?? alternates[locale] ?? Astro.url.pathname);
+const other = otherLocale(locale);
+const switchHref = alternates[other] ?? `/${other}/`;
+const image = absolute(cfg, ogImage || '/brand/og-default.jpg');
+const robots = noindex || !cfg.isProduction ? 'noindex, nofollow' : 'index, follow';
+---
+<!doctype html>
+<html lang={locale} dir={dir(locale)}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={desc} />
+    <meta name="robots" content={robots} />
+    <link rel="canonical" href={canonical} />
+    {hreflangLinks(cfg, alternates).map((l) => <link rel="alternate" hreflang={l.hreflang} href={l.href} />)}
+    <link rel="alternate" type="application/rss+xml" title={`${siteName}: ${t.news.title}`} href={`/${locale}/rss.xml`} />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={desc} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={image} />
+    <meta property="og:locale" content={locale === 'ar' ? 'ar_AR' : 'en_GB'} />
+    {alternates[other] && <meta property="og:locale:alternate" content={other === 'ar' ? 'ar_AR' : 'en_GB'} />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={desc} />
+    <meta name="twitter:image" content={image} />
+    <meta name="theme-color" content="#0b3443" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/icons/site.webmanifest" />
+    {locale === 'ar' && <link rel="preload" href="/fonts/noto-naskh-arabic-arabic-400-normal.woff2" as="font" type="font/woff2" crossorigin />}
+    {jsonLd.map((data) => <script is:inline type="application/ld+json" set:html={jsonLdText(data)} />)}
+  </head>
+  <body>
+    <a class="skip-link" href="#main">{t.a11y.skipToContent}</a>
+    <Header cfg={cfg} locale={locale} nav={nav.header} switchHref={switchHref} />
+    {notice && (
+      <div class="notice" role="note">
+        <p class="wrap">{notice}</p>
+      </div>
+    )}
+    <main id="main" tabindex="-1" lang={contentLocale && contentLocale !== locale ? contentLocale : undefined} dir={contentLocale && contentLocale !== locale ? dir(contentLocale) : undefined}>
+      <slot />
+    </main>
+    <Footer locale={locale} nav={nav.footer} settings={settings ?? null} />
+    <script>
+      import '../scripts/site';
+    </script>
+  </body>
+</html>

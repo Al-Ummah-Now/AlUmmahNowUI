@@ -1,0 +1,67 @@
+---
+import ErrorView from '../../components/ErrorView.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { builtinContent } from '../../content/fallback';
+import { documentAlternates, renderBody } from '../../lib/body';
+import type { Page } from '../../lib/cms-types';
+import { loadChrome, markSource, requestContext, routeLocale } from '../../lib/context';
+import { dir, otherLocale } from '../../lib/locale';
+import { plainText } from '../../lib/markdown';
+import { videoObjectLd } from '../../lib/seo';
+
+const locale = routeLocale(Astro);
+const slug = Astro.params.slug ?? '';
+// `home` is reserved by the CMS contract (it feeds the home page)
+if (!locale || slug === 'home' || !/^[\p{L}\p{N}_-]{1,120}$/u.test(slug)) return new Response(null, { status: 404 });
+const rc = requestContext(Astro, locale);
+const { cfg, t } = rc;
+const [chrome, first] = await Promise.all([loadChrome(rc), rc.cms.page(locale, slug)]);
+let page: Page | null = first.status === 'ok' ? first.data : null;
+if (first.status === 'not_found') {
+  // Missing translation: the other locale's page with a notice; then the built-in page (about)
+  const other = await rc.cms.page(otherLocale(locale), slug);
+  page = other.status === 'ok' && other.source !== 'builtin' ? other.data : (builtinContent(locale).pages[slug] ?? null);
+}
+markSource(Astro, rc);
+if (!page && first.status !== 'unavailable') return new Response(null, { status: 404 });
+if (!page) Astro.response.status = 503;
+
+const body = page ? await renderBody(rc, page.body, page.locale) : null;
+const alternates = page ? documentAlternates(page, page.alternates, (l, s) => `/${l}/${encodeURIComponent(s)}/`) : {};
+const translated = page && page.locale !== locale;
+const description = page ? page.seo_description || page.summary || plainText(page.body, 180) : '';
+const jsonLd = page ? (body?.videos ?? []).map((v) => videoObjectLd(cfg, v, page.locale)).filter(Boolean) : [];
+---
+<BaseLayout
+  cfg={cfg}
+  locale={locale}
+  title={page ? page.seo_title || page.title : t.errors.unavailableTitle}
+  description={description}
+  alternates={page ? alternates : { [locale]: Astro.url.pathname }}
+  nav={chrome.nav}
+  settings={chrome.settings}
+  ogImage={page?.cover?.url}
+  jsonLd={jsonLd}
+  noindex={!page}
+  notice={translated ? t.lang.notAvailable : null}
+  contentLocale={page?.locale}
+>
+  {page && body ? (
+    <article>
+      <header class="page-head">
+        <div class="wrap">
+          <h1>{page.title}</h1>
+          {page.summary && <p class="lede">{page.summary}</p>}
+          {page.cover && <img class="cover" src={page.cover.url} alt={page.cover.alt ?? ''} width={page.cover.width ?? undefined} height={page.cover.height ?? undefined} />}
+        </div>
+      </header>
+      <div class="section">
+        <div class="wrap">
+          <div class="prose" lang={page.locale} dir={dir(page.locale)} set:html={body.html} />
+        </div>
+      </div>
+    </article>
+  ) : (
+    <ErrorView locale={locale} kind="unavailable" />
+  )}
+</BaseLayout>

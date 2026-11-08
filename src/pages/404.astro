@@ -1,0 +1,21 @@
+---
+import ErrorView from '../components/ErrorView.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { builtinContent } from '../content/fallback';
+import { strings } from '../i18n';
+import { runtime } from '../lib/context';
+import { DEFAULT_LOCALE, localeFromPath, negotiateLocale } from '../lib/locale';
+
+export const prerender = false;
+// Built-in chrome only: a 404 never waits on the CMS
+const path = Astro.url.pathname;
+const locale =
+  localeFromPath(path) ?? Astro.locals.locale ??
+  (path.startsWith('/') ? negotiateLocale(Astro.request.headers.get('Cookie'), Astro.request.headers.get('Accept-Language')) : DEFAULT_LOCALE);
+const { cfg } = runtime(Astro);
+const b = builtinContent(locale);
+Astro.response.status = 404;
+---
+<BaseLayout cfg={cfg} locale={locale} title={strings(locale).errors.notFoundTitle} alternates={{ en: '/en/', ar: '/ar/' }} nav={{ header: b.headerNav, footer: b.footerNav }} settings={b.site.settings} noindex>
+  <ErrorView locale={locale} kind="not_found" />
+</BaseLayout>
