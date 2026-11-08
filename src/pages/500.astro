@@ -1,0 +1,20 @@
+---
+import ErrorView from '../components/ErrorView.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { builtinContent } from '../content/fallback';
+import { strings } from '../i18n';
+import { runtime } from '../lib/context';
+import { DEFAULT_LOCALE, localeFromPath } from '../lib/locale';
+
+export const prerender = false;
+interface Props { error?: unknown }
+// Logged server-side only; the visitor never sees a stack trace
+console.error(JSON.stringify({ msg: 'render error', path: Astro.url.pathname, error: String(Astro.props.error ?? 'unknown') }));
+const locale = localeFromPath(Astro.url.pathname) ?? Astro.locals.locale ?? DEFAULT_LOCALE;
+const { cfg } = runtime(Astro);
+const b = builtinContent(locale);
+Astro.response.status = 500;
+---
+<BaseLayout cfg={cfg} locale={locale} title={strings(locale).errors.serverTitle} alternates={{ en: '/en/', ar: '/ar/' }} nav={{ header: b.headerNav, footer: b.footerNav }} settings={b.site.settings} noindex>
+  <ErrorView locale={locale} kind="server" />
+</BaseLayout>

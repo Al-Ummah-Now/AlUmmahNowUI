@@ -1,0 +1,57 @@
+---
+import Icon from './Icon.astro';
+import { strings } from '../i18n';
+import { navHref } from '../lib/context';
+import type { NavItem } from '../lib/cms-types';
+import { libraryUrl } from '../lib/embeds';
+import type { Config } from '../lib/env';
+import { otherLocale, type Locale } from '../lib/locale';
+
+interface Props { cfg: Config; locale: Locale; nav: NavItem[]; switchHref: string }
+const { cfg, locale, nav, switchHref } = Astro.props;
+const t = strings(locale);
+const other = otherLocale(locale);
+const path = Astro.url.pathname;
+const current = (href: string) => (href === path || (href !== `/${locale}/` && path.startsWith(href)) ? 'page' : undefined);
+const items = nav.flatMap((n) => {
+  const href = navHref(n.url, locale);
+  return href ? [{ label: n.label, href }] : [];
+}).slice(0, 6);
+const loginHref = `/auth/login?return=${encodeURIComponent(path + Astro.url.search)}`;
+---
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href={`/${locale}/`} aria-label={t.a11y.home}>
+      <img src="/brand/logo-192.webp" alt="" width="40" height="40" />
+      {locale === 'ar' ? <span class="brand-ar">الأمة الآن</span> : <span>Al Ummah Now</span>}
+    </a>
+    <nav class="primary-nav" aria-label={t.a11y.primaryNav}>
+      <ul>
+        {items.map((i) => (
+          <li><a href={i.href} aria-current={current(i.href)}>{i.label}</a></li>
+        ))}
+      </ul>
+    </nav>
+    <div class="header-tools">
+      <a class="lang-switch" href={switchHref} hreflang={other} lang={other} data-set-locale={other}>{t.lang.switchTo}</a>
+      <div
+        class="account"
+        id="account"
+        data-me="/auth/me"
+        data-label-menu={t.a11y.accountMenu}
+        data-label-signed-in-as={t.auth.signedInAs}
+        data-label-profile={t.auth.profile}
+        data-label-videos={t.auth.videos}
+        data-label-cms={t.auth.cms}
+        data-label-sign-out={t.auth.signOut}
+        data-profile-url={cfg.profileUrl}
+        data-videos-url={libraryUrl(cfg.videosWebUrl, locale)}
+        data-cms-url={`${cfg.cmsPublicUrl}/`}
+        data-locale={locale}
+      >
+        <a class="signin-link" href={loginHref} rel="nofollow">{t.auth.signIn}</a>
+      </div>
+    </div>
+  </div>
+  <template id="caret-icon"><Icon name="caret" /></template>
+</header>

@@ -1,0 +1,63 @@
+---
+import Icon from '../../../components/Icon.astro';
+import NewsList from '../../../components/NewsList.astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { fmt } from '../../../i18n';
+import { libraryUrl } from '../../../lib/embeds';
+import { loadChrome, markSource, requestContext, routeLocale } from '../../../lib/context';
+
+const PAGE_SIZE = 10;
+const locale = routeLocale(Astro);
+if (!locale) return new Response(null, { status: 404 });
+const raw = Astro.url.searchParams.get('page');
+const page = raw === null ? 1 : /^[1-9]\d{0,3}$/.test(raw) ? Number(raw) : NaN;
+if (!Number.isFinite(page)) return new Response(null, { status: 404 });
+
+const rc = requestContext(Astro, locale);
+const { cfg, t } = rc;
+const [chrome, posts] = await Promise.all([loadChrome(rc), rc.cms.posts(locale, page, PAGE_SIZE)]);
+const list = posts.status === 'ok' ? posts.data : { items: [], page, limit: PAGE_SIZE, total: 0 };
+const pages = Math.max(1, Math.ceil(list.total / PAGE_SIZE));
+if (page > 1 && list.items.length === 0 && posts.source === 'cms') return new Response(null, { status: 404 });
+markSource(Astro, rc);
+const qs = (p: number) => (p === 1 ? '' : `?page=${p}`);
+const title = page > 1 ? `${t.news.title}: ${fmt(t.news.pageOf, { page, pages })}` : t.news.title;
+---
+<BaseLayout
+  cfg={cfg}
+  locale={locale}
+  title={title}
+  description={t.news.intro}
+  alternates={{ en: `/en/news/${qs(page)}`, ar: `/ar/news/${qs(page)}` }}
+  nav={chrome.nav}
+  settings={chrome.settings}
+>
+  <div class="page-head">
+    <div class="wrap">
+      <h1>{t.news.title}</h1>
+      <p class="lede">{t.news.intro}</p>
+    </div>
+  </div>
+  <section class="section" aria-label={t.news.title}>
+    <div class="wrap">
+      {list.items.length > 0 ? (
+        <>
+          <NewsList locale={locale} posts={list.items} />
+          {pages > 1 && (
+            <nav class="pagination" aria-label={t.a11y.pagination}>
+              {page > 1 && <a href={`/${locale}/news/${qs(page - 1)}`} rel="prev"><Icon name="chevron" class="flip" />{t.news.newer}</a>}
+              <p aria-current="page">{fmt(t.news.pageOf, { page, pages })}</p>
+              {page < pages && <a href={`/${locale}/news/${qs(page + 1)}`} rel="next">{t.news.older}<Icon name="chevron" /></a>}
+            </nav>
+          )}
+        </>
+      ) : (
+        <div class="empty">
+          <p>{t.news.empty}</p>
+          <p>{t.news.emptyHint}</p>
+          <a class="button button-quiet" href={libraryUrl(cfg.videosWebUrl, locale)}>{t.home.watchCta}</a>
+        </div>
+      )}
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,24 @@
+---
+import Icon from './Icon.astro';
+import { strings } from '../i18n';
+import type { Locale } from '../lib/locale';
+
+interface Props { locale: Locale; kind: 'not_found' | 'server' | 'unavailable' }
+const { locale, kind } = Astro.props;
+const t = strings(locale);
+const code = kind === 'not_found' ? '404' : kind === 'unavailable' ? '503' : '500';
+const title = kind === 'not_found' ? t.errors.notFoundTitle : kind === 'unavailable' ? t.errors.unavailableTitle : t.errors.serverTitle;
+const body = kind === 'not_found' ? t.errors.notFoundBody : kind === 'unavailable' ? t.errors.unavailableBody : t.errors.serverBody;
+---
+<section class="error-page">
+  <div class="wrap">
+    <p class="code" aria-hidden="true">{code}</p>
+    <h1>{title}</h1>
+    <p>{body}</p>
+    <ul class="error-links">
+      <li><a class="button button-quiet" href={`/${locale}/`}>{t.errors.goHome}</a></li>
+      <li><a class="more-link" href={`/${locale}/news/`}>{t.nav.news}<Icon name="chevron" /></a></li>
+      <li><a class="more-link" href={`/${locale}/videos/`}>{t.nav.videos}<Icon name="chevron" /></a></li>
+    </ul>
+  </div>
+</section>

@@ -1,0 +1,44 @@
+---
+import { fmt, strings } from '../i18n';
+import { navHref } from '../lib/context';
+import type { NavItem, SiteSettings } from '../lib/cms-types';
+import type { Locale } from '../lib/locale';
+
+interface Props { locale: Locale; nav: NavItem[]; settings: SiteSettings | null }
+const { locale, nav, settings } = Astro.props;
+const t = strings(locale);
+const items = nav.flatMap((n) => {
+  const href = navHref(n.url, locale);
+  return href ? [{ label: n.label, href }] : [];
+});
+const social = (settings?.social ?? []).filter((s) => /^https:\/\//.test(s.url)).slice(0, 8);
+const socialLabel = (kind: string) => kind.charAt(0).toUpperCase() + kind.slice(1);
+const year = new Date().getUTCFullYear();
+---
+<footer class="site-footer">
+  <div class="wrap">
+    <div>
+      <p class="footer-mark" lang="ar">الأمة الآن</p>
+      <p class="footer-tagline">{settings?.tagline || t.meta.siteName}</p>
+    </div>
+    <div>
+      <nav aria-label={t.a11y.footerNav}>
+        <ul>
+          {items.map((i) => <li><a href={i.href}>{i.label}</a></li>)}
+          <li><a href={`/${locale}/rss.xml`}>{t.footer.rss}</a></li>
+        </ul>
+      </nav>
+      {social.length > 0 && (
+        <nav aria-label={t.a11y.socialNav}>
+          <ul>
+            {social.map((s) => <li><a href={s.url} rel="noopener noreferrer me">{socialLabel(s.kind)}</a></li>)}
+          </ul>
+        </nav>
+      )}
+    </div>
+    <div class="footer-base">
+      <p>{fmt(t.footer.rights, { year })}</p>
+      <p lang={locale === 'ar' ? 'en' : 'ar'}>{locale === 'ar' ? 'Al Ummah Now' : 'الأمة الآن'}</p>
+    </div>
+  </div>
+</footer>

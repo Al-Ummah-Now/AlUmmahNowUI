@@ -1,0 +1,27 @@
+---
+import { channelUrl, watchUrl } from '../lib/embeds';
+import type { Config } from '../lib/env';
+import type { Locale } from '../lib/locale';
+import { strings } from '../i18n';
+import type { ResolvedCurated } from '../lib/videos';
+
+interface Props { cfg: Config; locale: Locale; items: ResolvedCurated[] }
+const { cfg, locale, items } = Astro.props;
+const t = strings(locale);
+const href = ({ item }: ResolvedCurated) =>
+  item.kind === 'channel'
+    ? channelUrl(cfg.videosWebUrl, { id: item.id, handle: item.handle, lang: locale })
+    : watchUrl(cfg.videosWebUrl, { kind: item.kind, id: item.id, lang: locale });
+const meta = ({ item }: ResolvedCurated) => (item.kind === 'channel' ? t.videos.channel : item.kind === 'playlist' ? t.videos.playlist : item.channelName);
+---
+<ul class="rail">
+  {items.map((r) => (
+    <li>
+      <a href={href(r)}>
+        {r.item.thumbnailUrl ? <img class="thumb" src={r.item.thumbnailUrl} alt="" loading="lazy" decoding="async" width="320" height="180" /> : <span class="thumb" aria-hidden="true" />}
+        <span class="rail-title">{r.item.title}</span>
+        {meta(r) && <span class="rail-meta">{meta(r)}</span>}
+      </a>
+    </li>
+  ))}
+</ul>

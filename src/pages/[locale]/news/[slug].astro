@@ -1,0 +1,93 @@
+---
+import Icon from '../../../components/Icon.astro';
+import ErrorView from '../../../components/ErrorView.astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { fmt, formatDate } from '../../../i18n';
+import { documentAlternates, renderBody } from '../../../lib/body';
+import { loadChrome, markSource, requestContext, routeLocale } from '../../../lib/context';
+import { otherLocale, dir } from '../../../lib/locale';
+import { plainText } from '../../../lib/markdown';
+import { newsArticleLd, videoObjectLd } from '../../../lib/seo';
+
+const locale = routeLocale(Astro);
+const slug = Astro.params.slug ?? '';
+if (!locale || !/^[\p{L}\p{N}_-]{1,120}$/u.test(slug)) return new Response(null, { status: 404 });
+const rc = requestContext(Astro, locale);
+const { cfg, t } = rc;
+const [chrome, first] = await Promise.all([loadChrome(rc), rc.cms.post(locale, slug)]);
+let result = first;
+// Missing translation: serve the other locale's article (same slug) with a notice
+if (result.status === 'not_found') {
+  const other = await rc.cms.post(otherLocale(locale), slug);
+  if (other.status === 'ok') result = other;
+}
+markSource(Astro, rc);
+if (result.status === 'not_found') return new Response(null, { status: 404 });
+if (result.status === 'unavailable') Astro.response.status = 503;
+
+const post = result.status === 'ok' ? result.data : null;
+const body = post ? await renderBody(rc, post.body, post.locale) : null;
+const alternates = post ? documentAlternates(post, post.alternates, (l, s) => `/${l}/news/${encodeURIComponent(s)}/`) : {};
+const translated = post && post.locale !== locale;
+const description = post ? post.seo_description || post.excerpt || plainText(post.body, 180) : '';
+const jsonLd = post
+  ? [
+      newsArticleLd(cfg, {
+        title: post.title,
+        description,
+        url: alternates[post.locale] ?? Astro.url.pathname,
+        image: post.cover?.url ?? null,
+        published: post.published_at,
+        modified: post.updated_at,
+        author: post.author_name,
+        locale: post.locale,
+      }),
+      ...(body?.videos ?? []).map((v) => videoObjectLd(cfg, v, post.locale)).filter(Boolean),
+    ]
+  : [];
+---
+<BaseLayout
+  cfg={cfg}
+  locale={locale}
+  title={post ? post.seo_title || post.title : t.errors.unavailableTitle}
+  description={description}
+  alternates={post ? alternates : { [locale]: Astro.url.pathname }}
+  nav={chrome.nav}
+  settings={chrome.settings}
+  ogType={post ? 'article' : 'website'}
+  ogImage={post?.cover?.url}
+  jsonLd={jsonLd}
+  noindex={!post}
+  notice={translated ? t.lang.notAvailable : null}
+  contentLocale={post?.locale}
+>
+  {post && body ? (
+    <article>
+      <header class="page-head">
+        <div class="wrap">
+          <p><a class="more-link" href={`/${locale}/news/`}><Icon name="chevron" class="flip" />{t.news.backToNews}</a></p>
+          <h1>{post.title}</h1>
+          {post.excerpt && <p class="lede">{post.excerpt}</p>}
+          <p class="byline">
+            <time datetime={post.published_at}>{formatDate(post.published_at, post.locale)}</time>
+            {post.author_name && <span>{' '}{fmt(t.news.by, { author: post.author_name })}</span>}
+          </p>
+          {post.cover && <img class="cover" src={post.cover.url} alt={post.cover.alt ?? ''} width={post.cover.width ?? undefined} height={post.cover.height ?? undefined} />}
+        </div>
+      </header>
+      <div class="section">
+        <div class="wrap">
+          <div class="prose" lang={post.locale} dir={dir(post.locale)} set:html={body.html} />
+          {post.tags.length > 0 && (
+            <div class="section-tags">
+              <h2 class="visually-hidden">{t.news.tags}</h2>
+              <ul class="tags">{post.tags.map((tag) => <li>{tag}</li>)}</ul>
+            </div>
+          )}
+        </div>
+      </div>
+    </article>
+  ) : (
+    <ErrorView locale={locale} kind="unavailable" />
+  )}
+</BaseLayout>

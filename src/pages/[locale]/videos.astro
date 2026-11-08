@@ -1,0 +1,67 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { channelUrl, libraryUrl } from '../../lib/embeds';
+import { loadChrome, markSource, requestContext, routeLocale } from '../../lib/context';
+import { facadeHtml } from '../../lib/facade';
+import { videoObjectLd } from '../../lib/seo';
+import { resolveCurated } from '../../lib/videos';
+
+const locale = routeLocale(Astro);
+if (!locale) return new Response(null, { status: 404 });
+const rc = requestContext(Astro, locale);
+const { cfg, t } = rc;
+const [chrome, videos] = await Promise.all([loadChrome(rc), rc.cms.videos(locale, 'videos')]);
+const curated = await resolveCurated(rc.videos, videos.status === 'ok' ? videos.data.items : []);
+markSource(Astro, rc);
+const embeds = curated.filter((c) => c.item.kind !== 'channel');
+const channels = curated.filter((c) => c.item.kind === 'channel');
+const library = libraryUrl(cfg.videosWebUrl, locale);
+---
+<BaseLayout
+  cfg={cfg}
+  locale={locale}
+  title={t.videos.title}
+  description={t.videos.intro}
+  alternates={{ en: '/en/videos/', ar: '/ar/videos/' }}
+  nav={chrome.nav}
+  settings={chrome.settings}
+  jsonLd={embeds.map((c) => videoObjectLd(cfg, c.item, locale)).filter(Boolean)}
+>
+  <div class="page-head">
+    <div class="wrap">
+      <h1>{t.videos.title}</h1>
+      <p class="lede">{t.videos.intro}</p>
+      <p><a class="button button-quiet" href={library}>{t.videos.browseAll}</a></p>
+    </div>
+  </div>
+  <section class="section" aria-label={t.videos.title}>
+    <div class="wrap">
+      {curated.length === 0 && (
+        <div class="empty">
+          <p>{t.videos.empty}</p>
+          <p>{t.videos.emptyHint}</p>
+          <a class="button button-quiet" href={library}>{t.videos.browseAll}</a>
+        </div>
+      )}
+      {embeds.length > 0 && (
+        <ul class="video-grid">
+          {embeds.map((c) => <li set:html={facadeHtml(c.item, { videosWebUrl: cfg.videosWebUrl, lang: locale, headingLevel: 2 })} />)}
+        </ul>
+      )}
+      {channels.length > 0 && (
+        <ul class="video-grid channels">
+          {channels.map(({ item }) => (
+            <li class="channel-card">
+              {item.thumbnailUrl ? <img src={item.thumbnailUrl} alt="" loading="lazy" width="64" height="64" /> : <span class="avatar-empty" aria-hidden="true" />}
+              <div>
+                <h2 class="facade-title">{item.title}</h2>
+                <p>{t.videos.channel}</p>
+                <a href={channelUrl(cfg.videosWebUrl, { id: item.id, handle: item.handle, lang: locale })}>{t.videos.visitChannel}</a>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  </section>
+</BaseLayout>

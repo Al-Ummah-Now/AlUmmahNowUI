@@ -1,0 +1,18 @@
+---
+import { formatDate } from '../i18n';
+import type { PostSummary } from '../lib/cms-types';
+import type { Locale } from '../lib/locale';
+
+interface Props { locale: Locale; posts: PostSummary[]; headingLevel?: 2 | 3 }
+const { locale, posts, headingLevel = 2 } = Astro.props;
+const H = `h${headingLevel}`;
+---
+<ul class="news-list">
+  {posts.map((p) => (
+    <li class="news-item">
+      <time datetime={p.published_at}>{formatDate(p.published_at, locale)}</time>
+      <H><a href={`/${locale}/news/${encodeURIComponent(p.slug)}/`}>{p.title}</a></H>
+      {p.excerpt && <p>{p.excerpt}</p>}
+    </li>
+  ))}
+</ul>
