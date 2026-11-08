@@ -10,6 +10,7 @@
 import type { CuratedVideo } from './cms-types';
 import { VIDEO_ID } from './embeds';
 import { normalizeImageUrl } from './images';
+import type { Locale } from './locale';
 
 export type VideoKind = 'video' | 'playlist' | 'channel';
 
@@ -25,6 +26,9 @@ export interface VideoItem {
   durationSeconds: number | null;
   uploadDate: string | null;
   videoCount: number | null;
+  /** Per-locale title/name and description from the API (titleLocalized / nameLocalized). */
+  titles?: Partial<Record<Locale, string>>;
+  descriptions?: Partial<Record<Locale, string>>;
 }
 
 export interface VideosDeps {
@@ -39,6 +43,16 @@ export interface VideosDeps {
 
 const PATHS: Record<VideoKind, string> = { video: 'videos', playlist: 'playlists', channel: 'channels' };
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null);
+const localized = (v: unknown): Partial<Record<Locale, string>> => {
+  const out: Partial<Record<Locale, string>> = {};
+  if (typeof v === 'object' && v !== null) {
+    for (const l of ['en', 'ar'] as const) {
+      const t = str((v as Record<string, unknown>)[l]);
+      if (t) out[l] = t;
+    }
+  }
+  return out;
+};
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null);
 
 /** Maps an API body to a VideoItem, or null when it is not public. Pure (unit-tested). */
@@ -62,7 +76,14 @@ export function toVideoItem(kind: VideoKind, id: string, body: unknown): VideoIt
     durationSeconds: kind === 'video' ? num(b.duration) : null,
     uploadDate: str(b.dateCreated),
     videoCount: kind === 'playlist' ? num(b.videosCount) ?? (Array.isArray(b.videos) ? b.videos.length : null) : null,
+    titles: localized(kind === 'channel' ? b.nameLocalized : b.titleLocalized),
+    descriptions: localized(b.descriptionLocalized),
   };
+}
+
+/** The item in the page's language: the API's localized title/description when it has one. */
+export function localizeItem(item: VideoItem, locale: Locale): VideoItem {
+  return { ...item, title: item.titles?.[locale] ?? item.title, description: item.descriptions?.[locale] ?? item.description };
 }
 
 export async function fetchVideoItem(deps: VideosDeps, kind: VideoKind, id: string): Promise<VideoItem | null> {
@@ -106,13 +127,14 @@ export async function fetchVideoItem(deps: VideosDeps, kind: VideoKind, id: stri
 export interface ResolvedCurated { curated: CuratedVideo; item: VideoItem }
 
 /** Curated CMS entries → public items, in CMS order, with the editor's title override. */
-export async function resolveCurated(deps: VideosDeps, curated: CuratedVideo[]): Promise<ResolvedCurated[]> {
+export async function resolveCurated(deps: VideosDeps, curated: CuratedVideo[], locale?: Locale): Promise<ResolvedCurated[]> {
   const sorted = [...curated].sort((a, b) => a.sort - b.sort);
   const items = await Promise.all(sorted.map((c) => fetchVideoItem(deps, c.kind, c.ref_id)));
   return sorted.flatMap((curated, i) => {
     const item = items[i];
     if (!item) return [];
-    return [{ curated, item: curated.title_override ? { ...item, title: curated.title_override } : item }];
+    const shown = locale ? localizeItem(item, locale) : item;
+    return [{ curated, item: curated.title_override ? { ...shown, title: curated.title_override } : shown }];
   });
 }
 

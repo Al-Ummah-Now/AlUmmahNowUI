@@ -35,11 +35,12 @@ export function contentSecurityPolicy(cfg: Config): string {
   const https = cfg.siteUrl.startsWith('https://');
   const directives = [
     "default-src 'self'",
-    "script-src 'self'",
+    // Cloudflare Web Analytics: the zone injects its beacon into HTML responses
+    "script-src 'self' https://static.cloudflareinsights.com",
     "style-src 'self'",
     `img-src ${imgSrcSources(cfg.cmsPublicUrl).join(' ')}`,
     "font-src 'self'",
-    "connect-src 'self'",
+    "connect-src 'self' https://cloudflareinsights.com",
     "media-src 'none'",
     `frame-src ${embedOrigin(cfg.videosWebUrl)}`,
     "frame-ancestors 'none'",

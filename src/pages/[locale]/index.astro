@@ -17,7 +17,7 @@ const [chrome, home] = await Promise.all([loadChrome(rc), rc.cms.home(locale)]);
 const builtin = builtinContent(locale);
 const data = home.status === 'ok' ? home.data : builtin.home;
 const settings = data.settings ?? chrome.settings;
-const curated = await resolveCurated(rc.videos, data.videos);
+const curated = await resolveCurated(rc.videos, data.videos, locale);
 markSource(Astro, rc);
 
 const heroTitle = settings?.hero_title || t.home.heroTitle;
