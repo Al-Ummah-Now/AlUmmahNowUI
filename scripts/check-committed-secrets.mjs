@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* global console, process */
 // Fails if committed files could leak secrets. Never prints a value: findings show
 // the file, line, key and a fingerprint (first 12 hex chars of sha256).
 //
@@ -18,6 +17,8 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
+import console from 'node:console';
 
 const fp = (v) => createHash('sha256').update(v).digest('hex').slice(0, 12);
 
