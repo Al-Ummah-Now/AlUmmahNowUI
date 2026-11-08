@@ -40,7 +40,10 @@ export function safeReturnPath(raw: string | null | undefined, fallback = '/'): 
     const url = new URL(raw, base);
     if (url.origin !== base) return fallback;
     if (url.pathname.startsWith('/auth/')) return fallback;
-    return `${url.pathname}${url.search}${url.hash}`;
+    // Check the normalised result too: '/..//evil.example' normalises to '//evil.example'
+    const out = `${url.pathname}${url.search}${url.hash}`;
+    if (!out.startsWith('/') || out.startsWith('//') || out.includes('\\')) return fallback;
+    return out;
   } catch {
     return fallback;
   }

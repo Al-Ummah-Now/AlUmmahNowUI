@@ -926,6 +926,7 @@ main {
   font-size: clamp(1.75rem, 4vw, 2.5rem);
 }
 .error-page p {
+  margin-block: 1rem 0;
   max-width: var(--measure);
   color: var(--color-ink-soft);
 }

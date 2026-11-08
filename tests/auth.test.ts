@@ -24,6 +24,10 @@ describe('return-path guard', () => {
     [null, '/'],
     ['/' + 'a'.repeat(600), '/'],
     ['/%2F%2Fevil.example', '/%2F%2Fevil.example'],
+    ['/..//evil.example', '/'],
+    ['/.//evil.example', '/'],
+    ['/a/../..//evil.example/x', '/'],
+    ['/en/../ar/news/', '/ar/news/'],
   ])('%s → %s', (input, expected) => {
     expect(safeReturnPath(input as string | null)).toBe(expected);
   });
