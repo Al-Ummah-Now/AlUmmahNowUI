@@ -4,9 +4,9 @@ import NewsList from '../../../components/NewsList.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { fmt } from '../../../i18n';
 import { libraryUrl } from '../../../lib/embeds';
+import { NEWS_PAGE_SIZE as PAGE_SIZE } from '../../../lib/cms';
 import { loadChrome, markSource, requestContext, routeLocale } from '../../../lib/context';
 
-const PAGE_SIZE = 10;
 const locale = routeLocale(Astro);
 if (!locale) return new Response(null, { status: 404 });
 const raw = Astro.url.searchParams.get('page');

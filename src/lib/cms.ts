@@ -2,6 +2,8 @@
  * CMS client with the fallback chain of SPEC §5:
  *   fresh Cache API entry (60 s) → CMS (2.5 s timeout) → stale Cache API entry (≤ 10 min)
  *   → KV last-known-good (CONTENT_SNAPSHOT) → built-in content.
+ * The request path only READS the KV snapshots; one writer (the cron in src/lib/snapshot-writer.ts)
+ * writes them, so isolates never race on a key and older data never overwrites newer (audit UI-3).
  * A 404 from the CMS is an answer, not a failure. Timeout, network error, 5xx/4xx
  * other than 404, and bad JSON are failures.
  */
@@ -22,7 +24,6 @@ export type Result<T> =
 
 export const FRESH_MS = 60_000;
 export const STALE_MS = 600_000;
-export const SNAPSHOT_EVERY_MS = 5 * 60_000;
 export const CMS_TIMEOUT_MS = 2_500;
 const STORED_AT = 'x-www-stored-at';
 
@@ -37,10 +38,6 @@ export interface CmsDeps {
   timeoutMs?: number;
   log?: (message: string, data?: Record<string, unknown>) => void;
 }
-
-// Per isolate: when this isolate last wrote each snapshot key (KV metadata covers other isolates)
-const snapshotWrites = new Map<string, number>();
-export const _resetSnapshotThrottle = () => snapshotWrites.clear();
 
 type Stored<T> = { notFound: true } | { notFound?: false; data: T };
 
@@ -69,23 +66,6 @@ function writeCache(deps: CmsDeps, key: string, value: Stored<unknown>) {
   deps.waitUntil(deps.cache.put(key, res).catch(() => undefined));
 }
 
-async function writeSnapshot(deps: CmsDeps, key: string, data: unknown) {
-  const kv = deps.kv;
-  if (!kv) return;
-  const now = (deps.now ?? Date.now)();
-  const last = snapshotWrites.get(key);
-  if (last !== undefined && now - last < SNAPSHOT_EVERY_MS) return;
-  snapshotWrites.set(key, now);
-  deps.waitUntil(
-    (async () => {
-      const existing = await kv.getWithMetadata<{ writtenAt?: number }>(key, 'text').catch(() => null);
-      const writtenAt = existing?.metadata?.writtenAt;
-      if (writtenAt && now - writtenAt < SNAPSHOT_EVERY_MS) return;
-      await kv.put(key, JSON.stringify(data), { metadata: { writtenAt: now } });
-    })().catch((error) => deps.log?.('snapshot write failed', { key, error: String(error) })),
-  );
-}
-
 export async function load<T>(
   deps: CmsDeps,
   path: string,
@@ -93,7 +73,6 @@ export async function load<T>(
   builtin: () => T | null,
 ): Promise<Result<T>> {
   const key = `${deps.cacheKeyBase}${path}`;
-  const snapshotKey = `v1:${path}`;
   const cached = await readCache<T>(deps, key);
   if (cached && cached.ageMs < FRESH_MS) {
     if (cached.value.notFound) return { status: 'not_found', source: 'cms' };
@@ -113,7 +92,6 @@ export async function load<T>(
       const json: unknown = await res.json().catch(() => undefined);
       if (isValid(json)) {
         writeCache(deps, key, { data: json });
-        await writeSnapshot(deps, snapshotKey, json);
         return { status: 'ok', data: json, source: 'cms' };
       }
       failure = 'bad JSON';
@@ -132,7 +110,7 @@ export async function load<T>(
     if (isValid(cached.value.data)) return { status: 'ok', data: cached.value.data, source: 'cache' };
   }
   if (deps.kv) {
-    const snap = await deps.kv.get(snapshotKey, 'json').catch(() => null);
+    const snap = await deps.kv.get(snapshotKey(path), 'json').catch(() => null);
     if (isValid(snap)) return { status: 'ok', data: snap, source: 'snapshot' };
   }
   const fallback = builtin();
@@ -164,6 +142,21 @@ export function createCmsDeps(env: WwwEnv, cfg: Config, waitUntil: (p: Promise<u
 const q = (params: Record<string, string | number>) => `?${new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v)]))}`;
 const enc = encodeURIComponent;
 
+/** CMS paths (also the KV snapshot keys, `v1:<path>`): shared by the client and the snapshot writer. */
+export const cmsPaths = {
+  site: (l: Locale) => `/site${q({ locale: l })}`,
+  home: (l: Locale) => `/home${q({ locale: l })}`,
+  page: (l: Locale, slug: string) => `/pages/${enc(slug)}${q({ locale: l })}`,
+  posts: (l: Locale, page: number, limit: number) => `/posts${q({ locale: l, page, limit })}`,
+  post: (l: Locale, slug: string) => `/posts/${enc(slug)}${q({ locale: l })}`,
+  videos: (l: Locale, placement: 'home' | 'videos') => `/videos${q({ locale: l, placement })}`,
+  sitemap: () => '/sitemap',
+};
+export const snapshotKey = (path: string) => `v1:${path}`;
+/** Page sizes the site requests (/news and the RSS feed): the snapshot writer covers exactly these. */
+export const NEWS_PAGE_SIZE = 10;
+export const RSS_ITEMS = 20;
+
 /** Typed endpoints of the CMS public API. Every call tracks its source for the page header. */
 export function cmsClient(deps: CmsDeps) {
   const sources: ContentSource[] = [];
@@ -175,18 +168,15 @@ export function cmsClient(deps: CmsDeps) {
   return {
     sources,
     source: () => worstSource(sources),
-    site: (l: Locale) => track(load<SiteResponse>(deps, `/site${q({ locale: l })}`, validate.site, () => builtinContent(l).site)),
-    home: (l: Locale) => track(load<HomeResponse>(deps, `/home${q({ locale: l })}`, validate.home, () => builtinContent(l).home)),
-    page: (l: Locale, slug: string) =>
-      track(load<Page>(deps, `/pages/${enc(slug)}${q({ locale: l })}`, validate.page, () => builtinContent(l).pages[slug] ?? null)),
+    site: (l: Locale) => track(load<SiteResponse>(deps, cmsPaths.site(l), validate.site, () => builtinContent(l).site)),
+    home: (l: Locale) => track(load<HomeResponse>(deps, cmsPaths.home(l), validate.home, () => builtinContent(l).home)),
+    page: (l: Locale, slug: string) => track(load<Page>(deps, cmsPaths.page(l, slug), validate.page, () => builtinContent(l).pages[slug] ?? null)),
     posts: (l: Locale, page: number, limit = 10) =>
-      track(
-        load<PostsResponse>(deps, `/posts${q({ locale: l, page, limit })}`, validate.posts, () => ({ items: [], page, limit, total: 0 })),
-      ),
-    post: (l: Locale, slug: string) => track(load<Post>(deps, `/posts/${enc(slug)}${q({ locale: l })}`, validate.post, () => null)),
+      track(load<PostsResponse>(deps, cmsPaths.posts(l, page, limit), validate.posts, () => ({ items: [], page, limit, total: 0 }))),
+    post: (l: Locale, slug: string) => track(load<Post>(deps, cmsPaths.post(l, slug), validate.post, () => null)),
     videos: (l: Locale, placement: 'home' | 'videos' = 'videos') =>
-      track(load<VideosResponse>(deps, `/videos${q({ locale: l, placement })}`, validate.videos, () => ({ items: [] }))),
-    sitemap: () => track(load<SitemapResponse>(deps, '/sitemap', validate.sitemap, () => ({ items: [] }))),
+      track(load<VideosResponse>(deps, cmsPaths.videos(l, placement), validate.videos, () => ({ items: [] }))),
+    sitemap: () => track(load<SitemapResponse>(deps, cmsPaths.sitemap(), validate.sitemap, () => ({ items: [] }))),
   };
 }
 export type CmsClient = ReturnType<typeof cmsClient>;

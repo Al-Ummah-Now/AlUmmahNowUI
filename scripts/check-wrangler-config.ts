@@ -16,6 +16,7 @@ interface Block {
   services?: { binding: string; service: string }[];
   kv_namespaces?: { binding: string; id: string }[];
   version_metadata?: { binding: string };
+  triggers?: { crons?: string[] };
 }
 interface WranglerConfig extends Block {
   main?: string;
@@ -51,6 +52,8 @@ export function checkWranglerConfig(config: WranglerConfig): string[] {
     const kv = block.kv_namespaces?.find((k) => k.binding === 'CONTENT_SNAPSHOT');
     if (kv?.id !== want.kvId) p(`KV CONTENT_SNAPSHOT must be ${want.kvId}`);
     if (block.version_metadata?.binding !== 'CF_VERSION_METADATA') p('version_metadata binding CF_VERSION_METADATA is required (healthz version, release smoke)');
+    // The single writer of the KV snapshots (src/lib/snapshot-writer.ts SNAPSHOT_CRON); triggers are not inherited.
+    if (!(block.triggers?.crons ?? []).includes('*/5 * * * *')) p('triggers.crons must include "*/5 * * * *" (KV snapshot writer)');
     if (block.vars && 'SESSION_SECRET' in block.vars) p('SESSION_SECRET must be a secret, never a var');
   }
   return errors;

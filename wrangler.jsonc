@@ -34,6 +34,8 @@
   },
   "services": [{ "binding": "CMS", "service": "al-ummah-now-cms" }],
   "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "bb7463036880446abdc652a56f0b6509" }],
+  // The single writer of the CONTENT_SNAPSHOT keys (src/lib/snapshot-writer.ts). Not inherited: each env repeats it.
+  "triggers": { "crons": ["*/5 * * * *"] },
   "env": {
     "qa": {
       "name": "al-ummah-now-www-qa",
@@ -52,6 +54,7 @@
       },
       "services": [{ "binding": "CMS", "service": "al-ummah-now-cms-qa" }],
       "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "2784164e06164e99bb5e837733dd38a2" }],
+      "triggers": { "crons": ["*/5 * * * *"] },
       "version_metadata": { "binding": "CF_VERSION_METADATA" }
     },
     "stage": {
@@ -71,6 +74,7 @@
       },
       "services": [{ "binding": "CMS", "service": "al-ummah-now-cms-stage" }],
       "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "9a4d7ee84d43427dad2e73e5904a21c7" }],
+      "triggers": { "crons": ["*/5 * * * *"] },
       "version_metadata": { "binding": "CF_VERSION_METADATA" }
     }
   }

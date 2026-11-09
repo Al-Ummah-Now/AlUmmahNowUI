@@ -72,8 +72,9 @@ Unknown slug: localized 404 page with links home, to news and to videos (status 
   is identical for everyone and always cacheable. CMS JSON is cached the same way (60 s).
 - **Fallback when the CMS is down** (timeout 2.5 s, 5xx, or bad JSON), in order:
   1. stale entry from the Cache API (SWR);
-  2. last-known-good JSON in KV `CONTENT_SNAPSHOT`, written on each successful CMS fetch (at most
-     once per key per 5 min);
+  2. last-known-good JSON in KV `CONTENT_SNAPSHOT`, written only by the Worker's cron every 5 min
+     (`src/lib/snapshot-writer.ts`: one writer, unchanged content not rewritten, never older over
+     newer); the request path only reads it;
   3. built-in content bundled in the Worker (`src/content/fallback/{en,ar}.ts`): home hero, about
      blurb, app links.
   The page still renders (200) with `X-Content-Source: cms|cache|snapshot|builtin`. `/healthz` reports

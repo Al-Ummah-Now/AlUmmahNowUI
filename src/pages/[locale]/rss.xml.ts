@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { RSS_ITEMS } from '../../lib/cms';
 import { requestContext, routeLocale } from '../../lib/context';
 import { escapeHtml as x } from '../../lib/html';
 
@@ -7,7 +8,7 @@ export const GET: APIRoute = async (ctx) => {
   if (!locale) return new Response('Not found', { status: 404 });
   const rc = requestContext(ctx, locale);
   const { cfg, t } = rc;
-  const [site, posts] = await Promise.all([rc.cms.site(locale), rc.cms.posts(locale, 1, 20)]);
+  const [site, posts] = await Promise.all([rc.cms.site(locale), rc.cms.posts(locale, 1, RSS_ITEMS)]);
   const items = posts.status === 'ok' ? posts.data.items : [];
   const title = site.status === 'ok' && site.data.settings?.site_title ? site.data.settings.site_title : t.meta.siteName;
   const link = `${cfg.siteUrl}/${locale}/news/`;
