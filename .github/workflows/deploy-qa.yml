@@ -70,6 +70,14 @@ jobs:
           QA_SEED_PASSWORD: ${{ secrets.QA_SEED_PASSWORD }}
         run: npx playwright test
 
+      # Public repo: artifacts are downloadable by anyone. Never upload a secret
+      # (Playwright puts typed values in traces and report step titles) or a storage state.
+      - name: Keep secrets out of the uploaded E2E output
+        if: always()
+        env:
+          QA_SEED_PASSWORD: ${{ secrets.QA_SEED_PASSWORD }}
+        run: python3 scripts/scan-artifacts-for-secrets.py --env QA_SEED_PASSWORD --remove e2e-artifacts playwright-report
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
