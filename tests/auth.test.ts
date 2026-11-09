@@ -1,6 +1,6 @@
 import { SignJWT, exportJWK, generateKeyPair, createLocalJWKSet } from 'jose';
 import { describe, expect, it } from 'vitest';
-import { canEditContent, codeChallenge, normalizeRole, safeReturnPath, sessionFromAccessToken, LOGIN_COOKIE, SESSION_COOKIE } from '../src/lib/auth';
+import { canEditContent, codeChallenge, normalizeRole, parsePrompt, safeReturnPath, sessionFromAccessToken, LOGIN_COOKIE, SESSION_COOKIE } from '../src/lib/auth';
 import { callback, login, logout, me } from '../src/lib/auth-routes';
 import { config } from '../src/lib/env';
 import { readCookie } from '../src/lib/locale';
@@ -88,14 +88,36 @@ describe('PKCE login', () => {
     const state = await unseal<{ returnTo: string; exp: number }>(SECRET, readCookie(res.headers.get('Set-Cookie'), LOGIN_COOKIE));
     expect(state?.returnTo).toBe('/');
   });
+  it('never adds a prompt by default (auth decides: silent for the active account, else the form)', async () => {
+    const res = await login(new Request('https://www.qa.alummahnow.net/auth/login?return=/en/'), { cfg, secret: SECRET });
+    expect(new URL(res.headers.get('Location')!).searchParams.has('prompt')).toBe(false);
+  });
+  it.each([
+    ['none', 'none', true],
+    ['login', 'login', undefined],
+    ['select_account', null, undefined],
+    ['consent', null, undefined],
+  ])('prompt=%s → authorize prompt %s', async (input, expected, silent) => {
+    const res = await login(new Request(`https://www.qa.alummahnow.net/auth/login?prompt=${input}&return=/en/news/`), { cfg, secret: SECRET });
+    expect(new URL(res.headers.get('Location')!).searchParams.get('prompt')).toBe(expected);
+    const state = await unseal<{ returnTo: string; silent?: boolean; exp: number }>(SECRET, readCookie(res.headers.get('Set-Cookie'), LOGIN_COOKIE));
+    expect(state?.returnTo).toBe('/en/news/');
+    expect(state?.silent).toBe(silent);
+  });
+  it('parsePrompt accepts only none and login', () => {
+    expect(parsePrompt('none')).toBe('none');
+    expect(parsePrompt('login')).toBe('login');
+    expect(parsePrompt('select_account')).toBeUndefined();
+    expect(parsePrompt(null)).toBeUndefined();
+  });
   it('is 503 without a valid SESSION_SECRET', async () => {
     expect((await login(new Request('https://www.qa.alummahnow.net/auth/login'), { cfg, secret: undefined })).status).toBe(503);
   });
 });
 
 describe('callback, me, logout', () => {
-  async function loginCookie() {
-    const res = await login(new Request('https://www.qa.alummahnow.net/auth/login?return=/en/news/'), { cfg, secret: SECRET });
+  async function loginCookie(prompt = '') {
+    const res = await login(new Request(`https://www.qa.alummahnow.net/auth/login?return=/en/news/${prompt ? `&prompt=${prompt}` : ''}`), { cfg, secret: SECRET });
     const cookie = res.headers.get('Set-Cookie')!.split(';')[0]!;
     const state = new URL(res.headers.get('Location')!).searchParams.get('state')!;
     return { cookie, state };
@@ -128,13 +150,58 @@ describe('callback, me, logout', () => {
 
     const meRes = await me(new Request('https://www.qa.alummahnow.net/auth/me', { headers: { Cookie: session.split(';')[0]! } }), { cfg, secret: SECRET });
     expect(meRes.headers.get('Cache-Control')).toBe('private, no-store');
-    expect(await meRes.json()).toEqual({ signedIn: true, name: 'Amina', roles: ['Admin'], canEditContent: true });
+    expect(await meRes.json()).toEqual({ signedIn: true, sub: 'u1', name: 'Amina', email: 'a@x', roles: ['Admin'], canEditContent: true });
   });
 
   it('rejects a state mismatch by restarting sign-in', async () => {
     const { cookie } = await loginCookie();
     const res = await callback(new Request('https://www.qa.alummahnow.net/auth/callback?code=c1&state=wrong', { headers: { Cookie: cookie } }), { cfg, secret: SECRET });
     expect(res.headers.get('Location')).toMatch(/^\/auth\/login\?return=/);
+  });
+
+  it('silent sign-in: error=login_required returns to the page anonymously (no error page, no retry)', async () => {
+    const { cookie, state } = await loginCookie('none');
+    const res = await callback(new Request(`https://www.qa.alummahnow.net/auth/callback?error=login_required&state=${state}`, { headers: { Cookie: cookie } }), { cfg, secret: SECRET });
+    expect(res.status).toBe(302);
+    expect(res.headers.get('Location')).toBe('/en/news/');
+    const cookies = res.headers.getSetCookie();
+    expect(cookies.some((c) => c.startsWith(`${LOGIN_COOKIE}=;`))).toBe(true);
+    expect(cookies.some((c) => c.startsWith(`${SESSION_COOKIE}=`))).toBe(false);
+  });
+
+  it('silent sign-in: a state mismatch or failed token exchange also just returns', async () => {
+    const { cookie, state } = await loginCookie('none');
+    const mismatch = await callback(new Request('https://www.qa.alummahnow.net/auth/callback?code=c1&state=wrong', { headers: { Cookie: cookie } }), { cfg, secret: SECRET });
+    expect(mismatch.headers.get('Location')).toBe('/en/news/');
+    const failed = await callback(new Request(`https://www.qa.alummahnow.net/auth/callback?code=c1&state=${state}`, { headers: { Cookie: cookie } }), {
+      cfg,
+      secret: SECRET,
+      fetchImpl: (async () => new Response('nope', { status: 400 })) as never,
+    });
+    expect(failed.status).toBe(302);
+    expect(failed.headers.get('Location')).toBe('/en/news/');
+  });
+
+  it('silent sign-in with a code creates the session like a normal sign-in', async () => {
+    const { cookie, state } = await loginCookie('none');
+    const res = await callback(new Request(`https://www.qa.alummahnow.net/auth/callback?code=c1&state=${state}`, { headers: { Cookie: cookie } }), {
+      cfg,
+      secret: SECRET,
+      fetchImpl: (async () => new Response(JSON.stringify({ access_token: 'tok' }))) as never,
+      verify: async () => ({ sub: 'u1', name: null, email: 'a@x', roles: [] }),
+    });
+    expect(res.headers.get('Location')).toBe('/en/news/');
+    expect(res.headers.getSetCookie().some((c) => c.startsWith(`${SESSION_COOKIE}=`))).toBe(true);
+  });
+
+  it('interactive sign-in: a failed token exchange still shows the error', async () => {
+    const { cookie, state } = await loginCookie();
+    const res = await callback(new Request(`https://www.qa.alummahnow.net/auth/callback?code=c1&state=${state}`, { headers: { Cookie: cookie } }), {
+      cfg,
+      secret: SECRET,
+      fetchImpl: (async () => new Response('nope', { status: 400 })) as never,
+    });
+    expect(res.status).toBe(502);
   });
 
   it('/auth/me is signed out without a cookie', async () => {

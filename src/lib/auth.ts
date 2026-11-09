@@ -1,6 +1,11 @@
 /**
  * Sign-in as a public OAuth client with PKCE S256 (SPEC §7). No client secret and no
  * tokens are kept: the session cookie holds only { sub, name, email, roles, exp }.
+ *
+ * Session lifetime: www never calls an API with the access token, so the 15-minute
+ * access-token lifetime does not bound the www session; it lives SESSION_TTL_SEC. When it
+ * ends while auth still has the browser signed in, the header's client probe signs in
+ * again silently (prompt=none), so a live auth session never shows "Sign in" on www.
  */
 import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose';
 import type { Config } from './env';
@@ -24,6 +29,18 @@ export interface LoginState {
   verifier: string;
   returnTo: string;
   exp: number;
+  /** prompt=none: any failure returns to `returnTo` anonymously (no error page, no retry). */
+  silent?: boolean;
+}
+
+/**
+ * OIDC prompt values www forwards to /authorize. `none` = silent sign-in (client probe,
+ * account switch), `login` = "Add another account". Anything else (including
+ * select_account) is dropped: the normal sign-in path never forces a chooser.
+ */
+export type Prompt = 'none' | 'login';
+export function parsePrompt(raw: string | null | undefined): Prompt | undefined {
+  return raw === 'none' || raw === 'login' ? raw : undefined;
 }
 
 /**
@@ -69,7 +86,7 @@ export async function codeChallenge(verifier: string): Promise<string> {
 
 export const redirectUri = (cfg: Config) => `${cfg.siteUrl}/auth/callback`;
 
-export function authorizeUrl(cfg: Config, state: string, challenge: string, locale?: string): string {
+export function authorizeUrl(cfg: Config, state: string, challenge: string, locale?: string, prompt?: Prompt): string {
   const url = new URL(`${cfg.authUrl}/authorize`);
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('client_id', cfg.clientId);
@@ -78,6 +95,7 @@ export function authorizeUrl(cfg: Config, state: string, challenge: string, loca
   url.searchParams.set('code_challenge', challenge);
   url.searchParams.set('code_challenge_method', 'S256');
   if (locale) url.searchParams.set('ui_locales', locale);
+  if (prompt) url.searchParams.set('prompt', prompt);
   return url.toString();
 }
 

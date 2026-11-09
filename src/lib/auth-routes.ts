@@ -13,6 +13,7 @@ import {
   codeChallenge,
   cookie,
   logoutUrl,
+  parsePrompt,
   randomToken,
   safeReturnPath,
   sessionFromAccessToken,
@@ -45,12 +46,15 @@ export async function login(request: Request, deps: AuthDeps): Promise<Response>
   if (!isValidSecret(deps.secret)) return text('Sign-in is not configured (SESSION_SECRET).', 503);
   const url = new URL(request.url);
   const returnTo = safeReturnPath(url.searchParams.get('return'), '/');
+  const prompt = parsePrompt(url.searchParams.get('prompt'));
   const state = randomToken();
   const verifier = randomToken(48);
   const exp = Math.floor((deps.now?.() ?? Date.now()) / 1000) + LOGIN_TTL_SEC;
-  const sealed = await seal(deps.secret, { state, verifier, returnTo, exp } satisfies LoginState);
+  const loginState: LoginState = { state, verifier, returnTo, exp };
+  if (prompt === 'none') loginState.silent = true;
+  const sealed = await seal(deps.secret, { ...loginState });
   const locale = localeFromPath(returnTo) ?? undefined;
-  return redirect(authorizeUrl(deps.cfg, state, await codeChallenge(verifier), locale), 302, {}, [cookie(LOGIN_COOKIE, sealed, LOGIN_TTL_SEC)]);
+  return redirect(authorizeUrl(deps.cfg, state, await codeChallenge(verifier), locale, prompt), 302, {}, [cookie(LOGIN_COOKIE, sealed, LOGIN_TTL_SEC)]);
 }
 
 export async function callback(request: Request, deps: AuthDeps): Promise<Response> {
@@ -59,11 +63,17 @@ export async function callback(request: Request, deps: AuthDeps): Promise<Respon
   const login = await unseal<LoginState>(deps.secret, readCookie(request.headers.get('Cookie'), LOGIN_COOKIE));
   const fallback = login?.returnTo ?? '/';
   const clearLogin = clearCookie(LOGIN_COOKIE);
-  // The user cancelled or auth refused: back where they came from, signed out
+  // The user cancelled or auth refused (prompt=none → error=login_required): back where
+  // they came from, unchanged. No error page and no retry, so a silent probe cannot loop.
   if (url.searchParams.get('error')) return redirect(fallback, 302, {}, [clearLogin]);
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
-  if (!login || !code || !state || state !== login.state) return redirect(`/auth/login?return=${encodeURIComponent(fallback)}`, 302, {}, [clearLogin]);
+  if (!login || !code || !state || state !== login.state) {
+    if (login?.silent) return redirect(fallback, 302, {}, [clearLogin]);
+    return redirect(`/auth/login?return=${encodeURIComponent(fallback)}`, 302, {}, [clearLogin]);
+  }
+  // A silent sign-in never ends on an error page: it just returns without a session
+  const failed = () => (login.silent ? redirect(fallback, 302, {}, [clearLogin]) : text('Sign-in failed. Please try again.', 502));
 
   let tokenJson: { access_token?: string };
   try {
@@ -76,16 +86,16 @@ export async function callback(request: Request, deps: AuthDeps): Promise<Respon
     tokenJson = (await res.json()) as { access_token?: string };
   } catch (error) {
     console.warn(JSON.stringify({ msg: 'sign-in: token exchange failed', error: String(error) }));
-    return text('Sign-in failed. Please try again.', 502);
+    return failed();
   }
-  if (!tokenJson.access_token) return text('Sign-in failed. Please try again.', 502);
+  if (!tokenJson.access_token) return failed();
 
   let fields: Omit<Session, 'exp'>;
   try {
     fields = await (deps.verify ?? ((t: string) => sessionFromAccessToken(t, deps.cfg)))(tokenJson.access_token);
   } catch (error) {
     console.warn(JSON.stringify({ msg: 'sign-in: token rejected', error: String(error) }));
-    return text('Sign-in failed. Please try again.', 502);
+    return failed();
   }
   const exp = Math.floor((deps.now?.() ?? Date.now()) / 1000) + SESSION_TTL_SEC;
   const session = await seal(deps.secret, { ...fields, exp } satisfies Session);
@@ -99,7 +109,9 @@ export async function readSession(request: Request, secret: string | undefined):
 
 export async function me(request: Request, deps: AuthDeps): Promise<Response> {
   const s = await readSession(request, deps.secret);
-  const body = s ? { signedIn: true, name: s.name ?? s.email, roles: s.roles, canEditContent: canEditContent(s.roles) } : { signedIn: false };
+  const body = s
+    ? { signedIn: true, sub: s.sub, name: s.name ?? s.email, email: s.email, roles: s.roles, canEditContent: canEditContent(s.roles) }
+    : { signedIn: false };
   return new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json', ...noStore, Vary: 'Cookie' } });
 }
 
