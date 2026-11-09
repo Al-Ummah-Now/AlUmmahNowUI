@@ -31,6 +31,24 @@ export function rootRedirect(request: Request): Response | null {
   });
 }
 
+/**
+ * form-action for the sign-out form. It posts to /auth/logout, which 303s to auth's
+ * /logout, and auth then walks a front-channel redirect chain through every app's logout
+ * (profile.auth, admin.auth, admin, cms, videos, back to www). Browsers apply form-action
+ * to every redirect in that chain, so allow auth's origin and its parent site's
+ * subdomains: https://auth.alummahnow.net → https://*.alummahnow.net;
+ * https://auth.qa.alummahnow.net → https://*.qa.alummahnow.net. No wildcard for
+ * single-label hosts (localhost) or IPs.
+ */
+export function formActionSources(authUrl: string): string[] {
+  const auth = new URL(authUrl);
+  const sources = ["'self'", auth.origin];
+  const labels = auth.hostname.split('.');
+  const isIp = /^[\d.]+$/.test(auth.hostname) || auth.hostname.includes(':');
+  if (!isIp && labels.length >= 3) sources.push(`${auth.protocol}//*.${labels.slice(1).join('.')}`);
+  return sources;
+}
+
 export function contentSecurityPolicy(cfg: Config): string {
   const https = cfg.siteUrl.startsWith('https://');
   const directives = [
@@ -47,8 +65,8 @@ export function contentSecurityPolicy(cfg: Config): string {
     "frame-ancestors 'none'",
     "object-src 'none'",
     "base-uri 'self'",
-    // the sign-out form posts here and is redirected to auth's /logout
-    `form-action 'self' ${new URL(cfg.authUrl).origin}`,
+    // the sign-out form posts here and is redirected through auth's logout chain
+    `form-action ${formActionSources(cfg.authUrl).join(' ')}`,
     "manifest-src 'self'",
   ];
   if (https) directives.push('upgrade-insecure-requests');
