@@ -32,6 +32,12 @@ export const en = {
     videos: 'Al Ummah Now Videos',
     cms: 'Content management',
     signedInAs: 'Signed in as {name}',
+    accounts: 'Your accounts',
+    current: 'Current account',
+    switchTo: 'Switch to {name}',
+    addAccount: 'Add another account',
+    signOutOf: 'Sign out of {name}',
+    signOutAll: 'Sign out of all accounts',
   },
   home: {
     wordmarkLatin: 'Al Ummah Now',

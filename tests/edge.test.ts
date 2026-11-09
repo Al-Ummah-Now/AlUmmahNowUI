@@ -32,6 +32,7 @@ describe('security headers', () => {
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("img-src 'self' data: https://cms.alummahnow.net https://images.alummahnow.net https://*.b-cdn.net");
     expect(csp).toContain("form-action 'self' https://auth.alummahnow.net");
+    expect(csp).toContain("connect-src 'self' https://auth.alummahnow.net https://cloudflareinsights.com");
   });
   it('adds HSTS and friends; noindex off production only', () => {
     const html = () => new Response('<p>', { headers: { 'Content-Type': 'text/html' } });

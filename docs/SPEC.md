@@ -112,9 +112,23 @@ show signed-in state. Epic 26 (embedded discussions) and "continue watching" wil
   `${AUTH_URL}/.well-known/jwks.json`, `iss`, `exp`) → a session cookie `__Host-aun_www`, AES-GCM
   encrypted with `SESSION_SECRET`, holding `{ sub, name, email, roles, exp }`, 8 h. Tokens are not
   stored.
-- `/auth/me` → `{ signedIn, name, roles, canEditContent }` with `Cache-Control: private, no-store`.
+- `/auth/login` forwards `prompt=none` (silent) and `prompt=login` (add account) only; the normal
+  sign-in sends no prompt, so auth signs the browser's active account in silently or shows its form.
+  A `prompt=none` callback that fails (`error=login_required`, bad state, token error) returns to
+  the page signed out, never to an error page.
+- `/auth/me` → `{ signedIn, sub, name, email, roles, canEditContent }` with `Cache-Control: private, no-store`.
 - `/auth/logout` (POST, same-origin check) clears the cookie and redirects to auth's logout with a
-  `return` to www.
+  `return` to www. GET `?next=` is auth's front-channel single sign-out.
+- **Signed in elsewhere = signed in here.** The header (src/scripts/site.ts, decisions in
+  src/lib/account-sync.ts) fetches `${AUTH_URL}/session/accounts` with credentials (CSP
+  `connect-src` allows the auth origin). Without a www session, and once per tab (sessionStorage),
+  an active auth account triggers `/auth/login?prompt=none`. With a session, the menu lists every
+  account in the browser: switch (`POST /session/switch`, then silent sign-in), add another
+  account, sign out of one (`DELETE /session/accounts/:id`; the last one is the normal sign-out).
+  If auth's active account differs from www's (switched in another app), www follows once per tab.
+  CORS/401/network failures keep the plain "Sign in" link (or the single-account menu).
+- Session lifetime: www keeps no tokens, so the 15-minute access token does not limit it; when the
+  8 h session ends while auth still has the browser, the probe signs in again silently.
 
 ## 8. SEO
 

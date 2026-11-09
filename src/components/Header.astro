@@ -38,6 +38,13 @@ const loginHref = `/auth/login?return=${encodeURIComponent(path + Astro.url.sear
         class="account"
         id="account"
         data-me="/auth/me"
+        data-auth-url={cfg.authUrl}
+        data-label-accounts={t.auth.accounts}
+        data-label-current={t.auth.current}
+        data-label-switch-to={t.auth.switchTo}
+        data-label-add-account={t.auth.addAccount}
+        data-label-sign-out-of={t.auth.signOutOf}
+        data-label-sign-out-all={t.auth.signOutAll}
         data-label-menu={t.a11y.accountMenu}
         data-label-signed-in-as={t.auth.signedInAs}
         data-label-profile={t.auth.profile}

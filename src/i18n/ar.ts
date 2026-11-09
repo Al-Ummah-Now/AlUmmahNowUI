@@ -34,6 +34,12 @@ export const ar: Messages = {
     videos: 'مرئيات الأمة الآن',
     cms: 'إدارة المحتوى',
     signedInAs: 'مسجّل الدخول باسم {name}',
+    accounts: 'حساباتك',
+    current: 'الحساب الحالي',
+    switchTo: 'التبديل إلى {name}',
+    addAccount: 'إضافة حساب آخر',
+    signOutOf: 'تسجيل الخروج من {name}',
+    signOutAll: 'تسجيل الخروج من جميع الحسابات',
   },
   home: {
     wordmarkLatin: 'Al Ummah Now',

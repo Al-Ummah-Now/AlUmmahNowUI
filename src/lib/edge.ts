@@ -40,7 +40,8 @@ export function contentSecurityPolicy(cfg: Config): string {
     "style-src 'self'",
     `img-src ${imgSrcSources(cfg.cmsPublicUrl).join(' ')}`,
     "font-src 'self'",
-    "connect-src 'self' https://cloudflareinsights.com",
+    // the header asks auth which accounts this browser is signed in to (/session/accounts)
+    `connect-src 'self' ${new URL(cfg.authUrl).origin} https://cloudflareinsights.com`,
     "media-src 'none'",
     `frame-src ${embedOrigin(cfg.videosWebUrl)}`,
     "frame-ancestors 'none'",
