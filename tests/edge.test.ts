@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { apexRedirect, applySecurityHeaders, contentSecurityPolicy, isCacheableRequest, withHtmlCache } from '../src/lib/edge';
+import { apexRedirect, applySecurityHeaders, contentSecurityPolicy, formActionSources, isCacheableRequest, withHtmlCache } from '../src/lib/edge';
 import { config } from '../src/lib/env';
 import { normalizeImageUrl } from '../src/lib/images';
 import { robotsTxt } from '../src/lib/seo';
@@ -31,8 +31,15 @@ describe('security headers', () => {
     expect(csp).toContain('frame-src https://videos.alummahnow.net');
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("img-src 'self' data: https://cms.alummahnow.net https://images.alummahnow.net https://*.b-cdn.net");
-    expect(csp).toContain("form-action 'self' https://auth.alummahnow.net");
+    expect(csp).toContain("form-action 'self' https://auth.alummahnow.net https://*.alummahnow.net;");
     expect(csp).toContain("connect-src 'self' https://auth.alummahnow.net https://cloudflareinsights.com");
+  });
+  it("form-action covers auth's front-channel logout chain (every app's logout, then back to www)", () => {
+    expect(formActionSources('https://auth.alummahnow.net')).toEqual(["'self'", 'https://auth.alummahnow.net', 'https://*.alummahnow.net']);
+    expect(formActionSources('https://auth.qa.alummahnow.net')).toEqual(["'self'", 'https://auth.qa.alummahnow.net', 'https://*.qa.alummahnow.net']);
+    // no wildcard for local dev hosts
+    expect(formActionSources('http://localhost:8787')).toEqual(["'self'", 'http://localhost:8787']);
+    expect(formActionSources('http://127.0.0.1:8787')).toEqual(["'self'", 'http://127.0.0.1:8787']);
   });
   it('adds HSTS and friends; noindex off production only', () => {
     const html = () => new Response('<p>', { headers: { 'Content-Type': 'text/html' } });

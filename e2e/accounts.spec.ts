@@ -150,15 +150,23 @@ test.describe('signed in to auth (real QA auth)', () => {
     await expect(menu.locator('.account-list > li')).toHaveCount(2);
     await expect(menu.locator('.account-entry[aria-current="true"]')).toContainText(second.split('@')[0]!);
 
-    // Switch back to the first account
+    // Switch back to the first account. Switching is POST /session/switch, then a silent
+    // prompt=none round trip through auth that lands on this same URL, so the URL alone
+    // proves nothing: wait for the page to actually reload, showing the first account.
+    const reloaded = page.waitForEvent('framenavigated', { predicate: (f) => f === page.mainFrame(), timeout: 30_000 });
     await menu.locator('button.account-entry').click();
+    await reloaded;
+    await expect(accountButton(page)).toContainText(first.split('@')[0]!, { timeout: 30_000 });
     await expect(page).toHaveURL(/\/en\/news\/$/);
     await openMenu(page);
     await expect(page.locator('#account-menu .account-entry[aria-current="true"]')).toContainText(first.split('@')[0]!);
 
     // Clean up: single sign-out of everything
     await page.getByRole('button', { name: 'Sign out of all accounts' }).click();
-    await page.waitForURL((u) => u.origin === WWW_ORIGIN && !u.pathname.startsWith('/auth/'), { timeout: 30_000 });
+    // Auth walks every app's logout and returns to the locale home: wait for that page
+    // (the current /en/news/ already satisfies a looser "back on www" check)
+    await page.waitForURL((u) => u.origin === WWW_ORIGIN && u.pathname === '/en/', { timeout: 30_000 });
     await expect(page.getByRole('link', { name: 'Sign in' }).first()).toBeVisible();
+    await expect(accountButton(page)).toHaveCount(0);
   });
 });
