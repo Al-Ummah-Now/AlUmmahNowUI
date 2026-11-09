@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { _resetSnapshotThrottle, cmsClient, load, worstSource, type CmsDeps } from '../src/lib/cms';
+import { describe, expect, it } from 'vitest';
+import { cmsClient, load, worstSource, type CmsDeps } from '../src/lib/cms';
 import { validate, type SiteResponse } from '../src/lib/cms-types';
 import { MemoryCache, MemoryKV, waiter } from './helpers';
 
@@ -24,16 +24,13 @@ function setup(fetchCms: CmsDeps['fetchCms']) {
 }
 const builtin = () => ({ settings: null, nav: { header: [{ label: 'Builtin', url: '/x/' }], footer: [] } }) as SiteResponse;
 
-beforeEach(() => _resetSnapshotThrottle());
-
 describe('CMS fallback chain', () => {
-  it('serves CMS data, then caches it and snapshots it in KV', async () => {
+  it('serves CMS data and caches it; the request path never writes KV (the cron does)', async () => {
     const { deps, kv, w } = setup(async () => json(SITE));
     const r = await load(deps, '/site?locale=en', validate.site, builtin);
     expect(r).toEqual({ status: 'ok', data: SITE, source: 'cms' });
     await w.flush();
-    expect(kv.puts).toBe(1);
-    expect(await kv.get('v1:/site?locale=en', 'json')).toEqual(SITE);
+    expect(kv.puts).toBe(0);
   });
 
   it('answers from a fresh cache entry without calling the CMS', async () => {
@@ -59,9 +56,10 @@ describe('CMS fallback chain', () => {
 
   it('falls back to the KV snapshot when the cache is gone (timeout)', async () => {
     let hang = false;
-    const { deps, cache, w } = setup((_p, signal) =>
+    const { deps, cache, kv, w } = setup((_p, signal) =>
       hang ? new Promise((_res, rej) => signal.addEventListener('abort', () => rej(new Error('aborted')))) : Promise.resolve(json(SITE)),
     );
+    await kv.put('v1:/site', JSON.stringify(SITE)); // written by the snapshot cron
     await load(deps, '/site', validate.site, builtin);
     await w.flush();
     cache.store.clear();
@@ -89,29 +87,14 @@ describe('CMS fallback chain', () => {
     expect(await load(deps, '/pages/x', validate.page, () => null)).toEqual({ status: 'not_found', source: 'cms' });
   });
 
-  it('writes a KV snapshot at most once per key per 5 minutes', async () => {
+  it('1000 concurrent requests in many isolates write no KV at all', async () => {
     const { deps, kv, w, advance } = setup(async () => json(SITE));
-    for (let i = 0; i < 5; i++) {
-      await load(deps, '/site', validate.site, builtin);
-      await w.flush();
-      advance(61_000); // past the fresh window: every call reaches the CMS
+    for (let wave = 0; wave < 5; wave++) {
+      await Promise.all(Array.from({ length: 200 }, () => load(deps, '/site', validate.site, builtin)));
+      advance(5 * 60_000);
     }
-    expect(kv.puts).toBe(1);
-    advance(5 * 60_000);
-    await load(deps, '/site', validate.site, builtin);
     await w.flush();
-    expect(kv.puts).toBe(2);
-  });
-
-  it('a new isolate respects the KV metadata timestamp', async () => {
-    const { deps, kv, w } = setup(async () => json(SITE));
-    await load(deps, '/site', validate.site, builtin);
-    await w.flush();
-    _resetSnapshotThrottle();
-    (deps.cache as unknown as MemoryCache).store.clear();
-    await load(deps, '/site', validate.site, builtin);
-    await w.flush();
-    expect(kv.puts).toBe(1);
+    expect(kv.puts).toBe(0);
   });
 
   it('the client tracks the worst source for X-Content-Source', async () => {

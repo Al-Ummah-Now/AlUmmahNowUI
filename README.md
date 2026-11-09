@@ -23,7 +23,7 @@ domains only (`workers_dev: false`). `npm run check:config` checks the file agai
 `scripts/environments.ts`.
 
 Bindings per env: `CMS` (service binding to the env's CMS Worker), `CONTENT_SNAPSHOT` (KV,
-last-known-good CMS JSON), `ASSETS`, `CF_VERSION_METADATA`. Vars: `APP_ENV`, `SITE_URL`,
+last-known-good CMS JSON, written only by the `*/5 * * * *` cron), `ASSETS`, `CF_VERSION_METADATA`. Vars: `APP_ENV`, `SITE_URL`,
 `AUTH_URL`, `WWW_CLIENT_ID`, `VIDEOS_WEB_URL`, `VIDEOS_API_URL`, `PROFILE_URL`, `CMS_PUBLIC_URL`.
 
 ### Secrets
