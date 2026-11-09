@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { apexRedirect, applySecurityHeaders, contentSecurityPolicy, formActionSources, isCacheableRequest, withHtmlCache } from '../src/lib/edge';
+import { apexRedirect, applySecurityHeaders, contentSecurityPolicy, formActionSources, HTML_FRESH_SEC, HTML_LEASE_SEC, HTML_SWR_SEC, isCacheableRequest, withHtmlCache } from '../src/lib/edge';
 import { config } from '../src/lib/env';
 import { normalizeImageUrl } from '../src/lib/images';
 import { robotsTxt } from '../src/lib/seo';
@@ -112,5 +112,90 @@ describe('HTML edge cache', () => {
     });
     await w.flush();
     expect(cache.store.size).toBe(0);
+  });
+});
+
+describe('stale-while-revalidate single flight (audit UI-2)', () => {
+  const html = (body: string) => new Response(body, { headers: { 'Content-Type': 'text/html', 'X-Content-Source': 'cms' } });
+  const url = 'https://w/ar/';
+
+  /** A render that stays in flight until released, so revalidations overlap. */
+  function gate() {
+    let renders = 0;
+    const waiting: (() => void)[] = [];
+    const render = () => {
+      renders++;
+      return new Promise<Response>((resolve) => waiting.push(() => resolve(html(`v${renders}`))));
+    };
+    return { render, count: () => renders, release: () => waiting.splice(0).forEach((f) => f()) };
+  }
+
+  async function seeded(cache: MemoryCache, at: number) {
+    const w = waiter();
+    await withHtmlCache(new Request(url), cache as unknown as Cache, w.waitUntil, async () => html('v0'), () => at, new Map());
+    await w.flush();
+  }
+
+  it('500 concurrent stale hits in one isolate start one render', async () => {
+    const cache = new MemoryCache();
+    await seeded(cache, 0);
+    const g = gate();
+    const w = waiter();
+    const inflight = new Map<string, Promise<unknown>>();
+    const out = await Promise.all(Array.from({ length: 500 }, () => withHtmlCache(new Request(url), cache as unknown as Cache, w.waitUntil, g.render, () => 120_000, inflight)));
+    expect(out.every((r) => r.headers.get('X-Edge-Cache') === 'STALE')).toBe(true);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(g.count()).toBe(1);
+    g.release();
+    await w.flush();
+    expect(inflight.size).toBe(0);
+    expect(await (await cache.match(url))!.text()).toBe('v1');
+  });
+
+  it('stale hits across 200 isolates after the first one: one render, the rest see the lease as a HIT', async () => {
+    const cache = new MemoryCache();
+    await seeded(cache, 0);
+    const g = gate();
+    const w = waiter();
+    const isolates = Array.from({ length: 200 }, () => new Map<string, Promise<unknown>>());
+    const first = await withHtmlCache(new Request(url), cache as unknown as Cache, w.waitUntil, g.render, () => 120_000, isolates[0]);
+    expect(first.headers.get('X-Edge-Cache')).toBe('STALE');
+    await new Promise((r) => setTimeout(r, 0)); // the lease put lands
+    const rest = await Promise.all(isolates.slice(1).map((m, i) => withHtmlCache(new Request(url), cache as unknown as Cache, w.waitUntil, g.render, () => 120_000 + i * 50, m)));
+    expect(rest.every((r) => r.headers.get('X-Edge-Cache') === 'HIT')).toBe(true);
+    expect(await rest[0]!.text()).toBe('v0');
+    expect(g.count()).toBe(1);
+    g.release();
+    await w.flush();
+    expect(await (await cache.match(url))!.text()).toBe('v1');
+  });
+
+  it('a failed revalidation lets the lease lapse, then the next stale hit retries', async () => {
+    const cache = new MemoryCache();
+    await seeded(cache, 0);
+    const w = waiter();
+    let renders = 0;
+    const failing = async () => (renders++, new Response('down', { status: 503 }));
+    const at = (t: number) => withHtmlCache(new Request(url), cache as unknown as Cache, w.waitUntil, failing, () => t, new Map());
+    expect((await at(120_000)).headers.get('X-Edge-Cache')).toBe('STALE');
+    await w.flush();
+    expect((await at(120_000 + 10_000)).headers.get('X-Edge-Cache')).toBe('HIT'); // inside the lease
+    expect((await at(120_000 + (HTML_LEASE_SEC + 1) * 1000)).headers.get('X-Edge-Cache')).toBe('STALE');
+    await w.flush();
+    expect(renders).toBe(2);
+  });
+
+  it('leases never extend staleness past the SWR window: then it is a MISS with a blocking render', async () => {
+    const cache = new MemoryCache();
+    await seeded(cache, 0);
+    const w = waiter();
+    const failing = async () => new Response('down', { status: 503 });
+    for (let t = 61_000; t < (HTML_FRESH_SEC + HTML_SWR_SEC) * 1000; t += (HTML_LEASE_SEC + 1) * 1000) {
+      await withHtmlCache(new Request(url), cache as unknown as Cache, w.waitUntil, failing, () => t, new Map());
+      await w.flush();
+    }
+    const late = await withHtmlCache(new Request(url), cache as unknown as Cache, w.waitUntil, async () => html('v9'), () => (HTML_FRESH_SEC + HTML_SWR_SEC) * 1000 + 1, new Map());
+    expect(late.headers.get('X-Edge-Cache')).toBe('MISS');
+    expect(await late.text()).toBe('v9');
   });
 });
