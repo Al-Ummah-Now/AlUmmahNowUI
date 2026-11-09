@@ -67,6 +67,8 @@ export interface PromoteDeps {
   smoke: (env: ReleaseEnv, overrides?: Record<string, string>) => Promise<CheckResult[]>;
   waitForVersion: (env: ReleaseEnv, worker: string, version: string, override: boolean) => Promise<void>;
   log: (line: string) => void;
+  /** waits between retries (tests pass a no-op) */
+  sleep?: (ms: number) => Promise<void>;
 }
 
 export class ReleaseError extends Error {
@@ -76,6 +78,25 @@ export class ReleaseError extends Error {
     super(message);
     this.released = released;
     this.rolledBack = rolledBack;
+  }
+}
+
+/** Cloudflare can answer "version could not be found" (code 100146) for a version it accepted seconds earlier. */
+export const isUnknownVersion = (error: unknown): boolean => /code: 100146|Worker version could not be found/i.test(String((error as Error)?.message ?? error));
+
+/** `wrangler versions deploy`, retried only while Cloudflare does not see a just-uploaded version yet. */
+export async function deployVersions(app: ReleaseApp, specs: string[], message: string, deps: Pick<PromoteDeps, 'run' | 'log' | 'sleep'>, delaysMs = [5_000, 10_000, 20_000, 30_000]): Promise<void> {
+  const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  for (let attempt = 0; ; attempt++) {
+    try {
+      deps.run(app.cwd, ['versions', 'deploy', ...specs, ...app.configArgs, '-y', '--message', message]);
+      return;
+    } catch (error) {
+      const delay = delaysMs[attempt];
+      if (!isUnknownVersion(error) || delay === undefined) throw error;
+      deps.log(`${app.worker}: Cloudflare does not see ${specs[0]} yet; retrying in ${delay / 1000}s`);
+      await sleep(delay);
+    }
   }
 }
 
@@ -122,7 +143,7 @@ export async function promote(app: ReleaseApp, env: ReleaseEnv, message: string,
 
   // 2. Candidate at 0%: reachable only through the override header
   try {
-    run(app.cwd, ['versions', 'deploy', `${candidate}@0%`, `${serving}@100%`, ...app.configArgs, '-y', '--message', `${message} (0%)`]);
+    await deployVersions(app, [`${candidate}@0%`, `${serving}@100%`], `${message} (0%)`, deps);
     await deps.waitForVersion(env, app.worker, candidate, true);
     const pre = failures(await deps.smoke(env, { [app.worker]: candidate }));
     if (pre.length) throw new Error(`pre-traffic smoke failed: ${pre.join('; ')}`);
@@ -134,7 +155,7 @@ export async function promote(app: ReleaseApp, env: ReleaseEnv, message: string,
 
   // 3. 100% traffic (custom domains are attached by triggers deploy), then the smoke a visitor would see
   try {
-    run(app.cwd, ['versions', 'deploy', `${candidate}@100%`, ...app.configArgs, '-y', '--message', message]);
+    await deployVersions(app, [`${candidate}@100%`], message, deps);
     run(app.cwd, ['triggers', 'deploy', ...app.configArgs]);
     await deps.waitForVersion(env, app.worker, candidate, false);
     const post = failures(await deps.smoke(env));
