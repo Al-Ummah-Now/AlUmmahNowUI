@@ -35,12 +35,31 @@ export interface Post extends PostSummary {
   body: string; seo_title: string | null; seo_description: string | null; alternates: Alternate[];
 }
 
+/**
+ * What the CMS stored for a curated item. The picker takes it and the CMS refreshes it every
+ * 30 minutes; the fields after channel_name exist once refreshed (refreshed_at set). A refreshed
+ * thumbnail_url is a signed URL valid ≥ 6 h after refreshed_at.
+ */
+export interface CuratedSnapshot {
+  title: string;
+  thumbnail_url: string | null;
+  channel_name: string | null;
+  refreshed_at?: string;
+  handle?: string | null;
+  description?: string | null;
+  titles?: Partial<Record<Locale, string>>;
+  descriptions?: Partial<Record<Locale, string>>;
+  duration_seconds?: number | null;
+  upload_date?: string | null;
+  video_count?: number | null;
+}
+
 export interface CuratedVideo {
   id: number;
   kind: 'video' | 'playlist' | 'channel';
   ref_id: string;
   title_override: string | null;
-  snapshot: { title: string; thumbnail_url: string | null; channel_name: string | null } | null;
+  snapshot: CuratedSnapshot | null;
   sort: number;
 }
 

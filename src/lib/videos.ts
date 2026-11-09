@@ -7,7 +7,7 @@
  * answers 404 for deleted, hidden and other users' private items; an anonymous
  * request never sees them. We still check the flags in case that ever changes.
  */
-import type { CuratedVideo } from './cms-types';
+import type { CuratedSnapshot, CuratedVideo } from './cms-types';
 import { VIDEO_ID } from './embeds';
 import { normalizeImageUrl } from './images';
 import type { Locale } from './locale';
@@ -33,6 +33,7 @@ export interface VideoItem {
 
 export interface VideosDeps {
   apiUrl: string;
+  now?: () => number;
   fetchImpl?: typeof fetch;
   cache?: Cache | null;
   cacheKeyBase: string;
@@ -126,10 +127,72 @@ export async function fetchVideoItem(deps: VideosDeps, kind: VideoKind, id: stri
 
 export interface ResolvedCurated { curated: CuratedVideo; item: VideoItem }
 
-/** Curated CMS entries → public items, in CMS order, with the editor's title override. */
+/** At most this many curated items render per list (the CMS caps it too). */
+export const CURATED_MAX = 48;
+/** At most this many items per render are looked up live (no fresh snapshot). */
+export const LIVE_LOOKUPS_MAX = 8;
+/**
+ * A snapshot refreshed within this window renders without a videos API call. The CMS refreshes
+ * every 30 minutes; its thumbnail tokens live ≥ 6 h, so 3 h leaves a wide margin.
+ */
+export const SNAPSHOT_MAX_AGE_MS = 3 * 60 * 60_000;
+
+const EXPIRES = /[?&]expires=(\d+)/;
+
+/**
+ * The item from the CMS snapshot, when it is fresh (refreshed recently) or `stale` is allowed.
+ * A stale snapshot's signed thumbnail is dropped once its `expires` has passed.
+ */
+export function snapshotItem(c: CuratedVideo, nowMs: number, allowStale = false): VideoItem | null {
+  const s: CuratedSnapshot | null = c.snapshot;
+  if (!s || !str(s.title) || !VIDEO_ID.test(c.ref_id)) return null;
+  const refreshed = s.refreshed_at ? Date.parse(s.refreshed_at) : NaN;
+  const fresh = Number.isFinite(refreshed) && nowMs - refreshed < SNAPSHOT_MAX_AGE_MS && refreshed - nowMs < 5 * 60_000;
+  if (!fresh && !allowStale) return null;
+  let thumb = normalizeImageUrl(s.thumbnail_url ?? null);
+  const expires = thumb ? EXPIRES.exec(thumb) : null;
+  if (expires && Number(expires[1]) * 1000 <= nowMs) thumb = null;
+  const title = str(s.title)!;
+  return {
+    kind: c.kind,
+    id: c.ref_id,
+    title: c.kind === 'video' ? title.replace(/\.(mp4|mov|mkv|webm)$/i, '') : title,
+    description: str(s.description),
+    thumbnailUrl: thumb,
+    channelName: c.kind === 'channel' ? null : str(s.channel_name),
+    handle: c.kind === 'channel' ? str(s.handle) : null,
+    durationSeconds: c.kind === 'video' ? num(s.duration_seconds) : null,
+    uploadDate: str(s.upload_date),
+    videoCount: c.kind === 'playlist' ? num(s.video_count) : null,
+    titles: localized(s.titles),
+    descriptions: localized(s.descriptions),
+  };
+}
+
+/**
+ * Curated CMS entries → public items, in CMS order, with the editor's title override.
+ *
+ * Bounded fan-out (audit UI-1): at most CURATED_MAX items; items with a fresh CMS snapshot need no
+ * videos API call; at most LIVE_LOOKUPS_MAX of the rest are looked up live, and any beyond that
+ * render from their (stale) snapshot or are skipped until the CMS refreshes them.
+ */
 export async function resolveCurated(deps: VideosDeps, curated: CuratedVideo[], locale?: Locale): Promise<ResolvedCurated[]> {
-  const sorted = [...curated].sort((a, b) => a.sort - b.sort);
-  const items = await Promise.all(sorted.map((c) => fetchVideoItem(deps, c.kind, c.ref_id)));
+  const now = (deps.now ?? Date.now)();
+  const sorted = [...curated].sort((a, b) => a.sort - b.sort).slice(0, CURATED_MAX);
+  let budget = LIVE_LOOKUPS_MAX;
+  const items = await Promise.all(
+    sorted.map((c) => {
+      const snap = snapshotItem(c, now);
+      if (snap) return snap;
+      if (budget > 0) {
+        budget--;
+        return fetchVideoItem(deps, c.kind, c.ref_id);
+      }
+      const stale = snapshotItem(c, now, true);
+      if (!stale) deps.log?.('videos: no fresh snapshot and over the live lookup budget, skipped', { kind: c.kind, id: c.ref_id });
+      return stale;
+    }),
+  );
   return sorted.flatMap((curated, i) => {
     const item = items[i];
     if (!item) return [];
