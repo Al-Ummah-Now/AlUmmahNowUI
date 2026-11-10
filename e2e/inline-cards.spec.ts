@@ -15,8 +15,8 @@ test.skip(!LOCAL, 'needs the stub CMS (local E2E)');
 test.use({ reducedMotion: 'reduce' });
 
 const strip = (page: Page, title: string) => page.getByRole('region', { name: new RegExp(`^(Cards|بطاقات): ${title}$`) });
-const pos = (viewer: Locator) => viewer.locator('[data-pos]');
-const live = (viewer: Locator) => viewer.locator('[data-live]');
+const pos = (viewer: Locator) => viewer.locator('[data-ci-pos]');
+const live = (viewer: Locator) => viewer.locator('[data-ci-live]');
 
 /** The card a strip shows: the slide whose box sits inside the track's box. */
 async function shown(viewer: Locator): Promise<number> {
@@ -183,11 +183,21 @@ test.describe('Articles list: card posts inline', () => {
   test('swipe on touch moves card by card, in the reading direction', async ({ page, browserName, isMobile }) => {
     test.skip(browserName !== 'chromium' || !isMobile, 'real touch gestures need Chromium (CDP) on a phone');
     const cdp = await page.context().newCDPSession(page);
-    // Past the half-way point, so scroll snapping settles on the next card, not back on this one.
+    // A finger drag in small steps (raw touch events: the browser scrolls and snaps natively),
+    // past the half-way point so snapping settles on the next card.
     const gesture = async (v: Locator, dir: 1 | -1) => {
-      await v.locator('[data-track]').scrollIntoViewIfNeeded();
-      const r = (await v.locator('[data-track]').boundingBox())!;
-      await cdp.send('Input.synthesizeScrollGesture', { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2), xDistance: Math.round(dir * r.width * 0.7), yDistance: 0, gestureSourceType: 'touch', speed: 1200 });
+      const track = v.locator('[data-track]');
+      await track.scrollIntoViewIfNeeded();
+      const r = (await track.boundingBox())!;
+      const y = Math.round(r.y + r.height / 2);
+      const from = Math.round(r.x + r.width / 2 - (dir * r.width * 0.35));
+      const step = (dir * r.width * 0.7) / 12;
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: from, y }] });
+      for (let i = 1; i <= 12; i++) {
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: Math.round(from + step * i), y }] });
+        await page.waitForTimeout(16);
+      }
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     };
     await page.goto('/en/articles/');
     const en = strip(page, 'A day in Madinah');
