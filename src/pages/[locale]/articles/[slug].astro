@@ -3,6 +3,7 @@ import ErrorView from '../../../components/ErrorView.astro';
 import PostArticle from '../../../components/PostArticle.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { documentAlternates, renderBody } from '../../../lib/body';
+import { fmt } from '../../../i18n';
 import { cardPostSeo, slideFromLink } from '../../../lib/cards';
 import { loadChrome, markSource, requestContext, routeLocale } from '../../../lib/context';
 import { otherLocale } from '../../../lib/locale';
@@ -16,10 +17,17 @@ const rc = requestContext(Astro, locale);
 const { cfg, t } = rc;
 const [chrome, first] = await Promise.all([loadChrome(rc), rc.cms.post(locale, slug)]);
 let result = first;
-// Missing translation: serve the other locale's article (same slug) with a notice
+// No version in this locale (docs/SPEC.md §4 "Articles in one language"): look for the slug in the
+// other locale. If that post has a translation here under another slug (its `alternates`), go
+// there (301); otherwise show it, in its own language, with "Only available in العربية" and a link
+// to its own URL (the canonical; the borrowed copy is noindex).
 if (result.status === 'not_found') {
   const other = await rc.cms.post(otherLocale(locale), slug);
-  if (other.status === 'ok') result = other;
+  if (other.status === 'ok') {
+    const here = other.data.alternates.find((a) => a.locale === locale);
+    if (here && here.slug !== slug) return Astro.redirect(`/${locale}/articles/${encodeURIComponent(here.slug)}/${Astro.url.search}`, 301);
+    result = other;
+  }
 }
 markSource(Astro, rc);
 if (result.status === 'not_found') return new Response(null, { status: 404 });
@@ -60,8 +68,9 @@ const jsonLd = post
   ogType={post ? 'article' : 'website'}
   ogImage={cardSeo?.image ?? undefined}
   jsonLd={jsonLd}
-  noindex={!post}
-  notice={translated ? t.lang.notAvailable : null}
+  noindex={!post || !!translated}
+  notice={post && translated ? fmt(t.lang.onlyIn, { language: t.lang.names[post.locale] }) : null}
+  noticeLink={post && translated ? { href: alternates[post.locale]!, label: fmt(t.lang.readIn, { language: t.lang.names[post.locale] }), lang: post.locale } : null}
   contentLocale={post?.locale}
 >
   {post && body ? (

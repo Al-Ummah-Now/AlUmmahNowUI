@@ -60,3 +60,35 @@ export function cardPostSeo(post: { cover?: { url: string } | null; kind?: strin
   const text = first ? [first.heading, first.body].filter(Boolean).join(' — ').slice(0, 180) : '';
   return { image: post.cover?.url ?? first?.image.url ?? null, text };
 }
+
+/**
+ * What a list (Articles, the home timeline) shows of a card post inline: the slides its summary
+ * carries (the CMS sends at most 10, docs/CMS_PUBLIC_API.md "Card posts"), or only the first slide
+ * from an older CMS or feed build. `more` > 0 means the post has cards the list doesn't carry: the
+ * strip then ends with a "See all N cards" link to the post. null: not a card post, or no slides.
+ */
+export function inlineCards<S>(post: { kind?: string; slide_count?: number; first_slide?: S | null; slides?: S[] }): { slides: S[]; total: number; more: number } | null {
+  if (post.kind !== 'cards') return null;
+  const slides = post.slides?.length ? post.slides : post.first_slide ? [post.first_slide] : [];
+  if (!slides.length) return null;
+  const total = Math.max(post.slide_count ?? 0, slides.length);
+  return { slides, total, more: total - slides.length };
+}
+
+/** The slide a horizontal strip shows at `scrollLeft` (negative in RTL), one slide per `width`. */
+export function stripIndex(scrollLeft: number, width: number, count: number): number {
+  if (width <= 0 || count <= 0) return 0;
+  return clampSlide(Math.round(Math.abs(scrollLeft) / width), count);
+}
+
+/** The scrollLeft that shows slide `i` of a strip: leftward (negative) in RTL. */
+export function stripOffset(i: number, width: number, dir: 'ltr' | 'rtl'): number {
+  return (dir === 'rtl' ? -1 : 1) * i * width;
+}
+
+let seq = 0;
+/** A page-unique id prefix for an inline viewer's slides (the same post may sit in two lists). */
+export function inlineUid(): string {
+  seq = (seq + 1) % 1_000_000;
+  return `cards-${seq.toString(36)}`;
+}

@@ -16,7 +16,8 @@ import {
   type FeedItem,
   type KvGet,
 } from '../src/lib/feed';
-import { cardCountLabel, feedVideoItem, loadTimeline } from '../src/lib/timeline';
+import { feedVideoItem, loadTimeline } from '../src/lib/timeline';
+import { inlineCards } from '../src/lib/cards';
 import { isoWeek, layoutFeed, post, video } from './feed-fixture';
 
 function getter(kv: Map<string, string>, log: string[] = []): KvGet {
@@ -222,9 +223,15 @@ describe('day headings', () => {
 });
 
 describe('cards and videos in the feed', () => {
-  it('counts cards with the Arabic plural forms', () => {
-    expect([1, 2, 3, 10, 11].map((n) => cardCountLabel(ar.timeline, n))).toEqual(['بطاقة واحدة', 'بطاقتان', '3 بطاقات', '10 بطاقات', '11 بطاقة']);
-    expect(cardCountLabel(en.timeline, 8)).toBe('8 cards');
+  it('a card post shows the slides the feed carries, or its first card from an older feed', () => {
+    const slide = (id: string) => ({ id, image: { url: 'https://cms/x.png', alt: null, width: 4, height: 5 }, heading: id, body: null, position: 'bottom' as const });
+    expect(inlineCards({ kind: 'cards', slide_count: 3, first_slide: slide('a'), slides: [slide('a'), slide('b'), slide('c')] })).toMatchObject({ total: 3, more: 0 });
+    expect(inlineCards({ kind: 'cards', slide_count: 14, first_slide: slide('a'), slides: Array.from({ length: 10 }, (_, i) => slide(String(i))) })).toMatchObject({ total: 14, more: 4 });
+    const old = inlineCards({ kind: 'cards', slide_count: 5, first_slide: slide('a') });
+    expect(old?.slides.map((s) => s.id)).toEqual(['a']);
+    expect(old).toMatchObject({ total: 5, more: 4 });
+    expect(inlineCards({ kind: 'article', slide_count: 0, first_slide: null, slides: [] })).toBeNull();
+    expect(inlineCards({ kind: 'cards', slide_count: 0, first_slide: null, slides: [] })).toBeNull();
   });
 
   it('turns a feed video into a facade item: snapshot, title override, or a plain card', () => {

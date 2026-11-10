@@ -47,6 +47,8 @@ export interface FeedPost {
   kind?: 'article' | 'cards';
   slide_count?: number;
   first_slide?: FeedSlide | null;
+  /** Card posts: the first ≤ 10 slides (absent from feeds built before the CMS sent them). */
+  slides?: FeedSlide[];
   /** `::video[ID]` lines of the body, in order (at most 4). */
   videos: FeedVideo[];
 }

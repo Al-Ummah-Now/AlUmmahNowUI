@@ -2,7 +2,6 @@
  * The home timeline's page model: which page to show (KV feed, or the CMS posts list when the feed
  * is missing), and the small pure helpers its components share with the client script.
  */
-import type { Messages } from '../i18n/en';
 import type { PostSummary, CuratedVideo } from './cms-types';
 import type { CmsClient } from './cms';
 import { FeedMissing, kvGetter, postItem, readPage, PAGE_SIZE, type FeedItem, type FeedVideo } from './feed';
@@ -48,13 +47,6 @@ export async function loadTimeline(opts: {
   // Fallback keys only need to be unique on the page (no cursor is built from them).
   const items = list.items.map((p, i) => postItem({ ...p, videos: [] }, (page - 1) * PAGE_SIZE + i + 1));
   return { pinned: [], items, nextHref: page < pages && items.length ? `${base}?page=${page + 1}` : null, source: 'fallback', builtAt: null };
-}
-
-/** "8 cards", with the forms Arabic needs (1, 2, 3–10, 11+). */
-export function cardCountLabel(t: Messages['timeline'], n: number): string {
-  if (n === 1) return t.cardsOne;
-  if (n === 2) return t.cardsTwo;
-  return (n >= 3 && n <= 10 ? t.cardsFew : t.cardsMany).replace('{count}', String(n));
 }
 
 /**

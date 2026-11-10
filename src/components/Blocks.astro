@@ -44,7 +44,7 @@ const { blocks, locale, contentLocale, cfg } = Astro.props;
         return (
           <section class="blk blk-content blk-posts" data-block={b.id} aria-labelledby={b.heading ? `blk-${b.id}-h` : undefined}>
             {b.heading && <h2 class="blk-heading" id={`blk-${b.id}-h`}>{b.heading}</h2>}
-            <ArticlesList locale={locale} posts={b.items} headingLevel={b.heading ? 3 : 2} />
+            <ArticlesList locale={locale} posts={b.items} headingLevel={b.heading ? 3 : 2} cmsOrigin={new URL(cfg.cmsPublicUrl).origin} />
           </section>
         );
       case 'cards':

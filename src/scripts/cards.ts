@@ -8,7 +8,7 @@
  *    closing lands on the slide the reader got to, with focus back on its Enlarge button;
  *  - a live region that says "Card 3 of 8" on every move; no animation under reduced motion.
  */
-import { clampSlide, keyStep, neighbours, slideFromLink, swipeStep } from '../lib/cards';
+import { clampSlide, keyStep, neighbours, slideFromLink, stripIndex, stripOffset, swipeStep } from '../lib/cards';
 
 const fill = (s: string, v: Record<string, number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -256,6 +256,106 @@ function buildLightbox(root: HTMLElement, slides: HTMLElement[], onMove: (i: num
   };
 }
 
+/**
+ * A card post inside a list (CardViewer `inline`): a scroll-snap strip that already swipes and
+ * scrolls without JS. This adds Next/Back buttons, arrow keys in the reading direction and Home/End
+ * while focus is in the viewer, the "3 / 8" counter with a polite "Card 3 of 8" announcement, and
+ * eager loading of the cards next to the one shown (the rest stay lazy).
+ */
+function initInline(root: HTMLElement) {
+  const found = root.querySelector<HTMLElement>('[data-track]');
+  const frames = [...root.querySelectorAll<HTMLElement>('.ci-slide')];
+  const count = frames.length;
+  if (!found || !count) return;
+  const track: HTMLElement = found;
+  const t = root.dataset;
+  const total = Number(t.total) || count;
+  const pos = root.querySelector<HTMLElement>('[data-pos]');
+  const live = root.querySelector<HTMLElement>('[data-live]');
+  const back = root.querySelector<HTMLButtonElement>('.ci-back');
+  const next = root.querySelector<HTMLButtonElement>('.ci-next');
+  let current = -1;
+  let announce = false;
+
+  const dirOf = () => viewerDir(track);
+  function update(i: number) {
+    if (i === current) return;
+    current = i;
+    // Until the reader moves, only the browser's own lazy loading runs (a list of card posts must not
+    // fetch every card up front); the observer below readies the second card once the strip shows.
+    if (announce) for (const n of [i, ...neighbours(i, count)]) eager(frames[n]);
+    const more = i === count - 1 && t.tMore;
+    const vars = { n: i + 1, total };
+    if (pos) pos.textContent = more ? t.tMore! : fill(t.tPosition ?? '{n} / {total}', vars);
+    if (live && announce) live.textContent = more ? t.tMore! : fill(t.tPositionLong ?? '{n} / {total}', vars);
+    const focused = document.activeElement;
+    if (back) back.disabled = i === 0;
+    if (next) next.disabled = i === count - 1;
+    // A button that just became disabled drops focus: keep it in the viewer.
+    if ((focused === back && back?.disabled) || (focused === next && next?.disabled)) (back?.disabled ? next : back)?.focus();
+  }
+  // While a button or key scrolls the strip, the cards passed on the way are not "shown".
+  let aim: number | null = null;
+  const read = () => {
+    const i = stripIndex(track.scrollLeft, track.clientWidth, count);
+    if (aim !== null && i !== aim) return;
+    aim = null;
+    update(i);
+  };
+  const release = () => {
+    aim = null;
+    read();
+  };
+  track.addEventListener('scrollend', release);
+  for (const type of ['pointerdown', 'wheel', 'touchstart'] as const) track.addEventListener(type, () => (aim = null), { passive: true });
+  function go(i: number) {
+    const target = clampSlide(i, count);
+    if (target === current) return;
+    announce = true;
+    aim = target;
+    track.scrollTo({ left: stripOffset(target, track.clientWidth, dirOf()), behavior: reduced() ? 'auto' : 'smooth' });
+    update(target); // at once (the scroll events follow and agree)
+  }
+
+  let frame = 0;
+  track.addEventListener(
+    'scroll',
+    () => {
+      announce = true; // a swipe or scroll by the reader
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(read);
+    },
+    { passive: true },
+  );
+  root.addEventListener('click', (e) => {
+    const b = (e.target as Element).closest<HTMLButtonElement>('button[data-step]');
+    if (b && !b.disabled) go(current + Number(b.dataset.step));
+  });
+  root.addEventListener('keydown', (e) => {
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+    const target = e.target as Element;
+    if (target !== track && !target.closest('.ci-nav')) return;
+    const s = keyStep(e.key, dirOf());
+    if (s === null) return;
+    e.preventDefault();
+    go(s === 'first' ? 0 : s === 'last' ? count - 1 : current + s);
+  });
+  // The width changes on rotation and resize: stay on the same card.
+  new ResizeObserver(() => {
+    if (current > 0) track.scrollTo({ left: stripOffset(current, track.clientWidth, dirOf()) });
+  }).observe(track);
+  update(stripIndex(track.scrollLeft, track.clientWidth, count));
+  // On screen: the next card loads, so a swipe never lands on a blank frame.
+  const seen = new IntersectionObserver((entries) => {
+    if (!entries.some((e) => e.isIntersecting)) return;
+    eager(frames[current + 1]);
+    seen.disconnect();
+  });
+  seen.observe(track);
+  root.dataset.ready = '';
+}
+
 export function initCards(doc: ParentNode = document) {
   doc.querySelectorAll<HTMLElement>('[data-cards]:not([data-ready])').forEach(initViewer);
+  doc.querySelectorAll<HTMLElement>('[data-cards-inline]:not([data-ready])').forEach(initInline);
 }

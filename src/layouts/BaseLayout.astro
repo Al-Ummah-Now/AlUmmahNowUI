@@ -25,11 +25,13 @@ interface Props {
   noindex?: boolean;
   /** Notice shown above the content (e.g. "not yet available in Arabic"). */
   notice?: string | null;
+  /** A link after the notice (e.g. "Read it in العربية" on an article that is only in Arabic). */
+  noticeLink?: { href: string; label: string; lang: Locale } | null;
   /** Language of the main content when it differs from the UI (missing translation). */
   contentLocale?: Locale;
 }
 
-const { cfg, locale, title, description, alternates, nav, settings, ogImage, ogType = 'website', jsonLd = [], noindex, notice, contentLocale } = Astro.props;
+const { cfg, locale, title, description, alternates, nav, settings, ogImage, ogType = 'website', jsonLd = [], noindex, notice, noticeLink, contentLocale } = Astro.props;
 const t = strings(locale);
 const siteName = settings?.site_title || t.meta.siteName;
 const fullTitle = title === siteName ? siteName : `${title} | ${siteName}`;
@@ -81,7 +83,7 @@ const robots = noindex || !cfg.isProduction ? 'noindex, nofollow' : 'index, foll
     <Header cfg={cfg} locale={locale} nav={nav.header} switchHref={switchHref} />
     {notice && (
       <div class="notice" role="note">
-        <p class="wrap">{notice}</p>
+        <p class="wrap">{notice}{noticeLink && <> <a href={noticeLink.href} hreflang={noticeLink.lang}>{noticeLink.label}</a></>}</p>
       </div>
     )}
     <main id="main" tabindex="-1" lang={contentLocale && contentLocale !== locale ? contentLocale : undefined} dir={contentLocale && contentLocale !== locale ? dir(contentLocale) : undefined}>

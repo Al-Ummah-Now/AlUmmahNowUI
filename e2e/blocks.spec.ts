@@ -75,7 +75,8 @@ test.describe('pages built from blocks', () => {
       await expect(page.locator('hr.blk-rule')).toHaveCount(1);
       const news = page.getByRole('region', { name: 'Latest news' });
       await expect(news.getByRole('link', { name: 'Community iftar this Friday' })).toBeVisible();
-      await expect(news.locator('.articles-item').nth(1).locator('.articles-cards')).toHaveText('2 cards');
+      await expect(news.locator('.articles-item').nth(1).locator('.cards-inline .ci-count')).toHaveText('2 cards');
+      await expect(news.locator('.articles-item').nth(1).locator('.ci-slide')).toHaveCount(2);
       await expect(page.getByRole('link', { name: 'Contact the team' })).toHaveAttribute('href', '/en/contact');
       // The card grid: first card's image and heading, the count, a tag filter and paging.
       const grid = page.getByRole('region', { name: 'Card stories' });
