@@ -5,7 +5,9 @@ import { defineConfig, devices } from '@playwright/test';
  * In CI: ci.yml runs locally, deploy-qa.yml against https://www.qa.alummahnow.net,
  * release.yml against stage.
  */
-const WWW_URL = (process.env.WWW_URL || 'http://localhost:4321').replace(/\/+$/, '');
+/** Local port (WWW_PORT) when another dev server already holds 4321. */
+const PORT = process.env.WWW_PORT || '4321';
+const WWW_URL = (process.env.WWW_URL || `http://localhost:${PORT}`).replace(/\/+$/, '');
 const local = !process.env.WWW_URL;
 
 export default defineConfig({
@@ -30,7 +32,7 @@ export default defineConfig({
   webServer: local
     ? [
         {
-          command: 'npm run build && npm run preview',
+          command: 'npm run build && node --experimental-strip-types --no-warnings e2e/seed-feed.ts && npm run preview',
           url: `${WWW_URL}/healthz`,
           timeout: 180_000,
           reuseExistingServer: !process.env.CI,

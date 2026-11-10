@@ -30,6 +30,15 @@ describe('wrangler config check', () => {
     expect(errors.join('\n')).toMatch(/stage: vars.AUTH_URL/);
     expect(errors.join('\n')).toMatch(/SESSION_SECRET must be a secret/);
   });
+  it('requires the FEED namespace per env, separate from CONTENT_SNAPSHOT', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mutating a parsed config fixture
+    const bad = structuredClone(real) as Record<string, any>;
+    bad.env.qa.kv_namespaces = bad.env.qa.kv_namespaces.filter((k: { binding: string }) => k.binding !== 'FEED');
+    bad.env.stage.kv_namespaces = bad.env.stage.kv_namespaces.map((k: { binding: string; id: string }) => (k.binding === 'FEED' ? { ...k, id: ENVIRONMENTS.stage.kvId } : k));
+    const errors = checkWranglerConfig(bad).join('\n');
+    expect(errors).toMatch(/qa: KV FEED must be 6e459b34fb954cf4a199cfef57036a8c/);
+    expect(errors).toMatch(/stage: KV FEED must not share the CONTENT_SNAPSHOT namespace/);
+  });
   it('parses JSONC with comments, URLs in strings and trailing commas', () => {
     expect(parseJsonc('{ // c\n "a": "https://x//y", /* b */ "b": [1,2,], }')).toEqual({ a: 'https://x//y', b: [1, 2] });
   });

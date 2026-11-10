@@ -15,7 +15,7 @@ if (existsSync(path)) {
   const vars: Record<string, string> = {
     SESSION_SECRET: randomBytes(32).toString('hex'),
     APP_ENV: 'local',
-    SITE_URL: 'http://localhost:4321',
+    SITE_URL: `http://localhost:${process.env.WWW_PORT || '4321'}`,
     AUTH_URL: 'https://auth.qa.alummahnow.net',
     WWW_CLIENT_ID: 'ecda6f18-89cb-415c-b746-7e77184d75a2',
     VIDEOS_WEB_URL: 'https://videos.qa.alummahnow.net',

@@ -23,7 +23,8 @@ domains only (`workers_dev: false`). `npm run check:config` checks the file agai
 `scripts/environments.ts`.
 
 Bindings per env: `CMS` (service binding to the env's CMS Worker), `CONTENT_SNAPSHOT` (KV,
-last-known-good CMS JSON, written only by the `*/5 * * * *` cron), `ASSETS`, `CF_VERSION_METADATA`. Vars: `APP_ENV`, `SITE_URL`,
+last-known-good CMS JSON, written only by the `*/5 * * * *` cron), `FEED` (KV, the home timeline,
+written only by the CMS feed job; www only reads it), `ASSETS`, `CF_VERSION_METADATA`. Vars: `APP_ENV`, `SITE_URL`,
 `AUTH_URL`, `WWW_CLIENT_ID`, `VIDEOS_WEB_URL`, `VIDEOS_API_URL`, `PROFILE_URL`, `CMS_PUBLIC_URL`.
 
 ### Secrets
@@ -44,6 +45,16 @@ every QA deploy and every promote.
   CMS (2.5 s timeout) → stale Cache API entry (≤ 10 min) → KV snapshot → built-in content
   (`src/content/fallback/{en,ar}.ts`). Pages still render 200; `X-Content-Source` says which
   (`cms|cache|snapshot|builtin`) and `/healthz` reports `cms: degraded`.
+- **Home timeline** (`src/lib/feed.ts`, `src/components/Timeline.astro`): the CMS-managed feed of
+  posts and videos, newest first under day headings. It is read from the `FEED` KV namespace, never
+  from the CMS on the request path: the first page is one KV read (the head), "Load more"
+  (`?before=<cursor>`, a plain link without JS) normally one more. The CMS rebuilds only the
+  week buckets a change touches (docs/CMS_PUBLIC_API.md "Home timeline feed"). A missing or
+  unreadable head → the CMS posts list (the fallback chain below); `/healthz` reports
+  `feed: ok|missing` and `X-Feed-Source: feed|fallback` says which a page used. `FEED` is its own
+  namespace, not a prefix in `CONTENT_SNAPSHOT`: one writer per namespace (the CMS writes `FEED`,
+  www's cron writes `CONTENT_SNAPSHOT`), each can be purged or rebuilt alone, and the config check
+  pins each binding separately.
 - **HTML** for locale pages is edge-cached (Cache API, `s-maxage=60`, `stale-while-revalidate=600`).
   Signed-in state is fetched client-side from `/auth/me`, so the HTML is the same for everyone.
 - **Videos**: metadata from the videos API; only items it returns as public render (others are

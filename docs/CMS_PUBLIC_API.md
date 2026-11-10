@@ -156,3 +156,22 @@ the staff session gate (admin or editor; anyone else has no CMS session), which 
 signature can never stand in for a session one. Rotating `BKND_JWT_SECRET` ends open preview links.
 www reads `k`/`id`/`exp` from the payload only to name its cookie; the CMS checks the signature on
 every render, so a token can't be stretched or moved to another row.
+
+## Home timeline feed (Workers KV)
+
+The CMS publishes the home timeline to the KV namespace bound as `FEED` in both Workers
+(`al-ummah-now-www-feed`, `-stage`, `-qa`); the CMS is the only writer. Contract:
+AlUmmahNowCMS `src/lib/feed/model.ts`; www's reader `src/lib/feed.ts` must stay in step.
+
+| Key | Value |
+|---|---|
+| `feed:{l}:head` | `{ v: 1, locale, build, built_at, page_size, pinned: FeedItem[], items: FeedItem[] (newest 40), more, total, weeks: { week, build, oldest, older }[], years: { year, key, count, oldest }[] }`. The pointer and the first page; the only key rewritten in place, written last in every build. |
+| `feed:{l}:w:{isoWeek}:{build}` | `{ v, week, build, items: FeedItem[] (newest first), older: { week, build } \| null }`. A superseded version is overwritten once with `{ v, week, moved: <build> }` or `{ v, week, gone: true }`, then deleted after 7 days. |
+| `feed:{l}:y:{isoYear}:{build}` | `{ v, year, weeks: { week, key, count, newest, oldest }[] }` (the fallback index). |
+
+`FeedItem = { key: "p<id>" \| "v<id>", type: "post" \| "video", date, pinned, post?: PostSummary & { videos: { kind, ref_id, snapshot }[] }, video?: { kind, ref_id, snapshot, title_override } }`.
+Order: date desc, then `v` before `p`, then id desc. Cursor (`?before=`):
+`<ms>-<key>` optionally followed by `.<isoWeek>.<build>` (the week to read next); regex
+`^(\d{1,15})-([pv]\d{1,12})(?:\.(\d{4}-W\d{2})\.([a-z0-9]{1,32}))?$`. Weeks are ISO weeks in UTC
+(storage only; www labels days in the reader's zone). Reads: head with `cacheTtl` 30 s, week and
+year keys 60 s (a tombstone overwrites a key once).

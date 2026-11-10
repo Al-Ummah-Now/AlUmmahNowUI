@@ -9,7 +9,8 @@ import { escapeHtml as e } from './html';
 import type { Locale } from './locale';
 import { clockDuration, type VideoItem } from './videos';
 
-export function facadeHtml(item: VideoItem, opts: { videosWebUrl: string; lang: Locale; headingLevel?: 2 | 3 }): string {
+/** `caption: false` leaves out the title block (the home timeline writes its own around the player). */
+export function facadeHtml(item: VideoItem, opts: { videosWebUrl: string; lang: Locale; headingLevel?: 2 | 3; caption?: boolean; className?: string }): string {
   if (item.kind === 'channel') throw new Error('channels have no embed');
   const t = strings(opts.lang);
   const src = embedUrl(opts.videosWebUrl, { kind: item.kind, id: item.id, lang: opts.lang, autoplay: true });
@@ -26,14 +27,14 @@ export function facadeHtml(item: VideoItem, opts: { videosWebUrl: string; lang: 
         ? `<span class="facade-badge" dir="ltr">${e(duration)}</span>`
         : '';
   return [
-    `<figure class="facade" data-embed-src="${e(src)}" data-embed-title="${e(item.title)}">`,
+    `<figure class="facade${opts.className ? ` ${e(opts.className)}` : ''}" data-embed-src="${e(src)}" data-embed-title="${e(item.title)}">`,
     `<div class="facade-frame">${thumb}${badge}`,
     `<button type="button" class="facade-play" aria-label="${e(fmt(t.videos.play, { title: item.title }))}">`,
     `<svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle cx="32" cy="32" r="31"/><path d="M26 20v24l19-12z"/></svg>`,
     `</button></div>`,
-    `<figcaption class="facade-caption"><${h} class="facade-title">${e(item.title)}</${h}>`,
-    item.channelName ? `<p class="facade-channel">${e(item.channelName)}</p>` : '',
-    `<a class="facade-link" href="${e(watch)}">${e(t.videos.watchOnVideos)}</a>`,
-    `</figcaption></figure>`,
+    opts.caption === false ? '' : `<figcaption class="facade-caption"><${h} class="facade-title">${e(item.title)}</${h}>`,
+    opts.caption !== false && item.channelName ? `<p class="facade-channel">${e(item.channelName)}</p>` : '',
+    opts.caption === false ? '' : `<a class="facade-link" href="${e(watch)}">${e(t.videos.watchOnVideos)}</a>`,
+    opts.caption === false ? '</figure>' : `</figcaption></figure>`,
   ].join('');
 }

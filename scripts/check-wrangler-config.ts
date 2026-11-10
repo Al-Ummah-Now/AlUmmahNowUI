@@ -51,6 +51,9 @@ export function checkWranglerConfig(config: WranglerConfig): string[] {
     if (cms?.service !== want.cmsService) p(`service binding CMS must point at ${want.cmsService}`);
     const kv = block.kv_namespaces?.find((k) => k.binding === 'CONTENT_SNAPSHOT');
     if (kv?.id !== want.kvId) p(`KV CONTENT_SNAPSHOT must be ${want.kvId}`);
+    const feed = block.kv_namespaces?.find((k) => k.binding === 'FEED');
+    if (feed?.id !== want.feedKvId) p(`KV FEED must be ${want.feedKvId} (the home timeline)`);
+    if (feed && feed.id === want.kvId) p('KV FEED must not share the CONTENT_SNAPSHOT namespace (one writer per namespace)');
     if (block.version_metadata?.binding !== 'CF_VERSION_METADATA') p('version_metadata binding CF_VERSION_METADATA is required (healthz version, release smoke)');
     // The single writer of the KV snapshots (src/lib/snapshot-writer.ts SNAPSHOT_CRON); triggers are not inherited.
     if (!(block.triggers?.crons ?? []).includes('*/5 * * * *')) p('triggers.crons must include "*/5 * * * *" (KV snapshot writer)');
