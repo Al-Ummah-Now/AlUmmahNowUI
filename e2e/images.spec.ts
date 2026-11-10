@@ -65,7 +65,7 @@ test('covers and inline images are responsive, sized, modern-format pictures', a
   }
 
   // Width/height reserve the box: loading the images moves nothing.
-  await page.mouse.wheel(0, 3000);
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
   await page.waitForTimeout(1500);
   if (browserName === 'chromium') expect(await page.evaluate(() => (window as unknown as { __cls: number }).__cls)).toBeLessThan(0.1);
 });
