@@ -2,7 +2,8 @@
  * Block and card-post fixtures for the stub CMS (e2e/stub-cms.ts), shaped like the CMS public API
  * (docs/CMS_PUBLIC_API.md "Blocks", "Card posts"):
  *  - /pages/stories (en) and /pages/qisas (ar): pages built from every block type;
- *  - /posts/<slug> for the card posts below, and /cards (newest first, ?tag=, paging);
+ *  - /posts/<slug> for the card posts below (404 for one only in the other locale), /posts (the
+ *    Articles list: summaries carry ≤ 10 slides) and /cards (newest first, ?tag=, paging);
  *  - /media/<id>.png: generated images at the sizes the refs declare.
  * Only these answer; every other public path stays 503 (the rest of the suite uses built-in content).
  */
@@ -102,6 +103,16 @@ const CARD_POSTS = [
     slides: [slide('f1', 13, 'Snow on a dome', 'First snow', 'The community clears the path together.', 'bottom')],
   },
   {
+    // Longer than a list carries (10): the inline strip ends with "See all 13 cards".
+    slug: 'thirteen-lanterns', locale: 'en', title: 'Thirteen lanterns', tags: ['ramadan'], published_at: '2026-10-30T08:00:00.000Z',
+    slides: Array.from({ length: 13 }, (_, i) => slide(`l${i + 1}`, [10, 11, 14, 15, 16][i % 5]!, `Lantern ${i + 1}`, `Lantern ${i + 1}`, i % 2 ? null : 'A light for every night of the month.', 'bottom')),
+  },
+  {
+    // The Arabic translation of "Ramadan nights", under its own slug (alternates).
+    slug: 'layali-ramadan', locale: 'ar', title: 'ليالي رمضان', tags: ['رمضان'], published_at: '2026-11-05T08:00:00.000Z',
+    slides: [slide('lr1', 16, 'فوانيس على طول الشارع', 'الفوانيس', 'لكل شارع نوره.', 'bottom'), slide('lr2', 15, 'مائدة الإفطار', 'الإفطار', null, 'top')],
+  },
+  {
     slug: 'rihla-ila-al-quds', locale: 'ar', title: 'رحلة إلى القدس', tags: ['سفر'], published_at: '2026-11-06T08:00:00.000Z',
     slides: [
       slide('q1', 11, 'قبة الصخرة عند الفجر', 'عند الفجر', 'تلمع القبة الذهبية مع أول ضوء.', 'bottom'),
@@ -112,13 +123,22 @@ const CARD_POSTS = [
   },
 ] as const;
 
-const summaryOf = (p: (typeof CARD_POSTS)[number]) => ({
+type CardPost = (typeof CARD_POSTS)[number];
+/** Only in the Articles list and their own pages (the /cards grid fixtures predate them). */
+const LIST_ONLY = new Set(['thirteen-lanterns', 'layali-ramadan']);
+/** Translations under different slugs (the CMS `alternates`). */
+const TRANSLATIONS: [string, string][] = [['ramadan-nights', 'layali-ramadan']];
+const alternatesOf = (p: CardPost) =>
+  TRANSLATIONS.flatMap((pair) => (pair.includes(p.slug) ? CARD_POSTS.filter((x) => x.slug !== p.slug && pair.includes(x.slug)) : [])).map((x) => ({ locale: x.locale, slug: x.slug }));
+/** A summary carries at most 10 slides; slide_count counts them all (docs/CMS_PUBLIC_API.md). */
+const summaryOf = (p: CardPost) => ({
   slug: p.slug, locale: p.locale, title: p.title, excerpt: null, cover: null, author_name: 'Editorial team', tags: [...p.tags],
-  published_at: p.published_at, updated_at: p.published_at, kind: 'cards', slide_count: p.slides.length, first_slide: p.slides[0],
+  published_at: p.published_at, updated_at: p.published_at, kind: 'cards', slide_count: p.slides.length, first_slide: p.slides[0], slides: p.slides.slice(0, 10),
 });
-const postOf = (p: (typeof CARD_POSTS)[number]) => ({ ...summaryOf(p), body: '', seo_title: null, seo_description: null, alternates: [], images: p.slides.map((s) => s.image), slides: p.slides });
+const postOf = (p: CardPost) => ({ ...summaryOf(p), body: '', seo_title: null, seo_description: null, alternates: alternatesOf(p), images: p.slides.map((s) => s.image), slides: p.slides });
 
-const article = (slug: string, title: string) => ({ slug, locale: 'en', title, excerpt: 'A short excerpt for the list.', cover: null, author_name: 'Editorial team', tags: [], published_at: now, updated_at: now, kind: 'article' });
+const article = (slug: string, title: string) => ({ slug, locale: 'en', title, excerpt: 'A short excerpt for the list.', cover: null, author_name: 'Editorial team', tags: [], published_at: now, updated_at: now, kind: 'article', slide_count: 0, first_slide: null, slides: [] });
+const ARTICLES = [article('community-iftar', 'Community iftar this Friday'), article('new-classes', 'New Qur’an classes for children')];
 
 const EN_BLOCKS = [
   { id: 'intro', type: 'markdown', text: '## Stories from the Ummah\n\nPictures, places and people, told **one card at a time**. Open a story to read it card by card.' },
@@ -129,7 +149,7 @@ const EN_BLOCKS = [
   { id: 'col', type: 'columns', text: '### Share your story\n\nSend us your photos and a few lines about each one. We publish a new card story every week.', image: media(5, 'A camera on a prayer mat'), caption: null, image_side: 'end' },
   { id: 'note', type: 'quote', variant: 'callout', text: 'Every story is checked by our editors before it is published.', cite: null },
   { id: 'line', type: 'divider', style: 'line', size: 'm' },
-  { id: 'news', type: 'posts', heading: 'Latest news', items: [article('community-iftar', 'Community iftar this Friday'), summaryOf(CARD_POSTS[1]), article('new-classes', 'New Qur’an classes for children')] },
+  { id: 'news', type: 'posts', heading: 'Latest news', items: [ARTICLES[0], summaryOf(CARD_POSTS[1]), ARTICLES[1]] },
   { id: 'cta', type: 'cta', heading: 'Have a story?', text: 'Tell us about it and we will help you share it.', label: 'Contact the team', url: '/contact', tone: 'primary' },
 ];
 const AR_BLOCKS = [
@@ -156,7 +176,7 @@ const PAGES: Record<string, unknown> = {
 /** Drafts for /preview: a blocks page and an Arabic card post (e2e/blocks.spec.ts). */
 export const PREVIEW_ROWS: Record<string, unknown> = {
   'pages/3': { ...pageOf('stories-draft', 'en', 'Stories (draft)', 'A draft built from blocks.', EN_BLOCKS.filter((b) => b.type !== 'cards')) },
-  'posts/4': { ...postOf(CARD_POSTS[4]), slug: 'rihla-draft', title: 'رحلة (مسودة)' },
+  'posts/4': { ...postOf(CARD_POSTS.find((p) => p.slug === 'rihla-ila-al-quds')!), slug: 'rihla-draft', title: 'رحلة (مسودة)' },
 };
 
 /** The public API answers the stub knows, or null (→ 503). */
@@ -171,11 +191,21 @@ export function publicFixture(url: URL): { status: number; body: unknown } | nul
   }
   const post = /^\/posts\/([^/]+)$/.exec(path);
   if (post) {
-    const p = CARD_POSTS.find((x) => x.slug === decodeURIComponent(post[1]!) && x.locale === locale);
-    return p ? { status: 200, body: postOf(p) } : null;
+    const slug = decodeURIComponent(post[1]!);
+    const p = CARD_POSTS.find((x) => x.slug === slug && x.locale === locale);
+    if (p) return { status: 200, body: postOf(p) };
+    // A card post the stub knows in the other locale only: 404 here, like the CMS.
+    return CARD_POSTS.some((x) => x.slug === slug) ? { status: 404, body: { error: 'not_found' } } : null;
+  }
+  if (path === '/posts') {
+    // The Articles list: card posts and two articles in English, card posts in Arabic.
+    const all = [...CARD_POSTS.filter((p) => p.locale === locale).map(summaryOf), ...(locale === 'en' ? ARTICLES : [])].sort((a, b) => b.published_at.localeCompare(a.published_at));
+    const limit = Math.min(50, Math.max(1, Number(url.searchParams.get('limit')) || 10));
+    const n = Math.max(1, Number(url.searchParams.get('page')) || 1);
+    return { status: 200, body: { items: all.slice((n - 1) * limit, n * limit), page: n, limit, total: all.length } };
   }
   if (path === '/cards') {
-    const all = CARD_POSTS.filter((p) => p.locale === locale);
+    const all = CARD_POSTS.filter((p) => p.locale === locale && !LIST_ONLY.has(p.slug));
     const tag = url.searchParams.get('tag');
     const items = all.filter((p) => !tag || (p.tags as readonly string[]).includes(tag));
     const limit = Math.min(24, Math.max(1, Number(url.searchParams.get('limit')) || 12));

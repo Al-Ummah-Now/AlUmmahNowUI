@@ -4,17 +4,20 @@
  * title, excerpt, author, time) or a video entry. Videos are facades: poster + play button; the
  * player iframe loads only on a click (src/scripts/facade.ts).
  *
- * Card posts show their first card and "N cards": the feed carries only the first slide (the full
- * viewer needs every slide, one more CMS read per item), and the card opens the post's viewer.
+ * Card posts show every card inline (CardViewer `inline`): the feed carries a card post's first 10
+ * slides (docs/CMS_PUBLIC_API.md "Card posts"); a longer post ends with a "See all N cards" link.
+ * A feed built before the CMS sent `slides` gives the first card only, with that link.
  */
+import CardViewer from './CardViewer.astro';
 import { fmt, strings } from '../i18n';
+import { inlineCards, inlineUid } from '../lib/cards';
 import { watchUrl } from '../lib/embeds';
 import { facadeHtml } from '../lib/facade';
 import type { FeedItem } from '../lib/feed';
 import { relativeTime } from '../lib/feed';
 import { dir, type Locale } from '../lib/locale';
 import { pictureHtml } from '../lib/picture';
-import { absoluteTime, cardCountLabel, feedVideoItem } from '../lib/timeline';
+import { absoluteTime, feedVideoItem } from '../lib/timeline';
 
 interface Props { item: FeedItem; locale: Locale; cmsOrigin: string; videosWebUrl: string; priority: boolean; now: Date }
 const { item, locale, cmsOrigin, videosWebUrl, priority, now } = Astro.props;
@@ -22,13 +25,11 @@ const t = strings(locale);
 const tl = t.timeline;
 const id = `tl-${item.key}`;
 const COVER_SIZES = '(min-width: 44rem) 40rem, calc(100vw - 2rem)';
-const CARD_SIZES = '(min-width: 44rem) 22rem, calc(100vw - 4rem)';
 
 const post = item.type === 'post' ? item.post! : null;
 const contentLocale: Locale = post?.locale === 'ar' || post?.locale === 'en' ? post.locale : locale;
 const href = post ? `/${locale}/articles/${encodeURIComponent(post.slug)}/` : null;
-const slide = post?.kind === 'cards' ? (post.first_slide ?? null) : null;
-const cards = post?.kind === 'cards' ? (post.slide_count ?? 0) : 0;
+const cards = post ? inlineCards(post) : null;
 const videos = post ? post.videos.filter((v) => v.kind === 'video' || v.kind === 'playlist') : [];
 
 const videoEntry = item.type === 'video' && item.video ? feedVideoItem(item.video, locale, tl.video, now.getTime()) : null;
@@ -39,8 +40,7 @@ const facades = videos.map((v, i) => {
   const video = feedVideoItem(v, locale, tl.video, now.getTime());
   return facadeHtml(video, { videosWebUrl, lang: locale, caption: false, className: i === 0 ? 'tl-facade' : 'tl-facade tl-facade-sm' });
 });
-const coverHtml = post && !slide && !videos.length && post.cover ? pictureHtml(post.cover, cmsOrigin, { sizes: COVER_SIZES, priority, className: 'tl-cover' }) : null;
-const slideHtml = slide ? pictureHtml(slide.image, cmsOrigin, { sizes: CARD_SIZES, priority, className: 'tl-card-img' }) : null;
+const coverHtml = post && !cards && !videos.length && post.cover ? pictureHtml(post.cover, cmsOrigin, { sizes: COVER_SIZES, priority, className: 'tl-cover' }) : null;
 const entryHtml = videoEntry ? facadeHtml(videoEntry, { videosWebUrl, lang: locale, caption: false, className: 'tl-facade' }) : null;
 const watch = videoEntry && videoEntry.kind !== 'channel' ? watchUrl(videosWebUrl, { kind: videoEntry.kind, id: videoEntry.id, lang: locale }) : null;
 ---
@@ -55,25 +55,15 @@ const watch = videoEntry && videoEntry.kind !== 'channel' ? watchUrl(videosWebUr
     {coverHtml && href && (
       <a class="tl-media" href={href} tabindex="-1" aria-hidden="true"><Fragment set:html={coverHtml} /></a>
     )}
-    {slideHtml && slide && href && (
-      <a class="tl-cardface" href={href}>
-        <span class="visually-hidden">{`${tl.readCards}: ${title}. `}</span>
-        <span class="tl-cardface-frame">
-          <Fragment set:html={slideHtml} />
-          {(slide.heading || slide.body) && (
-            <span class:list={['tl-cardface-text', `tl-cardface-${slide.position}`]} lang={contentLocale} dir={dir(contentLocale)}>
-              {slide.heading && <span class="tl-cardface-heading">{slide.heading}</span>}
-              {slide.body && <span class="tl-cardface-body">{slide.body}</span>}
-            </span>
-          )}
-          {cards > 0 && (
-            <span class="tl-cardface-count">
-              <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 2.5h7.5a1.5 1.5 0 0 1 1.5 1.5v9M2.5 5h7a1 1 0 0 1 1 1v7.5a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" /></svg>
-              {cardCountLabel(tl, cards)}
-            </span>
-          )}
-        </span>
-      </a>
+    {cards && href && (
+      <CardViewer
+        slides={cards.slides}
+        title={title}
+        contentLocale={contentLocale}
+        locale={locale}
+        cmsOrigin={cmsOrigin}
+        inline={{ href, uid: inlineUid(), total: cards.total, more: cards.more, priority, size: 'timeline' }}
+      />
     )}
     <div class="tl-body">
       <h4 class="tl-title" id={id} lang={contentLocale} dir={dir(contentLocale)}>

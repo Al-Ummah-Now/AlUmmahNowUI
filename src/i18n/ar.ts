@@ -26,6 +26,12 @@ export const ar: Messages = {
     switchTo: 'English',
     switchToLabel: 'اقرأ هذه الصفحة بالإنجليزية',
     notAvailable: 'هذه الصفحة غير متاحة بالعربية بعد، فهي معروضة بالإنجليزية.',
+    /** أسماء اللغات كما تُقال في الجمل أدناه. */
+    names: { en: 'بالإنجليزية', ar: 'بالعربية' },
+    onlyIn: 'هذه المقالة متاحة {language} فقط.',
+    readIn: 'اقرأها {language}',
+    otherHas: 'المقالات منشورة {language}.',
+    listIn: 'المقالات {language}',
   },
   theme: {
     label: 'المظهر',
@@ -107,6 +113,8 @@ export const ar: Messages = {
     showing: 'المعروض: {tag}',
     none: 'لا توجد منشورات بطاقات بهذا الموضوع بعد.',
     open: 'افتح منشور البطاقات: {title}',
+    seeAll: 'اعرض البطاقات كلها ({count})',
+    swipeHint: 'اسحب أو استخدم الأسهم لقراءة كل البطاقات',
   },
   videos: {
     title: 'مرئيات مختارة',
@@ -163,11 +171,6 @@ export const ar: Messages = {
     allArticles: 'كل المقالات',
     empty: 'لم يُنشر شيء بعد.',
     video: 'مقطع',
-    cardsOne: 'بطاقة واحدة',
-    cardsTwo: 'بطاقتان',
-    cardsFew: '{count} بطاقات',
-    cardsMany: '{count} بطاقة',
-    readCards: 'عرض البطاقات',
     olderTitle: 'منشورات سابقة',
     by: 'بقلم {author}',
     videoCount: '{count} مقاطع في هذا المنشور',

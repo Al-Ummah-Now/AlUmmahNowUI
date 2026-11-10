@@ -10,6 +10,7 @@
 import { dayKey, dayLabel, relativeTime } from '../lib/feed';
 import type { Locale } from '../lib/locale';
 import { absoluteTime } from '../lib/timeline';
+import { initCards } from './cards';
 import { initFacades } from './facade';
 
 const zone = (() => {
@@ -93,7 +94,10 @@ async function loadMore(root: HTMLElement, link: HTMLAnchorElement, locale: Loca
     tail.append(...adopted);
     regroup(root, locale);
     refreshTimes(root, locale);
-    for (const li of adopted) initFacades(li);
+    for (const li of adopted) {
+      initFacades(li);
+      initCards(li);
+    }
     const next = incoming.querySelector<HTMLAnchorElement>('[data-more]');
     const msg = adopted.length === 1 ? (root.dataset.tAddedOne ?? '') : (root.dataset.tAdded ?? '').replace('{count}', String(adopted.length));
     if (next) {

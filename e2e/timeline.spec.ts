@@ -113,7 +113,7 @@ test.describe('home timeline', () => {
       await page.goto('/ar/');
       await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
       await expect(page.locator('[data-days] .tl-date').first()).toHaveText('اليوم');
-      await expect(page.locator('.tl-cardface-count')).toHaveText('5 بطاقات');
+      await expect(page.locator('.tl-card .ci-count')).toHaveText('5 بطاقات');
       const card = page.locator('.tl-card').first();
       const box = await card.boundingBox();
       const pin = await page.locator('.tl-card-pinned').evaluate((e) => getComputedStyle(e).borderRightWidth);

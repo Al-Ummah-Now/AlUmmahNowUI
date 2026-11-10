@@ -15,13 +15,28 @@ import type { Slide } from '../lib/cms-types';
 import { dir, type Locale } from '../lib/locale';
 import { pictureHtml } from '../lib/picture';
 
-interface Props { slides: Slide[]; title: string; contentLocale: Locale; locale: Locale; initial: number; pathname: string; cmsOrigin: string }
-const { slides, title, contentLocale, locale, initial, pathname, cmsOrigin } = Astro.props;
+type CardSlide = Pick<Slide, 'image' | 'heading' | 'body' | 'position'>;
+/**
+ * `inline`: the viewer inside a list (the Articles list, the home timeline). There it is a strip of
+ * every slide the list carries, one 4:5 frame wide, scrolled with CSS scroll-snap: swipe and
+ * scrolling work natively and without JS (the strip is a focusable scroll region), and the strip
+ * flows in the page's direction, so in Arabic the next card is to the left. src/scripts/cards.ts
+ * adds Next/Back buttons, arrow keys, Home/End and the "Card 3 of 8" live text. `more` > 0 (the
+ * list carries at most 10 cards) ends the strip with a "See all N cards" frame linking to the post.
+ */
+interface Inline { href: string; uid: string; total: number; more: number; priority: boolean; size: 'list' | 'timeline' }
+interface Props { slides: CardSlide[]; title: string; contentLocale: Locale; locale: Locale; initial?: number; pathname?: string; cmsOrigin: string; inline?: Inline }
+const { slides, title, contentLocale, locale, initial = 0, pathname = '', cmsOrigin, inline } = Astro.props;
 const t = strings(locale).cards;
 const total = slides.length;
+const INLINE_SIZES = { list: '(min-width: 44rem) 26rem, calc(100vw - 2rem)', timeline: '(min-width: 44rem) 22rem, calc(100vw - 4.5rem)' };
+const inlinePic = (s: CardSlide, i: number) =>
+  pictureHtml(s.image, cmsOrigin, { sizes: INLINE_SIZES[inline?.size ?? 'list'], priority: !!inline?.priority && i === 0, className: 'cv-img' });
+const shown = inline ? inline.total : total;
+const frames = inline ? slides.length + (inline.more > 0 ? 1 : 0) : 0;
 const near = new Set([initial, ...neighbours(initial, total)]);
 const SLIDE_SIZES = '(min-width: 44rem) 36rem, calc(100vw - 2rem)';
-const pic = (s: Slide, i: number) => {
+const pic = (s: CardSlide, i: number) => {
   const html = pictureHtml(s.image, cmsOrigin, { sizes: SLIDE_SIZES, priority: i === initial, className: 'cv-img' });
   // The neighbours load now (eager) so Next shows at once; the rest load when reached.
   return near.has(i) && i !== initial ? html.replace('loading="lazy"', 'loading="eager"') : html;
@@ -29,6 +44,54 @@ const pic = (s: Slide, i: number) => {
 const href = (i: number) => (i <= 0 ? pathname : `${pathname}?slide=${i + 1}`);
 const showDots = total > 1 && total <= 16;
 ---
+{inline ? (
+<section
+  class:list={['cards-inline', `ci-${inline.size}`]}
+  data-cards-inline
+  data-count={frames}
+  data-total={shown}
+  data-t-more={inline.more > 0 ? fmt(t.seeAll, { count: inline.total }) : undefined}
+  role="region"
+  aria-roledescription="carousel"
+  aria-label={fmt(t.viewer, { title })}
+  data-t-position={t.position}
+  data-t-position-long={t.positionLong}
+>
+  <p class="cv-count ci-count"><Icon name="cards" class="cv-count-icon" />{slideCountLabel(t, shown)}</p>
+  <div class="ci-track" tabindex="0" aria-label={t.swipeHint} data-track>
+    {slides.map((s, i) => (
+      <div class="ci-slide" id={`${inline.uid}-${i + 1}`} role="group" aria-roledescription="slide" aria-label={fmt(t.positionLong, { n: i + 1, total: shown })} data-slide={i}>
+        <figure class="cv-card">
+          <div class="cv-frame">
+            <Fragment set:html={inlinePic(s, i)} />
+            {(s.heading || s.body) && (
+              <figcaption class={`cv-text cv-text-${s.position}`} lang={contentLocale} dir={dir(contentLocale)}>
+                {s.heading && <p class="cv-heading">{s.heading}</p>}
+                {s.body && <p class="cv-body">{s.body}</p>}
+              </figcaption>
+            )}
+          </div>
+        </figure>
+      </div>
+    ))}
+    {inline.more > 0 && (
+      <div class="ci-slide" id={`${inline.uid}-${slides.length + 1}`} role="group" aria-roledescription="slide" aria-label={fmt(t.seeAll, { count: inline.total })} data-slide={slides.length}>
+        <a class="cv-frame ci-more" href={inline.href}>
+          <Icon name="cards" />
+          <span>{fmt(t.seeAll, { count: inline.total })}</span>
+        </a>
+      </div>
+    )}
+  </div>
+  {frames > 1 && (
+    <div class="ci-nav">
+      <button type="button" class="cv-step ci-back" data-step="-1" aria-label={t.back} disabled><Icon name="chevron" class="flip" /></button>
+      <p class="cv-pos"><span data-pos aria-hidden="true">{fmt(t.position, { n: 1, total: shown })}</span><span class="visually-hidden" data-live aria-live="polite"></span></p>
+      <button type="button" class="cv-step ci-next" data-step="1" aria-label={t.next}><Icon name="chevron" /></button>
+    </div>
+  )}
+</section>
+) : (
 <section
   class="cards-viewer"
   data-cards
@@ -86,6 +149,7 @@ const showDots = total > 1 && total <= 16;
     </ol>
   )}
 </section>
+)}
 <script>
   import { initCards } from '../scripts/cards';
   initCards();

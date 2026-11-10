@@ -48,12 +48,15 @@ export interface PostSummary {
   slide_count?: number;
   /** A card post's face: its first slide. */
   first_slide?: Slide | null;
+  /**
+   * Card posts: in a summary (lists, home, /cards, the feed), the first ≤ 10 slides, so lists show
+   * the post whole (slide_count counts them all); on the full Post, every slide. [] for articles.
+   */
+  slides?: Slide[];
 }
 export interface Post extends PostSummary {
   body: string; seo_title: string | null; seo_description: string | null; alternates: Alternate[];
   images?: MediaRef[];
-  /** Card posts: the slides in order ([] for articles). */
-  slides?: Slide[];
 }
 
 /** A card post slide: an image with a heading and short text drawn on it. */

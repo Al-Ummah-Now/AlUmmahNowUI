@@ -56,6 +56,16 @@ Unknown slug: localized 404 page with links home, to articles and to videos (sta
 - Content comes from the CMS per locale. Missing translation: the page is served in the other locale
   with a notice ("This page is not yet available in Arabic") and `hreflang` pointing only at
   versions that exist.
+- Articles in one language (`/{l}/articles/{slug}/` with no post in `{l}`), decided 2026-11-10:
+  1. www looks up the same slug in the other locale. If that post's `alternates` names a
+     translation in `{l}` under another slug, it answers 301 to that translation.
+  2. Otherwise it shows the post in its own language, never a 404. A notice says "This article is
+     only available in العربية." (in Arabic: "…متاحة بالإنجليزية فقط"), with a "Read it in …" link to
+     the post's own URL. That URL is the canonical, and the borrowed copy is `noindex`.
+  3. The Articles list stays per locale. When `{l}` has no articles but the other locale does, the
+     empty list says "Articles are published in العربية" and links to that list. Neither page
+     claims there is nothing while the other shows something.
+  4. Neither the list nor this rule shows a post in both languages twice.
 - Language switcher on every page, keeping the equivalent page (via the CMS `translation_key`).
 - Fonts: system UI stack for Latin; "Noto Naskh Arabic" (self-hosted woff2, `font-display: swap`,
   subset) for Arabic.

@@ -20,6 +20,18 @@ export const SEED_NOW = Date.now();
 const HOUR = 3_600_000;
 const at = (hoursAgo: number) => new Date(SEED_NOW - hoursAgo * HOUR).toISOString();
 
+const ORDINALS = { en: ['one', 'two', 'three', 'four', 'five'], ar: ['الأولى', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة'] };
+const IMAGES = ['/brand/og-default.jpg', '/brand/alummah-now-bg.png', '/brand/alummah-now-bg-2.png', '/brand/alummah-now-bg-3.png', '/brand/og-default.jpg'];
+/** The card post's five slides (the feed carries up to 10 per card post). */
+const kahf = (ar: boolean) =>
+  ORDINALS[ar ? 'ar' : 'en'].map((n, i) => ({
+    id: `k${i + 1}`,
+    image: { url: IMAGES[i]!, alt: '', width: 1200, height: 630 },
+    heading: ar ? `الفائدة ${n}` : `Lesson ${n}`,
+    body: i === 0 ? (ar ? 'الصبر مفتاح الفرج.' : 'Patience opens the way.') : null,
+    position: (['bottom', 'top', 'middle', 'bottom', 'bottom'] as const)[i]!,
+  }));
+
 export function seedItems(locale: 'en' | 'ar'): FeedItem[] {
   const ar = locale === 'ar';
   const items: FeedItem[] = [
@@ -40,7 +52,8 @@ export function seedItems(locale: 'en' | 'ar'): FeedItem[] {
       locale,
       kind: 'cards',
       slide_count: 5,
-      first_slide: { image: { url: '/brand/og-default.jpg', alt: '', width: 1200, height: 630 }, heading: ar ? 'الفائدة الأولى' : 'Lesson one', body: ar ? 'الصبر مفتاح الفرج.' : 'Patience opens the way.', position: 'bottom' },
+      first_slide: kahf(ar)[0],
+      slides: kahf(ar),
     }),
   ];
   for (let i = 0; i < 50; i++) {

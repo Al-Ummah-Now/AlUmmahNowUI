@@ -24,6 +24,12 @@ export const en = {
     switchTo: 'العربية',
     switchToLabel: 'Read this page in Arabic',
     notAvailable: 'This page is not yet available in English. It is shown in Arabic.',
+    /** Language names as this UI says them inside the sentences below. */
+    names: { en: 'English', ar: 'العربية' },
+    onlyIn: 'This article is only available in {language}.',
+    readIn: 'Read it in {language}',
+    otherHas: 'Articles are published in {language}.',
+    listIn: 'Articles in {language}',
   },
   theme: {
     label: 'Theme',
@@ -105,6 +111,8 @@ export const en = {
     showing: 'Showing {tag}',
     none: 'No card posts with this topic yet.',
     open: 'Open the card post: {title}',
+    seeAll: 'See all {count} cards',
+    swipeHint: 'Swipe or use the arrows to read every card',
   },
   videos: {
     title: 'Featured videos',
@@ -161,11 +169,6 @@ export const en = {
     allArticles: 'All articles',
     empty: 'Nothing has been published yet.',
     video: 'Video',
-    cardsOne: '1 card',
-    cardsTwo: '2 cards',
-    cardsFew: '{count} cards',
-    cardsMany: '{count} cards',
-    readCards: 'View the cards',
     olderTitle: 'Earlier posts',
     by: 'By {author}',
     videoCount: '{count} videos in this post',

@@ -1,24 +1,41 @@
 ---
-import Icon from './Icon.astro';
-import { formatDate, strings } from '../i18n';
-import { slideCountLabel } from '../lib/cards';
+/**
+ * A list of posts (the Articles page, a page's posts block). Card posts show every card inline
+ * (CardViewer `inline`), so they read whole here; the title and date link to the full post.
+ */
+import CardViewer from './CardViewer.astro';
+import { formatDate } from '../i18n';
+import { inlineCards, inlineUid } from '../lib/cards';
 import type { PostSummary } from '../lib/cms-types';
 import type { Locale } from '../lib/locale';
 
-interface Props { locale: Locale; posts: PostSummary[]; headingLevel?: 2 | 3 }
-const { locale, posts, headingLevel = 2 } = Astro.props;
+interface Props { locale: Locale; posts: PostSummary[]; headingLevel?: 2 | 3; cmsOrigin: string }
+const { locale, posts, headingLevel = 2, cmsOrigin } = Astro.props;
 const H = `h${headingLevel}`;
-const t = strings(locale);
+// The first card post near the top carries the list's first image: the LCP candidate (eager).
+const lcp = posts.findIndex((p) => inlineCards(p));
+const href = (p: PostSummary) => `/${locale}/articles/${encodeURIComponent(p.slug)}/`;
 ---
 <ul class="articles-list">
-  {posts.map((p) => (
-    <li class="articles-item">
-      <time datetime={p.published_at}>{formatDate(p.published_at, locale)}</time>
-      <H><a href={`/${locale}/articles/${encodeURIComponent(p.slug)}/`}>{p.title}</a></H>
-      {p.kind === 'cards' && (p.slide_count ?? 0) > 0 && (
-        <p class="articles-cards"><Icon name="cards" />{slideCountLabel(t.cards, p.slide_count ?? 0)}</p>
-      )}
-      {p.excerpt && <p>{p.excerpt}</p>}
-    </li>
-  ))}
+  {posts.map((p, i) => {
+    const cards = inlineCards(p);
+    return (
+      <li class:list={['articles-item', cards && 'articles-item-cards']}>
+        <time datetime={p.published_at}>{formatDate(p.published_at, locale)}</time>
+        <H><a href={href(p)}>{p.title}</a></H>
+        {cards ? (
+          <CardViewer
+            slides={cards.slides}
+            title={p.title}
+            contentLocale={p.locale}
+            locale={locale}
+            cmsOrigin={cmsOrigin}
+            inline={{ href: href(p), uid: inlineUid(), total: cards.total, more: cards.more, priority: i === lcp && i < 3, size: 'list' }}
+          />
+        ) : (
+          p.excerpt && <p>{p.excerpt}</p>
+        )}
+      </li>
+    );
+  })}
 </ul>

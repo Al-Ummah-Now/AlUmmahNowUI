@@ -6,6 +6,7 @@ import { fmt } from '../../../i18n';
 import { libraryUrl } from '../../../lib/embeds';
 import { ARTICLES_PAGE_SIZE as PAGE_SIZE } from '../../../lib/cms';
 import { loadChrome, markSource, requestContext, routeLocale } from '../../../lib/context';
+import { otherLocale } from '../../../lib/locale';
 
 const locale = routeLocale(Astro);
 if (!locale) return new Response(null, { status: 404 });
@@ -17,6 +18,10 @@ const rc = requestContext(Astro, locale);
 const { cfg, t } = rc;
 const [chrome, posts] = await Promise.all([loadChrome(rc), rc.cms.posts(locale, page, PAGE_SIZE)]);
 const list = posts.status === 'ok' ? posts.data : { items: [], page, limit: PAGE_SIZE, total: 0 };
+// Nothing in this locale: say so only if the other locale has nothing either; else point there
+// (docs/SPEC.md §4 "Articles in one language"). One more read, only for an empty first page.
+const other = otherLocale(locale);
+const otherHas = page === 1 && posts.status === 'ok' && list.total === 0 ? await rc.cms.posts(other, 1, 1).then((r) => r.status === 'ok' && r.data.total > 0) : false;
 const pages = Math.max(1, Math.ceil(list.total / PAGE_SIZE));
 if (page > 1 && list.items.length === 0 && posts.source === 'cms') return new Response(null, { status: 404 });
 markSource(Astro, rc);
@@ -42,7 +47,7 @@ const title = page > 1 ? `${t.articles.title}: ${fmt(t.articles.pageOf, { page, 
     <div class="wrap">
       {list.items.length > 0 ? (
         <>
-          <ArticlesList locale={locale} posts={list.items} />
+          <ArticlesList locale={locale} posts={list.items} cmsOrigin={new URL(cfg.cmsPublicUrl).origin} />
           {pages > 1 && (
             <nav class="pagination" aria-label={t.a11y.pagination}>
               {page > 1 && <a href={`/${locale}/articles/${qs(page - 1)}`} rel="prev"><Icon name="chevron" class="flip" />{t.articles.newer}</a>}
@@ -52,11 +57,18 @@ const title = page > 1 ? `${t.articles.title}: ${fmt(t.articles.pageOf, { page, 
           )}
         </>
       ) : (
-        <div class="empty">
-          <p>{t.articles.empty}</p>
-          <p>{t.articles.emptyHint}</p>
-          <a class="button button-quiet" href={libraryUrl(cfg.videosWebUrl, locale)}>{t.home.watchCta}</a>
-        </div>
+        otherHas ? (
+          <div class="empty">
+            <p>{fmt(t.lang.otherHas, { language: t.lang.names[other] })}</p>
+            <a class="button button-quiet" href={`/${other}/articles/`} hreflang={other}>{fmt(t.lang.listIn, { language: t.lang.names[other] })}</a>
+          </div>
+        ) : (
+          <div class="empty">
+            <p>{t.articles.empty}</p>
+            <p>{t.articles.emptyHint}</p>
+            <a class="button button-quiet" href={libraryUrl(cfg.videosWebUrl, locale)}>{t.home.watchCta}</a>
+          </div>
+        )
       )}
     </div>
   </section>

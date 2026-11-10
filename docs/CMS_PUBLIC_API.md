@@ -57,11 +57,13 @@ interface PostSummary {
   kind: 'article' | 'cards';    // additive (see "Card posts")
   slide_count: number;          // card posts: served slides; 0 for articles
   first_slide: Slide | null;    // card posts: the face of the post in lists and grids
+  slides?: Slide[];             // additive (CMS#58): card posts, the first ≤ 10 served slides; www shows them
+                                // inline in lists and the timeline. Absent (older CMS/feed) → first_slide only.
 }
 interface Post extends PostSummary {
   body: string; seo_title: string | null; seo_description: string | null; alternates: Alternate[];
   images: MediaRef[];           // as Page.images (CMS-10, additive)
-  slides: Slide[];              // card posts, in order ([] for articles)
+  slides: Slide[];              // card posts: every served slide, in order ([] for articles)
 }
 
 interface CuratedVideo {
@@ -172,7 +174,9 @@ interface Slide {
 }
 ```
 
-Slides without an image are not served. `slide_count` and `first_slide` count only served slides.
+Slides without an image are not served. `slide_count`, `first_slide` and `slides` count only served slides.
+In a list (Articles, a posts block, the home timeline), www renders the CardViewer `inline` from the
+summary's `slides`. When `slide_count` is larger, the strip ends with "See all N cards", which links to the post.
 For SEO, www uses the first slide's image as `og:image` and, when the post has no excerpt, its
 heading/body as the description.
 
