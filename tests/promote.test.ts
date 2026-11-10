@@ -65,7 +65,7 @@ describe('waitForWwwVersion: the edge must serve the candidate steadily', () => 
     let i = 0;
     const seen: string[] = [];
     const doFetch = (async () => {
-      const v = versions[Math.min(i++, versions.length - 1)];
+      const v = versions[Math.min(i++, versions.length - 1)] as string;
       seen.push(v);
       return new Response(JSON.stringify({ version: v }));
     }) as unknown as typeof fetch;
