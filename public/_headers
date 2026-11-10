@@ -1,0 +1,5 @@
+# Workers static-asset headers. Tab and app icons have fixed names: a day fresh, a week stale-while-revalidate.
+/favicon.ico
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/icons/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
