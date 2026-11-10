@@ -7,6 +7,7 @@ import type { NavItem, SiteSettings } from '../lib/cms-types';
 import type { Config } from '../lib/env';
 import { dir, otherLocale, type Locale } from '../lib/locale';
 import { absolute, hreflangLinks, jsonLdText, type Alternates } from '../lib/seo';
+import { MODE_SCRIPT, THEME_COLOR } from '../lib/theme-mode';
 
 interface Props {
   cfg: Config;
@@ -61,7 +62,11 @@ const robots = noindex || !cfg.isProduction ? 'noindex, nofollow' : 'index, foll
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={desc} />
     <meta name="twitter:image" content={image} />
-    <meta name="theme-color" content="#0b3443" />
+    <meta name="color-scheme" content="light dark" />
+    {/* In <head>, before the body paints: the saved Light/Dark choice is on <html> before first paint (CSP: by hash) */}
+    <script is:inline set:html={MODE_SCRIPT} />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content={THEME_COLOR.light} />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content={THEME_COLOR.dark} />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />

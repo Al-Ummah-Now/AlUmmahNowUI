@@ -27,6 +27,13 @@ export const ar: Messages = {
     switchToLabel: 'اقرأ هذه الصفحة بالإنجليزية',
     notAvailable: 'هذه الصفحة غير متاحة بالعربية بعد، فهي معروضة بالإنجليزية.',
   },
+  theme: {
+    label: 'المظهر',
+    current: 'المظهر: {mode}',
+    system: 'حسب الجهاز',
+    light: 'فاتح',
+    dark: 'داكن',
+  },
   auth: {
     signIn: 'تسجيل الدخول',
     signOut: 'تسجيل الخروج',

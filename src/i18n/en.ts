@@ -25,6 +25,13 @@ export const en = {
     switchToLabel: 'Read this page in Arabic',
     notAvailable: 'This page is not yet available in English. It is shown in Arabic.',
   },
+  theme: {
+    label: 'Theme',
+    current: 'Theme: {mode}',
+    system: 'System',
+    light: 'Light',
+    dark: 'Dark',
+  },
   auth: {
     signIn: 'Sign in',
     signOut: 'Sign out',
