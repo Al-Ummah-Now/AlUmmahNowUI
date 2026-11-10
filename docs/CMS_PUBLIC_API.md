@@ -97,6 +97,27 @@ interface CuratedSnapshot {
 The page slug `home` is reserved (not used as a page route on www). An empty CMS returns empty
 arrays and `settings: null`, never an error.
 
+## Search
+
+Two endpoints (CMS docs/PUBLIC_API.md "Search"); live posts only, Arabic-normalised on both sides,
+ranked title prefix > word prefix > title substring > excerpt/tags/body, ties newest first.
+
+- `GET /search/suggest?locale=&q=&limit=1..10` → `SearchHit[]`. Called **from the browser** by
+  every search box (src/scripts/search-combobox.ts; CSP `connect-src` allows the CMS origin).
+  Any failure (error, 404, 429, offline) means no suggestions; the form still submits.
+- `GET /search?locale=&q=&page=&limit=1..20` → `{ items: SearchHit[], page, limit, total }`.
+  Called server-side by `/{l}/search` over the binding, with the visitor's IP in `X-Client-IP`
+  (the CMS limits search per IP). 429 → "try again in a minute"; failure → "not available".
+
+```ts
+interface SearchHit {
+  id: number; type: 'article' | 'cards'; title: string; slug: string; locale: Locale;
+  href: string;                 // www path, /{locale}/articles/{slug}/ (www drops anything else)
+  thumbnailUrl: string | null;  // https only
+  excerpt: string | null; publishedAt: string;
+}
+```
+
 ## Image variants (CMS-10)
 
 Originals are stored and served exactly as uploaded (never overwritten, CMS-1). Resized copies are

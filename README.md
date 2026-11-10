@@ -57,6 +57,13 @@ every QA deploy and every promote.
   pins each binding separately.
 - **HTML** for locale pages is edge-cached (Cache API, `s-maxage=60`, `stale-while-revalidate=600`).
   Signed-in state is fetched client-side from `/auth/me`, so the HTML is the same for everyone.
+- **Search** (`src/components/SearchBox.astro`, `src/scripts/search-combobox.ts`,
+  `src/pages/[locale]/search.astro`): every search box is a GET form to `/{l}/search` (works without
+  JS), enhanced into an ARIA 1.2 combobox: suggestions from the CMS as you type (debounced, stale
+  requests aborted, grouped, matches marked with the same Arabic normalisation as the CMS), recent
+  searches per viewer in localStorage (removable, "Clear recent searches"). No suggestions when the
+  CMS doesn't answer; the full search page still works. Inventory: the header box (every page) and
+  the box on the search page.
 - **Videos**: metadata from the videos API; only items it returns as public render (others are
   skipped and logged). `src/lib/embeds.ts` is the only place that builds videos-site URLs. Embeds
   are facades: thumbnail plus a real play button; the iframe loads on click. CMS markdown can embed

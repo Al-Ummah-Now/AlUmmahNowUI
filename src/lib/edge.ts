@@ -79,8 +79,9 @@ export function contentSecurityPolicy(cfg: Config, opts: { analytics?: boolean }
     "style-src 'self'",
     `img-src ${imgSrcSources(cfg.cmsPublicUrl).join(' ')}`,
     "font-src 'self'",
-    // the header asks auth which accounts this browser is signed in to (/session/accounts)
-    `connect-src 'self' ${new URL(cfg.authUrl).origin}${analytics ? ' https://cloudflareinsights.com' : ''}`,
+    // the header asks auth which accounts this browser is signed in to (/session/accounts), and
+    // search boxes ask the CMS for suggestions (/api/public/v1/search/suggest)
+    `connect-src 'self' ${new URL(cfg.authUrl).origin} ${new URL(cfg.cmsPublicUrl).origin}${analytics ? ' https://cloudflareinsights.com' : ''}`,
     "media-src 'none'",
     `frame-src ${embedOrigin(cfg.videosWebUrl)}`,
     "frame-ancestors 'none'",
