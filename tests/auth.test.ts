@@ -11,7 +11,7 @@ const cfg = config({ APP_ENV: 'qa', SITE_URL: 'https://www.qa.alummahnow.net', A
 
 describe('return-path guard', () => {
   it.each([
-    ['/ar/news/?page=2', '/ar/news/?page=2'],
+    ['/ar/articles/?page=2', '/ar/articles/?page=2'],
     ['/en/about/#team', '/en/about/#team'],
     ['https://evil.example/', '/'],
     ['//evil.example/', '/'],
@@ -27,7 +27,7 @@ describe('return-path guard', () => {
     ['/..//evil.example', '/'],
     ['/.//evil.example', '/'],
     ['/a/../..//evil.example/x', '/'],
-    ['/en/../ar/news/', '/ar/news/'],
+    ['/en/../ar/articles/', '/ar/articles/'],
   ])('%s → %s', (input, expected) => {
     expect(safeReturnPath(input as string | null)).toBe(expected);
   });
@@ -68,7 +68,7 @@ describe('session crypto', () => {
 
 describe('PKCE login', () => {
   it('redirects to /authorize with client_id, exact redirect_uri and an S256 challenge of the stored verifier', async () => {
-    const res = await login(new Request('https://www.qa.alummahnow.net/auth/login?return=/ar/news/'), { cfg, secret: SECRET });
+    const res = await login(new Request('https://www.qa.alummahnow.net/auth/login?return=/ar/articles/'), { cfg, secret: SECRET });
     expect(res.status).toBe(302);
     const url = new URL(res.headers.get('Location')!);
     expect(url.origin + url.pathname).toBe('https://auth.qa.alummahnow.net/authorize');
@@ -79,7 +79,7 @@ describe('PKCE login', () => {
     const setCookie = res.headers.get('Set-Cookie')!;
     expect(setCookie).toMatch(/^__Host-aun_www_login=.+; Path=\/; Max-Age=600; HttpOnly; Secure; SameSite=Lax$/);
     const state = await unseal<{ state: string; verifier: string; returnTo: string; exp: number }>(SECRET, readCookie(setCookie, LOGIN_COOKIE));
-    expect(state?.returnTo).toBe('/ar/news/');
+    expect(state?.returnTo).toBe('/ar/articles/');
     expect(url.searchParams.get('state')).toBe(state?.state);
     expect(url.searchParams.get('code_challenge')).toBe(await codeChallenge(state!.verifier));
   });
@@ -98,10 +98,10 @@ describe('PKCE login', () => {
     ['select_account', null, undefined],
     ['consent', null, undefined],
   ])('prompt=%s → authorize prompt %s', async (input, expected, silent) => {
-    const res = await login(new Request(`https://www.qa.alummahnow.net/auth/login?prompt=${input}&return=/en/news/`), { cfg, secret: SECRET });
+    const res = await login(new Request(`https://www.qa.alummahnow.net/auth/login?prompt=${input}&return=/en/articles/`), { cfg, secret: SECRET });
     expect(new URL(res.headers.get('Location')!).searchParams.get('prompt')).toBe(expected);
     const state = await unseal<{ returnTo: string; silent?: boolean; exp: number }>(SECRET, readCookie(res.headers.get('Set-Cookie'), LOGIN_COOKIE));
-    expect(state?.returnTo).toBe('/en/news/');
+    expect(state?.returnTo).toBe('/en/articles/');
     expect(state?.silent).toBe(silent);
   });
   it('parsePrompt accepts only none and login', () => {
@@ -117,7 +117,7 @@ describe('PKCE login', () => {
 
 describe('callback, me, logout', () => {
   async function loginCookie(prompt = '') {
-    const res = await login(new Request(`https://www.qa.alummahnow.net/auth/login?return=/en/news/${prompt ? `&prompt=${prompt}` : ''}`), { cfg, secret: SECRET });
+    const res = await login(new Request(`https://www.qa.alummahnow.net/auth/login?return=/en/articles/${prompt ? `&prompt=${prompt}` : ''}`), { cfg, secret: SECRET });
     const cookie = res.headers.get('Set-Cookie')!.split(';')[0]!;
     const state = new URL(res.headers.get('Location')!).searchParams.get('state')!;
     return { cookie, state };
@@ -136,7 +136,7 @@ describe('callback, me, logout', () => {
       verify: async () => ({ sub: 'u1', name: 'Amina', email: 'a@x', roles: ['Admin'] }),
     });
     expect(res.status).toBe(302);
-    expect(res.headers.get('Location')).toBe('/en/news/');
+    expect(res.headers.get('Location')).toBe('/en/articles/');
     const params = new URLSearchParams(body);
     expect(params.get('grant_type')).toBe('authorization_code');
     expect(params.get('redirect_uri')).toBe('https://www.qa.alummahnow.net/auth/callback');
@@ -163,7 +163,7 @@ describe('callback, me, logout', () => {
     const { cookie, state } = await loginCookie('none');
     const res = await callback(new Request(`https://www.qa.alummahnow.net/auth/callback?error=login_required&state=${state}`, { headers: { Cookie: cookie } }), { cfg, secret: SECRET });
     expect(res.status).toBe(302);
-    expect(res.headers.get('Location')).toBe('/en/news/');
+    expect(res.headers.get('Location')).toBe('/en/articles/');
     const cookies = res.headers.getSetCookie();
     expect(cookies.some((c) => c.startsWith(`${LOGIN_COOKIE}=;`))).toBe(true);
     expect(cookies.some((c) => c.startsWith(`${SESSION_COOKIE}=`))).toBe(false);
@@ -172,14 +172,14 @@ describe('callback, me, logout', () => {
   it('silent sign-in: a state mismatch or failed token exchange also just returns', async () => {
     const { cookie, state } = await loginCookie('none');
     const mismatch = await callback(new Request('https://www.qa.alummahnow.net/auth/callback?code=c1&state=wrong', { headers: { Cookie: cookie } }), { cfg, secret: SECRET });
-    expect(mismatch.headers.get('Location')).toBe('/en/news/');
+    expect(mismatch.headers.get('Location')).toBe('/en/articles/');
     const failed = await callback(new Request(`https://www.qa.alummahnow.net/auth/callback?code=c1&state=${state}`, { headers: { Cookie: cookie } }), {
       cfg,
       secret: SECRET,
       fetchImpl: (async () => new Response('nope', { status: 400 })) as never,
     });
     expect(failed.status).toBe(302);
-    expect(failed.headers.get('Location')).toBe('/en/news/');
+    expect(failed.headers.get('Location')).toBe('/en/articles/');
   });
 
   it('silent sign-in with a code creates the session like a normal sign-in', async () => {
@@ -190,7 +190,7 @@ describe('callback, me, logout', () => {
       fetchImpl: (async () => new Response(JSON.stringify({ access_token: 'tok' }))) as never,
       verify: async () => ({ sub: 'u1', name: null, email: 'a@x', roles: [] }),
     });
-    expect(res.headers.get('Location')).toBe('/en/news/');
+    expect(res.headers.get('Location')).toBe('/en/articles/');
     expect(res.headers.getSetCookie().some((c) => c.startsWith(`${SESSION_COOKIE}=`))).toBe(true);
   });
 

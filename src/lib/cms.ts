@@ -153,8 +153,8 @@ export const cmsPaths = {
   sitemap: () => '/sitemap',
 };
 export const snapshotKey = (path: string) => `v1:${path}`;
-/** Page sizes the site requests (/news and the RSS feed): the snapshot writer covers exactly these. */
-export const NEWS_PAGE_SIZE = 10;
+/** Page sizes the site requests (/articles and the RSS feed): the snapshot writer covers exactly these. */
+export const ARTICLES_PAGE_SIZE = 10;
 export const RSS_ITEMS = 20;
 
 /** Typed endpoints of the CMS public API. Every call tracks its source for the page header. */

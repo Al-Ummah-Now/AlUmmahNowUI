@@ -8,7 +8,7 @@ AlUmmahNow `docs/embeds/README.md` (embed player contract, owned by the embeds w
 ## 1. Purpose
 
 The public front door of Al Ummah Now: what the platform is, where to go next (videos, profile,
-sign-in), and editorial content (pages, news, curated videos) written by staff in the CMS.
+sign-in), and editorial content (pages, articles, curated videos) written by staff in the CMS.
 
 Non-goals for v1: comments/discussions (epic 26), "continue watching", search across videos,
 newsletter sign-up. Each becomes a `queue` issue.
@@ -35,16 +35,17 @@ All pages exist in `en` and `ar` under a locale prefix: `/en/…` and `/ar/…`.
 | Route | Content |
 |---|---|
 | `/` | 302 to `/en/` or `/ar/` (`aun_locale` cookie, then `Accept-Language`, default `en`). `Vary: Cookie, Accept-Language`, `Cache-Control: private` |
-| `/{l}/` | Home: hero (CMS `home` page or built-in default), the "What is Al Ummah Now" blocks, curated videos rail (CMS), latest news (CMS), app links (Videos, Profile, Sign in) |
-| `/{l}/news/` | News list (CMS posts, paginated `?page=`) |
-| `/{l}/news/{slug}/` | News article |
+| `/{l}/` | Home: hero (CMS `home` page or built-in default), the "What is Al Ummah Now" blocks, curated videos rail (CMS), latest articles (CMS), app links (Videos, Profile, Sign in) |
+| `/{l}/articles/` | Articles list (CMS posts, paginated `?page=`) |
+| `/{l}/articles/{slug}/` | Article |
+| `/{l}/news/…` | 301 to the same `/{l}/articles/…` url, query kept (the section was called News until 2026-11; src/lib/edge.ts `legacyArticlesRedirect`) |
 | `/{l}/{slug}/` | CMS page (about, contact, privacy, terms…) |
 | `/{l}/videos/` | Curated videos (CMS curation: videos, playlists, channels), embeds plus a link to videos.alummahnow.net |
 | `/auth/login`, `/auth/callback`, `/auth/logout`, `/auth/me` | Sign-in (§7) |
 | `/sitemap.xml`, `/robots.txt`, `/{l}/rss.xml` | SEO |
 | `/healthz` | `{ ok, version, cms: "ok"|"degraded" }` |
 
-Unknown slug: localized 404 page with links home, to news and to videos (status 404).
+Unknown slug: localized 404 page with links home, to articles and to videos (status 404).
 
 ## 4. Bilingual and RTL
 
@@ -106,7 +107,7 @@ show signed-in state. Epic 26 (embedded discussions) and "continue watching" wil
   `https://www.alummahnow.net/auth/callback`, `https://www.stage.alummahnow.net/auth/callback`
   (stage, rewritten by auth's stage seed), `https://www.qa.alummahnow.net/auth/callback`, and
   `http://localhost:4321/auth/callback`.
-- `/auth/login?return=/ar/news/` → state plus verifier in a short-lived (10 min), `__Host-`, HttpOnly,
+- `/auth/login?return=/ar/articles/` → state plus verifier in a short-lived (10 min), `__Host-`, HttpOnly,
   Secure, SameSite=Lax cookie → `${AUTH_URL}/authorize`. The return path must be a same-site
   relative path (open-redirect guard).
 - `/auth/callback` → exchange the code at `${AUTH_URL}/token` → verify the access token (JWKS at
@@ -134,7 +135,7 @@ show signed-in state. Epic 26 (embedded discussions) and "continue watching" wil
 ## 8. SEO
 
 `<title>`, meta description, canonical, `hreflang` en/ar/x-default, Open Graph and Twitter cards,
-JSON-LD (`Organization` + `WebSite` on home, `NewsArticle` on posts, `VideoObject` for embedded
+JSON-LD (`Organization` + `WebSite` on home, `Article` on posts, `VideoObject` for embedded
 videos), `sitemap.xml` from the CMS slugs, `robots.txt`. QA and stage serve
 `X-Robots-Tag: noindex` and `Disallow: /`.
 
@@ -145,12 +146,12 @@ videos), `sitemap.xml` from the CMS slugs, `robots.txt`. QA and stage serve
   warn-only at first).
 - **Accessibility:** WCAG 2.1 AA. Skip link, landmarks (`header`, `nav` with labels, `main`,
   `footer`), visible focus, contrast ≥ 4.5:1, keyboard-complete menus, `prefers-reduced-motion`.
-  axe-core in E2E: zero serious or critical violations on home/news/page in en and ar, desktop
+  axe-core in E2E: zero serious or critical violations on home/articles/page in en and ar, desktop
   and mobile.
 - **Security headers:** CSP (no nonce: HTML is edge-cached; the only inline script is the
   light/dark head script, allowed by its sha256 hash, see src/lib/theme-mode.ts), HSTS, `X-Content-Type-Options`,
   `Referrer-Policy`, `Permissions-Policy`, `frame-ancestors 'none'`.
-- **Empty and error states:** no news yet; no curated videos; CMS down (builtin); a video removed
+- **Empty and error states:** no articles yet; no curated videos; CMS down (builtin); a video removed
   upstream; 404; 500 (a localized error page, never a stack trace).
 
 ## 10. Configuration per env (wrangler `env.qa`, `env.stage`, top level = production)

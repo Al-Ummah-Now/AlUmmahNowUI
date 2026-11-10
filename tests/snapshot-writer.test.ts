@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cmsPaths, NEWS_PAGE_SIZE, RSS_ITEMS, snapshotKey } from '../src/lib/cms';
+import { cmsPaths, ARTICLES_PAGE_SIZE, RSS_ITEMS, snapshotKey } from '../src/lib/cms';
 import { MAX_KEYS_PER_RUN, writeSnapshots, type WriterDeps } from '../src/lib/snapshot-writer';
 import { MemoryKV } from './helpers';
 
@@ -48,9 +48,9 @@ describe('KV snapshot writer (single writer, audit UI-3)', () => {
     let now = 1_000;
     const deps: WriterDeps = { fetchCms: cms.fetchCms, kv: kv as never, now: () => now };
     const first = await writeSnapshots(deps);
-    // core 11 + 10 sitemap items + news pages 2..4 for each locale
+    // core 11 + 10 sitemap items + articles pages 2..4 for each locale
     expect(first).toMatchObject({ written: 11 + 10 + 6, failed: 0, keys: 27 });
-    for (const path of [cmsPaths.site('ar'), cmsPaths.home('en'), cmsPaths.videos('en', 'videos'), cmsPaths.posts('ar', 1, RSS_ITEMS), cmsPaths.posts('en', 4, NEWS_PAGE_SIZE), cmsPaths.page('en', 'p0'), cmsPaths.post('ar', 'n1'), cmsPaths.sitemap()]) {
+    for (const path of [cmsPaths.site('ar'), cmsPaths.home('en'), cmsPaths.videos('en', 'videos'), cmsPaths.posts('ar', 1, RSS_ITEMS), cmsPaths.posts('en', 4, ARTICLES_PAGE_SIZE), cmsPaths.page('en', 'p0'), cmsPaths.post('ar', 'n1'), cmsPaths.sitemap()]) {
       expect(await read(kv, path), path).not.toBeNull();
     }
     now += 5 * 60_000;

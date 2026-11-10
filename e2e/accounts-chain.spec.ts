@@ -59,10 +59,10 @@ test.describe('signed in across apps (real QA auth)', () => {
     expect((await context.cookies(WWW_ORIGIN)).map((c) => c.name)).toEqual([]);
 
     const { hops } = recordNavigations(page);
-    await page.goto('/en/news/?page=1');
+    await page.goto('/en/articles/?page=1');
     await expect(accountButton(page)).toContainText(user, { timeout: 20_000 });
     // It came back to the same page, through one silent prompt=none round trip
-    await expect(page).toHaveURL(/\/en\/news\/\?page=1$/);
+    await expect(page).toHaveURL(/\/en\/articles\/\?page=1$/);
     const authorize = hops.filter((h) => h.url.origin === AUTH_ORIGIN && h.url.pathname === '/authorize');
     expect(authorize).toHaveLength(1);
     expect(authorize[0]!.url.searchParams.get('prompt')).toBe('none');
@@ -85,13 +85,13 @@ test.describe('signed in across apps (real QA auth)', () => {
     test.setTimeout(150_000);
     // Signed in to two apps: profile, then www (silently)
     await signInAtProfile(page, email);
-    await page.goto('/ar/news/');
+    await page.goto('/ar/articles/');
     await expect(accountButton(page)).toContainText(user, { timeout: 20_000 });
 
     const { hops, csp } = recordNavigations(page);
     await openMenu(page);
     await page.getByRole('button', { name: 'تسجيل الخروج', exact: true }).click();
-    // Back on the locale of the page signed out from (the current /ar/news/ must not satisfy this)
+    // Back on the locale of the page signed out from (the current /ar/articles/ must not satisfy this)
     await page.waitForURL((u) => u.origin === WWW_ORIGIN && u.pathname === '/ar/', { timeout: 45_000 });
     await page.waitForLoadState('load');
 
@@ -126,7 +126,7 @@ test.describe('signed in across apps (real QA auth)', () => {
 
     // Reloading does not sign www back in (the probe asks auth, which has no session)
     const reload = hops.length;
-    await page.goto('/en/news/');
+    await page.goto('/en/articles/');
     await page.waitForLoadState('networkidle');
     await expect(page.getByRole('link', { name: 'Sign in' }).first()).toBeVisible();
     expect(hops.slice(reload).some((h) => h.url.pathname === '/authorize')).toBe(false);

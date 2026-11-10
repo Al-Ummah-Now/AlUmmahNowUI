@@ -44,7 +44,7 @@ export function parsePrompt(raw: string | null | undefined): Prompt | undefined 
 }
 
 /**
- * Open-redirect guard: only a same-site relative path survives ("/ar/news/?page=2").
+ * Open-redirect guard: only a same-site relative path survives ("/ar/articles/?page=2").
  * Anything absolute, protocol-relative, backslashed or with control characters → fallback.
  */
 export function safeReturnPath(raw: string | null | undefined, fallback = '/'): string {

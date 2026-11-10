@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { localeFromPath, negotiateLocale, swapLocale } from '../src/lib/locale';
+import { articlesPath, localeFromPath, negotiateLocale, swapLocale } from '../src/lib/locale';
+import { navHref } from '../src/lib/context';
 import { rootRedirect } from '../src/lib/edge';
 
 describe('negotiateLocale (for /)', () => {
@@ -42,12 +43,33 @@ describe('rootRedirect', () => {
 
 describe('path helpers', () => {
   it('localeFromPath', () => {
-    expect(localeFromPath('/ar/news/')).toBe('ar');
-    expect(localeFromPath('/fr/news/')).toBeNull();
+    expect(localeFromPath('/ar/articles/')).toBe('ar');
+    expect(localeFromPath('/fr/articles/')).toBeNull();
     expect(localeFromPath('/')).toBeNull();
   });
   it('swapLocale', () => {
-    expect(swapLocale('/en/news/', 'ar')).toBe('/ar/news/');
+    expect(swapLocale('/en/articles/', 'ar')).toBe('/ar/articles/');
     expect(swapLocale('/ar/', 'en')).toBe('/en/');
+  });
+});
+
+describe('News → Articles paths', () => {
+  it('maps old News paths, with or without a locale', () => {
+    expect(articlesPath('/en/news/')).toBe('/en/articles/');
+    expect(articlesPath('/ar/news')).toBe('/ar/articles/');
+    expect(articlesPath('/ar/news/x/')).toBe('/ar/articles/x/');
+    expect(articlesPath('/news/')).toBe('/articles/');
+    expect(articlesPath('/news?page=2')).toBe('/articles/?page=2');
+    expect(articlesPath('/news#top')).toBe('/articles/#top');
+  });
+  it('ignores anything else', () => {
+    for (const p of ['/en/articles/', '/newsletter/', '/en/newsroom', '/about/news/', '/']) expect(articlesPath(p), p).toBeNull();
+  });
+  it('CMS menus that still say /news/ link straight to /articles/', () => {
+    expect(navHref('/news/', 'ar')).toBe('/ar/articles/');
+    expect(navHref('/en/news/', 'ar')).toBe('/en/articles/');
+    expect(navHref('/articles/', 'en')).toBe('/en/articles/');
+    expect(navHref('/about/', 'en')).toBe('/en/about/');
+    expect(navHref('https://example.org/news/', 'en')).toBe('https://example.org/news/');
   });
 });

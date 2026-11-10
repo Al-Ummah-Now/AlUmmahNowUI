@@ -98,7 +98,7 @@ const empty = timeline.pinned.length === 0 && timeline.items.length === 0;
       <div class="tl-head">
         {later ? <h1 id="timeline-title">{t.timeline.olderTitle}</h1> : <h2 id="timeline-title">{t.timeline.title}</h2>}
         <p class="tl-intro">{t.timeline.intro}</p>
-        <a class="more-link" href={`/${locale}/news/`}>{t.timeline.allNews}<Icon name="chevron" /></a>
+        <a class="more-link" href={`/${locale}/articles/`}>{t.timeline.allArticles}<Icon name="chevron" /></a>
       </div>
       {empty ? (
         <div class="empty">

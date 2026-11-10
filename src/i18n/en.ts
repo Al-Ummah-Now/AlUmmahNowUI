@@ -16,7 +16,7 @@ export const en = {
   },
   nav: {
     home: 'Home',
-    news: 'News',
+    articles: 'Articles',
     videos: 'Videos',
     about: 'About',
   },
@@ -55,8 +55,8 @@ export const en = {
     whatTitle: 'What you will find here',
     curatedTitle: 'Chosen for you',
     curatedAll: 'All featured videos',
-    newsTitle: 'Latest news',
-    newsAll: 'All news',
+    articlesTitle: 'Latest articles',
+    articlesAll: 'All articles',
     appsTitle: 'Go further',
   },
   apps: {
@@ -67,10 +67,10 @@ export const en = {
     signInTitle: 'Sign in',
     signInBody: 'One account for every Al Ummah Now app.',
   },
-  news: {
-    title: 'News',
+  articles: {
+    title: 'Articles',
     intro: 'Announcements and updates from the Al Ummah Now team.',
-    empty: 'No news has been published yet.',
+    empty: 'No articles have been published yet.',
     emptyHint: 'In the meantime, there is plenty to watch.',
     by: 'By {author}',
     published: 'Published {date}',
@@ -78,7 +78,7 @@ export const en = {
     newer: 'Newer',
     older: 'Older',
     tags: 'Topics',
-    backToNews: 'Back to news',
+    backToArticles: 'Back to articles',
   },
   videos: {
     title: 'Featured videos',
@@ -122,7 +122,7 @@ export const en = {
   },
   timeline: {
     title: 'Latest',
-    intro: 'News, announcements and videos from Al Ummah Now, newest first.',
+    intro: 'Articles, announcements and videos from Al Ummah Now, newest first.',
     pinned: 'Pinned',
     today: 'Today',
     yesterday: 'Yesterday',
@@ -132,7 +132,7 @@ export const en = {
     addedOne: '1 more item added',
     failed: 'More items could not be loaded. Try again.',
     end: 'You have reached the end.',
-    allNews: 'All news',
+    allArticles: 'All articles',
     empty: 'Nothing has been published yet.',
     video: 'Video',
     cardsOne: '1 card',
@@ -147,7 +147,7 @@ export const en = {
   footer: {
     contact: 'Contact us',
     rights: '© {year} Al Ummah Now',
-    rss: 'News feed (RSS)',
+    rss: 'Articles feed (RSS)',
   },
 } as const;
 

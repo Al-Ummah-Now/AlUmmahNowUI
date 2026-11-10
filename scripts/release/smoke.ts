@@ -10,6 +10,7 @@
  * answer over HTTPS. Exit 1 on any failure.
  */
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { ENVIRONMENTS, parseEnvArg, type EnvName } from '../environments.ts';
 
 export interface CheckResult {
@@ -102,6 +103,13 @@ export async function runSmoke(opts: SmokeOptions): Promise<CheckResult[]> {
     return 'localized 404';
   });
 
+  await check('news → articles', async () => {
+    const res = await get(`${e.www}/ar/news/?page=2&smoke=1`);
+    const loc = res.headers.get('location');
+    assert(res.status === 301 && loc === '/ar/articles/?page=2&smoke=1', `status ${res.status} → ${loc}`);
+    return `/ar/news/ → ${loc}`;
+  });
+
   await check('robots.txt', async () => {
     const text = await (await get(`${e.www}/robots.txt`)).text();
     if (e.env === 'production') assert(text.includes('Sitemap:'), 'no sitemap line');
@@ -111,17 +119,17 @@ export async function runSmoke(opts: SmokeOptions): Promise<CheckResult[]> {
 
   if (e.apex) {
     await check('apex → www', async () => {
-      const res = await get(`${e.apex}/ar/news/?page=2&smoke=1`);
+      const res = await get(`${e.apex}/ar/articles/?page=2&smoke=1`);
       assert(res.status === 301, `status ${res.status}`);
       const loc = res.headers.get('location');
-      assert(loc === `${e.www}/ar/news/?page=2&smoke=1`, `location ${loc}`);
+      assert(loc === `${e.www}/ar/articles/?page=2&smoke=1`, `location ${loc}`);
       return `HTTPS apex → ${loc}`;
     });
   }
   return results;
 }
 
-const isMain = process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname);
+const isMain = process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(new URL(import.meta.url)));
 if (isMain) {
   const argv = process.argv.slice(2);
   const env = parseEnvArg(argv);

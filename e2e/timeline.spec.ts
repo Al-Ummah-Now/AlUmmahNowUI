@@ -70,7 +70,7 @@ test.describe('home timeline', () => {
       await page.goto('/en/');
       const card = page.locator('li.tl-item', { hasText: 'Five lessons from Surat al-Kahf' });
       const face = card.getByRole('link', { name: /^View the cards: Five lessons from Surat al-Kahf/ });
-      await expect(face).toHaveAttribute('href', '/en/news/post-30/');
+      await expect(face).toHaveAttribute('href', '/en/articles/post-30/');
       await expect(face).toContainText('5 cards');
       await expect(face).toContainText('Lesson one');
     });

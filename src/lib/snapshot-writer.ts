@@ -10,7 +10,7 @@
  */
 import type { PostsResponse, SitemapResponse } from './cms-types';
 import { validate } from './cms-types';
-import { cmsPaths, NEWS_PAGE_SIZE, RSS_ITEMS, snapshotKey } from './cms';
+import { cmsPaths, ARTICLES_PAGE_SIZE, RSS_ITEMS, snapshotKey } from './cms';
 import type { KVNamespace } from './cf';
 import { LOCALES, type Locale } from './locale';
 
@@ -114,8 +114,8 @@ export function contentEntries(sitemap: SitemapResponse | undefined, postTotals:
     );
   }
   for (const l of LOCALES) {
-    const pages = Math.ceil((postTotals[l] ?? 0) / NEWS_PAGE_SIZE);
-    for (let p = 2; p <= pages; p++) entries.push({ path: cmsPaths.posts(l, p, NEWS_PAGE_SIZE), isValid: validate.posts });
+    const pages = Math.ceil((postTotals[l] ?? 0) / ARTICLES_PAGE_SIZE);
+    for (let p = 2; p <= pages; p++) entries.push({ path: cmsPaths.posts(l, p, ARTICLES_PAGE_SIZE), isValid: validate.posts });
   }
   return entries;
 }
@@ -129,11 +129,11 @@ export async function writeSnapshots(deps: WriterDeps, run = Math.floor((deps.no
       { path: cmsPaths.site(l), isValid: validate.site },
       { path: cmsPaths.home(l), isValid: validate.home },
       { path: cmsPaths.videos(l, 'videos'), isValid: validate.videos },
-      { path: cmsPaths.posts(l, 1, NEWS_PAGE_SIZE), isValid: validate.posts },
+      { path: cmsPaths.posts(l, 1, ARTICLES_PAGE_SIZE), isValid: validate.posts },
       { path: cmsPaths.posts(l, 1, RSS_ITEMS), isValid: validate.posts },
     );
   }
-  // The sitemap and the first news page per locale tell us the rest.
+  // The sitemap and the first articles page per locale tell us the rest.
   let sitemap: SitemapResponse | undefined;
   const totals: Partial<Record<Locale, number>> = {};
   const capture: Entry[] = core.map((e) => ({
@@ -141,7 +141,7 @@ export async function writeSnapshots(deps: WriterDeps, run = Math.floor((deps.no
     isValid: (v: unknown) => {
       if (!e.isValid(v)) return false;
       if (e.path === cmsPaths.sitemap()) sitemap = v as SitemapResponse;
-      for (const l of LOCALES) if (e.path === cmsPaths.posts(l, 1, NEWS_PAGE_SIZE)) totals[l] = (v as PostsResponse).total;
+      for (const l of LOCALES) if (e.path === cmsPaths.posts(l, 1, ARTICLES_PAGE_SIZE)) totals[l] = (v as PostsResponse).total;
       return true;
     },
   }));

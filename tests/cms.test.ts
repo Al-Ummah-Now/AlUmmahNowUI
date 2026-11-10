@@ -3,7 +3,7 @@ import { cmsClient, load, worstSource, type CmsDeps } from '../src/lib/cms';
 import { validate, type SiteResponse } from '../src/lib/cms-types';
 import { MemoryCache, MemoryKV, waiter } from './helpers';
 
-const SITE: SiteResponse = { settings: null, nav: { header: [{ label: 'CMS News', url: '/news/' }], footer: [] } };
+const SITE: SiteResponse = { settings: null, nav: { header: [{ label: 'CMS Articles', url: '/articles/' }], footer: [] } };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 function setup(fetchCms: CmsDeps['fetchCms']) {

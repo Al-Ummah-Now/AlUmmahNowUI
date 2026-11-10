@@ -12,6 +12,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { ENVIRONMENTS } from '../environments.ts';
 import type { ReleaseEnv } from './promote.ts';
 import { runSmoke } from './smoke.ts';
@@ -72,10 +73,10 @@ export function rollbackArgv(env: ReleaseEnv, target: string, reason: string): s
   return ['rollback', target, '--name', ENVIRONMENTS[env].worker, '-y', '--message', reason.slice(0, 100)];
 }
 
-const isMain = process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname);
+const isMain = process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(new URL(import.meta.url)));
 if (isMain) {
   const args = parseRollbackArgs(process.argv.slice(2));
-  const root = resolve(new URL('../..', import.meta.url).pathname);
+  const root = resolve(fileURLToPath(new URL('../..', import.meta.url)));
   const worker = ENVIRONMENTS[args.env].worker;
   const wrangler = (argv: string[]) =>
     execFileSync('npx', ['wrangler', ...argv], { cwd: root, encoding: 'utf8', env: { ...process.env, CI: 'true' }, stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 32 * 1024 * 1024 });

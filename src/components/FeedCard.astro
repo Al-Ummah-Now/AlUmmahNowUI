@@ -26,7 +26,7 @@ const CARD_SIZES = '(min-width: 44rem) 22rem, calc(100vw - 4rem)';
 
 const post = item.type === 'post' ? item.post! : null;
 const contentLocale: Locale = post?.locale === 'ar' || post?.locale === 'en' ? post.locale : locale;
-const href = post ? `/${locale}/news/${encodeURIComponent(post.slug)}/` : null;
+const href = post ? `/${locale}/articles/${encodeURIComponent(post.slug)}/` : null;
 const slide = post?.kind === 'cards' ? (post.first_slide ?? null) : null;
 const cards = post?.kind === 'cards' ? (post.slide_count ?? 0) : 0;
 const videos = post ? post.videos.filter((v) => v.kind === 'video' || v.kind === 'playlist') : [];

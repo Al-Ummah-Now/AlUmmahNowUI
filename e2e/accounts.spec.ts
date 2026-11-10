@@ -42,7 +42,7 @@ test.describe('client probe (auth stubbed)', () => {
 
   test('no auth session (401): stays on "Sign in", asks auth once per tab', async ({ page }) => {
     const calls = await stubAuth(page, (r) => r.fulfill({ status: 401, headers: cors, body: '{"error":"session_not_found"}' }));
-    await page.goto('/en/news/');
+    await page.goto('/en/articles/');
     await expect.poll(() => calls.accounts).toBe(1);
     await expect(page.getByRole('link', { name: 'Sign in' }).first()).toBeVisible();
     await page.goto('/en/');
@@ -58,12 +58,12 @@ test.describe('client probe (auth stubbed)', () => {
     const calls = await stubAuth(page, (r) =>
       r.fulfill({ status: 200, headers: cors, body: JSON.stringify({ accounts: [{ userId: 'u1', isActive: true, email: 'a@example.com', name: 'A' }] }) }),
     );
-    await page.goto('/ar/news/?page=1');
+    await page.goto('/ar/articles/?page=1');
     await expect.poll(() => calls.authorize.length).toBe(1);
     const authorize = calls.authorize[0]!;
     expect(authorize.origin + authorize.pathname).toBe(`${AUTH_URL}/authorize`);
     expect(authorize.searchParams.get('prompt')).toBe('none');
-    await expect(page).toHaveURL(/\/ar\/news\/\?page=1$/);
+    await expect(page).toHaveURL(/\/ar\/articles\/\?page=1$/);
     await expect(page.getByRole('link', { name: 'تسجيل الدخول' }).first()).toBeVisible();
     await page.reload();
     await page.waitForLoadState('networkidle');

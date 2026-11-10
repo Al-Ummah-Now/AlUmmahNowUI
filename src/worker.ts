@@ -1,7 +1,7 @@
 /**
  * Worker entry (astro.config.mjs workerEntryPoint). Wraps Astro's Cloudflare handler:
  *   1. apex → www (301, path and query kept)
- *   2. `/` → /en/ or /ar/ (302)
+ *   2. `/` → /en/ or /ar/ (302); old News urls `/{l}/news/…` → `/{l}/articles/…` (301)
  *   3. HTML edge cache for locale pages (Cache API, s-maxage 60, SWR 600)
  *   4. security headers on every response, static assets included (run_worker_first)
  * and the cron (wrangler.jsonc triggers): the single writer of the KV content snapshots.
@@ -9,7 +9,7 @@
 import { handle } from '@astrojs/cloudflare/handler';
 import type { SSRManifest } from 'astro';
 import { App } from 'astro/app';
-import { apexRedirect, applySecurityHeaders, rootRedirect, withHtmlCache } from './lib/edge';
+import { apexRedirect, applySecurityHeaders, legacyArticlesRedirect, rootRedirect, withHtmlCache } from './lib/edge';
 import type { ExecutionContext } from './lib/cf';
 import { createCmsDeps } from './lib/cms';
 import { config, type WwwEnv } from './lib/env';
@@ -25,6 +25,8 @@ export function createExports(manifest: SSRManifest) {
         if (apex) return apex;
         const root = rootRedirect(request);
         if (root) return applySecurityHeaders(root, cfg, '/');
+        const moved = legacyArticlesRedirect(request.url);
+        if (moved) return applySecurityHeaders(moved, cfg, new URL(request.url).pathname);
         const cache = typeof caches !== 'undefined' ? (caches as unknown as { default: Cache }).default : null;
         const render = () => handle(manifest, app, request as never, env as never, ctx as never) as Promise<Response>;
         const response = await withHtmlCache(request, cache, (p) => ctx.waitUntil(p), render, Date.now, undefined, cfg.version);

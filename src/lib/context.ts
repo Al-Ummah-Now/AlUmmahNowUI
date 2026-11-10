@@ -5,7 +5,7 @@ import { strings } from '../i18n';
 import { cmsClient, createCmsDeps } from './cms';
 import type { NavItem, SiteResponse } from './cms-types';
 import { config, type WwwEnv } from './env';
-import { isLocale, type Locale } from './locale';
+import { articlesPath, isLocale, type Locale } from './locale';
 import type { VideosDeps } from './videos';
 
 type Ctx = AstroGlobal | APIContext;
@@ -57,8 +57,10 @@ export function navigation(site: SiteResponse | null, locale: Locale): { header:
 export function navHref(url: string, locale: Locale): string | null {
   if (/^https:\/\//i.test(url)) return url;
   if (!url.startsWith('/') || url.startsWith('//')) return null;
-  if (/^\/(en|ar)(\/|$)/.test(url)) return url;
-  return `/${locale}${url === '/' ? '/' : url}`;
+  // menus saved before News became Articles link "/news/": go straight to /articles/, no 301 hop
+  const path = articlesPath(url) ?? url;
+  if (/^\/(en|ar)(\/|$)/.test(path)) return path;
+  return `/${locale}${path === '/' ? '/' : path}`;
 }
 
 /** Site settings and navigation every page needs. */

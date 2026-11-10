@@ -115,7 +115,7 @@ describe('probe decision', () => {
 
 describe('login links', () => {
   it('silent, add-account and plain', () => {
-    expect(loginHref('/ar/news/?page=2', 'none')).toBe('/auth/login?prompt=none&return=%2Far%2Fnews%2F%3Fpage%3D2');
+    expect(loginHref('/ar/articles/?page=2', 'none')).toBe('/auth/login?prompt=none&return=%2Far%2Farticles%2F%3Fpage%3D2');
     expect(loginHref('/en/', 'login')).toBe('/auth/login?prompt=login&return=%2Fen%2F');
     expect(loginHref('/en/')).toBe('/auth/login?return=%2Fen%2F');
   });
