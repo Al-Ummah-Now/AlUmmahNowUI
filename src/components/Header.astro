@@ -70,6 +70,10 @@ const loginHref = `/auth/login?return=${encodeURIComponent(path + Astro.url.sear
         data-label-videos={t.auth.videos}
         data-label-cms={t.auth.cms}
         data-label-sign-out={t.auth.signOut}
+        data-label-confirm-sign-out-of-title={t.auth.confirmSignOutOfTitle}
+        data-label-confirm-sign-out-of-body={t.auth.confirmSignOutOfBody}
+        data-label-confirm-sign-out-all-title={t.auth.confirmSignOutAllTitle}
+        data-label-confirm-sign-out-all-body={t.auth.confirmSignOutAllBody}
         data-profile-url={cfg.profileUrl}
         data-videos-url={libraryUrl(cfg.videosWebUrl, locale)}
         data-cms-url={`${cfg.cmsPublicUrl}/`}
@@ -80,4 +84,15 @@ const loginHref = `/auth/login?return=${encodeURIComponent(path + Astro.url.sear
     </div>
   </div>
   <template id="caret-icon"><Icon name="caret" /></template>
+  <!-- the one in-app confirmation for destructive actions (./scripts/confirm.ts); never window.confirm -->
+  <dialog class="confirm-dialog" id="confirm-dialog" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-body">
+    <div class="confirm-dialog-inner">
+      <h2 class="confirm-dialog-title" id="confirm-dialog-title"></h2>
+      <p class="confirm-dialog-body" id="confirm-dialog-body"></p>
+      <div class="confirm-dialog-actions">
+        <button type="button" class="confirm-dialog-cancel" data-confirm-cancel>{t.auth.cancel}</button>
+        <button type="button" class="confirm-dialog-ok" data-confirm-ok></button>
+      </div>
+    </div>
+  </dialog>
 </header>

@@ -13,6 +13,19 @@ export default [
     },
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      // Never browser prompts: confirmations use the in-app dialog (src/scripts/confirm.ts)
+      'no-alert': 'error',
+      'no-restricted-globals': [
+        'error',
+        { name: 'alert', message: 'Use in-app UI, never a browser prompt.' },
+        { name: 'confirm', message: 'Use confirmDialog() from src/scripts/confirm.ts.' },
+        { name: 'prompt', message: 'Use an in-app dialog, never a browser prompt.' },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        { selector: "Literal[value='beforeunload']", message: 'No beforeunload: use pagehide for flushes and an in-app dialog for leave guards.' },
+        { selector: "MemberExpression[property.name='onbeforeunload']", message: 'No beforeunload: use pagehide for flushes and an in-app dialog for leave guards.' },
+      ],
     },
   },
 ];
