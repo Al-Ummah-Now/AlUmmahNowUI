@@ -1,0 +1,114 @@
+---
+/**
+ * A CMS page built from blocks (src/lib/blocks.ts prepares them). Text blocks sit in the reading
+ * column; wide images, galleries, shelves and the card grid use the wide column. Every image carries
+ * its width and height, so its box is reserved before it loads and nothing moves while the page fills
+ * in. No inline styles: the site's CSP is style-src 'self' (src/lib/edge.ts).
+ */
+import CardGrid from './CardGrid.astro';
+import ArticlesList from './ArticlesList.astro';
+import VideoRail from './VideoRail.astro';
+import type { PreparedBlock } from '../lib/blocks';
+import type { Config } from '../lib/env';
+import { dir, type Locale } from '../lib/locale';
+
+interface Props { blocks: PreparedBlock[]; locale: Locale; contentLocale: Locale; cfg: Config }
+const { blocks, locale, contentLocale, cfg } = Astro.props;
+---
+<div class="blocks" lang={contentLocale} dir={dir(contentLocale)}>
+  {blocks.map((b) => {
+    switch (b.type) {
+      case 'markdown':
+        return <div class="blk blk-text prose" data-block={b.id} set:html={b.html} />;
+      case 'image':
+        return (
+          <figure class:list={['blk', 'blk-image', b.size === 'wide' ? 'blk-wide' : 'blk-content']} data-block={b.id}>
+            <Fragment set:html={b.picture} />
+            {b.caption && <figcaption>{b.caption}</figcaption>}
+          </figure>
+        );
+      case 'gallery':
+        return (
+          <ul class:list={['blk', 'blk-wide', 'blk-gallery', `blk-cols-${b.columns}`]} data-block={b.id}>
+            {b.items.map((x) => (
+              <li>
+                <figure>
+                  <Fragment set:html={x.picture} />
+                  {x.caption && <figcaption>{x.caption}</figcaption>}
+                </figure>
+              </li>
+            ))}
+          </ul>
+        );
+      case 'posts':
+        return (
+          <section class="blk blk-content blk-posts" data-block={b.id} aria-labelledby={b.heading ? `blk-${b.id}-h` : undefined}>
+            {b.heading && <h2 class="blk-heading" id={`blk-${b.id}-h`}>{b.heading}</h2>}
+            <ArticlesList locale={locale} posts={b.items} headingLevel={b.heading ? 3 : 2} />
+          </section>
+        );
+      case 'cards':
+        return (
+          <div class="blk blk-wide" data-block={b.id}>
+            <CardGrid grid={b.grid} locale={locale} contentLocale={contentLocale} heading={b.heading} id={b.id} />
+          </div>
+        );
+      case 'videos':
+        return (
+          <section class="blk blk-wide blk-videos" data-block={b.id} aria-labelledby={b.heading ? `blk-${b.id}-h` : undefined}>
+            {b.heading && <h2 class="blk-heading" id={`blk-${b.id}-h`}>{b.heading}</h2>}
+            <VideoRail cfg={cfg} locale={locale} items={b.items} />
+          </section>
+        );
+      case 'video':
+        return (
+          <div class="blk blk-content blk-video" data-block={b.id}>
+            <Fragment set:html={b.facade} />
+            {b.caption && <p class="blk-caption">{b.caption}</p>}
+          </div>
+        );
+      case 'cta':
+        return (
+          <div class:list={['blk', 'blk-content', 'blk-cta', `blk-cta-${b.tone}`]} data-block={b.id}>
+            <div class="blk-cta-copy">
+              {b.heading && <h2>{b.heading}</h2>}
+              {b.text && <p>{b.text}</p>}
+            </div>
+            <a class:list={['button', b.tone === 'primary' ? 'button-primary' : 'button-quiet']} href={b.href} rel={b.external ? 'noopener' : undefined}>
+              {b.label}
+            </a>
+          </div>
+        );
+      case 'columns':
+        return (
+          <div class:list={['blk', 'blk-wide', 'blk-columns', `blk-columns-${b.imageSide}`]} data-block={b.id}>
+            {b.picture && (
+              <figure class="blk-columns-media">
+                <Fragment set:html={b.picture} />
+                {b.caption && <figcaption>{b.caption}</figcaption>}
+              </figure>
+            )}
+            <div class="blk-columns-text prose" set:html={b.html} />
+          </div>
+        );
+      case 'quote':
+        return b.variant === 'callout' ? (
+          <div class="blk blk-content blk-callout" role="note" data-block={b.id}>
+            <p>{b.text}</p>
+            {b.cite && <p class="blk-cite">{b.cite}</p>}
+          </div>
+        ) : (
+          <figure class="blk blk-content blk-quote" data-block={b.id}>
+            <blockquote><p>{b.text}</p></blockquote>
+            {b.cite && <figcaption class="blk-cite">{b.cite}</figcaption>}
+          </figure>
+        );
+      case 'divider':
+        return b.style === 'line' ? (
+          <hr class:list={['blk', 'blk-content', 'blk-rule', `blk-gap-${b.size}`]} data-block={b.id} />
+        ) : (
+          <div class:list={['blk', 'blk-space', `blk-gap-${b.size}`]} data-block={b.id} aria-hidden="true" />
+        );
+    }
+  })}
+</div>

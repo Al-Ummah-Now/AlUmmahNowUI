@@ -3,6 +3,7 @@ import ErrorView from '../../../components/ErrorView.astro';
 import PostArticle from '../../../components/PostArticle.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { documentAlternates, renderBody } from '../../../lib/body';
+import { cardPostSeo, slideFromLink } from '../../../lib/cards';
 import { loadChrome, markSource, requestContext, routeLocale } from '../../../lib/context';
 import { otherLocale } from '../../../lib/locale';
 import { plainText } from '../../../lib/markdown';
@@ -28,14 +29,17 @@ const post = result.status === 'ok' ? result.data : null;
 const body = post ? await renderBody(rc, post.body, post.locale, post.images) : null;
 const alternates = post ? documentAlternates(post, post.alternates, (l, s) => `/${l}/articles/${encodeURIComponent(s)}/`) : {};
 const translated = post && post.locale !== locale;
-const description = post ? post.seo_description || post.excerpt || plainText(post.body, 180) : '';
+const cardSeo = post ? cardPostSeo(post) : null;
+const description = post ? post.seo_description || post.excerpt || cardSeo?.text || plainText(post.body, 180) : '';
+// `?slide=3` opens a card post on its third card (the server renders it; `#3` is read by the script).
+const slide = post?.slides?.length ? slideFromLink(Astro.url.search, '', post.slides.length) : 0;
 const jsonLd = post
   ? [
       articleLd(cfg, {
         title: post.title,
         description,
         url: alternates[post.locale] ?? Astro.url.pathname,
-        image: post.cover?.url ?? null,
+        image: cardSeo?.image ?? null,
         published: post.published_at,
         modified: post.updated_at,
         author: post.author_name,
@@ -54,14 +58,14 @@ const jsonLd = post
   nav={chrome.nav}
   settings={chrome.settings}
   ogType={post ? 'article' : 'website'}
-  ogImage={post?.cover?.url}
+  ogImage={cardSeo?.image ?? undefined}
   jsonLd={jsonLd}
   noindex={!post}
   notice={translated ? t.lang.notAvailable : null}
   contentLocale={post?.locale}
 >
   {post && body ? (
-    <PostArticle post={post} html={body.html} locale={locale} cmsOrigin={new URL(cfg.cmsPublicUrl).origin} />
+    <PostArticle post={post} html={body.html} locale={locale} slide={slide} pathname={Astro.url.pathname} cmsOrigin={new URL(cfg.cmsPublicUrl).origin} />
   ) : (
     <ErrorView locale={locale} kind="unavailable" />
   )}

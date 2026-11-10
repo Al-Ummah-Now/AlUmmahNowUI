@@ -1,13 +1,16 @@
 /**
- * Stand-in for the CMS preview API in local E2E (playwright.config.ts starts it on :8585 next to
- * `wrangler dev`). Only /api/preview/v1 answers; everything else is 503, so the rest of the suite
- * still renders from built-in content exactly as with no CMS at all.
+ * Stand-in for the CMS in local E2E (playwright.config.ts starts it on :8585 next to `wrangler dev`).
+ * /api/preview/v1 answers, plus the block and card-post fixtures in e2e/stub-blocks.ts (two pages,
+ * card posts, /cards and their images); everything else is 503, so the rest of the suite still
+ * renders from built-in content exactly as with no CMS at all.
  *
  * Tokens are `v1.<base64url {k,id,exp}>.<sig>`: sig `good` is valid, `expired` is what the CMS says
- * for an old token, anything else is invalid. Rows: pages/1 (English draft), posts/2 (Arabic draft).
+ * for an old token, anything else is invalid. Rows: pages/1 (English draft), posts/2 (Arabic draft),
+ * pages/3 (a draft built from blocks), posts/4 (an Arabic card post draft).
  */
 import { createServer } from 'node:http';
 import { Buffer } from 'node:buffer';
+import { PREVIEW_ROWS, publicFixture, stubImage } from './stub-blocks.ts';
 
 const PORT = Number(process.env.STUB_CMS_PORT || 8585);
 const now = '2026-11-08T10:00:00.000Z';
@@ -21,6 +24,7 @@ const ROWS: Record<string, unknown> = {
     slug: 'khabar', locale: 'ar', title: 'خبر لم يُنشر بعد', excerpt: 'ملخص المسودة.', cover: null, author_name: 'فريق التحرير', tags: ['أخبار'],
     published_at: now, updated_at: now, body: 'نص **المسودة**.', seo_title: null, seo_description: null, alternates: [],
   },
+  ...PREVIEW_ROWS,
 };
 
 createServer((req, res) => {
@@ -29,6 +33,13 @@ createServer((req, res) => {
     res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' });
     res.end(JSON.stringify(body));
   };
+  const img = /^\/media\/(\d+)\.png$/.exec(url.pathname);
+  if (img) {
+    res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=600', 'Access-Control-Allow-Origin': '*' });
+    return res.end(stubImage(Number(img[1])));
+  }
+  const fixture = publicFixture(url);
+  if (fixture) return send(fixture.status, fixture.body);
   const m = /^\/api\/preview\/v1\/(pages|posts)\/(\d+)$/.exec(url.pathname);
   if (!m) return send(503, { error: 'stub' });
   const auth = /^Bearer (v1\.([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+))$/.exec(req.headers.authorization ?? '');

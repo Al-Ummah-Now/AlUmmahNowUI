@@ -4,6 +4,7 @@ import PageArticle from '../../components/PageArticle.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { builtinContent } from '../../content/fallback';
 import { documentAlternates, renderBody } from '../../lib/body';
+import { prepareBlocks } from '../../lib/blocks';
 import type { Page } from '../../lib/cms-types';
 import { loadChrome, markSource, requestContext, routeLocale } from '../../lib/context';
 import { otherLocale } from '../../lib/locale';
@@ -28,10 +29,12 @@ if (!page && first.status !== 'unavailable') return new Response(null, { status:
 if (!page) Astro.response.status = 503;
 
 const body = page ? await renderBody(rc, page.body, page.locale, page.images) : null;
+// A page built from blocks renders them; `body` stays as the text fallback (and the description).
+const built = page?.blocks?.length ? await prepareBlocks(rc, page, { pathname: Astro.url.pathname, search: Astro.url.searchParams }) : null;
 const alternates = page ? documentAlternates(page, page.alternates, (l, s) => `/${l}/${encodeURIComponent(s)}/`) : {};
 const translated = page && page.locale !== locale;
 const description = page ? page.seo_description || page.summary || plainText(page.body, 180) : '';
-const jsonLd = page ? (body?.videos ?? []).map((v) => videoObjectLd(cfg, v, page.locale)).filter(Boolean) : [];
+const jsonLd = page ? [...(body?.videos ?? []), ...(built?.videos ?? [])].map((v) => videoObjectLd(cfg, v, page.locale)).filter(Boolean) : [];
 ---
 <BaseLayout
   cfg={cfg}
@@ -48,7 +51,7 @@ const jsonLd = page ? (body?.videos ?? []).map((v) => videoObjectLd(cfg, v, page
   contentLocale={page?.locale}
 >
   {page && body ? (
-    <PageArticle page={page} html={body.html} cmsOrigin={new URL(cfg.cmsPublicUrl).origin} />
+    <PageArticle page={page} html={body.html} blocks={built?.blocks} locale={locale} cfg={cfg} cmsOrigin={new URL(cfg.cmsPublicUrl).origin} />
   ) : (
     <ErrorView locale={locale} kind="unavailable" />
   )}

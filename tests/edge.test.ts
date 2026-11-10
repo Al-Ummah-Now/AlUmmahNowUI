@@ -99,6 +99,13 @@ describe('HTML edge cache', () => {
   it('only caches anonymous-identical locale pages', () => {
     expect(isCacheableRequest(new Request('https://w/en/articles/?page=2'))).toBe(true);
     expect(isCacheableRequest(new Request('https://w/en/?utm_source=x'))).toBe(false);
+    // card posts and card grids: bounded ?slide= and ?tag=
+    expect(isCacheableRequest(new Request('https://w/ar/news/x/?slide=3'))).toBe(true);
+    expect(isCacheableRequest(new Request('https://w/en/stories/?tag=hajj&page=2'))).toBe(true);
+    expect(isCacheableRequest(new Request('https://w/en/news/x/?slide=0'))).toBe(false);
+    expect(isCacheableRequest(new Request('https://w/en/news/x/?slide=1234'))).toBe(false);
+    expect(isCacheableRequest(new Request('https://w/en/news/x/?slide=abc'))).toBe(false);
+    expect(isCacheableRequest(new Request(`https://w/en/stories/?tag=${'x'.repeat(61)}`))).toBe(false);
     expect(isCacheableRequest(new Request('https://w/auth/me'))).toBe(false);
     expect(isCacheableRequest(new Request('https://w/en/', { method: 'POST' }))).toBe(false);
   });
