@@ -89,7 +89,7 @@ const showDots = total > 1 && total <= 16;
   {frames > 1 && (
     <div class="ci-nav">
       <button type="button" class="cv-step ci-back" data-step="-1" aria-label={t.back} disabled><Icon name="chevron" class="flip" /></button>
-      <p class="cv-pos"><span data-pos aria-hidden="true">{fmt(t.position, { n: 1, total: shown })}</span><span class="visually-hidden" data-live aria-live="polite"></span></p>
+      <p class="cv-pos"><span data-ci-pos aria-hidden="true">{fmt(t.position, { n: 1, total: shown })}</span><span class="visually-hidden" data-ci-live aria-live="polite"></span></p>
       <button type="button" class="cv-step ci-next" data-step="1" aria-label={t.next}><Icon name="chevron" /></button>
     </div>
   )}

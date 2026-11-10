@@ -65,7 +65,7 @@ function refreshTimes(root: HTMLElement, locale: Locale) {
 }
 
 async function loadMore(root: HTMLElement, link: HTMLAnchorElement, locale: Locale) {
-  const live = root.querySelector<HTMLElement>('[data-live]');
+  const live = root.querySelector<HTMLElement>('.tl-foot [data-live]');
   const label = link.textContent ?? '';
   link.setAttribute('aria-disabled', 'true');
   link.classList.add('is-loading');

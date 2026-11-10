@@ -66,13 +66,14 @@ test.describe('home timeline', () => {
       await expect(entry.locator('iframe')).toHaveAttribute('src', /\/embed\/v\/feed-video-1/);
     });
 
-    test('card post: the first card and "N cards", linking to the viewer', async ({ page }) => {
+    test('card post: every card inline, the title linking to the post', async ({ page }) => {
       await page.goto('/en/');
       const card = page.locator('li.tl-item', { hasText: 'Five lessons from Surat al-Kahf' });
-      const face = card.getByRole('link', { name: /^View the cards: Five lessons from Surat al-Kahf/ });
-      await expect(face).toHaveAttribute('href', '/en/articles/post-30/');
-      await expect(face).toContainText('5 cards');
-      await expect(face).toContainText('Lesson one');
+      await expect(card.getByRole('heading', { name: 'Five lessons from Surat al-Kahf' }).getByRole('link')).toHaveAttribute('href', '/en/articles/post-30/');
+      const viewer = card.getByRole('region', { name: 'Cards: Five lessons from Surat al-Kahf' });
+      await expect(viewer.locator('.ci-count')).toHaveText('5 cards');
+      await expect(viewer.locator('.ci-slide')).toHaveCount(5);
+      await expect(viewer.locator('.ci-slide').first()).toContainText('Lesson one');
     });
 
     test('load more (JS): appends in place, announces, moves focus, and reaches the end', async ({ page }) => {
@@ -81,7 +82,7 @@ test.describe('home timeline', () => {
       await more.click();
       await expect(items(page)).toHaveCount(40);
       await expect(page).toHaveURL(/\/en\/$/);
-      await expect(page.locator('[data-live]')).toHaveText('20 more items added');
+      await expect(page.locator('.tl-foot [data-live]')).toHaveText('20 more items added');
       await expect(page.locator(':focus')).toHaveText('News item 18');
       // Day headings stay unique after the merge.
       const days = await page.locator('[data-days] .tl-day').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.day));

@@ -270,8 +270,9 @@ function initInline(root: HTMLElement) {
   const track: HTMLElement = found;
   const t = root.dataset;
   const total = Number(t.total) || count;
-  const pos = root.querySelector<HTMLElement>('[data-pos]');
-  const live = root.querySelector<HTMLElement>('[data-live]');
+  // Own hook names: the timeline around this viewer has its own [data-live] (src/scripts/timeline.ts).
+  const pos = root.querySelector<HTMLElement>('[data-ci-pos]');
+  const live = root.querySelector<HTMLElement>('[data-ci-live]');
   const back = root.querySelector<HTMLButtonElement>('.ci-back');
   const next = root.querySelector<HTMLButtonElement>('.ci-next');
   let current = -1;
