@@ -7,10 +7,14 @@
  * videos site is then signed in too without a password. A link to /auth/logout signs out of every
  * app (it used to clear www alone and leave auth and every other app signed in).
  *
+ * The sign-out ends the account's sign-in everywhere, so this spec signs in as its own dedicated
+ * account (qa-sso-ui, profile only), never a shared seed account other suites are signed in as.
+ * Its tests run one after another so one test's sign-out does not end another's sign-in.
+ *
  * Types the shared QA seed password: tracing is off (see real-auth.ts).
  */
 import { expect, test, type Page } from '@playwright/test';
-import { AUTH_ORIGIN, authAccountCount, authForm, REAL_AUTH, WWW_ORIGIN } from './real-auth';
+import { AUTH_ORIGIN, authAccountCount, authForm, REAL_AUTH, ssoAccount, WWW_ORIGIN } from './real-auth';
 
 test.use({ trace: 'off' });
 
@@ -52,8 +56,10 @@ test.describe('SSO journey from www (real QA auth)', () => {
   test.skip(!REAL_AUTH, 'needs WWW_URL on QA and QA_SEED_PASSWORD (deploy-qa.yml)');
   test.skip(({ browserName, isMobile }) => browserName === 'chromium' && isMobile, 'desktop Chromium and the iPhone (WebKit) project cover the engines');
 
-  // Not the accounts the other real-auth specs use, so the specs can run in parallel
-  const email = process.env.QA_SSO_EMAIL || 'qa-creator@delivered.resend.dev';
+  test.describe.configure({ mode: 'default' }); // in order, one worker, a failure does not skip the rest
+
+  // This spec's own account: no other spec or suite signs in as it (see ssoAccount)
+  const email = ssoAccount('qa-sso-ui');
 
   for (const locale of ['en', 'ar'] as const) {
     test(`sign in once on www, signed in on videos, a sign-out link signs out everywhere (${locale})`, async ({ page }) => {
