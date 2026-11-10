@@ -96,6 +96,7 @@ export const en = {
     tryAgain: 'Try again',
   },
   footer: {
+    contact: 'Contact us',
     rights: '© {year} Al Ummah Now',
     rss: 'News feed (RSS)',
   },

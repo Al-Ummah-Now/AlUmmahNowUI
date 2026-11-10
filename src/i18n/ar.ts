@@ -98,6 +98,7 @@ export const ar: Messages = {
     tryAgain: 'حاول مرة أخرى',
   },
   footer: {
+    contact: 'اتصل بنا',
     rights: '© {year} الأمة الآن',
     rss: 'خلاصة الأخبار (RSS)',
   },
