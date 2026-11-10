@@ -92,3 +92,22 @@ export function inlineUid(): string {
   seq = (seq + 1) % 1_000_000;
   return `cards-${seq.toString(36)}`;
 }
+
+/**
+ * The frame a card post's cards share: 4:5 (the card format), or square when its first card is
+ * square or wider (designed cards are often 1:1 with text near the edges, which a 4:5 crop would
+ * cut). One frame per post, known from the CMS's width/height, so moving between cards never
+ * changes the height.
+ */
+export function cardFrame(slides: Array<{ image: { width: number | null; height: number | null } }>): 'r45' | 'r11' {
+  const img = slides[0]?.image;
+  if (!img?.width || !img.height) return 'r45';
+  return img.width / img.height >= 0.95 ? 'r11' : 'r45';
+}
+
+/** Whether a card's image fills its frame (cover) or shows whole on the night ground (contain). */
+export function cardFit(image: { width: number | null; height: number | null }, frame: 'r45' | 'r11'): 'cover' | 'contain' {
+  if (!image.width || !image.height) return 'cover';
+  const want = frame === 'r11' ? 1 : 0.8;
+  return Math.abs(image.width / image.height / want - 1) <= 0.04 ? 'cover' : 'contain';
+}

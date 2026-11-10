@@ -165,6 +165,21 @@ test.describe('Articles list: card posts inline', () => {
     await axeAndShot(page, 'articles-inline-ar', info.project.name);
   });
 
+  test('square cards keep a square frame; a card of another shape shows whole', async ({ page }) => {
+    await page.goto('/ar/articles/');
+    const v = strip(page, 'بطاقات التوحيد');
+    await expect(v).toHaveClass(/cv-r11/);
+    const frame = (await v.locator('.cv-frame').first().boundingBox())!;
+    expect(Math.abs(frame.width - frame.height)).toBeLessThan(1);
+    await expect(v.locator('.ci-slide').nth(0).locator('img')).not.toHaveClass(/cv-contain/);
+    await expect(v.locator('.ci-slide').nth(2).locator('img')).toHaveClass(/cv-contain/); // 4:5 in a square frame
+    // English 4:5 posts stay 4:5; their 16:9 card is shown whole.
+    await page.goto('/en/articles/');
+    const m = strip(page, 'A day in Madinah');
+    await expect(m).toHaveClass(/cv-r45/);
+    await expect(m.locator('.ci-slide').nth(2).locator('img')).toHaveClass(/cv-contain/);
+  });
+
   test('swipe on touch moves card by card, in the reading direction', async ({ page, browserName, isMobile }) => {
     test.skip(browserName !== 'chromium' || !isMobile, 'real touch gestures need Chromium (CDP) on a phone');
     const cdp = await page.context().newCDPSession(page);

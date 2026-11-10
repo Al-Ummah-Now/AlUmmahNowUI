@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { en } from '../src/i18n/en';
 import { ar } from '../src/i18n/ar';
-import { cardPostSeo, clampSlide, inlineUid, keyStep, neighbours, slideCountLabel, slideFromLink, stripIndex, stripOffset, swipeStep } from '../src/lib/cards';
+import { cardFit, cardFrame, cardPostSeo, clampSlide, inlineUid, keyStep, neighbours, slideCountLabel, slideFromLink, stripIndex, stripOffset, swipeStep } from '../src/lib/cards';
 
 describe('card viewer rules', () => {
   it('reads ?slide=N and #N (1-based), falling back to the first card', () => {
@@ -71,5 +71,19 @@ describe('card viewer rules', () => {
   it('gives each inline viewer its own id prefix', () => {
     expect(inlineUid()).not.toBe(inlineUid());
     expect(inlineUid()).toMatch(/^cards-[0-9a-z]+$/);
+  });
+
+  it('frames a post 4:5, or square for square cards, and shows other shapes whole', () => {
+    const img = (width: number | null, height: number | null) => ({ image: { width, height } });
+    expect(cardFrame([img(1080, 1350)])).toBe('r45');
+    expect(cardFrame([img(1000, 1000), img(1080, 1350)])).toBe('r11'); // the first card decides
+    expect(cardFrame([img(1600, 900)])).toBe('r11');
+    expect(cardFrame([img(null, null)])).toBe('r45');
+    expect(cardFrame([])).toBe('r45');
+    expect(cardFit({ width: 1080, height: 1350 }, 'r45')).toBe('cover');
+    expect(cardFit({ width: 1000, height: 1000 }, 'r11')).toBe('cover');
+    expect(cardFit({ width: 1080, height: 1350 }, 'r11')).toBe('contain');
+    expect(cardFit({ width: 1600, height: 900 }, 'r11')).toBe('contain');
+    expect(cardFit({ width: null, height: 500 }, 'r45')).toBe('cover');
   });
 });
