@@ -8,10 +8,13 @@
  *    www and the other app are all signed out, the probe does not sign www back in, and the
  *    form's redirects never trip www's CSP form-action (#15).
  *
+ * Both tests sign out, which ends the account's sign-in everywhere: the spec signs in as its own
+ * dedicated account (qa-sso-ui-chain), never a shared seed account, and runs its tests in order.
+ *
  * Types the shared QA seed password: tracing is off (see real-auth.ts).
  */
 import { expect, test, type Page } from '@playwright/test';
-import { accountButton, AUTH_ORIGIN, authAccountCount, authForm, openMenu, PROFILE_URL, REAL_AUTH, WWW_ORIGIN } from './real-auth';
+import { accountButton, AUTH_ORIGIN, authAccountCount, authForm, notSeededYet, openMenu, PROFILE_URL, REAL_AUTH, ssoAccount, WWW_ORIGIN } from './real-auth';
 
 test.use({ trace: 'off' });
 
@@ -48,8 +51,11 @@ test.describe('signed in across apps (real QA auth)', () => {
   test.skip(!REAL_AUTH, 'needs WWW_URL on QA and QA_SEED_PASSWORD (deploy-qa.yml)');
   test.skip(({ browserName, isMobile }) => browserName === 'chromium' && isMobile, 'desktop Chromium and the iPhone (WebKit) project cover the engines');
 
-  // Not the accounts the switching test uses, so the specs can run in parallel
-  const email = process.env.QA_CHAIN_EMAIL || 'qa-moderator@delivered.resend.dev';
+  test.describe.configure({ mode: 'default' }); // in order, one worker, a failure does not skip the rest
+
+  // This spec's own account: no other spec or suite signs in as it (see ssoAccount)
+  const email = ssoAccount('qa-sso-ui-chain');
+  test.skip(notSeededYet(email), `${email.split('@')[0]} is not seeded on QA yet (AlUmmahNow seed-qa)`);
   const user = email.split('@')[0]!;
 
   test('signed in through another app: the first www page shows the account without a click', async ({ page, context }) => {

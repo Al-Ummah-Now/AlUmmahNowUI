@@ -18,6 +18,28 @@ export const SEED_PASSWORD = process.env.QA_SEED_PASSWORD;
 /** Real auth runs only against a deployed www with the seed password (deploy-qa.yml). */
 export const REAL_AUTH = !!SEED_PASSWORD && !!process.env.WWW_URL && !WWW_URL.startsWith('http://localhost');
 
+/**
+ * A dedicated seed account for a spec that ends sessions (sign-out, revoke, password or role
+ * change). Signing out goes through auth's /logout, which ends that account's sign-in in every
+ * app and every browser, so it must never be a shared seed account (qa-admin, qa-creator, ...)
+ * that other suites (CMS, videos, ...) are signed in as at the same time. Each spec file gets
+ * its own qa-sso-* account, seeded by AlUmmahNow's seed-qa workflow (profile only, no role);
+ * tests/session-ending-specs.test.ts fails CI if a session-ending spec names a shared account.
+ * Seed domain per environment: QA @delivered.resend.dev, stage @e2e.alummahnow.net.
+ */
+export function ssoAccount(local: `qa-sso-${string}`): string {
+  if (!/^qa-sso-[a-z0-9-]+$/.test(local)) throw new Error(`not a dedicated qa-sso-* account: ${local}`);
+  const stage = new URL(AUTH_URL).hostname.includes('.stage.');
+  return `${local}@${stage ? 'e2e.alummahnow.net' : 'delivered.resend.dev'}`;
+}
+
+/**
+ * Dedicated accounts not seeded on QA yet (an AlUmmahNow seed PR is pending): their tests skip
+ * until the account is in seed-qa, then drop it from this list.
+ */
+const NOT_SEEDED_YET = new Set(['qa-sso-ui-chain', 'qa-sso-ui-multi-a', 'qa-sso-ui-multi-b']);
+export const notSeededYet = (...emails: string[]) => emails.some((e) => NOT_SEEDED_YET.has(e.split('@')[0]!));
+
 /** Types a secret without it appearing in the report's step titles (keep tracing off too). */
 export async function fillSecret(field: Locator, value: string) {
   await field.evaluate((el, v) => {

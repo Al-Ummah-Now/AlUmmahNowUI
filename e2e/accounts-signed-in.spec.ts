@@ -3,21 +3,26 @@
  * → www shows the account without a click; two accounts → the menu lists both, switching
  * works, and Sign out walks auth's logout chain back to www.
  *
+ * Signing out of all accounts ends both accounts' sign-in everywhere: the spec signs in as its
+ * own dedicated accounts (qa-sso-ui-multi-a/-b), never shared seed accounts.
+ *
  * Types the shared QA seed password: tracing is off and the password goes in through
  * fillSecret (see real-auth.ts for why).
  */
 import { expect, test } from '@playwright/test';
-import { accountButton, authAccountCount, authForm, openMenu, REAL_AUTH, WWW_ORIGIN } from './real-auth';
+import { accountButton, authAccountCount, authForm, notSeededYet, openMenu, REAL_AUTH, ssoAccount, WWW_ORIGIN } from './real-auth';
 import { WWW_URL } from './env';
 
 test.use({ trace: 'off' });
 
 test.describe('signed in to auth (real QA auth)', () => {
   test.skip(!REAL_AUTH, 'needs WWW_URL on QA and QA_SEED_PASSWORD (deploy-qa.yml)');
-  test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile, 'one browser is enough for the shared seed accounts');
+  test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile, 'one browser is enough');
 
-  const first = process.env.QA_ADMIN_EMAIL || 'qa-admin@delivered.resend.dev';
-  const second = process.env.QA_NONADMIN_EMAIL || 'qa-viewer@delivered.resend.dev';
+  // This spec's own accounts: no other spec or suite signs in as them (see ssoAccount)
+  const first = ssoAccount('qa-sso-ui-multi-a');
+  const second = ssoAccount('qa-sso-ui-multi-b');
+  test.skip(notSeededYet(first, second), 'qa-sso-ui-multi-a/-b are not seeded on QA yet (AlUmmahNow seed-qa)');
 
   test('www shows the account without a click; two accounts are listed and switching works', async ({ page, context }) => {
     test.setTimeout(120_000);
