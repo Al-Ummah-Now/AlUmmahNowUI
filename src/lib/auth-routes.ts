@@ -119,22 +119,26 @@ export async function me(request: Request, deps: AuthDeps): Promise<Response> {
  * POST (the header's sign-out form): same-origin only, clears the session, then auth's
  * /logout ends the SSO session and returns to www.
  * GET ?next=<auth>/logout?...: auth's front-channel sign-out walking each app
- * (FRONTCHANNEL_LOGOUT_URLS); `next` must be on AUTH_URL.
+ * (FRONTCHANNEL_LOGOUT_URLS); `next` must be auth's /logout.
+ * GET without a valid `next` (a link to /auth/logout): single sign-out, like every other app.
+ * Signing out of www alone would leave the other apps signed in.
  */
 export async function logout(request: Request, deps: AuthDeps): Promise<Response> {
   const clear = clearCookie(SESSION_COOKIE);
   if (request.method === 'GET') {
-    const next = new URL(request.url).searchParams.get('next');
-    let target = '/';
+    const url = new URL(request.url);
+    const next = url.searchParams.get('next');
     if (next) {
       try {
         const u = new URL(next);
-        if (u.origin === new URL(deps.cfg.authUrl).origin) target = u.toString();
+        if (u.origin === new URL(deps.cfg.authUrl).origin && u.pathname === '/logout') return redirect(u.toString(), 302, {}, [clear]);
       } catch {
         // not a URL
       }
     }
-    return redirect(target, 302, {}, [clear]);
+    const l = url.searchParams.get('locale');
+    const locale = isLocale(l) ? l : 'en';
+    return redirect(logoutUrl(deps.cfg, `${deps.cfg.siteUrl}/${locale}/`), 302, {}, [clear]);
   }
   if (request.method !== 'POST') return text('Method not allowed', 405);
   const origin = request.headers.get('Origin');

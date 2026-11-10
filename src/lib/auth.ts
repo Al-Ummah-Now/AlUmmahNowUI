@@ -94,7 +94,11 @@ export function authorizeUrl(cfg: Config, state: string, challenge: string, loca
   url.searchParams.set('state', state);
   url.searchParams.set('code_challenge', challenge);
   url.searchParams.set('code_challenge_method', 'S256');
-  if (locale) url.searchParams.set('ui_locales', locale);
+  if (locale) {
+    // The sign-in pages take their language only from ?lang= (ui_locales is the OIDC name)
+    url.searchParams.set('lang', locale);
+    url.searchParams.set('ui_locales', locale);
+  }
   if (prompt) url.searchParams.set('prompt', prompt);
   return url.toString();
 }
