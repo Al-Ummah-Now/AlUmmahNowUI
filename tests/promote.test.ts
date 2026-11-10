@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { promote, type PromoteDeps, type ReleaseApp } from '../scripts/release/promote.ts';
+import { promote, waitForWwwVersion, type PromoteDeps, type ReleaseApp } from '../scripts/release/promote.ts';
 
 const app: ReleaseApp = { worker: 'al-ummah-now-www-stage', cwd: '.', configArgs: ['-c', 'wrangler.jsonc', '--env', 'stage'] };
 const CANDIDATE = '0ea73b06-7c5a-4061-af56-ddaabcfe1e60';
@@ -57,5 +57,29 @@ describe('promote: versions deploy right after upload', () => {
     await expect(promote(app, 'stage', 'release x', h.deps)).rejects.toMatchObject({ rolledBack: true });
     expect(h.sleeps).toEqual([]);
     expect(h.calls.filter((a) => a[0] === 'versions' && a[1] === 'deploy')).toHaveLength(1);
+  });
+});
+
+describe('waitForWwwVersion: the edge must serve the candidate steadily', () => {
+  const serving = (versions: string[]) => {
+    let i = 0;
+    const seen: string[] = [];
+    const doFetch = (async () => {
+      const v = versions[Math.min(i++, versions.length - 1)];
+      seen.push(v);
+      return new Response(JSON.stringify({ version: v }));
+    }) as unknown as typeof fetch;
+    return { doFetch, seen };
+  };
+
+  it('does not return on a single match that the edge then contradicts (the 2026-11-10 rollback)', async () => {
+    const f = serving([CANDIDATE, SERVING, CANDIDATE, CANDIDATE, CANDIDATE]);
+    await waitForWwwVersion('stage', app.worker, CANDIDATE, true, 5_000, 3, f.doFetch, 1);
+    expect(f.seen).toEqual([CANDIDATE, SERVING, CANDIDATE, CANDIDATE, CANDIDATE]);
+  });
+
+  it('gives up with the last version seen when the candidate never holds', async () => {
+    const f = serving([CANDIDATE, SERVING]);
+    await expect(waitForWwwVersion('stage', app.worker, CANDIDATE, true, 50, 3, f.doFetch, 1)).rejects.toThrow(`last: version ${SERVING}`);
   });
 });
