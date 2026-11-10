@@ -3,7 +3,8 @@
  * Pure functions (no DOM, no fetch) so they are unit-testable; src/scripts/site.ts wires them.
  *
  * Auth keeps the browser session on its own origin (host-only `__session`), so only the
- * page can ask it, with a credentialed fetch of `{AUTH}/session/accounts`:
+ * page can ask it, with a credentialed fetch of `{AUTH}/session/accounts` (no session:
+ * 200 `{"accounts":[]}`; older auth answered 401, mapped to signed-out):
  *  - www has no session and auth has an active account → silent sign-in (prompt=none)
  *  - www has a session for someone other than auth's active account (switched elsewhere)
  *    → silent sign-in once, to follow auth

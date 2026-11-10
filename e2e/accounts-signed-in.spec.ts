@@ -7,7 +7,7 @@
  * fillSecret (see real-auth.ts for why).
  */
 import { expect, test } from '@playwright/test';
-import { accountButton, authAccountsStatus, authForm, openMenu, REAL_AUTH, WWW_ORIGIN } from './real-auth';
+import { accountButton, authAccountCount, authForm, openMenu, REAL_AUTH, WWW_ORIGIN } from './real-auth';
 import { WWW_URL } from './env';
 
 test.use({ trace: 'off' });
@@ -23,7 +23,7 @@ test.describe('signed in to auth (real QA auth)', () => {
     test.setTimeout(120_000);
     await page.goto('/en/');
     // Auth allows www for credentialed CORS and has no session for this fresh browser yet
-    expect(await authAccountsStatus(page)).toBe(401);
+    expect(await authAccountCount(page)).toBe(0);
     // Sign in to auth (through www), then drop www's own cookies: auth still has the browser
     await page.getByRole('link', { name: 'Sign in' }).first().click();
     await authForm(page, first);
