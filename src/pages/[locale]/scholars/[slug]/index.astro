@@ -1,0 +1,144 @@
+---
+/**
+ * A scholar's page (AlUmmahNowCMS docs/SCHOLARS.md §3): bio, every article they published (featured
+ * on the main site or not, card posts included; `?page=`), and their channel's latest public videos
+ * from the videos API (`?after=` = the videos API cursor), embeddable in place. Both languages share
+ * the slug; the bio and name follow the page's language with a fallback to the other.
+ */
+import ArticlesList from '../../../../components/ArticlesList.astro';
+import Icon from '../../../../components/Icon.astro';
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import { fmt } from '../../../../i18n';
+import { SCHOLAR_POSTS_PAGE_SIZE as PAGE_SIZE } from '../../../../lib/cms';
+import { loadChrome, markSource, requestContext, routeLocale } from '../../../../lib/context';
+import { channelUrl } from '../../../../lib/embeds';
+import { facadeHtml } from '../../../../lib/facade';
+import { otherLocale } from '../../../../lib/locale';
+import { pictureHtml } from '../../../../lib/picture';
+import { scholarLd, videoObjectLd } from '../../../../lib/seo';
+import { CURSOR, fetchChannelVideos, localizeItem } from '../../../../lib/videos';
+
+const VIDEOS_PER_PAGE = 8;
+const locale = routeLocale(Astro);
+const slug = Astro.params.slug ?? '';
+if (!locale || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || slug.length > 60) return new Response(null, { status: 404 });
+const rawPage = Astro.url.searchParams.get('page');
+const page = rawPage === null ? 1 : /^[1-9]\d{0,3}$/.test(rawPage) ? Number(rawPage) : NaN;
+const after = Astro.url.searchParams.get('after');
+if (!Number.isFinite(page) || (after !== null && !CURSOR.test(after))) return new Response(null, { status: 404 });
+
+const rc = requestContext(Astro, locale);
+const { cfg, t } = rc;
+const [chrome, res] = await Promise.all([loadChrome(rc), rc.cms.scholar(locale, slug, page, PAGE_SIZE)]);
+markSource(Astro, rc);
+if (res.status === 'not_found') return new Response(null, { status: 404 });
+if (res.status === 'unavailable') Astro.response.status = 503;
+const data = res.status === 'ok' ? res.data : null;
+const s = data?.scholar ?? null;
+const channelId = s?.channel_ids[0] ?? null;
+const videos = channelId ? await fetchChannelVideos(rc.videos, channelId, { cursor: after, limit: VIDEOS_PER_PAGE }) : { items: [], cursor: '' };
+const items = videos.items.map((v) => localizeItem(v, locale));
+const posts = data?.posts ?? { items: [], page, limit: PAGE_SIZE, total: 0 };
+const pages = Math.max(1, Math.ceil(posts.total / PAGE_SIZE));
+if (data && page > 1 && posts.items.length === 0) return new Response(null, { status: 404 });
+const other = otherLocale(locale);
+const otherHas = !!data && posts.total === 0 && (data.post_counts[other] ?? 0) > 0;
+const base = `/${locale}/scholars/${encodeURIComponent(slug)}/`;
+const cmsOrigin = new URL(cfg.cmsPublicUrl).origin;
+const qs = (p: number) => (p === 1 ? '' : `?page=${p}`);
+// Paged views (more articles, more videos) are not separate pages for search engines.
+const paged = page > 1 || after !== null;
+const channelHref = channelId ? channelUrl(cfg.videosWebUrl, { id: channelId, lang: locale }) : null;
+const title = s ? fmt(t.scholars.pageTitle, { name: s.name }) : t.errors.unavailableTitle;
+const jsonLd = s
+  ? [
+      scholarLd(cfg, { name: s.name, url: base, description: s.bio, image: s.avatar?.url ?? null, locale, sameAs: channelHref ? [channelHref] : [] }),
+      ...items.map((v) => videoObjectLd(cfg, v, locale)).filter(Boolean),
+    ]
+  : [];
+---
+<BaseLayout
+  cfg={cfg}
+  locale={locale}
+  title={title}
+  description={s?.bio_excerpt ?? t.scholars.intro}
+  alternates={{ en: `/en/scholars/${encodeURIComponent(slug)}/`, ar: `/ar/scholars/${encodeURIComponent(slug)}/` }}
+  nav={chrome.nav}
+  settings={chrome.settings}
+  ogImage={s?.avatar?.url ?? undefined}
+  jsonLd={jsonLd}
+  noindex={!s || paged}
+  feed={s ? { title: fmt(t.scholars.rss, { name: s.name }), href: `${base}rss.xml` } : null}
+>
+  {s ? (
+    <>
+      <div class="page-head scholar-head">
+        <div class="wrap">
+          <p><a class="more-link" href={`/${locale}/scholars/`}><Icon name="chevron" class="flip" />{t.scholars.viewPage}</a></p>
+          <div class="scholar-intro">
+            {s.avatar ? (
+              <Fragment set:html={pictureHtml(s.avatar, cmsOrigin, { sizes: '8rem', priority: true, className: 'scholar-photo', alt: '' })} />
+            ) : (
+              <span class="scholar-photo scholar-avatar-empty" aria-hidden="true">{s.name.slice(0, 1)}</span>
+            )}
+            <div>
+              <h1 dir="auto">{s.name}</h1>
+              {s.bio && <p class="lede scholar-bio-full" dir="auto">{s.bio}</p>}
+              <p class="scholar-links">
+                {channelHref && <a class="button button-quiet" href={channelHref}>{t.scholars.onVideos}</a>}
+                <a class="more-link" href={`${base}rss.xml`}>{fmt(t.scholars.rss, { name: s.name })}</a>
+              </p>
+            </div>
+          </div>
+          <nav class="scholar-tabs" aria-label={t.scholars.sections}>
+            <a href="#articles">{t.scholars.articles}</a>
+            {channelId && <a href="#videos">{t.scholars.videos}</a>}
+          </nav>
+        </div>
+      </div>
+      <section class="section" id="articles" aria-labelledby="articles-h">
+        <div class="wrap">
+          <h2 id="articles-h">{t.scholars.articles}</h2>
+          {posts.items.length > 0 ? (
+            <>
+              <ArticlesList locale={locale} posts={posts.items} headingLevel={3} cmsOrigin={cmsOrigin} byline={false} />
+              {pages > 1 && (
+                <nav class="pagination" aria-label={t.a11y.pagination}>
+                  {page > 1 && <a href={`${base}${qs(page - 1)}#articles`} rel="prev"><Icon name="chevron" class="flip" />{t.articles.newer}</a>}
+                  <p aria-current="page">{fmt(t.articles.pageOf, { page, pages })}</p>
+                  {page < pages && <a href={`${base}${qs(page + 1)}#articles`} rel="next">{t.articles.older}<Icon name="chevron" /></a>}
+                </nav>
+              )}
+            </>
+          ) : otherHas ? (
+            <div class="empty">
+              <p>{fmt(t.scholars.otherHas, { name: s.name, language: t.lang.names[other] })}</p>
+              <a class="button button-quiet" href={`/${other}/scholars/${encodeURIComponent(slug)}/#articles`} hreflang={other}>{fmt(t.lang.listIn, { language: t.lang.names[other] })}</a>
+            </div>
+          ) : (
+            <div class="empty"><p>{t.scholars.noArticles}</p></div>
+          )}
+        </div>
+      </section>
+      {channelId && (
+        <section class="section" id="videos" aria-labelledby="videos-h">
+          <div class="wrap">
+            <h2 id="videos-h">{after ? t.scholars.videos : t.scholars.firstVideos}</h2>
+            {items.length > 0 ? (
+              <ul class="video-grid">
+                {items.map((v) => <li set:html={facadeHtml(v, { videosWebUrl: cfg.videosWebUrl, lang: locale, headingLevel: 3 })} />)}
+              </ul>
+            ) : (
+              <div class="empty"><p>{t.scholars.noVideos}</p></div>
+            )}
+            {videos.cursor && (
+              <p class="scholar-more"><a class="button button-quiet" href={`${base}?after=${encodeURIComponent(videos.cursor)}#videos`} rel="next">{t.scholars.moreVideos}<Icon name="chevron" /></a></p>
+            )}
+          </div>
+        </section>
+      )}
+    </>
+  ) : (
+    <div class="section"><div class="wrap"><div class="empty"><p>{t.errors.unavailableTitle}</p></div></div></div>
+  )}
+</BaseLayout>

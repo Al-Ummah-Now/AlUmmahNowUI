@@ -9,6 +9,7 @@ import { hit, memoryStore } from './search-fixtures';
 const t = en.search;
 const labels: ComboboxLabels = {
   articles: t.articles,
+  scholars: t.scholars,
   cards: t.cards,
   recent: t.recent,
   removeRecent: t.removeRecent,
@@ -54,6 +55,7 @@ let form: HTMLFormElement;
 let input: HTMLInputElement;
 let store: ReturnType<typeof memoryStore>;
 let fetchHits: ReturnType<typeof vi.fn>;
+let fetchScholars: ReturnType<typeof vi.fn>;
 let navigate: ReturnType<typeof vi.fn>;
 let submit: ReturnType<typeof vi.fn>;
 let destroy: () => void;
@@ -75,9 +77,10 @@ beforeEach(() => {
   input = form.querySelector('input')!;
   store = memoryStore();
   fetchHits = vi.fn(async () => HITS);
+  fetchScholars = vi.fn(async () => []);
   navigate = vi.fn();
   submit = vi.fn();
-  ({ destroy } = initCombobox(form, { store, fetchHits, navigate, submit, debounceMs: 200 }));
+  ({ destroy } = initCombobox(form, { store, fetchHits, fetchScholars, navigate, submit, debounceMs: 200 }));
 });
 afterEach(() => {
   destroy();
@@ -85,6 +88,21 @@ afterEach(() => {
 });
 
 describe('search combobox', () => {
+  it('lists matching scholars first, in their own group, linking to their pages', async () => {
+    fetchScholars.mockResolvedValueOnce([
+      { id: -1, type: 'scholar', title: 'Aisha Rahman', slug: 'aisha-rahman', locale: 'en', href: '/en/scholars/aisha-rahman/', thumbnailUrl: null, excerpt: null, publishedAt: '' },
+    ]);
+    input.value = 'aisha';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.advanceTimersByTimeAsync(250);
+    expect(fetchScholars.mock.calls[0]![0]).toBe('https://cms.test/api/public/v1/search/scholars?locale=en&q=aisha&limit=3');
+    const groups = [...listbox().querySelectorAll('[role="group"]')];
+    expect(groups.map((g) => document.getElementById(g.getAttribute('aria-labelledby')!)!.textContent)[0]).toBe(t.scholars);
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(navigate).toHaveBeenCalledWith('/en/scholars/aisha-rahman/');
+  });
+
   it('debounces, then shows grouped suggestions with the ARIA wiring and a count announcement', async () => {
     input.value = 'احمد';
     input.dispatchEvent(new Event('input', { bubbles: true }));

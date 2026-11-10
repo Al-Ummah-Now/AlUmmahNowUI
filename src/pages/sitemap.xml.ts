@@ -10,7 +10,7 @@ export const GET: APIRoute = async (ctx) => {
   const map = await rc.cms.sitemap();
   const items = map.status === 'ok' ? map.data.items : [];
   const urls: string[] = [];
-  for (const path of ['/', '/articles/', '/videos/']) {
+  for (const path of ['/', '/articles/', '/videos/', '/scholars/']) {
     const alts = LOCALES.map((l) => `<xhtml:link rel="alternate" hreflang="${l}" href="${x(`${cfg.siteUrl}/${l}${path}`)}"/>`).join('');
     for (const l of LOCALES) urls.push(`<url><loc>${x(`${cfg.siteUrl}/${l}${path}`)}</loc>${alts}</url>`);
   }
@@ -20,6 +20,14 @@ export const GET: APIRoute = async (ctx) => {
     const path = item.type === 'post' ? `/${item.locale}/articles/${encodeURIComponent(item.slug)}/` : `/${item.locale}/${encodeURIComponent(item.slug)}/`;
     const lastmod = /^\d{4}-\d{2}-\d{2}/.test(item.updated_at) ? `<lastmod>${item.updated_at.slice(0, 10)}</lastmod>` : '';
     urls.push(`<url><loc>${x(cfg.siteUrl + path)}</loc>${lastmod}</url>`);
+  }
+  // Scholar pages: one slug, both languages (hreflang pairs).
+  for (const s of map.status === 'ok' ? (map.data.scholars ?? []) : []) {
+    if (!/^[a-z0-9-]{1,60}$/.test(s.slug)) continue;
+    const path = `/scholars/${s.slug}/`;
+    const lastmod = /^\d{4}-\d{2}-\d{2}/.test(s.updated_at) ? `<lastmod>${s.updated_at.slice(0, 10)}</lastmod>` : '';
+    const alts = LOCALES.map((l) => `<xhtml:link rel="alternate" hreflang="${l}" href="${x(`${cfg.siteUrl}/${l}${path}`)}"/>`).join('');
+    for (const l of LOCALES) urls.push(`<url><loc>${x(`${cfg.siteUrl}/${l}${path}`)}</loc>${lastmod}${alts}</url>`);
   }
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls.join('\n')}\n</urlset>\n`;
   return new Response(xml, {

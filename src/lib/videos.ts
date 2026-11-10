@@ -220,3 +220,58 @@ export function clockDuration(seconds: number | null): string | null {
   const r = String(s % 60).padStart(2, '0');
   return h ? `${h}:${String(m).padStart(2, '0')}:${r}` : `${m}:${r}`;
 }
+
+export interface ChannelVideosPage {
+  items: VideoItem[];
+  /** The videos API's cursor for the next page; '' = no more. */
+  cursor: string;
+}
+
+/** A videos-API cursor as we pass it back: opaque, but bounded and URL-safe. */
+export const CURSOR = /^[A-Za-z0-9._~:+/=-]{1,512}$/;
+
+/**
+ * A channel's latest public videos (`GET /api/channels/:id/videos?sort=latest&cursor=`), for a
+ * scholar's page (AlUmmahNowCMS docs/SCHOLARS.md). Same rules as fetchVideoItem: only public items,
+ * failures are an empty page (and logged), never an error page. Cached 60 s per (channel, cursor).
+ */
+export async function fetchChannelVideos(deps: VideosDeps, channelId: string, opts: { cursor?: string | null; limit?: number } = {}): Promise<ChannelVideosPage> {
+  if (!VIDEO_ID.test(channelId)) return { items: [], cursor: '' };
+  const cursor = opts.cursor && CURSOR.test(opts.cursor) ? opts.cursor : '';
+  const limit = Math.min(Math.max(opts.limit ?? 12, 1), 24);
+  const params = new URLSearchParams({ sort: 'latest', limit: String(limit), ...(cursor ? { cursor } : {}) });
+  const url = `${deps.apiUrl}/api/channels/${channelId}/videos?${params}`;
+  const key = `${deps.cacheKeyBase}/channel-videos/${channelId}?${params}`;
+  try {
+    const hit = await deps.cache?.match(key);
+    if (hit) return (await hit.json()) as ChannelVideosPage;
+  } catch {
+    // cache miss
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), deps.timeoutMs ?? 2_500);
+  let page: ChannelVideosPage = { items: [], cursor: '' };
+  try {
+    const res = await (deps.fetchImpl ?? fetch)(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
+    if (!res.ok) {
+      deps.log?.('videos: channel videos skipped', { channelId, status: res.status });
+      return page;
+    }
+    const body = (await res.json()) as { data?: unknown; cursor?: unknown };
+    const rows = Array.isArray(body.data) ? (body.data as Record<string, unknown>[]) : [];
+    page = {
+      items: rows.map((r) => (typeof r.id === 'string' ? toVideoItem('video', r.id, r) : null)).filter((x): x is VideoItem => x !== null),
+      cursor: typeof body.cursor === 'string' && CURSOR.test(body.cursor) ? body.cursor : '',
+    };
+  } catch (error) {
+    deps.log?.('videos: channel videos failed', { channelId, error: controller.signal.aborted ? 'timeout' : String(error) });
+    return page;
+  } finally {
+    clearTimeout(timer);
+  }
+  if (deps.cache) {
+    const res = new Response(JSON.stringify(page), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } });
+    deps.waitUntil(deps.cache.put(key, res).catch(() => undefined));
+  }
+  return page;
+}

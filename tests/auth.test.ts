@@ -38,7 +38,8 @@ describe('roles', () => {
     expect(normalizeRole(' Super Admin ')).toBe('super_admin');
     expect(normalizeRole('content-editor')).toBe('content_editor');
   });
-  it('CMS link only for super_admin, admin, moderator', () => {
+  it('CMS link only for super_admin, admin, moderator, scholar', () => {
+    expect(canEditContent(['Scholar', 'Member'])).toBe(true);
     expect(canEditContent(['Super Admin'])).toBe(true);
     expect(canEditContent(['Admin'])).toBe(true);
     expect(canEditContent(['moderator'])).toBe(true);

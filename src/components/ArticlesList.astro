@@ -4,13 +4,15 @@
  * (CardViewer `inline`), so they read whole here; the title and date link to the full post.
  */
 import CardViewer from './CardViewer.astro';
-import { formatDate } from '../i18n';
+import { fmt, formatDate, strings } from '../i18n';
 import { inlineCards, inlineUid } from '../lib/cards';
 import type { PostSummary } from '../lib/cms-types';
 import type { Locale } from '../lib/locale';
 
-interface Props { locale: Locale; posts: PostSummary[]; headingLevel?: 2 | 3; cmsOrigin: string }
-const { locale, posts, headingLevel = 2, cmsOrigin } = Astro.props;
+/** `byline: false` on a scholar's own page (every post there is theirs). */
+interface Props { locale: Locale; posts: PostSummary[]; headingLevel?: 2 | 3; cmsOrigin: string; byline?: boolean }
+const { locale, posts, headingLevel = 2, cmsOrigin, byline = true } = Astro.props;
+const t = strings(locale);
 const H = `h${headingLevel}`;
 // The first card post near the top carries the list's first image: the LCP candidate (eager).
 const lcp = posts.findIndex((p) => inlineCards(p));
@@ -23,6 +25,9 @@ const href = (p: PostSummary) => `/${locale}/articles/${encodeURIComponent(p.slu
       <li class:list={['articles-item', cards && 'articles-item-cards']}>
         <time datetime={p.published_at}>{formatDate(p.published_at, locale)}</time>
         <H><a href={href(p)}>{p.title}</a></H>
+        {byline && p.author && (
+          <p class="articles-by"><a href={`/${locale}/scholars/${encodeURIComponent(p.author.slug)}/`}>{fmt(t.scholars.byScholar, { name: p.author.name })}</a></p>
+        )}
         {cards ? (
           <CardViewer
             slides={cards.slides}

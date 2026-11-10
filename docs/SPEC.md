@@ -40,6 +40,8 @@ All pages exist in `en` and `ar` under a locale prefix: `/en/…` and `/ar/…`.
 | `/{l}/articles/{slug}/` | Article |
 | `/{l}/news/…` | 301 to the same `/{l}/articles/…` url, query kept (the section was called News until 2026-11; src/lib/edge.ts `legacyArticlesRedirect`) |
 | `/{l}/{slug}/` | CMS page (about, contact, privacy, terms…) |
+| `/{l}/scholars/` | Scholars directory (CMS `/scholars`), by name, paginated `?page=` |
+| `/{l}/scholars/{slug}/` | A scholar's page: photo, name, bio; **Articles** (every live post they wrote, card posts included, `?page=`) and **Videos** (their first channel's latest public videos from the videos API, `?after=<cursor>`, facade embeds). `ProfilePage`/`Person` JSON-LD, hreflang (same slug), `rss.xml` per scholar. Paged views are `noindex`. AlUmmahNowCMS `docs/SCHOLARS.md` |
 | `/{l}/videos/` | Curated videos (CMS curation: videos, playlists, channels), embeds plus a link to videos.alummahnow.net |
 | `/auth/login`, `/auth/callback`, `/auth/logout`, `/auth/me` | Sign-in (§7) |
 | `/sitemap.xml`, `/robots.txt`, `/{l}/rss.xml` | SEO |
@@ -110,7 +112,7 @@ Unknown slug: localized 404 page with links home, to articles and to videos (sta
 
 Registering www as an auth client is in scope (owner). v1 uses it for one signed-in feature: the
 header shows the user's name and a menu with Profile, Videos, **CMS (only for Super Admin, Admin,
-Moderator)** and Sign out. Without a client, www could only link to the profile app and could never
+Moderator, Scholar)** and Sign out. Without a client, www could only link to the profile app and could never
 show signed-in state. Epic 26 (embedded discussions) and "continue watching" will reuse this session.
 
 - **Public client with PKCE (S256)**, no secret. `client_id` per env (§10). Redirect URIs (exact):
@@ -145,8 +147,10 @@ show signed-in state. Epic 26 (embedded discussions) and "continue watching" wil
 ## 8. SEO
 
 `<title>`, meta description, canonical, `hreflang` en/ar/x-default, Open Graph and Twitter cards,
-JSON-LD (`Organization` + `WebSite` on home, `Article` on posts, `VideoObject` for embedded
-videos), `sitemap.xml` from the CMS slugs, `robots.txt`. QA and stage serve
+JSON-LD (`Organization` + `WebSite` on home, `Article` on posts (a scholar's post names them as a
+`Person` author by `@id`, linked from the byline), `ProfilePage` + `Person` on scholar pages,
+`VideoObject` for embedded videos), `sitemap.xml` from the CMS slugs (scholar pages in both locales),
+`robots.txt`. Search suggestions list matching scholars first (CMS `/search/scholars`). QA and stage serve
 `X-Robots-Tag: noindex` and `Disallow: /`.
 
 ## 9. Quality bars
