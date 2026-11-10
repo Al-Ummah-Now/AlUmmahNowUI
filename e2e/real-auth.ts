@@ -37,7 +37,7 @@ export function ssoAccount(local: `qa-sso-${string}`): string {
  * Dedicated accounts not seeded on QA yet (an AlUmmahNow seed PR is pending): their tests skip
  * until the account is in seed-qa, then drop it from this list.
  */
-const NOT_SEEDED_YET = new Set(['qa-sso-ui-chain', 'qa-sso-ui-multi-a', 'qa-sso-ui-multi-b']);
+const NOT_SEEDED_YET = new Set<string>(); // qa-sso-ui-chain, -multi-a, -multi-b: seeded (AlUmmahNow #749)
 export const notSeededYet = (...emails: string[]) => emails.some((e) => NOT_SEEDED_YET.has(e.split('@')[0]!));
 
 /** Types a secret without it appearing in the report's step titles (keep tracing off too). */
