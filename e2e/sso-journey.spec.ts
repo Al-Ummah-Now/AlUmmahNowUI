@@ -25,7 +25,8 @@ async function wwwSignedIn(page: Page): Promise<boolean> {
 }
 
 async function videosSignedIn(page: Page): Promise<boolean> {
-  await page.goto(`${VIDEOS_ORIGIN}/en`);
+  // The silent sign-in may redirect while the page loads (an interrupted goto on WebKit)
+  await page.goto(`${VIDEOS_ORIGIN}/en`).catch(() => {});
   // The videos header signs in silently (client probe); give it time to come back
   let signedIn = false;
   await expect
@@ -71,7 +72,12 @@ test.describe('SSO journey from www (real QA auth)', () => {
       expect(new URL(page.url()).origin).toBe(VIDEOS_ORIGIN);
 
       // A link to www's sign-out: single sign-out through auth and every app, back to www
-      await page.goto(`${WWW_ORIGIN}/auth/logout?locale=${locale}`);
+      // From a settled www page (the videos page may still be reloading after its silent sign-in,
+      // which would cancel the sign-out navigation)
+      await page.goto(`${WWW_ORIGIN}/${locale}/`, { waitUntil: 'load' });
+      await page.waitForLoadState('networkidle').catch(() => {});
+      // The chain hops through every app; WebKit reports the hops as an interrupted goto
+      await page.goto(`${WWW_ORIGIN}/auth/logout?locale=${locale}`).catch(() => {});
       await page.waitForURL((u) => u.origin === WWW_ORIGIN && u.pathname === `/${locale}/`, { timeout: 60_000 });
       expect(await authAccountCount(page), 'auth still has the account').toBe(0);
       expect(await wwwSignedIn(page)).toBe(false);
