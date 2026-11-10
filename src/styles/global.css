@@ -883,6 +883,18 @@ main {
   margin-block-start: 1.6em;
   font-size: 1.3125rem;
 }
+/* markdown ### (headings sit one level under the page's h1) */
+.prose h4 {
+  margin-block-start: 1.5em;
+  font-size: 1.125rem;
+  font-family: var(--font-latin-display);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--heading);
+}
+.prose h4:lang(ar) {
+  font-family: var(--font-arabic);
+}
 .prose ul,
 .prose ol {
   padding-inline-start: 1.5rem;
@@ -1375,4 +1387,584 @@ html:not([data-js]) .theme {
 }
 .button-outline:hover {
   box-shadow: inset 0 0 0 2px var(--text);
+}
+
+/* ---------- pages built from blocks (src/components/Blocks.astro) ---------- */
+.blocks {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.75rem, 4vw, 2.75rem);
+}
+.blk {
+  margin: 0;
+  min-width: 0;
+}
+/* a block starts at its own top edge, heading or not */
+.blk.prose > :first-child,
+.blk .prose > :first-child {
+  margin-block-start: 0;
+}
+.blk-content {
+  width: 100%;
+  max-width: var(--measure);
+}
+.blk-wide {
+  width: 100%;
+  max-width: 56rem;
+}
+.blk-heading {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+}
+/*
+ * Images keep their own shape: width/height on every <img> reserve the box before the file
+ * arrives (no layout shift). Gallery tiles share one 4:3 crop so the rows line up.
+ */
+.blk img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-media);
+  background: var(--surface);
+  filter: var(--media-filter);
+}
+.blk-gallery img {
+  aspect-ratio: 4 / 3;
+  height: auto;
+  object-fit: cover;
+}
+.blk figcaption,
+.blk-caption {
+  margin-block-start: 0.625rem;
+  color: var(--text-soft);
+  font-size: 0.9375rem;
+}
+.blk-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+.blk-gallery figure {
+  margin: 0;
+}
+.blk-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.blk-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (max-width: 40rem) {
+  .blk-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.blk-columns {
+  display: grid;
+  gap: clamp(1.25rem, 3vw, 2.5rem);
+  align-items: center;
+}
+@media (min-width: 48rem) {
+  .blk-columns {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .blk-columns-end .blk-columns-media {
+    order: 2;
+  }
+}
+.blk-columns-media {
+  margin: 0;
+}
+.blk-quote blockquote {
+  margin: 0;
+  padding-inline-start: 1.5rem;
+  border-inline-start: 3px solid var(--color-lantern);
+  font-family: var(--font-latin-display);
+  font-size: clamp(1.25rem, 2.4vw, 1.5rem);
+  line-height: 1.5;
+  color: var(--heading);
+}
+:lang(ar) .blk-quote blockquote {
+  font-family: var(--font-arabic);
+}
+.blk-quote blockquote p,
+.blk-callout p {
+  margin: 0;
+}
+.blk-cite {
+  margin-block-start: 0.75rem;
+  padding-inline-start: 1.5rem;
+  color: var(--text-soft);
+  font-size: 0.9375rem;
+}
+.blk-callout {
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--notice-line);
+  border-inline-start-width: 4px;
+  border-radius: 0.625rem;
+  background: var(--notice-bg);
+}
+.blk-callout .blk-cite {
+  padding: 0;
+}
+.blk-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  padding: 1.5rem;
+  border-radius: var(--radius-media);
+  background: var(--surface-raised);
+  box-shadow: 0 0 0 1px var(--line), var(--card-shadow);
+}
+.blk-cta-primary {
+  background: var(--hero-bg);
+  color: var(--color-on-night);
+  box-shadow: 0 0 0 1px var(--hero-line), var(--card-shadow);
+}
+.blk-cta-primary h2 {
+  color: var(--color-on-night);
+}
+.blk-cta-copy {
+  flex: 1 1 16rem;
+}
+.blk-cta h2 {
+  margin: 0;
+  font-size: 1.3125rem;
+}
+.blk-cta p {
+  margin: 0.375rem 0 0;
+}
+.blk-cta-primary p {
+  color: var(--color-on-night-soft);
+}
+.blk-rule {
+  border: 0;
+  border-block-start: 1px solid var(--line);
+}
+.blk-space.blk-gap-s { height: 0.5rem; }
+.blk-space.blk-gap-m { height: 2rem; }
+.blk-space.blk-gap-l { height: 4.5rem; }
+.blk-rule.blk-gap-s { margin-block: 0; }
+.blk-rule.blk-gap-m { margin-block: 1rem; }
+.blk-rule.blk-gap-l { margin-block: 2.5rem; }
+.blk-video .facade {
+  margin: 0;
+}
+.empty-note {
+  color: var(--text-soft);
+}
+
+/* ---------- card posts: the grid (CardGrid.astro) and the viewer (CardViewer.astro) ---------- */
+/* One frame for cards everywhere: 4:5, the image covering it, the text drawn on it. */
+.cv-frame {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: var(--radius-media);
+  background: var(--color-night-deep);
+  isolation: isolate;
+}
+.cv-frame > picture,
+.cv-frame > img,
+.cv-frame picture img,
+.cv-frame > .card-blank {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: var(--media-filter);
+}
+/*
+ * The text sits on a scrim dark enough for white text to pass AA (≥ 4.5:1) over any photo,
+ * white included: at 72% night the brightest pixel behind the text is about #484d50.
+ */
+.cv-text {
+  position: absolute;
+  inset-inline: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+.cv-text-bottom {
+  inset-block-end: 0;
+  padding-block-start: 3rem;
+  background: linear-gradient(to top, rgb(6 15 21 / 0.84), rgb(6 15 21 / 0.74) calc(100% - 3rem), rgb(6 15 21 / 0));
+}
+.cv-text-top {
+  inset-block-start: 0;
+  padding-block-end: 3rem;
+  background: linear-gradient(to bottom, rgb(6 15 21 / 0.84), rgb(6 15 21 / 0.74) calc(100% - 3rem), rgb(6 15 21 / 0));
+}
+.cv-text-middle {
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  justify-content: center;
+  text-align: center;
+  background: rgb(6 15 21 / 0.74);
+}
+.cv-heading {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(1.25rem, 3.2vw, 1.625rem);
+  line-height: 1.25;
+}
+.cv-body {
+  margin: 0;
+  font-size: clamp(0.9375rem, 2.2vw, 1.0625rem);
+  line-height: 1.55;
+}
+
+.card-filter ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+.card-filter a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding-inline: 1rem;
+  border: 1px solid var(--control-line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+.card-filter a:hover {
+  background: var(--hover);
+}
+.card-filter a[aria-current='page'] {
+  background: var(--solid-bg);
+  border-color: var(--solid-bg);
+  color: var(--on-solid);
+}
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: clamp(1rem, 2.5vw, 1.5rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.card-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: var(--text);
+  text-decoration: none;
+}
+.card-frame {
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  box-shadow: var(--card-shadow);
+}
+.card-link:hover .card-frame {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 2px var(--color-lantern), var(--card-shadow);
+}
+.card-text .cv-heading {
+  font-size: 1.125rem;
+}
+.card-blank {
+  background: linear-gradient(160deg, var(--color-night), var(--color-night-deep));
+}
+.card-count {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 0.625rem;
+  inset-inline-end: 0.625rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  background: rgb(6 15 21 / 0.8);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.card-count svg,
+.cv-count svg {
+  width: 0.9375rem;
+  height: 0.9375rem;
+}
+.card-title {
+  font-weight: 700;
+  font-size: 1.0625rem;
+  line-height: 1.35;
+  color: var(--heading);
+}
+.card-link:hover .card-title {
+  text-decoration: underline;
+}
+.card-date {
+  color: var(--text-soft);
+  font-size: 0.875rem;
+}
+
+.cards-viewer {
+  max-width: 36rem;
+}
+.cv-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0 0 0.75rem;
+  color: var(--text-soft);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+.cv-stage {
+  touch-action: pan-y;
+}
+.cv-track {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cv-slide[hidden] {
+  display: none;
+}
+.cv-card {
+  margin: 0;
+}
+.cv-card .cv-frame {
+  box-shadow: 0 0 0 1px var(--line), var(--card-shadow);
+}
+.cv-text,
+.cv-text * {
+  user-select: text;
+}
+.cv-enlarge {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 0.625rem;
+  inset-inline-end: 0.625rem;
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid rgb(255 255 255 / 0.35);
+  border-radius: 999px;
+  background: rgb(6 15 21 / 0.78);
+  color: #fff;
+  cursor: zoom-in;
+}
+.cv-enlarge[hidden] {
+  display: none;
+}
+.cv-enlarge:hover {
+  background: rgb(6 15 21 / 0.95);
+}
+.cv-enlarge svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+.cv-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block-start: 1rem;
+}
+.cv-step {
+  display: inline-grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid var(--control-line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+}
+.cv-step:hover {
+  background: var(--hover);
+}
+.cv-step[aria-disabled='true'] {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.cv-step svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+.cv-pos {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+.cv-dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.125rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+/* 24px targets around an 8px dot */
+.cv-dots a {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+}
+.cv-dots a::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--control-line);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+.cv-dots a[aria-current='step']::before {
+  background: var(--color-lantern);
+  transform: scale(1.35);
+}
+@keyframes cv-in-fwd {
+  from { opacity: 0; transform: translateX(1.5rem); }
+}
+@keyframes cv-in-back {
+  from { opacity: 0; transform: translateX(-1.5rem); }
+}
+.cv-in-fwd { animation: cv-in-fwd 0.22s ease-out; }
+.cv-in-back { animation: cv-in-back 0.22s ease-out; }
+[dir='rtl'] .cv-in-fwd { animation-name: cv-in-back; }
+[dir='rtl'] .cv-in-back { animation-name: cv-in-fwd; }
+
+/* The enlarged view (src/scripts/cards.ts builds it): the card at full size on the night. */
+html.lb-open {
+  overflow: hidden;
+}
+.cv-lightbox {
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: rgb(4 10 14 / 0.96);
+  color: #fff;
+}
+.cv-lightbox[open] {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.cv-lightbox::backdrop {
+  background: rgb(4 10 14 / 0.9);
+}
+.lb-top,
+.lb-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem clamp(0.75rem, 3vw, 1.5rem);
+}
+.lb-nav {
+  justify-content: center;
+  gap: 2rem;
+  padding-block-end: max(0.75rem, env(safe-area-inset-bottom));
+}
+.lb-pos {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: rgb(255 255 255 / 0.86);
+}
+.lb-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid rgb(255 255 255 / 0.3);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.08);
+  color: #fff;
+  cursor: pointer;
+}
+.lb-btn:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.18);
+}
+.lb-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.lb-btn svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+/* Back and Next follow the reading direction: in Arabic, Next points left. */
+[dir='rtl'] .lb-back svg,
+[dir='rtl'] .lb-next svg {
+  transform: scaleX(-1);
+}
+.lb-stage {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding-inline: clamp(0.5rem, 2vw, 1.5rem);
+  touch-action: pan-y pinch-zoom;
+}
+.lb-card {
+  position: relative;
+  display: grid;
+  margin: 0;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.lb-card > picture,
+.lb-card > img {
+  display: block;
+  min-height: 0;
+}
+.lb-img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100dvh - 9.5rem);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+.lb-card .cv-heading {
+  font-size: clamp(1.375rem, 3vw, 2rem);
+}
+.lb-card .cv-body {
+  font-size: clamp(1rem, 2vw, 1.1875rem);
+}
+.cv-lightbox :focus-visible {
+  outline: var(--focus);
+  outline-offset: 2px;
+}
+/* A card post in a news list says so (and how many cards). */
+.news-cards {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--text-soft);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.news-cards svg {
+  width: 0.9375rem;
+  height: 0.9375rem;
 }

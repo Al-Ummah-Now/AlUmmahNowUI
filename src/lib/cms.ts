@@ -8,7 +8,7 @@
  * other than 404, and bad JSON are failures.
  */
 import { builtinContent } from '../content/fallback';
-import type { HomeResponse, Page, Post, PostsResponse, SiteResponse, SitemapResponse, VideosResponse } from './cms-types';
+import type { CardsResponse, HomeResponse, Page, Post, PostsResponse, SiteResponse, SitemapResponse, VideosResponse } from './cms-types';
 import { validate } from './cms-types';
 import type { KVNamespace } from './cf';
 import type { Config, WwwEnv } from './env';
@@ -151,6 +151,7 @@ export const cmsPaths = {
   post: (l: Locale, slug: string) => `/posts/${enc(slug)}${q({ locale: l })}`,
   videos: (l: Locale, placement: 'home' | 'videos') => `/videos${q({ locale: l, placement })}`,
   sitemap: () => '/sitemap',
+  cards: (l: Locale, page: number, limit: number, tag?: string | null) => `/cards${q({ locale: l, ...(tag ? { tag } : {}), page, limit })}`,
 };
 export const snapshotKey = (path: string) => `v1:${path}`;
 /** Page sizes the site requests (/news and the RSS feed): the snapshot writer covers exactly these. */
@@ -177,6 +178,8 @@ export function cmsClient(deps: CmsDeps) {
     videos: (l: Locale, placement: 'home' | 'videos' = 'videos') =>
       track(load<VideosResponse>(deps, cmsPaths.videos(l, placement), validate.videos, () => ({ items: [] }))),
     sitemap: () => track(load<SitemapResponse>(deps, cmsPaths.sitemap(), validate.sitemap, () => ({ items: [] }))),
+    cards: (l: Locale, page: number, limit: number, tag?: string | null) =>
+      track(load<CardsResponse>(deps, cmsPaths.cards(l, page, limit, tag), validate.cards, () => ({ items: [], page, limit, total: 0, tags: [] }))),
   };
 }
 export type CmsClient = ReturnType<typeof cmsClient>;

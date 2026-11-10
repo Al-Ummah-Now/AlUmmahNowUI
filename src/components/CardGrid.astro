@@ -1,0 +1,60 @@
+---
+/**
+ * The Card posts block: a grid of card posts, each showing its first slide (image and text) and how
+ * many cards it has. The topic filter and the pages are plain links (?tag=, ?page=), so they work
+ * without JS and every state has its own URL.
+ */
+import Icon from './Icon.astro';
+import { fmt, formatDate, strings } from '../i18n';
+import type { CardGrid } from '../lib/blocks';
+import { slideCountLabel } from '../lib/cards';
+import { dir, type Locale } from '../lib/locale';
+
+interface Props { grid: CardGrid; locale: Locale; contentLocale: Locale; heading: string | null; id: string }
+const { grid, locale, contentLocale, heading, id } = Astro.props;
+const t = strings(locale);
+const hid = `cards-${id}-h`;
+---
+<section class="blk-cards" aria-labelledby={heading ? hid : undefined} aria-label={heading ? undefined : t.cards.label}>
+  {heading && <h2 id={hid} class="blk-heading">{heading}</h2>}
+  {grid.filter && (
+    <nav class="card-filter" aria-label={t.cards.filter}>
+      <ul>
+        <li><a href={grid.href({ tag: null })} aria-current={grid.filter.active ? undefined : 'page'}>{t.cards.all}</a></li>
+        {grid.filter.tags.map((tag) => (
+          <li><a href={grid.href({ tag })} aria-current={grid.filter?.active === tag ? 'page' : undefined} lang={contentLocale} dir="auto">{tag}</a></li>
+        ))}
+      </ul>
+    </nav>
+  )}
+  {grid.cards.length === 0 ? (
+    <p class="empty-note">{t.cards.none}</p>
+  ) : (
+    <ul class="card-grid" lang={contentLocale} dir={dir(contentLocale)}>
+      {grid.cards.map(({ post, picture }) => (
+        <li class="card-tile">
+          <a href={`/${locale}/news/${encodeURIComponent(post.slug)}/`} class="card-link">
+            <span class="cv-frame card-frame">
+              {picture ? <Fragment set:html={picture} /> : <span class="card-blank" aria-hidden="true" />}
+              {post.first_slide && (post.first_slide.heading || post.first_slide.body) && (
+                <span class={`cv-text cv-text-${post.first_slide.position} card-text`} aria-hidden="true">
+                  {post.first_slide.heading && <span class="cv-heading">{post.first_slide.heading}</span>}
+                </span>
+              )}
+              <span class="card-count"><Icon name="cards" />{slideCountLabel(t.cards, post.slide_count ?? 0)}</span>
+            </span>
+            <span class="card-title">{post.title}</span>
+            <time class="card-date" datetime={post.published_at}>{formatDate(post.published_at, locale)}</time>
+          </a>
+        </li>
+      ))}
+    </ul>
+  )}
+  {grid.pages > 1 && (
+    <nav class="pagination" aria-label={fmt(t.news.pageOf, { page: grid.page, pages: grid.pages })}>
+      {grid.page > 1 && <a href={grid.href({ page: grid.page - 1 })} rel="prev"><Icon name="chevron" class="flip" />{t.news.newer}</a>}
+      <p>{fmt(t.news.pageOf, { page: grid.page, pages: grid.pages })}</p>
+      {grid.page < grid.pages && <a href={grid.href({ page: grid.page + 1 })} rel="next">{t.news.older}<Icon name="chevron" /></a>}
+    </nav>
+  )}
+</section>

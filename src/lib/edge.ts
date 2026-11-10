@@ -127,8 +127,14 @@ export function isCacheableRequest(request: Request): boolean {
   if (request.method !== 'GET') return false;
   const url = new URL(request.url);
   if (isPreviewPath(url.pathname) || !/^\/(en|ar)(\/|$)/.test(url.pathname)) return false;
-  // Only ?page= varies a page; other query strings (tracking etc.) bypass the cache
-  for (const k of url.searchParams.keys()) if (k !== 'page') return false;
+  // Only ?page=, a card post's ?slide=N and a card grid's ?tag= vary a page, each bounded so junk
+  // values can't fill the cache; other query strings (tracking etc.) bypass it.
+  for (const [k, v] of url.searchParams) {
+    if (k === 'page') continue;
+    if (k === 'slide' && /^[1-9]\d{0,2}$/.test(v)) continue;
+    if (k === 'tag' && v.length > 0 && v.length <= 60) continue;
+    return false;
+  }
   return true;
 }
 

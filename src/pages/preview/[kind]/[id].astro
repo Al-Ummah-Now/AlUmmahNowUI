@@ -11,6 +11,8 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { builtinContent } from '../../../content/fallback';
 import { strings } from '../../../i18n';
 import { documentAlternates, renderBody } from '../../../lib/body';
+import { prepareBlocks } from '../../../lib/blocks';
+import { cardPostSeo, slideFromLink } from '../../../lib/cards';
 import { loadChrome, requestContext, runtime } from '../../../lib/context';
 import { applyPreviewHeaders } from '../../../lib/edge';
 import { negotiateLocale, readCookie } from '../../../lib/locale';
@@ -35,6 +37,10 @@ const rc = requestContext(Astro, locale);
 const chrome = data ? await loadChrome(rc) : { settings: builtinContent(locale).site.settings, nav: { header: builtinContent(locale).headerNav, footer: builtinContent(locale).footerNav } };
 const body = data ? await renderBody(rc, data.content.body, data.content.locale, data.content.images) : null;
 const here = Astro.url.pathname;
+// Drafts render like the published page: blocks for pages, the card viewer for card posts.
+const built = data?.kind === 'page' && data.content.blocks?.length ? await prepareBlocks(rc, data.content, { pathname: here, search: Astro.url.searchParams }) : null;
+const cardSeo = data?.kind === 'post' ? cardPostSeo(data.content) : null;
+const slide = data?.kind === 'post' && data.content.slides?.length ? slideFromLink(Astro.url.search, '', data.content.slides.length) : 0;
 // The switcher and hreflang point at published translations; this locale stays on the preview.
 const alternates = data
   ? { ...documentAlternates(data.content, data.content.alternates, (l, s) => (data.kind === 'post' ? `/${l}/news/${encodeURIComponent(s)}/` : `/${l}/${encodeURIComponent(s)}/`)), [locale]: here }
@@ -43,7 +49,7 @@ const t = strings(locale);
 if (result.state !== 'ok') Astro.response.status = { expired: 410, invalid: 400, gone: 404, unavailable: 503 }[result.state];
 const problemTitle = result.state === 'ok' ? '' : { expired: t.preview.expiredTitle, invalid: t.preview.invalidTitle, gone: t.preview.goneTitle, unavailable: t.preview.unavailableTitle }[result.state];
 const title = data ? `${t.preview.label}: ${data.content.seo_title || data.content.title}` : problemTitle;
-const description = data ? data.content.seo_description || (data.kind === 'page' ? data.content.summary : data.content.excerpt) || plainText(data.content.body, 180) : '';
+const description = data ? data.content.seo_description || (data.kind === 'page' ? data.content.summary : data.content.excerpt) || cardSeo?.text || plainText(data.content.body, 180) : '';
 ---
 <BaseLayout
   cfg={cfg}
@@ -54,12 +60,12 @@ const description = data ? data.content.seo_description || (data.kind === 'page'
   nav={chrome.nav}
   settings={chrome.settings}
   ogType={data?.kind === 'post' ? 'article' : 'website'}
-  ogImage={data?.content.cover?.url}
+  ogImage={cardSeo?.image ?? data?.content.cover?.url}
   noindex
 >
   {data && <PreviewBanner slot="banner" locale={locale} status={data.status} minutes={minutesLeft(data.expiresAt)} editUrl={data.editUrl} />}
   {data && body ? (
-    data.kind === 'page' ? <PageArticle page={data.content} html={body.html} cmsOrigin={new URL(rc.cfg.cmsPublicUrl).origin} /> : <PostArticle post={data.content} html={body.html} locale={locale} cmsOrigin={new URL(rc.cfg.cmsPublicUrl).origin} />
+    data.kind === 'page' ? <PageArticle page={data.content} html={body.html} blocks={built?.blocks} locale={locale} cfg={cfg} cmsOrigin={new URL(rc.cfg.cmsPublicUrl).origin} /> : <PostArticle post={data.content} html={body.html} locale={locale} slide={slide} pathname={here} cmsOrigin={new URL(rc.cfg.cmsPublicUrl).origin} />
   ) : (
     <PreviewMessage locale={locale} problem={result.state === 'ok' ? 'unavailable' : result.state} cmsUrl={`${cfg.cmsPublicUrl}/${kind}/${id}`} />
   )}

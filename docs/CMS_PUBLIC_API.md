@@ -47,16 +47,21 @@ interface Page {
   published_at: string;         // ISO 8601
   updated_at: string;
   alternates: Alternate[];      // other locales of the same translation_key (published only)
+  blocks: Block[];              // additive: the page as blocks (see "Blocks"); `body` stays for older readers
 }
 
 interface PostSummary {
   slug: string; locale: Locale; title: string; excerpt: string | null;
   cover: MediaRef | null; author_name: string | null; tags: string[];
   published_at: string; updated_at: string;
+  kind: 'article' | 'cards';    // additive (see "Card posts")
+  slide_count: number;          // card posts: served slides; 0 for articles
+  first_slide: Slide | null;    // card posts: the face of the post in lists and grids
 }
 interface Post extends PostSummary {
   body: string; seo_title: string | null; seo_description: string | null; alternates: Alternate[];
   images: MediaRef[];           // as Page.images (CMS-10, additive)
+  slides: Slide[];              // card posts, in order ([] for articles)
 }
 
 interface CuratedVideo {
@@ -89,6 +94,7 @@ interface CuratedSnapshot {
 | `/pages/:slug` | `locale` | `Page` or 404 |
 | `/posts` | `locale`, `page` (1-based, default 1), `limit` (1–20, default 10) | `{ items: PostSummary[], page: number, limit: number, total: number }` newest first |
 | `/posts/:slug` | `locale` | `Post` or 404 |
+| `/cards` | `locale`, `tag` (optional), `page` (1-based, default 1), `limit` (1–24, default 12) | `{ items: PostSummary[], page: number, limit: number, total: number, tags: string[] }` card posts only, newest first; `tags` = every tag on this locale's live card posts (for the filter) |
 | `/videos` | `locale`, `placement` (`home` \| `videos`, default `videos`) | `{ items: CuratedVideo[] }` (by sort, at most 48) |
 | `/sitemap` | — | `{ items: { type: 'page' \| 'post', locale: Locale, slug: string, updated_at: string }[] }` (pages with show_in_sitemap only) |
 | `/media/*` | — | the R2 object, `Cache-Control: public, max-age=31536000, immutable` |
@@ -96,6 +102,68 @@ interface CuratedSnapshot {
 
 The page slug `home` is reserved (not used as a page route on www). An empty CMS returns empty
 arrays and `settings: null`, never an error.
+
+## Blocks
+
+A page is an ordered list of blocks. Every block has a stable `id` (`[a-z0-9-]`, unique in the page)
+and a `type`. Text is in the page's own language (one row per locale; a translation starts as a copy).
+References are resolved when the page is read: a block that is incomplete in the editor, or whose
+images/posts/videos are all gone or no longer public, is **left out**, so www never renders an empty
+frame. A page saved before blocks existed is served as `[{ id: "body", type: "markdown", text: body }]`.
+
+```ts
+type Block =
+  | { id: string; type: 'markdown'; text: string }                           // same markdown rules as body
+  | { id: string; type: 'image'; image: MediaRef; caption: string | null; size: 'content' | 'wide' }
+  | { id: string; type: 'gallery'; columns: 2 | 3 | 4; items: { image: MediaRef; caption: string | null }[] }
+  | { id: string; type: 'posts'; heading: string | null; mode: 'latest' | 'tag' | 'picked'; items: PostSummary[] }
+  | { id: string; type: 'cards'; heading: string | null; tag: string | null; page_size: number; filter: boolean }
+      // a grid of card posts: www reads GET /cards?locale&tag&page&limit=page_size; filter = show the tag filter
+  | { id: string; type: 'videos'; heading: string | null; items: { kind: 'video' | 'playlist' | 'channel'; ref_id: string; title_override: string | null; snapshot: CuratedSnapshot | null }[] }
+  | { id: string; type: 'video'; kind: 'video' | 'playlist'; ref_id: string; caption: string | null; snapshot: CuratedSnapshot | null }
+  | { id: string; type: 'cta'; heading: string | null; text: string | null; label: string; url: string; tone: 'primary' | 'quiet' }
+      // url: "/..." (www-relative, no locale prefix) or https://
+  | { id: string; type: 'columns'; text: string; image: MediaRef | null; caption: string | null; image_side: 'start' | 'end' }
+      // start/end are logical: the image is on the right in Arabic when image_side = start
+  | { id: string; type: 'quote'; variant: 'quote' | 'callout'; text: string; cite: string | null }
+  | { id: string; type: 'divider'; style: 'line' | 'space'; size: 's' | 'm' | 'l' };
+```
+
+- `image.alt` is the block's own description when set, else the library's; `null` = decorative.
+- `posts`: `latest` and `tag` list live posts of the page's locale (at most 12); `picked` keeps the
+  editor's order, follows a picked post to its translation in the page's locale, and drops posts that
+  aren't live. Items may be card posts (`kind: 'cards'`).
+- `videos`/`video` snapshots are taken when picked and refreshed by the CMS (every 2 h, with retry and
+  backoff); an item no longer public is left out. Same `CuratedSnapshot` as curated videos.
+- New block types may be added; www must skip a `type` it doesn't know.
+
+## Card posts
+
+A post with `kind: 'cards'` is a sequence of slides read one at a time: an image with text on it.
+
+```ts
+interface Slide {
+  id: string;
+  image: MediaRef;                // alt: the slide's description, else the library's
+  heading: string | null;         // ≤ 140 chars, drawn on the image
+  body: string | null;            // ≤ 400 chars, plain text, drawn on the image
+  position: 'top' | 'middle' | 'bottom';   // where the text sits on the image
+}
+```
+
+Slides without an image are not served. `slide_count` and `first_slide` count only served slides.
+For SEO, www uses the first slide's image as `og:image` and, when the post has no excerpt, its
+heading/body as the description.
+
+### How www renders them
+
+- `src/lib/blocks.ts` resolves blocks once on the server (markdown, pictures, shelves, the `/cards`
+  page for `?tag=` and `?page=`); `src/components/Blocks.astro` lays them out. Unknown types are skipped.
+- Card posts: `src/components/CardViewer.astro` renders every slide (real text, one shown), with
+  Next/Back and dots as links to `?slide=N` (works without JS); `src/scripts/cards.ts` adds instant
+  moves, arrow keys in the reading direction (Arabic: ← is next), swipe, `#N`, neighbour preloading
+  and the enlarged view (a modal dialog; closing returns to the slide reached).
+- The edge cache keys `?slide=` (1–999) and `?tag=` (≤ 60 chars) alongside `?page=`.
 
 ## Image variants (CMS-10)
 
