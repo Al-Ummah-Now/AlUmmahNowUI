@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { applySecurityHeaders, contentSecurityPolicy, isCacheableRequest, withHtmlCache } from '../src/lib/edge';
 import { config } from '../src/lib/env';
 import { enterPreview, loadPreview, minutesLeft, parsePreview, previewCookieName, readClaims, type FetchPreview } from '../src/lib/preview';
+import { MODE_SCRIPT_HASH } from '../src/lib/theme-mode';
 import { MemoryCache } from './helpers';
 
 const NOW = 1_800_000_000;
@@ -100,7 +101,8 @@ describe('preview responses at the edge', () => {
     const normal = applySecurityHeaders(new Response('<p>x</p>', { headers: { 'Content-Type': 'text/html' } }), prod, '/en/');
     expect(normal.headers.get('Content-Security-Policy')).toContain('static.cloudflareinsights.com');
     expect(normal.headers.get('X-Robots-Tag')).toBeNull();
-    expect(contentSecurityPolicy(qa, { analytics: false })).toContain("script-src 'self';");
+    // The light/dark head script still runs on previews (allowed by hash); the beacon does not
+    expect(contentSecurityPolicy(qa, { analytics: false })).toContain(`script-src 'self' ${MODE_SCRIPT_HASH};`);
   });
 
   it('the HTML edge cache never stores or serves a preview', async () => {
