@@ -25,7 +25,7 @@ if (result.status === 'not_found') return new Response(null, { status: 404 });
 if (result.status === 'unavailable') Astro.response.status = 503;
 
 const post = result.status === 'ok' ? result.data : null;
-const body = post ? await renderBody(rc, post.body, post.locale) : null;
+const body = post ? await renderBody(rc, post.body, post.locale, post.images) : null;
 const alternates = post ? documentAlternates(post, post.alternates, (l, s) => `/${l}/news/${encodeURIComponent(s)}/`) : {};
 const translated = post && post.locale !== locale;
 const description = post ? post.seo_description || post.excerpt || plainText(post.body, 180) : '';
@@ -61,7 +61,7 @@ const jsonLd = post
   contentLocale={post?.locale}
 >
   {post && body ? (
-    <PostArticle post={post} html={body.html} locale={locale} />
+    <PostArticle post={post} html={body.html} locale={locale} cmsOrigin={new URL(cfg.cmsPublicUrl).origin} />
   ) : (
     <ErrorView locale={locale} kind="unavailable" />
   )}

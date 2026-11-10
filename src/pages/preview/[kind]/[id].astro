@@ -33,7 +33,7 @@ const data = result.state === 'ok' ? result.data : null;
 const locale = data ? data.content.locale : negotiateLocale(cookieHeader, Astro.request.headers.get('Accept-Language'));
 const rc = requestContext(Astro, locale);
 const chrome = data ? await loadChrome(rc) : { settings: builtinContent(locale).site.settings, nav: { header: builtinContent(locale).headerNav, footer: builtinContent(locale).footerNav } };
-const body = data ? await renderBody(rc, data.content.body, data.content.locale) : null;
+const body = data ? await renderBody(rc, data.content.body, data.content.locale, data.content.images) : null;
 const here = Astro.url.pathname;
 // The switcher and hreflang point at published translations; this locale stays on the preview.
 const alternates = data
@@ -59,7 +59,7 @@ const description = data ? data.content.seo_description || (data.kind === 'page'
 >
   {data && <PreviewBanner slot="banner" locale={locale} status={data.status} minutes={minutesLeft(data.expiresAt)} editUrl={data.editUrl} />}
   {data && body ? (
-    data.kind === 'page' ? <PageArticle page={data.content} html={body.html} /> : <PostArticle post={data.content} html={body.html} locale={locale} />
+    data.kind === 'page' ? <PageArticle page={data.content} html={body.html} cmsOrigin={new URL(rc.cfg.cmsPublicUrl).origin} /> : <PostArticle post={data.content} html={body.html} locale={locale} cmsOrigin={new URL(rc.cfg.cmsPublicUrl).origin} />
   ) : (
     <PreviewMessage locale={locale} problem={result.state === 'ok' ? 'unavailable' : result.state} cmsUrl={`${cfg.cmsPublicUrl}/${kind}/${id}`} />
   )}

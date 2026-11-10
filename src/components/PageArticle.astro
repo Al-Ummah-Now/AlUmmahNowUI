@@ -2,16 +2,19 @@
 /** A CMS page as published (src/pages/[locale]/[slug].astro) and as previewed (src/pages/preview/). */
 import type { Page } from '../lib/cms-types';
 import { dir } from '../lib/locale';
+import { pictureHtml, SIZES } from '../lib/picture';
 
-interface Props { page: Page; html: string }
-const { page, html } = Astro.props;
+interface Props { page: Page; html: string; cmsOrigin: string }
+const { page, html, cmsOrigin } = Astro.props;
+// The cover is the page's LCP image: responsive, sized, eager and high priority (CMS-10).
+const coverHtml = page.cover ? pictureHtml(page.cover, cmsOrigin, { sizes: SIZES.cover, priority: true, className: 'cover' }) : null;
 ---
 <article>
   <header class="page-head">
     <div class="wrap">
       <h1>{page.title}</h1>
       {page.summary && <p class="lede">{page.summary}</p>}
-      {page.cover && <img class="cover" src={page.cover.url} alt={page.cover.alt ?? ''} width={page.cover.width ?? undefined} height={page.cover.height ?? undefined} />}
+      {coverHtml && <Fragment set:html={coverHtml} />}
     </div>
   </header>
   <div class="section">

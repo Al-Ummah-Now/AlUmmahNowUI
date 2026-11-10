@@ -1,7 +1,16 @@
 /** CMS public read API v1 (docs/CMS_PUBLIC_API.md). Keep in step with the contract. */
 import type { Locale } from './locale';
 
-export interface MediaRef { url: string; alt: string | null; width: number | null; height: number | null }
+export interface MediaRef {
+  url: string; alt: string | null; width: number | null; height: number | null;
+  /** CMS-10 (additive; absent on older CMS builds): srcset strings per format. */
+  variants?: MediaVariants | null;
+}
+export interface MediaVariants {
+  widths: number[];
+  fallback_type: 'image/jpeg' | 'image/png';
+  avif: string; webp: string; fallback: string;
+}
 /** url: relative "/..." (www-relative, no locale prefix) or absolute https */
 export interface NavItem { label: string; url: string }
 
@@ -24,6 +33,8 @@ export interface Page {
   published_at: string;
   updated_at: string;
   alternates: Alternate[];
+  /** CMS media used inline in body (CMS-10; absent on older CMS builds). */
+  images?: MediaRef[];
 }
 
 export interface PostSummary {
@@ -33,6 +44,7 @@ export interface PostSummary {
 }
 export interface Post extends PostSummary {
   body: string; seo_title: string | null; seo_description: string | null; alternates: Alternate[];
+  images?: MediaRef[];
 }
 
 /**
