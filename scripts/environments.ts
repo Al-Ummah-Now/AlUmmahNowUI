@@ -12,6 +12,8 @@ export interface WwwEnvironment {
   vars: Record<string, string>;
   cmsService: string;
   kvId: string;
+  /** The home timeline feed (written by the CMS feed job; www reads it). */
+  feedKvId: string;
 }
 
 const vars = (sub: string, clientId: string, env: string) => ({
@@ -38,6 +40,7 @@ export const ENVIRONMENTS: Record<EnvName, WwwEnvironment> = {
     vars: vars('', PROD_STAGE_CLIENT, 'production'),
     cmsService: 'al-ummah-now-cms',
     kvId: 'bb7463036880446abdc652a56f0b6509',
+    feedKvId: '5f27cddf86c84bbdbb59445ad867253c',
   },
   stage: {
     env: 'stage',
@@ -48,6 +51,7 @@ export const ENVIRONMENTS: Record<EnvName, WwwEnvironment> = {
     vars: vars('stage.', PROD_STAGE_CLIENT, 'stage'),
     cmsService: 'al-ummah-now-cms-stage',
     kvId: '9a4d7ee84d43427dad2e73e5904a21c7',
+    feedKvId: '33ddf8bb7eae439c91fcc4af22797f42',
   },
   qa: {
     env: 'qa',
@@ -58,6 +62,7 @@ export const ENVIRONMENTS: Record<EnvName, WwwEnvironment> = {
     vars: vars('qa.', QA_CLIENT, 'qa'),
     cmsService: 'al-ummah-now-cms-qa',
     kvId: '2784164e06164e99bb5e837733dd38a2',
+    feedKvId: '6e459b34fb954cf4a199cfef57036a8c',
   },
 };
 

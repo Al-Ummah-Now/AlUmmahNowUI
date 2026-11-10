@@ -22,6 +22,8 @@ export interface WwwEnv {
   CMS?: ServiceBinding;
   /** Last-known-good CMS JSON. */
   CONTENT_SNAPSHOT?: KVNamespace;
+  /** The home timeline, published by the CMS feed job (src/lib/feed.ts). Read only. */
+  FEED?: KVNamespace;
   ASSETS?: ServiceBinding;
   /** 64 hex chars; encrypts the session and sign-in cookies. */
   SESSION_SECRET?: string;

@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "node --experimental-strip-types --no-warnings scripts/dev-vars.ts && wrangler dev --port 4321",
+    "preview": "node --experimental-strip-types --no-warnings scripts/dev-vars.ts && wrangler dev --port ${WWW_PORT:-4321}",
     "lint": "eslint .",
     "typecheck": "astro check && tsc --noEmit -p tsconfig.scripts.json",
     "test": "vitest run",

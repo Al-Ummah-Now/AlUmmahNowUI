@@ -1,76 +1,88 @@
 ---
+/**
+ * Home: the hero, the editors' "Chosen for you" videos (CMS curated, placement home) and the home
+ * timeline: the CMS-managed feed of posts and videos, read from Workers KV (src/lib/feed.ts), newest
+ * first, with "Load more" (?before=<cursor>). When the feed is missing the timeline is the CMS posts
+ * list (cache → CMS → snapshot → built-in), so the page never fails.
+ *
+ * ?before= pages (no-JS "Load more", and what the script fetches) show only the timeline.
+ */
 import Icon from '../../components/Icon.astro';
-import NewsList from '../../components/NewsList.astro';
+import Timeline from '../../components/Timeline.astro';
 import VideoRail from '../../components/VideoRail.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { builtinContent } from '../../content/fallback';
 import { libraryUrl } from '../../lib/embeds';
 import { loadChrome, markSource, requestContext, routeLocale } from '../../lib/context';
+import { parseCursor } from '../../lib/feed';
 import { organizationLd, websiteLd } from '../../lib/seo';
+import { loadTimeline } from '../../lib/timeline';
 import { resolveCurated } from '../../lib/videos';
 
 const locale = routeLocale(Astro);
 if (!locale) return new Response(null, { status: 404 });
+const rawBefore = Astro.url.searchParams.get('before');
+const rawPage = Astro.url.searchParams.get('page');
+if (rawBefore !== null && !parseCursor(rawBefore)) return new Response(null, { status: 404 });
+const page = rawPage === null ? 1 : /^[1-9]\d{0,3}$/.test(rawPage) ? Number(rawPage) : NaN;
+if (!Number.isFinite(page)) return new Response(null, { status: 404 });
+const later = rawBefore !== null || page > 1;
+
 const rc = requestContext(Astro, locale);
 const { cfg, t } = rc;
-const [chrome, home] = await Promise.all([loadChrome(rc), rc.cms.home(locale)]);
+const now = new Date();
+const [chrome, home, timeline] = await Promise.all([
+  loadChrome(rc),
+  later ? Promise.resolve(null) : rc.cms.home(locale),
+  loadTimeline({ kv: rc.env.FEED, cms: rc.cms, locale, before: rawBefore, page, log: (msg, data) => console.warn(JSON.stringify({ msg, ...data })) }),
+]);
 const builtin = builtinContent(locale);
-const data = home.status === 'ok' ? home.data : builtin.home;
-const settings = data.settings ?? chrome.settings;
-const curated = await resolveCurated(rc.videos, data.videos, locale);
+const data = home ? (home.status === 'ok' ? home.data : builtin.home) : null;
+const settings = data?.settings ?? chrome.settings;
+const curated = data ? await resolveCurated(rc.videos, data.videos, locale) : [];
 markSource(Astro, rc);
+Astro.response.headers.set('X-Feed-Source', timeline.source);
 
 const heroTitle = settings?.hero_title || t.home.heroTitle;
 const heroBody = settings?.hero_body || t.home.heroBody;
 const siteName = settings?.site_title || t.meta.siteName;
 const sameAs = (settings?.social ?? []).map((s) => s.url).filter((u) => u.startsWith('https://'));
 const videosHref = libraryUrl(cfg.videosWebUrl, locale);
-const loginHref = `/auth/login?return=${encodeURIComponent(`/${locale}/`)}`;
+const cmsOrigin = new URL(cfg.cmsPublicUrl).origin;
+const empty = timeline.pinned.length === 0 && timeline.items.length === 0;
 ---
 <BaseLayout
   cfg={cfg}
   locale={locale}
-  title={siteName}
+  title={later ? t.timeline.olderTitle : siteName}
   description={settings?.tagline ? `${settings.tagline}. ${t.meta.defaultDescription}` : t.meta.defaultDescription}
   alternates={{ en: '/en/', ar: '/ar/' }}
   nav={chrome.nav}
   settings={settings}
-  jsonLd={[organizationLd(cfg, siteName, sameAs), websiteLd(cfg, siteName, locale)]}
+  noindex={later}
+  jsonLd={later ? [] : [organizationLd(cfg, siteName, sameAs), websiteLd(cfg, siteName, locale)]}
 >
-  <section class="hero" aria-labelledby="hero-title">
-    <div class="wrap">
-      <div>
-        <p class="hero-wordmark" lang="ar" dir="rtl">الأمة الآن</p>
-        {locale === 'en' && <p class="hero-latin">{t.home.wordmarkLatin}</p>}
-        <h1 id="hero-title">{heroTitle}</h1>
-        <p class="hero-body">{heroBody}</p>
-        <div class="hero-actions">
-          <a class="button button-primary" href={videosHref}>{t.home.watchCta}<Icon name="arrow" /></a>
-          <a class="button button-ghost" href={cfg.profileUrl}>{t.home.profileCta}</a>
+  {!later && (
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap">
+        <div>
+          <p class="hero-wordmark" lang="ar" dir="rtl">الأمة الآن</p>
+          {locale === 'en' && <p class="hero-latin">{t.home.wordmarkLatin}</p>}
+          <h1 id="hero-title">{heroTitle}</h1>
+          <p class="hero-body">{heroBody}</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href={videosHref}>{t.home.watchCta}<Icon name="arrow" /></a>
+            <a class="button button-ghost" href={cfg.profileUrl}>{t.home.profileCta}</a>
+          </div>
         </div>
+        <img class="hero-lantern" src="/brand/logo-512.webp" alt="" width="512" height="512" fetchpriority="high" />
       </div>
-      <img class="hero-lantern" src="/brand/logo-512.webp" alt="" width="512" height="512" fetchpriority="high" />
-    </div>
-  </section>
+    </section>
+  )}
 
-  <section class="section" aria-labelledby="what-title">
-    <div class="wrap">
-      <div class="section-head"><h2 id="what-title">{t.home.whatTitle}</h2></div>
-      <ul class="pillars">
-        {builtin.pillars.map((p) => (
-          <li class="pillar">
-            <Icon name="star" />
-            <h3>{p.title}</h3>
-            <p>{p.body}</p>
-          </li>
-        ))}
-      </ul>
-    </div>
-  </section>
-
-  {/* Empty rails are hidden on the home page (the /videos and /news pages carry the empty states) */}
+  {/* The editors' home videos stay above the timeline (an empty rail is hidden; /videos has the empty state) */}
   {curated.length > 0 && (
-    <section class="section" aria-labelledby="curated-title">
+    <section class="section tl-curated" aria-labelledby="curated-title">
       <div class="wrap">
         <div class="section-head">
           <h2 id="curated-title">{t.home.curatedTitle}</h2>
@@ -81,26 +93,30 @@ const loginHref = `/auth/login?return=${encodeURIComponent(`/${locale}/`)}`;
     </section>
   )}
 
-  {data.posts.length > 0 && (
-    <section class="section" aria-labelledby="news-title">
-      <div class="wrap">
-        <div class="section-head">
-          <h2 id="news-title">{t.home.newsTitle}</h2>
-          <a class="more-link" href={`/${locale}/news/`}>{t.home.newsAll}<Icon name="chevron" /></a>
-        </div>
-        <NewsList locale={locale} posts={data.posts.slice(0, 3)} headingLevel={3} />
+  <section class="section tl-section" aria-labelledby="timeline-title">
+    <div class="tl-wrap">
+      <div class="tl-head">
+        {later ? <h1 id="timeline-title">{t.timeline.olderTitle}</h1> : <h2 id="timeline-title">{t.timeline.title}</h2>}
+        <p class="tl-intro">{t.timeline.intro}</p>
+        <a class="more-link" href={`/${locale}/news/`}>{t.timeline.allNews}<Icon name="chevron" /></a>
       </div>
-    </section>
-  )}
-
-  <section class="section" aria-labelledby="apps-title">
-    <div class="wrap">
-      <div class="section-head"><h2 id="apps-title">{t.home.appsTitle}</h2></div>
-      <ul class="apps">
-        <li><a class="app-link" href={videosHref}><strong>{t.apps.videosTitle}<Icon name="arrow" /></strong><span>{t.apps.videosBody}</span></a></li>
-        <li><a class="app-link" href={cfg.profileUrl}><strong>{t.apps.profileTitle}<Icon name="arrow" /></strong><span>{t.apps.profileBody}</span></a></li>
-        <li><a class="app-link" href={loginHref} rel="nofollow"><strong>{t.apps.signInTitle}<Icon name="arrow" /></strong><span>{t.apps.signInBody}</span></a></li>
-      </ul>
+      {empty ? (
+        <div class="empty">
+          <p>{t.timeline.empty}</p>
+          <a class="button button-quiet" href={videosHref}>{t.home.watchCta}</a>
+        </div>
+      ) : (
+        <Timeline
+          locale={locale}
+          pinned={timeline.pinned}
+          items={timeline.items}
+          nextHref={timeline.nextHref}
+          cmsOrigin={cmsOrigin}
+          videosWebUrl={cfg.videosWebUrl}
+          first={!later}
+          now={now}
+        />
+      )}
     </div>
   </section>
 </BaseLayout>

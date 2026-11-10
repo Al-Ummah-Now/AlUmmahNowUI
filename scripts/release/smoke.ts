@@ -55,12 +55,12 @@ export async function runSmoke(opts: SmokeOptions): Promise<CheckResult[]> {
   await check('healthz', async () => {
     const res = await get(`${e.www}/healthz`);
     assert(res.status === 200, `status ${res.status}`);
-    const body = (await res.json()) as { ok?: boolean; version?: string; cms?: string; env?: string };
+    const body = (await res.json()) as { ok?: boolean; version?: string; cms?: string; env?: string; feed?: string; feedBuiltAt?: string | null };
     assert(body.ok === true, 'ok is not true');
     assert(body.env === e.vars.APP_ENV, `env ${body.env}, expected ${e.vars.APP_ENV}`);
     if (version) assert(body.version === version, `served by ${body.version}, expected candidate ${version}`);
-    // cms "degraded" is reported, not fatal: www falls back by design (SPEC §5)
-    return `version ${body.version}, cms ${body.cms}`;
+    // cms "degraded" and feed "missing" are reported, not fatal: www falls back by design (SPEC §5)
+    return `version ${body.version}, cms ${body.cms}, feed ${body.feed ?? 'unknown'}${body.feedBuiltAt ? ` (built ${body.feedBuiltAt})` : ''}`;
   });
 
   for (const l of ['en', 'ar'] as const) {
@@ -75,7 +75,7 @@ export async function runSmoke(opts: SmokeOptions): Promise<CheckResult[]> {
       assert(res.headers.get('strict-transport-security'), 'HSTS missing');
       if (e.env !== 'production') assert(res.headers.get('x-robots-tag')?.includes('noindex'), 'noindex missing off production');
       else assert(!res.headers.get('x-robots-tag'), 'production must be indexable');
-      return `source ${res.headers.get('x-content-source')}`;
+      return `source ${res.headers.get('x-content-source')}, timeline ${res.headers.get('x-feed-source') ?? 'unknown'}`;
     });
   }
 

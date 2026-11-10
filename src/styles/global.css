@@ -1376,3 +1376,305 @@ html:not([data-js]) .theme {
 .button-outline:hover {
   box-shadow: inset 0 0 0 2px var(--text);
 }
+
+/* ---------- home timeline (src/components/Timeline.astro) ----------
+ * One column of cards, newest first, under plain day headings (no central line). Cards sit on the
+ * Fawanees surfaces with a hairline border, an inner top highlight and a soft drop shadow, the
+ * same depth as the sign-in panels; pinned cards carry a lantern edge on the reading side.
+ */
+.tl-section {
+  --tl-card-shadow: 0 1px 2px rgb(7 40 50 / 0.06), 0 8px 24px -12px rgb(7 40 50 / 0.18);
+  --tl-card-edge: inset 0 1px 0 rgb(255 255 255 / 0.7);
+  --tl-rule: linear-gradient(90deg, var(--line), transparent);
+}
+:root[data-mode='dark'] .tl-section {
+  --tl-card-shadow: 0 1px 0 rgb(0 0 0 / 0.3), 0 12px 28px -14px rgb(0 0 0 / 0.7);
+  --tl-card-edge: inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode='light']) .tl-section {
+    --tl-card-shadow: 0 1px 0 rgb(0 0 0 / 0.3), 0 12px 28px -14px rgb(0 0 0 / 0.7);
+    --tl-card-edge: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  }
+}
+[dir='rtl'] .tl-section {
+  --tl-rule: linear-gradient(270deg, var(--line), transparent);
+}
+.tl-wrap {
+  width: 100%;
+  max-width: 42rem;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+.tl-head {
+  display: grid;
+  gap: 0.25rem;
+  margin-block-end: 1.5rem;
+}
+.tl-head h1,
+.tl-head h2 {
+  margin: 0;
+  font-size: clamp(1.625rem, 3vw, 2.125rem);
+}
+.tl-intro {
+  margin: 0;
+  color: var(--text-soft);
+}
+.tl-head .more-link {
+  justify-self: start;
+}
+.tl-day {
+  margin-block-start: 1.75rem;
+}
+.tl-day:first-child {
+  margin-block-start: 0;
+}
+.tl-date {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 0.875rem;
+  font-family: var(--font-latin);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--accent-text);
+}
+.tl-date:lang(ar),
+:lang(ar) .tl-date {
+  font-family: var(--font-arabic);
+  font-size: 1.0625rem;
+  letter-spacing: 0;
+}
+.tl-date::before {
+  content: '';
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-lantern);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-lantern) 25%, transparent);
+}
+.tl-date::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--tl-rule);
+}
+.tl-pinned {
+  margin-block-end: 2rem;
+}
+.tl-list {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tl-card {
+  position: relative;
+  display: grid;
+  gap: 0.875rem;
+  padding: 1rem;
+  background: linear-gradient(180deg, var(--surface-raised), var(--surface));
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  box-shadow: var(--tl-card-edge), var(--tl-card-shadow);
+}
+@media (min-width: 36rem) {
+  .tl-card {
+    padding: 1.25rem;
+  }
+}
+.tl-card-pinned {
+  border-inline-start: 3px solid var(--color-lantern);
+}
+.tl-pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--accent-text);
+}
+.tl-pin svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+.tl-media {
+  display: block;
+  border-radius: var(--radius-media);
+  overflow: hidden;
+}
+.tl-media .tl-cover,
+.tl-media img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  filter: var(--media-filter);
+  background: var(--hover);
+}
+.tl-videos {
+  display: grid;
+  gap: 0.75rem;
+}
+.tl-videos-many {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.tl-videos-many .tl-facade:first-child {
+  grid-column: 1 / -1;
+}
+.tl-facade-sm .facade-play svg {
+  width: 3rem;
+  height: 3rem;
+}
+.tl-cardface {
+  display: block;
+  justify-self: center;
+  width: min(100%, 22rem);
+  color: inherit;
+  text-decoration: none;
+}
+.tl-cardface-frame {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: var(--radius-media);
+  background: var(--color-night);
+  box-shadow: 0 0 0 1px var(--line);
+}
+.tl-cardface-frame img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: var(--media-filter);
+}
+.tl-cardface-text {
+  position: absolute;
+  inset-inline: 0;
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem;
+  color: #fff;
+  background: rgb(7 20 28 / 0.72);
+}
+.tl-cardface-top {
+  inset-block-start: 0;
+}
+.tl-cardface-middle {
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+}
+.tl-cardface-bottom {
+  inset-block-end: 0;
+}
+.tl-cardface-heading {
+  font-weight: 700;
+  font-size: 1.125rem;
+  line-height: 1.35;
+}
+.tl-cardface-body {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tl-cardface-count {
+  position: absolute;
+  inset-block-start: 0.625rem;
+  inset-inline-end: 0.625rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  background: rgb(7 20 28 / 0.85);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+.tl-cardface-count svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+.tl-cardface:hover .tl-cardface-frame,
+.tl-cardface:focus-visible .tl-cardface-frame {
+  box-shadow: 0 0 0 2px var(--color-lantern);
+}
+.tl-body {
+  display: grid;
+  gap: 0.375rem;
+}
+.tl-title {
+  margin: 0;
+  font-family: var(--font-latin-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--heading);
+  text-wrap: balance;
+}
+.tl-title:lang(ar) {
+  font-family: var(--font-arabic);
+  font-weight: 700;
+  line-height: 1.6;
+}
+.tl-title a {
+  color: inherit;
+  text-decoration: none;
+}
+.tl-title a:hover {
+  text-decoration: underline;
+}
+.tl-excerpt {
+  margin: 0;
+  color: var(--text-soft);
+}
+.tl-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: var(--text-soft);
+}
+.tl-meta > * + *::before {
+  content: '·';
+  margin-inline-end: 0.75rem;
+  color: var(--line);
+}
+.tl-meta time {
+  font-weight: 600;
+  color: var(--text);
+}
+.tl-kind {
+  font-weight: 700;
+  color: var(--accent-text);
+}
+.tl-foot {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  margin-block-start: 2rem;
+}
+.tl-more.is-loading {
+  opacity: 0.75;
+  cursor: progress;
+}
+.tl-end {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.9375rem;
+}
+.tl-section .facade-frame {
+  box-shadow: 0 0 0 1px var(--line);
+}

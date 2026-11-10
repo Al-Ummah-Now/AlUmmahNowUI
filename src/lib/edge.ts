@@ -107,6 +107,9 @@ export function applySecurityHeaders(response: Response, cfg: Config, pathname =
   return res;
 }
 
+/** A home timeline cursor (src/lib/feed.ts CURSOR: position, then the week version to read next). */
+const FEED_CURSOR = /^\d{1,15}-[pv]\d{1,12}(?:\.\d{4}-W\d{2}\.[a-z0-9]{1,32})?$/;
+
 // ---- HTML edge cache (SPEC §5): anonymous-identical HTML, keyed by URL --------------
 
 export const HTML_FRESH_SEC = 60;
@@ -127,8 +130,13 @@ export function isCacheableRequest(request: Request): boolean {
   if (request.method !== 'GET') return false;
   const url = new URL(request.url);
   if (isPreviewPath(url.pathname) || !/^\/(en|ar)(\/|$)/.test(url.pathname)) return false;
-  // Only ?page= varies a page; other query strings (tracking etc.) bypass the cache
-  for (const k of url.searchParams.keys()) if (k !== 'page') return false;
+  // Only ?page= and the home timeline's ?before=<cursor> vary a page, each bounded so junk values
+  // can't fill the cache; other query strings (tracking etc.) bypass it.
+  for (const [k, v] of url.searchParams) {
+    if (k === 'page') continue;
+    if (k === 'before' && FEED_CURSOR.test(v)) continue;
+    return false;
+  }
   return true;
 }
 
