@@ -51,6 +51,7 @@ const jsonLd = post
         published: post.published_at,
         modified: post.updated_at,
         author: post.author_name,
+        authorUrl: post.author ? `/${post.locale}/scholars/${encodeURIComponent(post.author.slug)}/` : null,
         locale: post.locale,
       }),
       ...(body?.videos ?? []).map((v) => videoObjectLd(cfg, v, post.locale)).filter(Boolean),

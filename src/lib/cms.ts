@@ -8,7 +8,7 @@
  * other than 404, and bad JSON are failures.
  */
 import { builtinContent } from '../content/fallback';
-import type { CardsResponse, HomeResponse, Page, Post, PostsResponse, SiteResponse, SitemapResponse, VideosResponse } from './cms-types';
+import type { CardsResponse, HomeResponse, Page, Post, PostsResponse, ScholarPageResponse, ScholarsResponse, SiteResponse, SitemapResponse, VideosResponse } from './cms-types';
 import { validate } from './cms-types';
 import type { KVNamespace } from './cf';
 import type { Config, WwwEnv } from './env';
@@ -152,11 +152,16 @@ export const cmsPaths = {
   videos: (l: Locale, placement: 'home' | 'videos') => `/videos${q({ locale: l, placement })}`,
   sitemap: () => '/sitemap',
   cards: (l: Locale, page: number, limit: number, tag?: string | null) => `/cards${q({ locale: l, ...(tag ? { tag } : {}), page, limit })}`,
+  scholars: (l: Locale, page: number, limit: number) => `/scholars${q({ locale: l, page, limit })}`,
+  scholar: (l: Locale, slug: string, page: number, limit: number) => `/scholars/${enc(slug)}${q({ locale: l, page, limit })}`,
 };
 export const snapshotKey = (path: string) => `v1:${path}`;
 /** Page sizes the site requests (/articles and the RSS feed): the snapshot writer covers exactly these. */
 export const ARTICLES_PAGE_SIZE = 10;
 export const RSS_ITEMS = 20;
+/** Scholars directory and a scholar's articles (page and RSS). */
+export const SCHOLARS_PAGE_SIZE = 24;
+export const SCHOLAR_POSTS_PAGE_SIZE = 12;
 
 /** Typed endpoints of the CMS public API. Every call tracks its source for the page header. */
 export function cmsClient(deps: CmsDeps) {
@@ -178,6 +183,10 @@ export function cmsClient(deps: CmsDeps) {
     videos: (l: Locale, placement: 'home' | 'videos' = 'videos') =>
       track(load<VideosResponse>(deps, cmsPaths.videos(l, placement), validate.videos, () => ({ items: [] }))),
     sitemap: () => track(load<SitemapResponse>(deps, cmsPaths.sitemap(), validate.sitemap, () => ({ items: [] }))),
+    scholars: (l: Locale, page: number, limit = SCHOLARS_PAGE_SIZE) =>
+      track(load<ScholarsResponse>(deps, cmsPaths.scholars(l, page, limit), validate.scholars, () => ({ items: [], page, limit, total: 0 }))),
+    scholar: (l: Locale, slug: string, page: number, limit = SCHOLAR_POSTS_PAGE_SIZE) =>
+      track(load<ScholarPageResponse>(deps, cmsPaths.scholar(l, slug, page, limit), validate.scholar, () => null)),
     cards: (l: Locale, page: number, limit: number, tag?: string | null) =>
       track(load<CardsResponse>(deps, cmsPaths.cards(l, page, limit, tag), validate.cards, () => ({ items: [], page, limit, total: 0, tags: [] }))),
   };

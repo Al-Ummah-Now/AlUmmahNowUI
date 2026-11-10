@@ -25,7 +25,11 @@ const t = strings(locale);
       {post.excerpt && <p class="lede">{post.excerpt}</p>}
       <p class="byline">
         <time datetime={post.published_at}>{formatDate(post.published_at, post.locale)}</time>
-        {post.author_name && <span>{' '}{fmt(t.articles.by, { author: post.author_name })}</span>}
+        {post.author ? (
+          <span>{' '}<a rel="author" href={`/${locale}/scholars/${encodeURIComponent(post.author.slug)}/`} data-scholar-byline>{fmt(t.articles.by, { author: post.author.name })}</a></span>
+        ) : (
+          post.author_name && <span>{' '}{fmt(t.articles.by, { author: post.author_name })}</span>
+        )}
       </p>
       {coverHtml && <Fragment set:html={coverHtml} />}
     </div>

@@ -39,7 +39,11 @@ export interface Page {
   blocks?: Block[];
 }
 
+/** A scholar's post (AlUmmahNowCMS docs/SCHOLARS.md): their name and page. Null for staff posts. */
+export interface PostAuthor { slug: string; name: string; avatar: MediaRef | null }
+
 export interface PostSummary {
+  author?: PostAuthor | null;
   slug: string; locale: Locale; title: string; excerpt: string | null;
   cover: MediaRef | null; author_name: string | null; tags: string[];
   published_at: string; updated_at: string;
@@ -123,7 +127,35 @@ export interface PostsResponse { items: PostSummary[]; page: number; limit: numb
 export interface VideosResponse { items: CuratedVideo[] }
 /** GET /cards: card posts only, newest first; `tags` = every tag on this locale's card posts. */
 export interface CardsResponse { items: PostSummary[]; page: number; limit: number; total: number; tags: string[] }
-export interface SitemapResponse { items: { type: 'page' | 'post'; locale: Locale; slug: string; updated_at: string }[] }
+export interface SitemapResponse {
+  items: { type: 'page' | 'post'; locale: Locale; slug: string; updated_at: string }[];
+  /** Scholar pages (both locales each). Absent from older CMS versions. */
+  scholars?: { slug: string; updated_at: string }[];
+}
+
+export interface ScholarSummary {
+  slug: string;
+  name: string;
+  name_en: string | null;
+  name_ar: string | null;
+  bio_excerpt: string | null;
+  avatar: MediaRef | null;
+  updated_at: string;
+  post_count?: number;
+}
+export interface Scholar extends ScholarSummary {
+  bio: string | null;
+  bio_en: string | null;
+  bio_ar: string | null;
+  channel_ids: string[];
+  created_at: string;
+}
+export interface ScholarsResponse { items: ScholarSummary[]; page: number; limit: number; total: number }
+export interface ScholarPageResponse {
+  scholar: Scholar;
+  posts: PostsResponse;
+  post_counts: Record<Locale, number>;
+}
 
 // Shallow shape checks: enough to reject an HTML error page or a truncated body
 // ("bad JSON" in SPEC §5 counts as a CMS failure and takes the fallback path).
@@ -139,4 +171,7 @@ export const validate = {
   videos: (v: unknown): v is VideosResponse => isObj(v) && isArr(v.items),
   cards: (v: unknown): v is CardsResponse => isObj(v) && isArr(v.items) && typeof v.total === 'number' && isArr(v.tags),
   sitemap: (v: unknown): v is SitemapResponse => isObj(v) && isArr(v.items),
+  scholars: (v: unknown): v is ScholarsResponse => isObj(v) && isArr(v.items) && typeof v.total === 'number',
+  scholar: (v: unknown): v is ScholarPageResponse =>
+    isObj(v) && isObj(v.scholar) && typeof v.scholar.slug === 'string' && typeof v.scholar.name === 'string' && isObj(v.posts) && isArr(v.posts.items) && isObj(v.post_counts),
 };

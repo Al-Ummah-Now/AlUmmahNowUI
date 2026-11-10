@@ -29,9 +29,11 @@ interface Props {
   noticeLink?: { href: string; label: string; lang: Locale } | null;
   /** Language of the main content when it differs from the UI (missing translation). */
   contentLocale?: Locale;
+  /** An extra feed for this page (a scholar's articles), listed after the site's. */
+  feed?: { title: string; href: string } | null;
 }
 
-const { cfg, locale, title, description, alternates, nav, settings, ogImage, ogType = 'website', jsonLd = [], noindex, notice, noticeLink, contentLocale } = Astro.props;
+const { cfg, locale, title, description, alternates, nav, settings, ogImage, ogType = 'website', jsonLd = [], noindex, notice, noticeLink, contentLocale, feed } = Astro.props;
 const t = strings(locale);
 const siteName = settings?.site_title || t.meta.siteName;
 const fullTitle = title === siteName ? siteName : `${title} | ${siteName}`;
@@ -53,6 +55,7 @@ const robots = noindex || !cfg.isProduction ? 'noindex, nofollow' : 'index, foll
     <link rel="canonical" href={canonical} />
     {hreflangLinks(cfg, alternates).map((l) => <link rel="alternate" hreflang={l.hreflang} href={l.href} />)}
     <link rel="alternate" type="application/rss+xml" title={`${siteName}: ${t.articles.title}`} href={`/${locale}/rss.xml`} />
+    {feed && <link rel="alternate" type="application/rss+xml" title={feed.title} href={feed.href} />}
     <meta property="og:site_name" content={siteName} />
     <meta property="og:type" content={ogType} />
     <meta property="og:title" content={title} />

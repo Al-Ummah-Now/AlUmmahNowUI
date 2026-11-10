@@ -71,7 +71,8 @@ export function normalizeRole(role: string): string {
   return role.trim().toLowerCase().replace(/[\s-]+/g, '_');
 }
 
-const EDITOR_ROLES = new Set(['super_admin', 'admin', 'moderator']);
+// Scholar: writes their own articles in the CMS (AlUmmahNowCMS docs/SCHOLARS.md).
+const EDITOR_ROLES = new Set(['super_admin', 'admin', 'moderator', 'scholar']);
 export function canEditContent(roles: readonly string[]): boolean {
   return roles.some((r) => EDITOR_ROLES.has(normalizeRole(r)));
 }

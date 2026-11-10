@@ -14,11 +14,13 @@
 import { normalizeSearchText } from '../lib/search/normalize';
 import { highlightParts } from '../lib/search/highlight';
 import { addRecent, clearRecent, localStore, readRecent, removeRecent, type StorageLike } from '../lib/search/recent';
-import { fetchSuggestions, isSafeHref, suggestUrl, type SearchHit } from '../lib/search/suggest';
+import { fetchScholarSuggestions, fetchSuggestions, isSafeHref, scholarSuggestUrl, suggestUrl, type SearchHit } from '../lib/search/suggest';
 import type { Locale } from '../lib/locale';
 
 export interface ComboboxLabels {
   articles: string;
+  /** Scholars' pages (shown before the articles). Older pages may not send it. */
+  scholars?: string;
   cards: string;
   recent: string;
   removeRecent: string;
@@ -35,6 +37,8 @@ export interface ComboboxLabels {
 
 export interface ComboboxOptions {
   fetchHits?: (url: string, signal: AbortSignal) => Promise<SearchHit[] | null>;
+  /** Scholar suggestions (the CMS /search/scholars); null = none. */
+  fetchScholars?: (url: string, signal: AbortSignal) => Promise<SearchHit[] | null>;
   store?: StorageLike | null;
   debounceMs?: number;
   navigate?: (href: string) => void;
@@ -82,6 +86,7 @@ export function initCombobox(form: HTMLFormElement, opts: ComboboxOptions = {}):
   const cmsUrl = form.dataset.cmsUrl ?? '';
   const store = opts.store === undefined ? localStore() : opts.store;
   const fetchHits = opts.fetchHits ?? ((url: string, signal: AbortSignal) => fetchSuggestions(url, signal));
+  const fetchScholars = opts.fetchScholars ?? ((url: string, signal: AbortSignal) => fetchScholarSuggestions(url, locale, signal));
   const navigate = opts.navigate ?? ((href: string) => location.assign(href));
   const submit = opts.submit ?? ((f: HTMLFormElement) => (typeof f.requestSubmit === 'function' ? f.requestSubmit() : f.submit()));
   const debounceMs = opts.debounceMs ?? DEBOUNCE_MS;
@@ -187,7 +192,8 @@ export function initCombobox(form: HTMLFormElement, opts: ComboboxOptions = {}):
         remove.textContent = '×';
         li.append(text, remove);
       } else if (it.kind === 'hit') {
-        const li = option(target(it.hit.type, it.hit.type === 'cards' ? labels.cards : labels.articles), i);
+        const groupLabel = it.hit.type === 'scholar' ? (labels.scholars ?? labels.articles) : it.hit.type === 'cards' ? labels.cards : labels.articles;
+        const li = option(target(it.hit.type, groupLabel), i);
         if (it.hit.thumbnailUrl) {
           const img = document.createElement('img');
           img.src = it.hit.thumbnailUrl;
@@ -244,8 +250,9 @@ export function initCombobox(form: HTMLFormElement, opts: ComboboxOptions = {}):
     const mine = new AbortController();
     controller = mine;
     const n = ++seq;
-    const hits = await fetchHits(suggestUrl(cmsUrl, locale, q), mine.signal);
+    const [posts, scholars] = await Promise.all([fetchHits(suggestUrl(cmsUrl, locale, q), mine.signal), fetchScholars(scholarSuggestUrl(cmsUrl, locale, q), mine.signal)]);
     if (n !== seq || mine.signal.aborted || input.value !== q) return;
+    const hits = posts === null && !scholars?.length ? null : [...(scholars ?? []), ...(posts ?? [])];
     if (hits === null) {
       // No answer: no suggestions, the form still submits to the full search.
       render([], q);

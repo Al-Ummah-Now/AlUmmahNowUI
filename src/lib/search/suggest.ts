@@ -8,7 +8,8 @@ import type { Locale } from '../locale';
 
 export interface SearchHit {
   id: number;
-  type: 'article' | 'cards';
+  /** 'scholar': a scholar's page (from /search/scholars), listed before the posts. */
+  type: 'article' | 'cards' | 'scholar';
   title: string;
   slug: string;
   locale: Locale;
@@ -75,6 +76,36 @@ export async function fetchSuggestions(
     const res = await fetchImpl(url, { signal, headers: { Accept: 'application/json' }, credentials: 'omit' });
     if (!res.ok) return null;
     return hitsOf(await res.json());
+  } catch {
+    return null;
+  }
+}
+
+/** Scholars whose name matches (AlUmmahNowCMS `/search/scholars`): their pages, before the posts. */
+export const SCHOLAR_SUGGEST_LIMIT = 3;
+
+export function scholarSuggestUrl(cmsPublicUrl: string, locale: Locale, q: string, limit = SCHOLAR_SUGGEST_LIMIT): string {
+  const params = new URLSearchParams({ locale, q: q.slice(0, QUERY_MAX), limit: String(limit) });
+  return `${cmsPublicUrl}/api/public/v1/search/scholars?${params}`;
+}
+
+/** Valid scholar answers as hits (type 'scholar'); anything else is dropped. Pure (unit-tested). */
+export function scholarHitsOf(v: unknown, locale: Locale): SearchHit[] | null {
+  if (!Array.isArray(v)) return null;
+  const out: SearchHit[] = [];
+  v.forEach((r, i) => {
+    if (!isObj(r) || r.type !== 'scholar' || typeof r.slug !== 'string' || typeof r.title !== 'string' || !isSafeHref(r.href)) return;
+    const thumb = typeof r.thumbnailUrl === 'string' && r.thumbnailUrl.startsWith('https://') ? r.thumbnailUrl : null;
+    out.push({ id: -(i + 1), type: 'scholar', title: r.title, slug: r.slug, locale, href: r.href, thumbnailUrl: thumb, excerpt: null, publishedAt: '' });
+  });
+  return out;
+}
+
+export async function fetchScholarSuggestions(url: string, locale: Locale, signal: AbortSignal, fetchImpl: typeof fetch = fetch): Promise<SearchHit[] | null> {
+  try {
+    const res = await fetchImpl(url, { signal, headers: { Accept: 'application/json' }, credentials: 'omit' });
+    if (!res.ok) return null;
+    return scholarHitsOf(await res.json(), locale);
   } catch {
     return null;
   }
