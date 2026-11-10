@@ -1,0 +1,34 @@
+---
+/** Friendly page for a preview link that can't be shown (never a raw error). */
+import { strings } from '../i18n';
+import type { Locale } from '../lib/locale';
+
+export type PreviewProblem = 'invalid' | 'expired' | 'gone' | 'unavailable';
+interface Props { locale: Locale; problem: PreviewProblem; cmsUrl: string }
+const { locale, problem, cmsUrl } = Astro.props;
+const t = strings(locale);
+const [title, body] = {
+  invalid: [t.preview.invalidTitle, t.preview.invalidBody],
+  expired: [t.preview.expiredTitle, t.preview.expiredBody],
+  gone: [t.preview.goneTitle, t.preview.goneBody],
+  unavailable: [t.preview.unavailableTitle, t.preview.unavailableBody],
+}[problem];
+---
+<section class="error-page preview-problem" data-preview-problem={problem}>
+  <div class="wrap">
+    <p class="code">{t.preview.label}</p>
+    <h1>{title}</h1>
+    <p>{body}</p>
+    <ul class="error-links">
+      {problem === 'unavailable' ? (
+        <>
+        <li><a class="button button-quiet" href={Astro.url.pathname}>{t.errors.tryAgain}</a></li>
+        <li><a class="button button-outline" href={cmsUrl} rel="noreferrer">{t.preview.openCms}</a></li>
+        </>
+      ) : (
+        <li><a class="button button-quiet" href={cmsUrl} rel="noreferrer">{t.preview.openCms}</a></li>
+      )}
+      <li><a class="more-link" href={`/${locale}/`}>{t.errors.goHome}</a></li>
+    </ul>
+  </div>
+</section>

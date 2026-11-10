@@ -24,11 +24,11 @@ export function createExports(manifest: SSRManifest) {
         const apex = apexRedirect(request.url, cfg.siteUrl);
         if (apex) return apex;
         const root = rootRedirect(request);
-        if (root) return applySecurityHeaders(root, cfg);
+        if (root) return applySecurityHeaders(root, cfg, '/');
         const cache = typeof caches !== 'undefined' ? (caches as unknown as { default: Cache }).default : null;
         const render = () => handle(manifest, app, request as never, env as never, ctx as never) as Promise<Response>;
         const response = await withHtmlCache(request, cache, (p) => ctx.waitUntil(p), render);
-        return applySecurityHeaders(response, cfg);
+        return applySecurityHeaders(response, cfg, new URL(request.url).pathname);
       },
       async scheduled(_controller: unknown, env: WwwEnv, ctx: ExecutionContext): Promise<void> {
         const kv = env.CONTENT_SNAPSHOT;

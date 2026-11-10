@@ -1309,3 +1309,68 @@ html:not([data-js]) .theme {
   flex: none;
   color: var(--accent-text);
 }
+/* ---------- draft preview (src/components/PreviewBanner.astro) ---------- */
+.preview-bar {
+  background-color: var(--color-night-deep);
+  background-image: url('/brand/pattern.svg');
+  background-size: 96px 96px;
+  color: var(--color-on-night);
+  border-block-end: 3px solid var(--color-lantern);
+}
+.preview-bar .wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  padding-block: 0.875rem;
+}
+.preview-bar-text {
+  flex: 1 1 28rem;
+  min-width: 0;
+}
+.preview-bar p {
+  margin: 0;
+}
+.preview-bar-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.0625rem;
+}
+.preview-bar-title strong {
+  color: var(--color-lantern-soft);
+}
+.preview-dot {
+  inline-size: 0.625rem;
+  block-size: 0.625rem;
+  border-radius: 50%;
+  background: var(--color-lantern);
+  box-shadow: 0 0 0 4px rgb(245 164 67 / 0.25);
+  flex: none;
+}
+.preview-bar .preview-bar-body {
+  margin-block-start: 0.25rem;
+  color: var(--color-on-night-soft);
+  font-size: 0.9375rem;
+  max-width: var(--measure);
+}
+.preview-bar-action {
+  min-height: 2.75rem;
+  flex: none;
+}
+.preview-bar a:focus-visible {
+  outline: var(--focus);
+  outline-offset: 3px;
+}
+.preview-problem .code {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  letter-spacing: 0.02em;
+}
+.button-outline {
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--text);
+}
+.button-outline:hover {
+  box-shadow: inset 0 0 0 2px var(--text);
+}

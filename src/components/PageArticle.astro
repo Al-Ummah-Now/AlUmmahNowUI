@@ -1,0 +1,22 @@
+---
+/** A CMS page as published (src/pages/[locale]/[slug].astro) and as previewed (src/pages/preview/). */
+import type { Page } from '../lib/cms-types';
+import { dir } from '../lib/locale';
+
+interface Props { page: Page; html: string }
+const { page, html } = Astro.props;
+---
+<article>
+  <header class="page-head">
+    <div class="wrap">
+      <h1>{page.title}</h1>
+      {page.summary && <p class="lede">{page.summary}</p>}
+      {page.cover && <img class="cover" src={page.cover.url} alt={page.cover.alt ?? ''} width={page.cover.width ?? undefined} height={page.cover.height ?? undefined} />}
+    </div>
+  </header>
+  <div class="section">
+    <div class="wrap">
+      <div class="prose" lang={page.locale} dir={dir(page.locale)} set:html={html} />
+    </div>
+  </div>
+</article>

@@ -1,11 +1,10 @@
 ---
-import Icon from '../../../components/Icon.astro';
 import ErrorView from '../../../components/ErrorView.astro';
+import PostArticle from '../../../components/PostArticle.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import { fmt, formatDate } from '../../../i18n';
 import { documentAlternates, renderBody } from '../../../lib/body';
 import { loadChrome, markSource, requestContext, routeLocale } from '../../../lib/context';
-import { otherLocale, dir } from '../../../lib/locale';
+import { otherLocale } from '../../../lib/locale';
 import { plainText } from '../../../lib/markdown';
 import { newsArticleLd, videoObjectLd } from '../../../lib/seo';
 
@@ -62,31 +61,7 @@ const jsonLd = post
   contentLocale={post?.locale}
 >
   {post && body ? (
-    <article>
-      <header class="page-head">
-        <div class="wrap">
-          <p><a class="more-link" href={`/${locale}/news/`}><Icon name="chevron" class="flip" />{t.news.backToNews}</a></p>
-          <h1>{post.title}</h1>
-          {post.excerpt && <p class="lede">{post.excerpt}</p>}
-          <p class="byline">
-            <time datetime={post.published_at}>{formatDate(post.published_at, post.locale)}</time>
-            {post.author_name && <span>{' '}{fmt(t.news.by, { author: post.author_name })}</span>}
-          </p>
-          {post.cover && <img class="cover" src={post.cover.url} alt={post.cover.alt ?? ''} width={post.cover.width ?? undefined} height={post.cover.height ?? undefined} />}
-        </div>
-      </header>
-      <div class="section">
-        <div class="wrap">
-          <div class="prose" lang={post.locale} dir={dir(post.locale)} set:html={body.html} />
-          {post.tags.length > 0 && (
-            <div class="section-tags">
-              <h2 class="visually-hidden">{t.news.tags}</h2>
-              <ul class="tags">{post.tags.map((tag) => <li>{tag}</li>)}</ul>
-            </div>
-          )}
-        </div>
-      </div>
-    </article>
+    <PostArticle post={post} html={body.html} locale={locale} />
   ) : (
     <ErrorView locale={locale} kind="unavailable" />
   )}

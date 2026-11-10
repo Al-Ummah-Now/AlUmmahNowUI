@@ -54,6 +54,14 @@ every QA deploy and every promote.
   `/auth/callback` (token exchange, JWKS verification) → an encrypted `__Host-aun_www` cookie
   holding `{ sub, name, email, roles, exp }` for 8 h; no tokens are stored. The header menu shows
   Profile, Videos, CMS (Super Admin, Admin, Moderator only) and Sign out.
+- **Draft preview** (`src/lib/preview.ts`, `src/pages/preview/`): the CMS editor's "Preview on
+  site" lands on `/preview?token=…`, which moves the token into an HttpOnly cookie for that one row
+  (`__Host-aun_preview_{kind}_{id}`, until the token's expiry) and 303s to `/preview/{kind}/{id}`,
+  so the token never stays in the address bar, history, links or analytics. That page fetches the
+  row from the CMS preview API (the CMS verifies the token every time) and renders it with the same
+  article components and layout as the live page, plus a "Preview — not published" banner.
+  Responses are `private, no-store, no-transform` (no edge cache, no analytics beacon injection),
+  `noindex`, `Referrer-Policy: no-referrer`; broken, expired or deleted links get friendly pages.
 - **Edge** (`src/worker.ts`): apex → www 301, `/` → `/en/` or `/ar/` (cookie, then
   `Accept-Language`), CSP without `unsafe-inline`, HSTS, `frame-ancestors 'none'`, and
   `X-Robots-Tag: noindex` off production.

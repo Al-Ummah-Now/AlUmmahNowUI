@@ -1,11 +1,12 @@
 ---
 import ErrorView from '../../components/ErrorView.astro';
+import PageArticle from '../../components/PageArticle.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { builtinContent } from '../../content/fallback';
 import { documentAlternates, renderBody } from '../../lib/body';
 import type { Page } from '../../lib/cms-types';
 import { loadChrome, markSource, requestContext, routeLocale } from '../../lib/context';
-import { dir, otherLocale } from '../../lib/locale';
+import { otherLocale } from '../../lib/locale';
 import { plainText } from '../../lib/markdown';
 import { videoObjectLd } from '../../lib/seo';
 
@@ -47,20 +48,7 @@ const jsonLd = page ? (body?.videos ?? []).map((v) => videoObjectLd(cfg, v, page
   contentLocale={page?.locale}
 >
   {page && body ? (
-    <article>
-      <header class="page-head">
-        <div class="wrap">
-          <h1>{page.title}</h1>
-          {page.summary && <p class="lede">{page.summary}</p>}
-          {page.cover && <img class="cover" src={page.cover.url} alt={page.cover.alt ?? ''} width={page.cover.width ?? undefined} height={page.cover.height ?? undefined} />}
-        </div>
-      </header>
-      <div class="section">
-        <div class="wrap">
-          <div class="prose" lang={page.locale} dir={dir(page.locale)} set:html={body.html} />
-        </div>
-      </div>
-    </article>
+    <PageArticle page={page} html={body.html} />
   ) : (
     <ErrorView locale={locale} kind="unavailable" />
   )}
