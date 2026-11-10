@@ -82,6 +82,8 @@ describe('PKCE login', () => {
     expect(state?.returnTo).toBe('/ar/articles/');
     expect(url.searchParams.get('state')).toBe(state?.state);
     expect(url.searchParams.get('code_challenge')).toBe(await codeChallenge(state!.verifier));
+    // The sign-in page takes its language from ?lang= only: an Arabic page signs in in Arabic
+    expect(url.searchParams.get('lang')).toBe('ar');
   });
   it('guards the return path', async () => {
     const res = await login(new Request('https://www.qa.alummahnow.net/auth/login?return=https://evil.example'), { cfg, secret: SECRET });
@@ -223,7 +225,16 @@ describe('callback, me, logout', () => {
     const good = await logout(new Request('https://www.qa.alummahnow.net/auth/logout?next=https%3A%2F%2Fauth.qa.alummahnow.net%2Flogout%3Fstep%3D2'), { cfg, secret: SECRET });
     expect(good.headers.get('Location')).toBe('https://auth.qa.alummahnow.net/logout?step=2');
     const bad = await logout(new Request('https://www.qa.alummahnow.net/auth/logout?next=https%3A%2F%2Fevil.example'), { cfg, secret: SECRET });
-    expect(bad.headers.get('Location')).toBe('/');
+    expect(bad.headers.get('Location')).toBe('https://auth.qa.alummahnow.net/logout?return=https%3A%2F%2Fwww.qa.alummahnow.net%2Fen%2F');
+    const notLogout = await logout(new Request('https://www.qa.alummahnow.net/auth/logout?next=https%3A%2F%2Fauth.qa.alummahnow.net%2Fauthorize'), { cfg, secret: SECRET });
+    expect(notLogout.headers.get('Location')).toBe('https://auth.qa.alummahnow.net/logout?return=https%3A%2F%2Fwww.qa.alummahnow.net%2Fen%2F');
+  });
+
+  it('a GET without next is single sign-out (not www alone), back to the page language', async () => {
+    const res = await logout(new Request('https://www.qa.alummahnow.net/auth/logout?locale=ar'), { cfg, secret: SECRET });
+    expect(res.status).toBe(302);
+    expect(res.headers.get('Location')).toBe('https://auth.qa.alummahnow.net/logout?return=https%3A%2F%2Fwww.qa.alummahnow.net%2Far%2F');
+    expect(res.headers.get('Set-Cookie')).toContain(`${SESSION_COOKIE}=; Path=/; Max-Age=0`);
   });
 });
 
