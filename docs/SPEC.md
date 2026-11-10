@@ -147,7 +147,8 @@ videos), `sitemap.xml` from the CMS slugs, `robots.txt`. QA and stage serve
   `footer`), visible focus, contrast ≥ 4.5:1, keyboard-complete menus, `prefers-reduced-motion`.
   axe-core in E2E: zero serious or critical violations on home/news/page in en and ar, desktop
   and mobile.
-- **Security headers:** CSP (nonce not needed: no inline scripts), HSTS, `X-Content-Type-Options`,
+- **Security headers:** CSP (no nonce: HTML is edge-cached; the only inline script is the
+  light/dark head script, allowed by its sha256 hash, see src/lib/theme-mode.ts), HSTS, `X-Content-Type-Options`,
   `Referrer-Policy`, `Permissions-Policy`, `frame-ancestors 'none'`.
 - **Empty and error states:** no news yet; no curated videos; CMS down (builtin); a video removed
   upstream; 404; 500 (a localized error page, never a stack trace).

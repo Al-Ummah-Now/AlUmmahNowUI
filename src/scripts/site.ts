@@ -1,5 +1,6 @@
 /**
  * Site behaviour (the only JS besides the video facade):
+ *  - Light / Dark / System menu (./theme.ts; the head script applies the saved choice)
  *  - language switch remembers the choice (aun_locale cookie, read by `/`)
  *  - account: fetch /auth/me and auth's account list ({AUTH}/session/accounts);
  *    signed in → name + disclosure menu listing every account in this browser (switch,
@@ -9,6 +10,7 @@
  * HTML is identical for every visitor (edge-cached); signed-in state is client-side only.
  */
 import { initFacades } from './facade';
+import { initTheme } from './theme';
 import {
   PROBE_KEY,
   SYNC_KEY,
@@ -280,5 +282,6 @@ async function initAccount() {
 }
 
 rememberLocale();
+initTheme();
 initFacades();
 void initAccount();

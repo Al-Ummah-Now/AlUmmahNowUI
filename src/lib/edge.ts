@@ -6,6 +6,7 @@ import { embedOrigin } from './embeds';
 import type { Config } from './env';
 import { imgSrcSources } from './images';
 import { negotiateLocale } from './locale';
+import { MODE_SCRIPT_HASH } from './theme-mode';
 
 /** alummahnow.net/x?y → 301 https://www.alummahnow.net/x?y (only when SITE_URL is a www host). */
 export function apexRedirect(requestUrl: string, siteUrl: string): Response | null {
@@ -53,8 +54,9 @@ export function contentSecurityPolicy(cfg: Config): string {
   const https = cfg.siteUrl.startsWith('https://');
   const directives = [
     "default-src 'self'",
-    // Cloudflare Web Analytics: the zone injects its beacon into HTML responses
-    "script-src 'self' https://static.cloudflareinsights.com",
+    // Cloudflare Web Analytics: the zone injects its beacon into HTML responses.
+    // The one inline script is the light/dark head script, allowed by its hash (theme-mode.ts).
+    `script-src 'self' ${MODE_SCRIPT_HASH} https://static.cloudflareinsights.com`,
     "style-src 'self'",
     `img-src ${imgSrcSources(cfg.cmsPublicUrl).join(' ')}`,
     "font-src 'self'",

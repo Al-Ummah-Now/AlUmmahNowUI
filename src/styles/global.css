@@ -49,13 +49,143 @@
   --measure: 42rem;
   --wide: 74rem;
   --radius-media: 0.75rem;
-  --focus: 3px solid var(--color-lantern);
+  --focus: 3px solid var(--focus-color);
+
+  /*
+   * Colour roles. Light is the original www palette; dark (below) is the Fanous
+   * "Fawanees" dark scheme shared with the sign-in pages, videos and the CMS.
+   * Components use only these roles (and the fixed brand colours for things that are
+   * always on night, like the hero text and video placeholders).
+   */
   color-scheme: light;
+  --bg: var(--color-mist);
+  --page-bg: none;
+  --surface: var(--color-paper);
+  --surface-raised: #fbfdfc;
+  --hover: var(--color-mist);
+  --text: var(--color-ink);
+  --heading: var(--color-ink);
+  --text-soft: var(--color-ink-soft);
+  --link: var(--color-link);
+  --accent-text: var(--color-brass);
+  --line: var(--color-line);
+  --control-line: var(--color-line);
+  --focus-color: var(--color-lantern);
+  --header-bg: var(--color-paper);
+  --header-line: var(--color-line);
+  --header-shadow: none;
+  --page-head-bg: var(--color-paper);
+  --page-head-glow: 0;
+  --solid-bg: var(--color-night);
+  --solid-bg-hover: var(--color-night-deep);
+  --solid-edge: none;
+  --on-solid: var(--color-on-night);
+  --hero-bg: var(--color-night);
+  --hero-glow: 0.2;
+  --hero-shade: linear-gradient(transparent, transparent);
+  --hero-line: transparent;
+  --footer-bg: var(--color-night-deep);
+  --footer-line: transparent;
+  --notice-bg: #fff4e3;
+  --notice-line: #f1d3a6;
+  --card-shadow: none;
+  --menu-shadow: 0 12px 32px -12px rgb(7 40 50 / 0.35);
+  --pre-bg: var(--color-night-deep);
+  --media-filter: none;
+}
+
+/* Dark: the viewer's system setting, unless they picked Light or Dark (html[data-mode]) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode='light']) {
+    color-scheme: dark;
+    --bg: #09151e;
+    /* the Fanous page: lantern light falling from the top corners onto the night */
+    --page-bg: radial-gradient(60rem 28rem at 12% -6rem, rgb(244 174 58 / 0.07), transparent 70%),
+      radial-gradient(50rem 26rem at 88% -4rem, rgb(244 174 58 / 0.05), transparent 70%);
+    --surface: #0e2b3d;
+    --surface-raised: #133a4e;
+    --hover: #184456;
+    --text: #f7f1e8;
+    --heading: #fbefd0;
+    --text-soft: #b0c0c8;
+    --link: #fbc661;
+    --accent-text: #f5cf92;
+    --line: #184456;
+    --control-line: #3d6475;
+    --focus-color: #f5cf92;
+    --header-bg: #0b1d2a;
+    --header-line: #184456;
+    --header-shadow: 0 1px 0 rgb(255 255 255 / 0.03), 0 8px 24px -16px rgb(0 0 0 / 0.8);
+    --page-head-bg: linear-gradient(180deg, #0e2b3d, #0b1d2a);
+    --page-head-glow: 0.1;
+    --solid-bg: #184456;
+    --solid-bg-hover: #1f5468;
+    --solid-edge: inset 0 1px 0 rgb(255 255 255 / 0.06);
+    --on-solid: #f7f1e8;
+    --hero-bg: #0b1d2a;
+    --hero-glow: 0.16;
+    --hero-shade: linear-gradient(180deg, rgb(14 43 61 / 0.6), rgb(9 21 30 / 0.85));
+    --hero-line: #184456;
+    --footer-bg: #060f15;
+    --footer-line: #184456;
+    --notice-bg: #2a2416;
+    --notice-line: #5b4620;
+    --card-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 4px 12px rgb(0 0 0 / 0.25);
+    --menu-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 12px 32px rgb(0 0 0 / 0.45);
+    --pre-bg: #050d13;
+    /* photos and CMS images sit a touch lower so they don't glare against the night */
+    --media-filter: brightness(0.92) contrast(1.04);
+  }
+}
+:root[data-mode='dark'] {
+  color-scheme: dark;
+  --bg: #09151e;
+  /* the Fanous page: lantern light falling from the top corners onto the night */
+  --page-bg: radial-gradient(60rem 28rem at 12% -6rem, rgb(244 174 58 / 0.07), transparent 70%),
+    radial-gradient(50rem 26rem at 88% -4rem, rgb(244 174 58 / 0.05), transparent 70%);
+  --surface: #0e2b3d;
+  --surface-raised: #133a4e;
+  --hover: #184456;
+  --text: #f7f1e8;
+  --heading: #fbefd0;
+  --text-soft: #b0c0c8;
+  --link: #fbc661;
+  --accent-text: #f5cf92;
+  --line: #184456;
+  --control-line: #3d6475;
+  --focus-color: #f5cf92;
+  --header-bg: #0b1d2a;
+  --header-line: #184456;
+  --header-shadow: 0 1px 0 rgb(255 255 255 / 0.03), 0 8px 24px -16px rgb(0 0 0 / 0.8);
+  --page-head-bg: linear-gradient(180deg, #0e2b3d, #0b1d2a);
+    --page-head-glow: 0.1;
+  --solid-bg: #184456;
+  --solid-bg-hover: #1f5468;
+  --solid-edge: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  --on-solid: #f7f1e8;
+  --hero-bg: #0b1d2a;
+  --hero-glow: 0.16;
+  --hero-shade: linear-gradient(180deg, rgb(14 43 61 / 0.6), rgb(9 21 30 / 0.85));
+  --hero-line: #184456;
+  --footer-bg: #060f15;
+  --footer-line: #184456;
+  --notice-bg: #2a2416;
+  --notice-line: #5b4620;
+  --card-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 4px 12px rgb(0 0 0 / 0.25);
+  --menu-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 12px 32px rgb(0 0 0 / 0.45);
+  --pre-bg: #050d13;
+  /* photos and CMS images sit a touch lower so they don't glare against the night */
+  --media-filter: brightness(0.92) contrast(1.04);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-lantern) 35%, transparent);
 }
 
 html {
-  background: var(--color-mist);
-  color: var(--color-ink);
+  background: var(--page-bg);
+  background-color: var(--bg);
+  color: var(--text);
   font-family: var(--font-latin);
   font-size: 100%;
   -webkit-text-size-adjust: 100%;
@@ -85,7 +215,7 @@ h3 {
   font-weight: 600;
   line-height: 1.2;
   text-wrap: balance;
-  color: var(--color-ink);
+  color: var(--heading);
 }
 :lang(ar) :is(h1, h2, h3),
 :is(h1, h2, h3):lang(ar) {
@@ -95,7 +225,7 @@ h3 {
 }
 
 a {
-  color: var(--color-link);
+  color: var(--link);
   text-decoration-thickness: 1px;
   text-underline-offset: 0.2em;
 }
@@ -133,8 +263,8 @@ a:hover {
   inset-block-start: -10rem;
   z-index: 50;
   padding: 0.75rem 1rem;
-  background: var(--color-night);
-  color: var(--color-on-night);
+  background: var(--solid-bg);
+  color: var(--on-solid);
   border-radius: 0.375rem;
   font-weight: 600;
 }
@@ -144,8 +274,11 @@ a:hover {
 
 /* ---------- header ---------- */
 .site-header {
-  background: var(--color-paper);
-  border-block-end: 1px solid var(--color-line);
+  position: relative;
+  z-index: 30;
+  background: var(--header-bg);
+  border-block-end: 1px solid var(--header-line);
+  box-shadow: var(--header-shadow);
 }
 .site-header .wrap {
   display: flex;
@@ -158,7 +291,7 @@ a:hover {
   display: inline-flex;
   align-items: center;
   gap: 0.625rem;
-  color: var(--color-ink);
+  color: var(--text);
   text-decoration: none;
   font-weight: 700;
   font-size: 1.0625rem;
@@ -190,13 +323,13 @@ a:hover {
   min-height: 2.75rem;
   padding-inline: 0.75rem;
   border-radius: 0.375rem;
-  color: var(--color-ink);
+  color: var(--text);
   text-decoration: none;
   font-weight: 500;
 }
 .primary-nav a:hover,
 .lang-switch:hover {
-  background: var(--color-mist);
+  background: var(--hover);
 }
 .primary-nav a[aria-current='page'] {
   box-shadow: inset 0 -3px 0 var(--color-lantern);
@@ -207,15 +340,15 @@ a:hover {
   gap: 0.25rem;
 }
 .lang-switch {
-  border: 1px solid var(--color-line);
+  border: 1px solid var(--control-line);
 }
 .signin-link {
-  background: var(--color-night);
-  color: var(--color-on-night);
+  background: var(--solid-bg);
+  color: var(--on-solid);
   font-weight: 600;
 }
 .signin-link:hover {
-  background: var(--color-night-deep);
+  background: var(--solid-bg-hover);
 }
 
 @media (max-width: 47.99rem) {
@@ -235,8 +368,8 @@ a:hover {
 }
 .account-button {
   gap: 0.5rem;
-  border: 1px solid var(--color-line);
-  background: var(--color-paper);
+  border: 1px solid var(--control-line);
+  background: var(--surface);
   cursor: pointer;
   font: inherit;
   max-width: 14rem;
@@ -260,10 +393,10 @@ a:hover {
   margin: 0;
   padding: 0.375rem;
   list-style: none;
-  background: var(--color-paper);
-  border: 1px solid var(--color-line);
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: 0.5rem;
-  box-shadow: 0 12px 32px -12px rgb(7 40 50 / 0.35);
+  box-shadow: var(--menu-shadow);
 }
 .account-menu[hidden] {
   display: none;
@@ -276,7 +409,7 @@ a:hover {
   align-items: center;
   padding-inline: 0.75rem;
   border-radius: 0.375rem;
-  color: var(--color-ink);
+  color: var(--text);
   text-decoration: none;
   background: none;
   border: 0;
@@ -288,31 +421,31 @@ a:hover {
 .account-menu button:hover,
 .account-menu a:focus-visible,
 .account-menu button:focus-visible {
-  background: var(--color-mist);
+  background: var(--hover);
 }
 .account-menu .account-who {
   padding: 0.5rem 0.75rem;
-  color: var(--color-ink-soft);
+  color: var(--text-soft);
   font-size: 0.875rem;
-  border-block-end: 1px solid var(--color-line);
+  border-block-end: 1px solid var(--line);
   margin-block-end: 0.25rem;
 }
 .account-menu form {
   margin: 0;
-  border-block-start: 1px solid var(--color-line);
+  border-block-start: 1px solid var(--line);
   margin-block-start: 0.25rem;
   padding-block-start: 0.25rem;
 }
 /* every account in this browser (from auth's /session/accounts) */
 .account-menu .account-group {
-  border-block-end: 1px solid var(--color-line);
+  border-block-end: 1px solid var(--line);
   margin-block-end: 0.25rem;
   padding-block-end: 0.25rem;
 }
 .account-menu .account-group-label {
   display: block;
   padding: 0.25rem 0.75rem;
-  color: var(--color-ink-soft);
+  color: var(--text-soft);
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -338,7 +471,7 @@ a:hover {
   border-radius: 0.375rem;
 }
 .account-menu .account-entry[aria-current='true'] {
-  background: var(--color-mist);
+  background: var(--hover);
 }
 .account-menu .account-name,
 .account-menu .account-email {
@@ -352,13 +485,13 @@ a:hover {
 }
 .account-menu .account-email,
 .account-menu .account-current {
-  color: var(--color-ink-soft);
+  color: var(--text-soft);
   font-size: 0.8125rem;
 }
 .account-menu .account-row > .account-signout {
   width: auto;
   flex: none;
-  color: var(--color-ink-soft);
+  color: var(--text-soft);
   font-size: 0.8125rem;
 }
 .account-menu button[disabled] {
@@ -368,9 +501,9 @@ a:hover {
 
 /* ---------- notices ---------- */
 .notice {
-  background: #fff4e3;
-  border-block-end: 1px solid #f1d3a6;
-  color: var(--color-ink);
+  background: var(--notice-bg);
+  border-block-end: 1px solid var(--notice-line);
+  color: var(--text);
 }
 .notice p {
   margin: 0;
@@ -381,13 +514,17 @@ a:hover {
 .hero {
   position: relative;
   overflow: hidden;
-  background-color: var(--color-night);
-  background-image: radial-gradient(60rem 40rem at var(--glow-x, 78%) 40%, rgb(245 164 67 / 0.2), transparent 60%), url('/brand/pattern.svg');
-  background-size: auto, 96px 96px;
+  background-color: var(--hero-bg);
+  background-image: radial-gradient(60rem 40rem at var(--glow-x, 78%) 40%, rgb(245 164 67 / var(--hero-glow)), transparent 60%), var(--hero-shade), url('/brand/pattern.svg');
+  background-size: auto, auto, 96px 96px;
+  border-block-end: 1px solid var(--hero-line);
   color: var(--color-on-night);
 }
 [dir='rtl'] .hero {
   --glow-x: 22%;
+}
+[dir='rtl'] .page-head {
+  --glow-x: 15%;
 }
 .hero .wrap {
   display: grid;
@@ -479,11 +616,12 @@ a:hover {
   box-shadow: inset 0 0 0 2px var(--color-on-night);
 }
 .button-quiet {
-  background: var(--color-night);
-  color: var(--color-on-night);
+  background: var(--solid-bg);
+  color: var(--on-solid);
+  box-shadow: var(--solid-edge);
 }
 .button-quiet:hover {
-  background: var(--color-night-deep);
+  background: var(--solid-bg-hover);
 }
 
 /* ---------- sections ---------- */
@@ -494,7 +632,7 @@ main {
   padding-block: clamp(2.5rem, 6vw, 4.5rem);
 }
 .section + .section {
-  border-block-start: 1px solid var(--color-line);
+  border-block-start: 1px solid var(--line);
 }
 .section-head {
   display: flex;
@@ -541,7 +679,7 @@ main {
 .pillar svg {
   width: 2.25rem;
   height: 2.25rem;
-  color: var(--color-brass);
+  color: var(--accent-text);
 }
 .pillar h3 {
   margin: 0.75rem 0 0.5rem;
@@ -549,7 +687,7 @@ main {
 }
 .pillar p {
   margin: 0;
-  color: var(--color-ink-soft);
+  color: var(--text-soft);
   max-width: 34ch;
 }
 
@@ -571,7 +709,7 @@ main {
 }
 .rail a {
   display: block;
-  color: var(--color-ink);
+  color: var(--text);
   text-decoration: none;
 }
 .rail a:hover .rail-title {
@@ -594,7 +732,7 @@ main {
 }
 .rail-meta {
   display: block;
-  color: var(--color-ink-soft);
+  color: var(--text-soft);
   font-size: 0.9375rem;
 }
 
@@ -607,13 +745,13 @@ main {
 }
 .news-item {
   padding-block: 1.25rem;
-  border-block-end: 1px solid var(--color-line);
+  border-block-end: 1px solid var(--line);
 }
 .news-item:first-child {
   padding-block-start: 0;
 }
 .news-item time {
-  color: var(--color-brass);
+  color: var(--accent-text);
   font-size: 0.9375rem;
   font-weight: 600;
 }
@@ -624,7 +762,7 @@ main {
 }
 .news-item h2 a,
 .news-item h3 a {
-  color: var(--color-ink);
+  color: var(--text);
   text-decoration: none;
 }
 .news-item h2 a:hover,
@@ -633,7 +771,7 @@ main {
 }
 .news-item p {
   margin: 0;
-  color: var(--color-ink-soft);
+  color: var(--text-soft);
 }
 
 /* apps */
@@ -653,15 +791,16 @@ main {
   display: block;
   height: 100%;
   padding: 1.5rem;
-  background: var(--color-paper);
+  background: var(--surface);
   border-radius: 0.5rem;
   border-block-start: 3px solid var(--color-lantern);
-  color: var(--color-ink);
+  color: var(--text);
   text-decoration: none;
+  box-shadow: var(--card-shadow);
 }
 .app-link:hover {
-  background: #fbfdfc;
-  box-shadow: 0 0 0 1px var(--color-line);
+  background: var(--surface-raised);
+  box-shadow: 0 0 0 1px var(--line), var(--card-shadow);
 }
 .app-link strong {
   display: flex;
@@ -672,16 +811,17 @@ main {
 .app-link span {
   display: block;
   margin-block-start: 0.375rem;
-  color: var(--color-ink-soft);
+  color: var(--text-soft);
 }
 
 /* empty states */
 .empty {
   max-width: var(--measure);
   padding: 2rem;
-  background: var(--color-paper);
+  background: var(--surface);
   border-radius: 0.5rem;
-  border: 1px dashed var(--color-line);
+  border: 1px dashed var(--line);
+  box-shadow: var(--card-shadow);
 }
 .empty p {
   margin: 0 0 1rem;
@@ -693,8 +833,8 @@ main {
 
 /* ---------- page heads and articles ---------- */
 .page-head {
-  background: var(--color-paper);
-  border-block-end: 1px solid var(--color-line);
+  background: radial-gradient(40rem 18rem at var(--glow-x, 85%) 0, rgb(244 174 58 / var(--page-head-glow)), transparent 70%), var(--page-head-bg);
+  border-block-end: 1px solid var(--line);
 }
 .page-head .wrap {
   padding-block: clamp(2rem, 5vw, 3.5rem);
@@ -707,16 +847,16 @@ main {
 .page-head .lede {
   margin: 0.75rem 0 0;
   max-width: var(--measure);
-  color: var(--color-ink-soft);
+  color: var(--text-soft);
   font-size: 1.1875rem;
 }
 .byline {
   margin: 1rem 0 0;
-  color: var(--color-ink-soft);
+  color: var(--text-soft);
   font-size: 0.9375rem;
 }
 .byline time {
-  color: var(--color-brass);
+  color: var(--accent-text);
   font-weight: 600;
 }
 .cover {
@@ -726,6 +866,7 @@ main {
   height: auto;
   margin-block: 2rem 0;
   border-radius: var(--radius-media);
+  filter: var(--media-filter);
 }
 
 .prose {
@@ -759,24 +900,26 @@ main {
   margin-inline: 0;
   padding-inline-start: 1.25rem;
   border-inline-start: 3px solid var(--color-lantern);
-  color: var(--color-ink-soft);
+  color: var(--text-soft);
 }
 .prose img {
+  filter: var(--media-filter);
   max-width: 100%;
   height: auto;
   border-radius: var(--radius-media);
 }
 .prose code {
   font-size: 0.9em;
-  background: var(--color-paper);
+  background: var(--surface);
   padding: 0.1em 0.3em;
   border-radius: 0.25rem;
 }
 .prose pre {
   overflow-x: auto;
   padding: 1rem;
-  background: var(--color-night-deep);
+  background: var(--pre-bg);
   color: var(--color-on-night);
+  border: 1px solid var(--line);
   border-radius: 0.5rem;
 }
 .prose pre code {
@@ -785,7 +928,7 @@ main {
 }
 .prose hr {
   border: 0;
-  border-block-start: 1px solid var(--color-line);
+  border-block-start: 1px solid var(--line);
 }
 .prose table {
   border-collapse: collapse;
@@ -793,7 +936,7 @@ main {
 }
 .prose th,
 .prose td {
-  border: 1px solid var(--color-line);
+  border: 1px solid var(--line);
   padding: 0.5rem 0.75rem;
   text-align: start;
 }
@@ -811,8 +954,8 @@ main {
 .tags li {
   padding: 0.125rem 0.75rem;
   border-radius: 999px;
-  background: var(--color-paper);
-  border: 1px solid var(--color-line);
+  background: var(--surface);
+  border: 1px solid var(--line);
   font-size: 0.9375rem;
 }
 
@@ -827,7 +970,7 @@ main {
 }
 .pagination p {
   margin: 0;
-  color: var(--color-ink-soft);
+  color: var(--text-soft);
 }
 .pagination a {
   display: inline-flex;
@@ -835,9 +978,9 @@ main {
   gap: 0.375rem;
   min-height: 2.75rem;
   padding-inline: 1rem;
-  border: 1px solid var(--color-line);
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--color-paper);
+  background: var(--surface);
   text-decoration: none;
   font-weight: 600;
 }
@@ -934,7 +1077,7 @@ main {
 }
 .facade-channel {
   margin: 0.125rem 0 0;
-  color: var(--color-ink-soft);
+  color: var(--text-soft);
   font-size: 0.9375rem;
 }
 .facade-link {
@@ -948,9 +1091,10 @@ main {
   align-items: center;
   gap: 1rem;
   padding: 1.25rem;
-  background: var(--color-paper);
+  background: var(--surface);
   border-radius: 0.5rem;
-  border: 1px solid var(--color-line);
+  border: 1px solid var(--line);
+  box-shadow: var(--card-shadow);
 }
 .channel-card img,
 .channel-card .avatar-empty {
@@ -968,7 +1112,7 @@ main {
 }
 .channel-card p {
   margin: 0.125rem 0 0;
-  color: var(--color-ink-soft);
+  color: var(--text-soft);
   font-size: 0.9375rem;
 }
 
@@ -981,7 +1125,7 @@ main {
   font-family: var(--font-latin-display);
   font-size: clamp(3rem, 8vw, 5rem);
   line-height: 1;
-  color: var(--color-brass);
+  color: var(--accent-text);
 }
 .error-page h1 {
   margin: 0.75rem 0 0;
@@ -990,7 +1134,7 @@ main {
 .error-page p {
   margin-block: 1rem 0;
   max-width: var(--measure);
-  color: var(--color-ink-soft);
+  color: var(--text-soft);
 }
 .error-links {
   display: flex;
@@ -1004,8 +1148,9 @@ main {
 /* ---------- footer ---------- */
 .site-footer {
   margin-block-start: auto;
-  background-color: var(--color-night-deep);
+  background-color: var(--footer-bg);
   background-image: url('/brand/pattern.svg');
+  border-block-start: 1px solid var(--footer-line);
   background-size: 96px 96px;
   color: var(--color-on-night);
 }
@@ -1081,4 +1226,86 @@ main {
 }
 .video-grid + .video-grid {
   margin-block-start: 3rem;
+}
+
+/* ---------- Light / Dark / System (needs JS: shown once the head script ran) ---------- */
+.theme {
+  position: relative;
+}
+html:not([data-js]) .theme {
+  display: none;
+}
+.theme-button {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 1px solid var(--control-line);
+  border-radius: 999px;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+.theme-button:hover {
+  background: var(--hover);
+}
+.theme-button .theme-icon {
+  grid-area: 1 / 1;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+.theme-button[data-current='system'] .theme-icon:not([data-icon='system']),
+.theme-button[data-current='light'] .theme-icon:not([data-icon='light']),
+.theme-button[data-current='dark'] .theme-icon:not([data-icon='dark']) {
+  display: none;
+}
+.theme-menu {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-start: calc(100% + 0.375rem);
+  z-index: 40;
+  min-width: 11rem;
+  margin: 0;
+  padding: 0.375rem;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  box-shadow: var(--menu-shadow);
+}
+.theme-menu[hidden] {
+  display: none;
+}
+.theme-menu button {
+  display: flex;
+  width: 100%;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.625rem;
+  padding-inline: 0.75rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.theme-menu button:hover,
+.theme-menu button:focus-visible {
+  background: var(--hover);
+}
+.theme-menu button[aria-pressed='true'] {
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--color-lantern);
+}
+[dir='rtl'] .theme-menu button[aria-pressed='true'] {
+  box-shadow: inset -3px 0 0 var(--color-lantern);
+}
+.theme-menu .theme-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+  color: var(--accent-text);
 }

@@ -1,6 +1,7 @@
 ---
 import Icon from './Icon.astro';
-import { strings } from '../i18n';
+import ThemeIcon from './ThemeIcon.astro';
+import { fmt, strings } from '../i18n';
 import { navHref } from '../lib/context';
 import type { NavItem } from '../lib/cms-types';
 import { libraryUrl } from '../lib/embeds';
@@ -33,6 +34,24 @@ const loginHref = `/auth/login?return=${encodeURIComponent(path + Astro.url.sear
       </ul>
     </nav>
     <div class="header-tools">
+      <div class="theme" id="theme" data-label-current={t.theme.current} data-label-system={t.theme.system} data-label-light={t.theme.light} data-label-dark={t.theme.dark}>
+        <button type="button" class="theme-button" aria-expanded="false" aria-controls="theme-menu" data-current="system">
+          <span class="visually-hidden" data-theme-name>{fmt(t.theme.current, { mode: t.theme.system })}</span>
+          <ThemeIcon mode="system" />
+          <ThemeIcon mode="light" />
+          <ThemeIcon mode="dark" />
+        </button>
+        <ul class="theme-menu" id="theme-menu" aria-label={t.theme.label} hidden>
+          {(['system', 'light', 'dark'] as const).map((m) => (
+            <li>
+              <button type="button" data-set-mode={m} aria-pressed={m === 'system' ? 'true' : 'false'}>
+                <ThemeIcon mode={m} />
+                <span>{t.theme[m]}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
       <a class="lang-switch" href={switchHref} hreflang={other} lang={other} data-set-locale={other}>{t.lang.switchTo}</a>
       <div
         class="account"
