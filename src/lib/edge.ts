@@ -141,6 +141,20 @@ export function isCacheableResponse(response: Response): boolean {
   return type.includes('text/html') || type.includes('xml');
 }
 
+/**
+ * The edge-cache key for a page: its URL plus the Worker version that rendered it. Pages link
+ * hashed assets (/_astro/*.css) that only exist in the version that built them, so a page cached
+ * by the previous deploy would load without its stylesheet (404) for up to FRESH+SWR after every
+ * deploy. Keying by version starts each deploy on its own cache; during a gradual rollout each
+ * version serves only pages that match its own assets.
+ */
+export function htmlCacheKey(url: string, version: string): string {
+  if (!version) return url;
+  const u = new URL(url);
+  u.searchParams.set('__v', version);
+  return u.toString();
+}
+
 /** Revalidations in flight in this isolate, by URL. */
 const revalidating = new Map<string, Promise<unknown>>();
 
@@ -151,9 +165,10 @@ export async function withHtmlCache(
   render: () => Promise<Response>,
   now: () => number = Date.now,
   inflight: Map<string, Promise<unknown>> = revalidating,
+  version = '',
 ): Promise<Response> {
   if (!cache || !isCacheableRequest(request)) return render();
-  const key = new Request(request.url, { method: 'GET' });
+  const key = new Request(htmlCacheKey(request.url, version), { method: 'GET' });
   const put = (res: Response, storedAt: number, renderedAt: number) => {
     const copy = new Response(res.body, res);
     copy.headers.set(STORED_AT, String(storedAt));

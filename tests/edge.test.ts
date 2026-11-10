@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { apexRedirect, applySecurityHeaders, contentSecurityPolicy, formActionSources, HTML_FRESH_SEC, HTML_LEASE_SEC, HTML_SWR_SEC, isCacheableRequest, withHtmlCache } from '../src/lib/edge';
+import { apexRedirect, applySecurityHeaders, contentSecurityPolicy, formActionSources, HTML_FRESH_SEC, HTML_LEASE_SEC, HTML_SWR_SEC, htmlCacheKey, isCacheableRequest, withHtmlCache } from '../src/lib/edge';
 import { config } from '../src/lib/env';
 import { normalizeImageUrl } from '../src/lib/images';
 import { robotsTxt } from '../src/lib/seo';
@@ -77,6 +77,29 @@ describe('HTML edge cache', () => {
     expect(isCacheableRequest(new Request('https://w/en/?utm_source=x'))).toBe(false);
     expect(isCacheableRequest(new Request('https://w/auth/me'))).toBe(false);
     expect(isCacheableRequest(new Request('https://w/en/', { method: 'POST' }))).toBe(false);
+  });
+
+  it('a new deploy never serves pages cached by the previous one (their /_astro assets are gone)', async () => {
+    const cache = new MemoryCache();
+    const w = waiter();
+    const page = (v: string) => async () =>
+      new Response(`<link rel="stylesheet" href="/_astro/site.${v}.css">`, { headers: { 'Content-Type': 'text/html', 'X-Content-Source': 'cms' } });
+    const go = (v: string) => withHtmlCache(new Request('https://w/en/'), cache as unknown as Cache, w.waitUntil, page(v), () => 1_000, new Map(), v);
+    expect((await go('aaa')).headers.get('X-Edge-Cache')).toBe('MISS');
+    await w.flush();
+    const next = await go('bbb');
+    expect(next.headers.get('X-Edge-Cache')).toBe('MISS');
+    expect(await next.text()).toContain('site.bbb.css');
+    await w.flush();
+    // During a gradual rollout the old version still gets its own copy
+    const old = await go('aaa');
+    expect(old.headers.get('X-Edge-Cache')).toBe('HIT');
+    expect(await old.text()).toContain('site.aaa.css');
+  });
+
+  it('the cache key is the URL plus the version (none in local dev)', () => {
+    expect(htmlCacheKey('https://w/en/news?page=2', 'v1')).toBe('https://w/en/news?page=2&__v=v1');
+    expect(htmlCacheKey('https://w/en/', '')).toBe('https://w/en/');
   });
 
   it('MISS → HIT → STALE (revalidates in the background) → MISS', async () => {
