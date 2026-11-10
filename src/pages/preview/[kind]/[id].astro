@@ -1,0 +1,66 @@
+---
+/**
+ * A CMS draft rendered exactly as it will be published (the same article components and layout),
+ * plus the preview banner. Read with the row's preview cookie; never cached, never indexed.
+ */
+import PageArticle from '../../../components/PageArticle.astro';
+import PostArticle from '../../../components/PostArticle.astro';
+import PreviewBanner from '../../../components/PreviewBanner.astro';
+import PreviewMessage from '../../../components/PreviewMessage.astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { builtinContent } from '../../../content/fallback';
+import { strings } from '../../../i18n';
+import { documentAlternates, renderBody } from '../../../lib/body';
+import { loadChrome, requestContext, runtime } from '../../../lib/context';
+import { applyPreviewHeaders } from '../../../lib/edge';
+import { negotiateLocale, readCookie } from '../../../lib/locale';
+import { plainText } from '../../../lib/markdown';
+import { isPreviewKind, loadPreview, minutesLeft, previewCookieName, previewFetcher } from '../../../lib/preview';
+
+export const prerender = false;
+const kind = Astro.params.kind;
+const idParam = Astro.params.id ?? '';
+if (!isPreviewKind(kind) || !/^[1-9][0-9]{0,14}$/.test(idParam)) return new Response(null, { status: 404 });
+const id = Number(idParam);
+applyPreviewHeaders(Astro.response.headers);
+Astro.response.headers.set('Referrer-Policy', 'no-referrer');
+
+const cookieHeader = Astro.request.headers.get('Cookie');
+const { env, cfg } = runtime(Astro);
+const result = await loadPreview(previewFetcher(env, cfg), kind, id, readCookie(cookieHeader, previewCookieName(kind, id)));
+
+const data = result.state === 'ok' ? result.data : null;
+const locale = data ? data.content.locale : negotiateLocale(cookieHeader, Astro.request.headers.get('Accept-Language'));
+const rc = requestContext(Astro, locale);
+const chrome = data ? await loadChrome(rc) : { settings: builtinContent(locale).site.settings, nav: { header: builtinContent(locale).headerNav, footer: builtinContent(locale).footerNav } };
+const body = data ? await renderBody(rc, data.content.body, data.content.locale) : null;
+const here = Astro.url.pathname;
+// The switcher and hreflang point at published translations; this locale stays on the preview.
+const alternates = data
+  ? { ...documentAlternates(data.content, data.content.alternates, (l, s) => (data.kind === 'post' ? `/${l}/news/${encodeURIComponent(s)}/` : `/${l}/${encodeURIComponent(s)}/`)), [locale]: here }
+  : { [locale]: here };
+const t = strings(locale);
+if (result.state !== 'ok') Astro.response.status = { expired: 410, invalid: 400, gone: 404, unavailable: 503 }[result.state];
+const problemTitle = result.state === 'ok' ? '' : { expired: t.preview.expiredTitle, invalid: t.preview.invalidTitle, gone: t.preview.goneTitle, unavailable: t.preview.unavailableTitle }[result.state];
+const title = data ? `${t.preview.label}: ${data.content.seo_title || data.content.title}` : problemTitle;
+const description = data ? data.content.seo_description || (data.kind === 'page' ? data.content.summary : data.content.excerpt) || plainText(data.content.body, 180) : '';
+---
+<BaseLayout
+  cfg={cfg}
+  locale={locale}
+  title={title}
+  description={description}
+  alternates={alternates}
+  nav={chrome.nav}
+  settings={chrome.settings}
+  ogType={data?.kind === 'post' ? 'article' : 'website'}
+  ogImage={data?.content.cover?.url}
+  noindex
+>
+  {data && <PreviewBanner slot="banner" locale={locale} status={data.status} minutes={minutesLeft(data.expiresAt)} editUrl={data.editUrl} />}
+  {data && body ? (
+    data.kind === 'page' ? <PageArticle page={data.content} html={body.html} /> : <PostArticle post={data.content} html={body.html} locale={locale} />
+  ) : (
+    <PreviewMessage locale={locale} problem={result.state === 'ok' ? 'unavailable' : result.state} cmsUrl={`${cfg.cmsPublicUrl}/${kind}/${id}`} />
+  )}
+</BaseLayout>

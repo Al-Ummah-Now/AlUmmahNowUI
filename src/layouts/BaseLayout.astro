@@ -76,6 +76,7 @@ const robots = noindex || !cfg.isProduction ? 'noindex, nofollow' : 'index, foll
   </head>
   <body>
     <a class="skip-link" href="#main">{t.a11y.skipToContent}</a>
+    <slot name="banner" />
     <Header cfg={cfg} locale={locale} nav={nav.header} switchHref={switchHref} />
     {notice && (
       <div class="notice" role="note">

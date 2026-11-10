@@ -28,13 +28,22 @@ export default defineConfig({
     { name: 'iphone', use: { ...devices['iPhone 14'] } },
   ],
   webServer: local
-    ? {
-        command: 'npm run build && npm run preview',
-        url: `${WWW_URL}/healthz`,
-        timeout: 180_000,
-        reuseExistingServer: !process.env.CI,
-        stdout: 'ignore',
-        stderr: 'ignore',
-      }
+    ? [
+        {
+          command: 'npm run build && npm run preview',
+          url: `${WWW_URL}/healthz`,
+          timeout: 180_000,
+          reuseExistingServer: !process.env.CI,
+          stdout: 'ignore',
+          stderr: 'ignore',
+        },
+        {
+          // The CMS preview API stand-in (e2e/stub-cms.ts); everything else it answers 503.
+          command: 'node --experimental-strip-types --no-warnings e2e/stub-cms.ts',
+          url: 'http://localhost:8585/api/preview/v1/pages/0',
+          timeout: 30_000,
+          reuseExistingServer: !process.env.CI,
+        },
+      ]
     : undefined,
 });

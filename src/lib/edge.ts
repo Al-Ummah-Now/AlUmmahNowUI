@@ -6,6 +6,7 @@ import { embedOrigin } from './embeds';
 import type { Config } from './env';
 import { imgSrcSources } from './images';
 import { negotiateLocale } from './locale';
+import { isPreviewPath } from './preview';
 import { MODE_SCRIPT_HASH } from './theme-mode';
 
 /** alummahnow.net/x?y → 301 https://www.alummahnow.net/x?y (only when SITE_URL is a www host). */
@@ -50,18 +51,21 @@ export function formActionSources(authUrl: string): string[] {
   return sources;
 }
 
-export function contentSecurityPolicy(cfg: Config): string {
+export function contentSecurityPolicy(cfg: Config, opts: { analytics?: boolean } = {}): string {
   const https = cfg.siteUrl.startsWith('https://');
+  const analytics = opts.analytics ?? true;
   const directives = [
     "default-src 'self'",
-    // Cloudflare Web Analytics: the zone injects its beacon into HTML responses.
+    // Cloudflare Web Analytics: the zone injects its beacon into HTML responses (not on previews).
     // The one inline script is the light/dark head script, allowed by its hash (theme-mode.ts).
-    `script-src 'self' ${MODE_SCRIPT_HASH} https://static.cloudflareinsights.com`,
+    analytics
+      ? `script-src 'self' ${MODE_SCRIPT_HASH} https://static.cloudflareinsights.com`
+      : `script-src 'self' ${MODE_SCRIPT_HASH}`,
     "style-src 'self'",
     `img-src ${imgSrcSources(cfg.cmsPublicUrl).join(' ')}`,
     "font-src 'self'",
     // the header asks auth which accounts this browser is signed in to (/session/accounts)
-    `connect-src 'self' ${new URL(cfg.authUrl).origin} https://cloudflareinsights.com`,
+    `connect-src 'self' ${new URL(cfg.authUrl).origin}${analytics ? ' https://cloudflareinsights.com' : ''}`,
     "media-src 'none'",
     `frame-src ${embedOrigin(cfg.videosWebUrl)}`,
     "frame-ancestors 'none'",
@@ -75,18 +79,31 @@ export function contentSecurityPolicy(cfg: Config): string {
   return directives.join('; ');
 }
 
-export function applySecurityHeaders(response: Response, cfg: Config): Response {
+/**
+ * Draft previews (src/lib/preview.ts): never stored by any cache (no-store), never rewritten by
+ * the zone (no-transform: Cloudflare injects no analytics beacon), never indexed, no Referer, and
+ * a CSP that would block the beacon anyway. Applied to every /preview response, errors included.
+ */
+export function applyPreviewHeaders(h: Headers): void {
+  h.set('Cache-Control', 'private, no-store, no-transform');
+  h.set('X-Robots-Tag', 'noindex, nofollow');
+  h.delete('X-Edge-Cache');
+}
+
+export function applySecurityHeaders(response: Response, cfg: Config, pathname = ''): Response {
   const res = new Response(response.body, response);
   const h = res.headers;
   const type = h.get('Content-Type') ?? '';
-  if (type.includes('text/html')) h.set('Content-Security-Policy', contentSecurityPolicy(cfg));
+  const preview = isPreviewPath(pathname);
+  if (type.includes('text/html')) h.set('Content-Security-Policy', contentSecurityPolicy(cfg, { analytics: !preview }));
   if (cfg.siteUrl.startsWith('https://')) h.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   h.set('X-Content-Type-Options', 'nosniff');
-  h.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  h.set('Referrer-Policy', preview ? 'no-referrer' : 'strict-origin-when-cross-origin');
   h.set('X-Frame-Options', 'DENY');
   h.set('Cross-Origin-Opener-Policy', 'same-origin');
   h.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()');
   if (!cfg.isProduction) h.set('X-Robots-Tag', 'noindex, nofollow');
+  if (preview) applyPreviewHeaders(h);
   return res;
 }
 
@@ -109,7 +126,7 @@ export const HTML_CACHE_CONTROL = `public, max-age=0, s-maxage=${HTML_FRESH_SEC}
 export function isCacheableRequest(request: Request): boolean {
   if (request.method !== 'GET') return false;
   const url = new URL(request.url);
-  if (!/^\/(en|ar)(\/|$)/.test(url.pathname)) return false;
+  if (isPreviewPath(url.pathname) || !/^\/(en|ar)(\/|$)/.test(url.pathname)) return false;
   // Only ?page= varies a page; other query strings (tracking etc.) bypass the cache
   for (const k of url.searchParams.keys()) if (k !== 'page') return false;
   return true;

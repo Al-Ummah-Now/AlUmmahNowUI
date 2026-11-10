@@ -1,0 +1,24 @@
+---
+/** /preview/invalid and /preview/expired: where a broken or old preview link lands (no token in the URL). */
+import PreviewMessage from '../../components/PreviewMessage.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { builtinContent } from '../../content/fallback';
+import { strings } from '../../i18n';
+import { runtime } from '../../lib/context';
+import { applyPreviewHeaders } from '../../lib/edge';
+import { negotiateLocale } from '../../lib/locale';
+
+export const prerender = false;
+const state = Astro.params.state;
+if (state !== 'invalid' && state !== 'expired') return new Response(null, { status: 404 });
+applyPreviewHeaders(Astro.response.headers);
+Astro.response.headers.set('Referrer-Policy', 'no-referrer');
+Astro.response.status = state === 'expired' ? 410 : 400;
+const locale = negotiateLocale(Astro.request.headers.get('Cookie'), Astro.request.headers.get('Accept-Language'));
+const { cfg } = runtime(Astro);
+const b = builtinContent(locale);
+const t = strings(locale);
+---
+<BaseLayout cfg={cfg} locale={locale} title={state === 'expired' ? t.preview.expiredTitle : t.preview.invalidTitle} alternates={{ [locale]: Astro.url.pathname }} nav={{ header: b.headerNav, footer: b.footerNav }} settings={b.site.settings} noindex>
+  <PreviewMessage locale={locale} problem={state} cmsUrl={`${cfg.cmsPublicUrl}/`} />
+</BaseLayout>
