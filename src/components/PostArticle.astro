@@ -1,15 +1,20 @@
 ---
 /** A CMS post as published (src/pages/[locale]/articles/[slug].astro) and as previewed (src/pages/preview/). */
+import CardViewer from './CardViewer.astro';
 import Icon from './Icon.astro';
 import { fmt, formatDate, strings } from '../i18n';
 import type { Post } from '../lib/cms-types';
 import { dir, type Locale } from '../lib/locale';
 import { pictureHtml, SIZES } from '../lib/picture';
 
-interface Props { post: Post; html: string; locale: Locale; cmsOrigin: string }
-const { post, html, locale, cmsOrigin } = Astro.props;
+/** `slide`: the card shown first (0-based, from `?slide=`); `pathname`: the post's URL (card links). */
+interface Props { post: Post; html: string; locale: Locale; cmsOrigin: string; slide?: number; pathname?: string }
+const { post, html, locale, cmsOrigin, slide = 0, pathname = Astro.url.pathname } = Astro.props;
+const slides = post.kind === 'cards' && Array.isArray(post.slides) ? post.slides : [];
+const isCards = slides.length > 0;
 // The cover is the article's LCP image: responsive, sized, eager and high priority (CMS-10).
-const coverHtml = post.cover ? pictureHtml(post.cover, cmsOrigin, { sizes: SIZES.cover, priority: true, className: 'cover' }) : null;
+// A card post's first card is its image, so its cover isn't shown above it.
+const coverHtml = post.cover && !isCards ? pictureHtml(post.cover, cmsOrigin, { sizes: SIZES.cover, priority: true, className: 'cover' }) : null;
 const t = strings(locale);
 ---
 <article>
@@ -27,7 +32,11 @@ const t = strings(locale);
   </header>
   <div class="section">
     <div class="wrap">
-      <div class="prose" lang={post.locale} dir={dir(post.locale)} set:html={html} />
+      {isCards ? (
+        <CardViewer slides={slides} title={post.title} contentLocale={post.locale} locale={locale} initial={Math.min(slide, slides.length - 1)} pathname={pathname} cmsOrigin={cmsOrigin} />
+      ) : (
+        <div class="prose" lang={post.locale} dir={dir(post.locale)} set:html={html} />
+      )}
       {post.tags.length > 0 && (
         <div class="section-tags">
           <h2 class="visually-hidden">{t.articles.tags}</h2>

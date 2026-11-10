@@ -1,0 +1,92 @@
+---
+/**
+ * A card post: slides read one at a time, each an image with its text drawn on it (docs/CMS_PUBLIC_API.md
+ * "Card posts"). Server-rendered and usable without JS: Next, Back and the dots are links to
+ * `?slide=N`, which this component honours. src/scripts/cards.ts turns them into instant navigation,
+ * adds arrow keys (RTL-aware), swipe, `#N` deep links and the enlarged view.
+ *
+ * Every slide is in the HTML (real, selectable text; search engines read them all); only the current
+ * one is shown. Each frame keeps a fixed 4:5 box, so changing slides never moves the page.
+ */
+import Icon from './Icon.astro';
+import { fmt, strings } from '../i18n';
+import { neighbours, slideCountLabel } from '../lib/cards';
+import type { Slide } from '../lib/cms-types';
+import { dir, type Locale } from '../lib/locale';
+import { pictureHtml } from '../lib/picture';
+
+interface Props { slides: Slide[]; title: string; contentLocale: Locale; locale: Locale; initial: number; pathname: string; cmsOrigin: string }
+const { slides, title, contentLocale, locale, initial, pathname, cmsOrigin } = Astro.props;
+const t = strings(locale).cards;
+const total = slides.length;
+const near = new Set([initial, ...neighbours(initial, total)]);
+const SLIDE_SIZES = '(min-width: 44rem) 36rem, calc(100vw - 2rem)';
+const pic = (s: Slide, i: number) => {
+  const html = pictureHtml(s.image, cmsOrigin, { sizes: SLIDE_SIZES, priority: i === initial, className: 'cv-img' });
+  // The neighbours load now (eager) so Next shows at once; the rest load when reached.
+  return near.has(i) && i !== initial ? html.replace('loading="lazy"', 'loading="eager"') : html;
+};
+const href = (i: number) => (i <= 0 ? pathname : `${pathname}?slide=${i + 1}`);
+const showDots = total > 1 && total <= 16;
+---
+<section
+  class="cards-viewer"
+  data-cards
+  data-count={total}
+  data-initial={initial}
+  aria-roledescription="carousel"
+  aria-label={fmt(t.viewer, { title })}
+  data-t-position={t.position}
+  data-t-position-long={t.positionLong}
+  data-t-enlarge={t.enlarge}
+  data-t-close={t.close}
+  data-t-next={t.next}
+  data-t-back={t.back}
+  data-t-lightbox={t.lightbox}
+>
+  <p class="cv-count"><Icon name="cards" class="cv-count-icon" />{slideCountLabel(t, total)}</p>
+  <div class="cv-stage" lang={contentLocale} dir={dir(contentLocale)}>
+    <div class="cv-track">
+      {slides.map((s, i) => (
+        <div class="cv-slide" id={`card-${i + 1}`} role="group" aria-roledescription="slide" aria-label={fmt(t.positionLong, { n: i + 1, total })} hidden={i !== initial} data-slide={i}>
+          <figure class="cv-card">
+            <div class="cv-frame">
+              <Fragment set:html={pic(s, i)} />
+              {(s.heading || s.body) && (
+                <figcaption class={`cv-text cv-text-${s.position}`}>
+                  {s.heading && <h2 class="cv-heading">{s.heading}</h2>}
+                  {s.body && <p class="cv-body">{s.body}</p>}
+                </figcaption>
+              )}
+              <button type="button" class="cv-enlarge" data-enlarge aria-label={fmt(t.enlarge, { n: i + 1 })} hidden>
+                <Icon name="expand" />
+              </button>
+            </div>
+          </figure>
+        </div>
+      ))}
+    </div>
+  </div>
+  {total > 1 && (
+    <nav class="cv-nav" aria-label={fmt(t.viewer, { title })}>
+      <a class="cv-step cv-back" href={href(initial - 1)} rel="prev" data-step="-1" aria-label={t.back} aria-disabled={initial === 0 ? 'true' : undefined} tabindex={initial === 0 ? -1 : undefined}>
+        <Icon name="chevron" class="flip" />
+      </a>
+      <p class="cv-pos"><span data-pos aria-hidden="true">{fmt(t.position, { n: initial + 1, total })}</span><span class="visually-hidden" data-live aria-live="polite">{fmt(t.positionLong, { n: initial + 1, total })}</span></p>
+      <a class="cv-step cv-next" href={href(initial + 1)} rel="next" data-step="1" aria-label={t.next} aria-disabled={initial === total - 1 ? 'true' : undefined} tabindex={initial === total - 1 ? -1 : undefined}>
+        <Icon name="chevron" />
+      </a>
+    </nav>
+  )}
+  {showDots && (
+    <ol class="cv-dots">
+      {slides.map((_, i) => (
+        <li><a href={href(i)} data-go={i} aria-label={fmt(t.goTo, { n: i + 1 })} aria-current={i === initial ? 'step' : undefined}></a></li>
+      ))}
+    </ol>
+  )}
+</section>
+<script>
+  import { initCards } from '../scripts/cards';
+  initCards();
+</script>

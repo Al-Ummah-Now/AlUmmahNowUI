@@ -1,11 +1,15 @@
 ---
 /** A CMS page as published (src/pages/[locale]/[slug].astro) and as previewed (src/pages/preview/). */
+import Blocks from './Blocks.astro';
+import type { PreparedBlock } from '../lib/blocks';
 import type { Page } from '../lib/cms-types';
-import { dir } from '../lib/locale';
+import type { Config } from '../lib/env';
+import { dir, type Locale } from '../lib/locale';
 import { pictureHtml, SIZES } from '../lib/picture';
 
-interface Props { page: Page; html: string; cmsOrigin: string }
-const { page, html, cmsOrigin } = Astro.props;
+/** `blocks`: the page built from blocks (src/lib/blocks.ts); without them, the markdown body (`html`). */
+interface Props { page: Page; html: string; cmsOrigin: string; blocks?: PreparedBlock[] | null; locale: Locale; cfg: Config }
+const { page, html, cmsOrigin, blocks, locale, cfg } = Astro.props;
 // The cover is the page's LCP image: responsive, sized, eager and high priority (CMS-10).
 const coverHtml = page.cover ? pictureHtml(page.cover, cmsOrigin, { sizes: SIZES.cover, priority: true, className: 'cover' }) : null;
 ---
@@ -19,7 +23,11 @@ const coverHtml = page.cover ? pictureHtml(page.cover, cmsOrigin, { sizes: SIZES
   </header>
   <div class="section">
     <div class="wrap">
-      <div class="prose" lang={page.locale} dir={dir(page.locale)} set:html={html} />
+      {blocks ? (
+        <Blocks blocks={blocks} locale={locale} contentLocale={page.locale} cfg={cfg} />
+      ) : (
+        <div class="prose" lang={page.locale} dir={dir(page.locale)} set:html={html} />
+      )}
     </div>
   </div>
 </article>
