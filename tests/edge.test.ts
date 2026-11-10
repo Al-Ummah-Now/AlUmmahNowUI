@@ -56,7 +56,7 @@ describe('security headers', () => {
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("img-src 'self' data: https://cms.alummahnow.net https://images.alummahnow.net https://*.b-cdn.net");
     expect(csp).toContain("form-action 'self' https://auth.alummahnow.net https://*.alummahnow.net;");
-    expect(csp).toContain("connect-src 'self' https://auth.alummahnow.net https://cloudflareinsights.com");
+    expect(csp).toContain("connect-src 'self' https://auth.alummahnow.net https://cms.alummahnow.net https://cloudflareinsights.com");
   });
   it("form-action covers auth's front-channel logout chain (every app's logout, then back to www)", () => {
     expect(formActionSources('https://auth.alummahnow.net')).toEqual(["'self'", 'https://auth.alummahnow.net', 'https://*.alummahnow.net']);

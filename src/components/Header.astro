@@ -1,5 +1,6 @@
 ---
 import Icon from './Icon.astro';
+import SearchBox from './SearchBox.astro';
 import ThemeIcon from './ThemeIcon.astro';
 import { fmt, strings } from '../i18n';
 import { navHref } from '../lib/context';
@@ -33,6 +34,7 @@ const loginHref = `/auth/login?return=${encodeURIComponent(path + Astro.url.sear
         ))}
       </ul>
     </nav>
+    <SearchBox cfg={cfg} locale={locale} id="site-search" />
     <div class="header-tools">
       <div class="theme" id="theme" data-label-current={t.theme.current} data-label-system={t.theme.system} data-label-light={t.theme.light} data-label-dark={t.theme.dark}>
         <button type="button" class="theme-button" aria-expanded="false" aria-controls="theme-menu" data-current="system">

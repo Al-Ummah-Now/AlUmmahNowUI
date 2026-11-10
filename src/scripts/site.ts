@@ -7,9 +7,11 @@
  *    add, sign out of one); signed in to auth but not to www → silent sign-in
  *    (prompt=none, once per tab); anything failing → keep the "Sign in" link
  *  - video facades: swap in the iframe on click
+ *  - search boxes: live suggestions and recent searches (./search-combobox.ts)
  * HTML is identical for every visitor (edge-cached); signed-in state is client-side only.
  */
 import { initFacades } from './facade';
+import { initSearchBoxes } from './search-combobox';
 import { initTheme } from './theme';
 import {
   PROBE_KEY,
@@ -284,4 +286,5 @@ async function initAccount() {
 rememberLocale();
 initTheme();
 initFacades();
+initSearchBoxes();
 void initAccount();

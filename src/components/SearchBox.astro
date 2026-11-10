@@ -1,0 +1,71 @@
+---
+/**
+ * A search box: a plain GET form to /{l}/search (works without JS), enhanced into an ARIA 1.2
+ * combobox with live suggestions and recent searches by src/scripts/search-combobox.ts.
+ */
+import { strings } from '../i18n';
+import type { Config } from '../lib/env';
+import type { Locale } from '../lib/locale';
+import { QUERY_MAX } from '../lib/search/suggest';
+
+interface Props { cfg: Config; locale: Locale; id: string; value?: string; variant?: 'header' | 'page' }
+const { cfg, locale, id, value = '', variant = 'header' } = Astro.props;
+const t = strings(locale).search;
+const labels = {
+  articles: t.articles,
+  cards: t.cards,
+  recent: t.recent,
+  removeRecent: t.removeRecent,
+  removeHint: t.removeHint,
+  recentCleared: t.recentCleared,
+  seeAll: t.seeAll,
+  countNone: t.countNone,
+  countOne: t.countOne,
+  countTwo: t.countTwo,
+  countFew: t.countFew,
+  countMany: t.countMany,
+  recentCount: t.recentCount,
+};
+const inputId = `${id}-input`;
+const listId = `${id}-list`;
+---
+<form
+  class:list={['search', `search-${variant}`]}
+  role="search"
+  action={`/${locale}/search`}
+  method="get"
+  data-search
+  data-locale={locale}
+  data-cms-url={cfg.cmsPublicUrl}
+  data-labels={JSON.stringify(labels)}
+>
+  <label class="visually-hidden" for={inputId}>{t.label}</label>
+  <div class="search-field">
+    <svg class="search-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.6" /><path d="m10.5 10.5 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg>
+    <input
+      id={inputId}
+      name="q"
+      type="search"
+      dir="auto"
+      value={value}
+      placeholder={t.placeholder}
+      maxlength={QUERY_MAX}
+      autocomplete="off"
+      autocapitalize="off"
+      spellcheck="false"
+      enterkeyhint="search"
+      role="combobox"
+      aria-autocomplete="list"
+      aria-expanded="false"
+      aria-controls={listId}
+      aria-haspopup="listbox"
+    />
+    {variant === 'page' && <button class="button button-primary search-submit" type="submit">{t.submit}</button>}
+  </div>
+  <div class="search-popup" data-search-popup hidden>
+    <ul class="search-list" id={listId} role="listbox" aria-label={t.suggestions}></ul>
+    <button type="button" class="search-clear" data-search-clear hidden>{t.clearRecent}</button>
+  </div>
+  <span class="visually-hidden" id={`${id}-hint`} data-search-hint>{t.removeHint}</span>
+  <p class="visually-hidden" role="status" aria-live="polite" aria-atomic="true" data-search-status></p>
+</form>

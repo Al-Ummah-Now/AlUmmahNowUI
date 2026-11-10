@@ -1,0 +1,103 @@
+---
+import Icon from '../../components/Icon.astro';
+import SearchBox from '../../components/SearchBox.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { fmt, formatDate } from '../../i18n';
+import { loadChrome, markSource, requestContext, routeLocale } from '../../lib/context';
+import { highlightParts } from '../../lib/search/highlight';
+import { normalizeSearchText } from '../../lib/search/normalize';
+import { searchDeps, searchPosts, type SearchResult } from '../../lib/search/server';
+import { QUERY_MAX, SEARCH_PAGE_SIZE } from '../../lib/search/suggest';
+
+const locale = routeLocale(Astro);
+if (!locale) return new Response(null, { status: 404 });
+const raw = Astro.url.searchParams.get('page');
+const page = raw === null ? 1 : /^[1-9]\d{0,2}$/.test(raw) ? Number(raw) : NaN;
+if (!Number.isFinite(page)) return new Response(null, { status: 404 });
+const q = (Astro.url.searchParams.get('q') ?? '').trim().replace(/\s+/g, ' ').slice(0, QUERY_MAX);
+const searchable = normalizeSearchText(q) !== '';
+
+const rc = requestContext(Astro, locale);
+const { cfg, env, t } = rc;
+const [chrome, result] = await Promise.all([
+  loadChrome(rc),
+  searchable
+    ? searchPosts(searchDeps(env, cfg), locale, q, page, Astro.request.headers.get('CF-Connecting-IP'))
+    : Promise.resolve<SearchResult>({ status: 'ok', data: { items: [], page, limit: SEARCH_PAGE_SIZE, total: 0 } }),
+]);
+markSource(Astro, rc);
+if (result.status !== 'ok') Astro.response.headers.set('Cache-Control', 'no-store');
+const total = result.status === 'ok' ? result.data.total : 0;
+const pages = Math.max(1, Math.ceil(total / SEARCH_PAGE_SIZE));
+const qs = (l: string, p: number) => {
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (p > 1) params.set('page', String(p));
+  const s = params.toString();
+  return `/${l}/search${s ? `?${s}` : ''}`;
+};
+const title = searchable ? fmt(t.search.titleFor, { query: q }) : t.search.title;
+---
+<BaseLayout
+  cfg={cfg}
+  locale={locale}
+  title={title}
+  description={t.search.intro}
+  alternates={{ en: qs('en', 1), ar: qs('ar', 1) }}
+  nav={chrome.nav}
+  settings={chrome.settings}
+  noindex={searchable}
+>
+  <div class="page-head">
+    <div class="wrap">
+      <h1>{t.search.title}</h1>
+      <p class="lede">{t.search.intro}</p>
+      <SearchBox cfg={cfg} locale={locale} id="page-search" value={q} variant="page" />
+    </div>
+  </div>
+  <section class="section" aria-labelledby="search-results-heading">
+    <div class="wrap">
+      {!searchable ? (
+        <p class="search-prompt" id="search-results-heading">{t.search.prompt}</p>
+      ) : result.status === 'unavailable' ? (
+        <div class="empty" role="alert" id="search-results-heading"><p>{t.search.unavailable}</p></div>
+      ) : result.status === 'limited' ? (
+        <div class="empty" role="alert" id="search-results-heading"><p>{t.search.limited}</p></div>
+      ) : (
+        <>
+          <h2 class="search-results-heading" id="search-results-heading">
+            <bdi>{fmt(t.search.resultsFor, { query: q })}</bdi>
+            <span class="search-total">{total === 1 ? t.search.totalOne : fmt(t.search.total, { count: total })}</span>
+          </h2>
+          {result.data.items.length === 0 ? (
+            <div class="empty">
+              <p><bdi>{fmt(t.search.none, { query: q })}</bdi></p>
+              <p>{t.search.noneHint}</p>
+            </div>
+          ) : (
+            <ul class="articles-list search-results">
+              {result.data.items.map((hit) => (
+                <li class="articles-item search-result">
+                  {hit.thumbnailUrl && <img class="search-result-thumb" src={hit.thumbnailUrl} alt="" width="96" height="96" loading="lazy" decoding="async" />}
+                  <div>
+                    <time datetime={hit.publishedAt}>{formatDate(hit.publishedAt, locale)}</time>
+                    {hit.type === 'cards' && <span class="search-kind">{t.search.cardPost}</span>}
+                    <h3 dir="auto"><a href={hit.href}>{highlightParts(hit.title, q).map((part) => (part.mark ? <mark>{part.text}</mark> : part.text))}</a></h3>
+                    {hit.excerpt && <p dir="auto">{highlightParts(hit.excerpt, q).map((part) => (part.mark ? <mark>{part.text}</mark> : part.text))}</p>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          {pages > 1 && (
+            <nav class="pagination" aria-label={t.a11y.pagination}>
+              {page > 1 && <a href={qs(locale, page - 1)} rel="prev"><Icon name="chevron" class="flip" />{t.search.prev}</a>}
+              <p aria-current="page">{fmt(t.articles.pageOf, { page, pages })}</p>
+              {page < pages && <a href={qs(locale, page + 1)} rel="next">{t.search.next}<Icon name="chevron" /></a>}
+            </nav>
+          )}
+        </>
+      )}
+    </div>
+  </section>
+</BaseLayout>

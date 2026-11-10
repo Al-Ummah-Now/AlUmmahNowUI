@@ -8,6 +8,7 @@ const PAGES = [
   { name: 'articles', path: (l: string) => `/${l}/articles/` },
   { name: 'videos', path: (l: string) => `/${l}/videos/` },
   { name: 'about', path: (l: string) => `/${l}/about/` },
+  { name: 'search', path: (l: string) => `/${l}/search?q=salah` },
   { name: '404', path: (l: string) => `/${l}/this/does/not/exist/` },
 ];
 
