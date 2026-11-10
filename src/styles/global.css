@@ -2556,3 +2556,11 @@ html:not([data-js]) .ci-nav {
 .articles-item .cards-inline {
   margin-block-start: 0.75rem;
 }
+/* A post of square cards keeps a square frame (a 4:5 crop would cut text designed near the edges). */
+.cv-r11 .cv-frame {
+  aspect-ratio: 1 / 1;
+}
+/* A card whose image has another shape than the post's frame shows whole, on the night ground. */
+.cv-frame img.cv-contain {
+  object-fit: contain;
+}

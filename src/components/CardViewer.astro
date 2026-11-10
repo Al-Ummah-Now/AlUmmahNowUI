@@ -10,7 +10,7 @@
  */
 import Icon from './Icon.astro';
 import { fmt, strings } from '../i18n';
-import { neighbours, slideCountLabel } from '../lib/cards';
+import { cardFit, cardFrame, neighbours, slideCountLabel } from '../lib/cards';
 import type { Slide } from '../lib/cms-types';
 import { dir, type Locale } from '../lib/locale';
 import { pictureHtml } from '../lib/picture';
@@ -29,15 +29,18 @@ interface Props { slides: CardSlide[]; title: string; contentLocale: Locale; loc
 const { slides, title, contentLocale, locale, initial = 0, pathname = '', cmsOrigin, inline } = Astro.props;
 const t = strings(locale).cards;
 const total = slides.length;
+// One frame for the whole post (4:5, or square for square cards); an image of another shape shows whole.
+const frame = cardFrame(slides);
+const imgClass = (s: CardSlide) => (cardFit(s.image, frame) === 'contain' ? 'cv-img cv-contain' : 'cv-img');
 const INLINE_SIZES = { list: '(min-width: 44rem) 26rem, calc(100vw - 2rem)', timeline: '(min-width: 44rem) 22rem, calc(100vw - 4.5rem)' };
 const inlinePic = (s: CardSlide, i: number) =>
-  pictureHtml(s.image, cmsOrigin, { sizes: INLINE_SIZES[inline?.size ?? 'list'], priority: !!inline?.priority && i === 0, className: 'cv-img' });
+  pictureHtml(s.image, cmsOrigin, { sizes: INLINE_SIZES[inline?.size ?? 'list'], priority: !!inline?.priority && i === 0, className: imgClass(s) });
 const shown = inline ? inline.total : total;
 const frames = inline ? slides.length + (inline.more > 0 ? 1 : 0) : 0;
 const near = new Set([initial, ...neighbours(initial, total)]);
 const SLIDE_SIZES = '(min-width: 44rem) 36rem, calc(100vw - 2rem)';
 const pic = (s: CardSlide, i: number) => {
-  const html = pictureHtml(s.image, cmsOrigin, { sizes: SLIDE_SIZES, priority: i === initial, className: 'cv-img' });
+  const html = pictureHtml(s.image, cmsOrigin, { sizes: SLIDE_SIZES, priority: i === initial, className: imgClass(s) });
   // The neighbours load now (eager) so Next shows at once; the rest load when reached.
   return near.has(i) && i !== initial ? html.replace('loading="lazy"', 'loading="eager"') : html;
 };
@@ -46,7 +49,7 @@ const showDots = total > 1 && total <= 16;
 ---
 {inline ? (
 <section
-  class:list={['cards-inline', `ci-${inline.size}`]}
+  class:list={['cards-inline', `ci-${inline.size}`, `cv-${frame}`]}
   data-cards-inline
   data-count={frames}
   data-total={shown}
@@ -93,7 +96,7 @@ const showDots = total > 1 && total <= 16;
 </section>
 ) : (
 <section
-  class="cards-viewer"
+  class:list={['cards-viewer', `cv-${frame}`]}
   data-cards
   data-count={total}
   data-initial={initial}

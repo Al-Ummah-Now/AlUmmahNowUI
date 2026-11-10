@@ -108,6 +108,11 @@ const CARD_POSTS = [
     slides: Array.from({ length: 13 }, (_, i) => slide(`l${i + 1}`, [10, 11, 14, 15, 16][i % 5]!, `Lantern ${i + 1}`, `Lantern ${i + 1}`, i % 2 ? null : 'A light for every night of the month.', 'bottom')),
   },
   {
+    // Square designed cards (like production's first card post): a square frame, nothing cropped.
+    slug: 'tawhid', locale: 'ar', title: 'بطاقات التوحيد', tags: ['عقيدة'], published_at: '2026-10-28T08:00:00.000Z',
+    slides: [slide('t1', 5, 'بطاقة مربعة', null, null, 'bottom'), slide('t2', 5, 'بطاقة مربعة ثانية', null, null, 'bottom'), slide('t3', 10, 'بطاقة طولية', 'بطاقة طولية', null, 'bottom')],
+  },
+  {
     // The Arabic translation of "Ramadan nights", under its own slug (alternates).
     slug: 'layali-ramadan', locale: 'ar', title: 'ليالي رمضان', tags: ['رمضان'], published_at: '2026-11-05T08:00:00.000Z',
     slides: [slide('lr1', 16, 'فوانيس على طول الشارع', 'الفوانيس', 'لكل شارع نوره.', 'bottom'), slide('lr2', 15, 'مائدة الإفطار', 'الإفطار', null, 'top')],
@@ -125,7 +130,7 @@ const CARD_POSTS = [
 
 type CardPost = (typeof CARD_POSTS)[number];
 /** Only in the Articles list and their own pages (the /cards grid fixtures predate them). */
-const LIST_ONLY = new Set(['thirteen-lanterns', 'layali-ramadan']);
+const LIST_ONLY = new Set(['thirteen-lanterns', 'layali-ramadan', 'tawhid']);
 /** Translations under different slugs (the CMS `alternates`). */
 const TRANSLATIONS: [string, string][] = [['ramadan-nights', 'layali-ramadan']];
 const alternatesOf = (p: CardPost) =>
