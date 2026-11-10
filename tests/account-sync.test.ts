@@ -94,6 +94,8 @@ describe('probe decision', () => {
   it('no auth session (401), no active account, or accounts unavailable → stay anonymous', () => {
     expect(decide({ ...base, accounts: { status: 'signed-out' } })).toEqual({ action: 'stay' });
     expect(decide({ ...base, accounts: { status: 'unavailable' } })).toEqual({ action: 'stay' });
+    // Auth answers an anonymous browser 200 {"accounts":[]} (no failed request in the console)
+    expect(decide({ ...base, accounts: accountsResult(200, { accounts: [] }) })).toEqual({ action: 'stay' });
     expect(decide({ ...base, accounts: accountsResult(200, { accounts: [{ userId: 'u1', isActive: false }] }) })).toEqual({ action: 'stay' });
   });
   it('no sessionStorage → never navigates (guard could not persist)', () => {

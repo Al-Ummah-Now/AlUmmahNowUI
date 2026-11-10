@@ -44,11 +44,19 @@ export async function openMenu(page: Page) {
   await expect(page.locator('#account-menu')).toBeVisible();
 }
 
-/** Auth's session list as the page sees it (credentialed CORS); 401 = no session. */
-export function authAccountsStatus(page: Page): Promise<number> {
+/**
+ * How many accounts auth lists for this browser, as the page sees it (credentialed CORS).
+ * 0 = no session: auth answers 200 {"accounts":[]} (older auth: 401, also readable through CORS).
+ * -1 = the page could not read the answer (CORS refused, network, unexpected status).
+ */
+export function authAccountCount(page: Page): Promise<number> {
   return page.evaluate(async (auth) => {
     try {
-      return (await fetch(`${auth}/session/accounts`, { credentials: 'include' })).status;
+      const res = await fetch(`${auth}/session/accounts`, { credentials: 'include' });
+      if (res.status === 401) return 0;
+      if (res.status !== 200) return -1;
+      const body = (await res.json()) as { accounts?: unknown };
+      return Array.isArray(body.accounts) ? body.accounts.length : -1;
     } catch {
       return -1;
     }

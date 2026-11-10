@@ -11,7 +11,7 @@
  * Types the shared QA seed password: tracing is off (see real-auth.ts).
  */
 import { expect, test, type Page } from '@playwright/test';
-import { accountButton, AUTH_ORIGIN, authAccountsStatus, authForm, openMenu, PROFILE_URL, REAL_AUTH, WWW_ORIGIN } from './real-auth';
+import { accountButton, AUTH_ORIGIN, authAccountCount, authForm, openMenu, PROFILE_URL, REAL_AUTH, WWW_ORIGIN } from './real-auth';
 
 test.use({ trace: 'off' });
 
@@ -121,7 +121,7 @@ test.describe('signed in across apps (real QA auth)', () => {
     await expect(page.getByRole('link', { name: 'تسجيل الدخول' }).first()).toBeVisible();
     await expect(accountButton(page)).toHaveCount(0);
     expect(await page.evaluate(async () => (await fetch('/auth/me')).json())).toEqual({ signedIn: false });
-    expect(await authAccountsStatus(page)).toBe(401);
+    expect(await authAccountCount(page)).toBe(0);
     expect((await context.cookies(WWW_ORIGIN)).filter((c) => /session/i.test(c.name))).toEqual([]);
 
     // Reloading does not sign www back in (the probe asks auth, which has no session)
