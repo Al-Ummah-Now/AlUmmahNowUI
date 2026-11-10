@@ -27,7 +27,7 @@ markSource(Astro, rc);
 if (!page && first.status !== 'unavailable') return new Response(null, { status: 404 });
 if (!page) Astro.response.status = 503;
 
-const body = page ? await renderBody(rc, page.body, page.locale) : null;
+const body = page ? await renderBody(rc, page.body, page.locale, page.images) : null;
 const alternates = page ? documentAlternates(page, page.alternates, (l, s) => `/${l}/${encodeURIComponent(s)}/`) : {};
 const translated = page && page.locale !== locale;
 const description = page ? page.seo_description || page.summary || plainText(page.body, 180) : '';
@@ -48,7 +48,7 @@ const jsonLd = page ? (body?.videos ?? []).map((v) => videoObjectLd(cfg, v, page
   contentLocale={page?.locale}
 >
   {page && body ? (
-    <PageArticle page={page} html={body.html} />
+    <PageArticle page={page} html={body.html} cmsOrigin={new URL(cfg.cmsPublicUrl).origin} />
   ) : (
     <ErrorView locale={locale} kind="unavailable" />
   )}

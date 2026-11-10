@@ -22,6 +22,8 @@ export function extractVideoIds(markdown: string): string[] {
 export interface RenderOptions {
   /** HTML for a video id, or '' when the video is not public (skipped silently). */
   renderVideo: (id: string) => string;
+  /** HTML for an image the CMS described (responsive <picture>), or null for a plain lazy <img>. */
+  renderImage?: (src: string, alt: string) => string | null;
 }
 
 type BlockRule = Parameters<InstanceType<typeof MarkdownIt>['block']['ruler']['before']>[2];
@@ -58,7 +60,13 @@ export function renderMarkdown(markdown: string, opts: RenderOptions): string {
     if (/^https?:\/\//i.test(href)) tokens[idx]!.attrSet('rel', 'noopener noreferrer');
     return self.renderToken(tokens, idx, o);
   };
-  md.renderer.rules.image = (tokens, idx, o, _env, self) => {
+  md.renderer.rules.image = (tokens, idx, o, env, self) => {
+    const token = tokens[idx]!;
+    // markdown-it's own image rule fills alt from the children; renderToken alone leaves it empty.
+    const alt = self.renderInlineAsText(token.children ?? [], o, env);
+    token.attrSet('alt', alt);
+    const custom = opts.renderImage?.(String(token.attrGet('src') ?? ''), alt);
+    if (custom) return custom;
     tokens[idx]!.attrSet('loading', 'lazy');
     tokens[idx]!.attrSet('decoding', 'async');
     return self.renderToken(tokens, idx, o);

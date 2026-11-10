@@ -4,9 +4,12 @@ import Icon from './Icon.astro';
 import { fmt, formatDate, strings } from '../i18n';
 import type { Post } from '../lib/cms-types';
 import { dir, type Locale } from '../lib/locale';
+import { pictureHtml, SIZES } from '../lib/picture';
 
-interface Props { post: Post; html: string; locale: Locale }
-const { post, html, locale } = Astro.props;
+interface Props { post: Post; html: string; locale: Locale; cmsOrigin: string }
+const { post, html, locale, cmsOrigin } = Astro.props;
+// The cover is the article's LCP image: responsive, sized, eager and high priority (CMS-10).
+const coverHtml = post.cover ? pictureHtml(post.cover, cmsOrigin, { sizes: SIZES.cover, priority: true, className: 'cover' }) : null;
 const t = strings(locale);
 ---
 <article>
@@ -19,7 +22,7 @@ const t = strings(locale);
         <time datetime={post.published_at}>{formatDate(post.published_at, post.locale)}</time>
         {post.author_name && <span>{' '}{fmt(t.news.by, { author: post.author_name })}</span>}
       </p>
-      {post.cover && <img class="cover" src={post.cover.url} alt={post.cover.alt ?? ''} width={post.cover.width ?? undefined} height={post.cover.height ?? undefined} />}
+      {coverHtml && <Fragment set:html={coverHtml} />}
     </div>
   </header>
   <div class="section">
