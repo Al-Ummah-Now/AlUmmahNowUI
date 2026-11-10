@@ -2,20 +2,22 @@
 /** "Preview — not published" bar on every draft preview (src/pages/preview/[kind]/[id].astro). */
 import { fmt, strings } from '../i18n';
 import type { Locale } from '../lib/locale';
+import type { PreviewStatus } from '../lib/preview';
 
-interface Props { locale: Locale; status: 'draft' | 'published'; minutes: number; editUrl: string }
+interface Props { locale: Locale; status: PreviewStatus; minutes: number; editUrl: string }
 const { locale, status, minutes, editUrl } = Astro.props;
 const t = strings(locale).preview;
+const live = status === 'published';
 ---
 <section class="preview-bar" aria-labelledby="preview-bar-title" data-preview-banner>
   <div class="wrap">
     <div class="preview-bar-text">
       <p class="preview-bar-title" id="preview-bar-title">
         <span class="preview-dot" aria-hidden="true"></span>
-        <strong>{status === 'draft' ? t.banner : t.bannerPublished}</strong>
+        <strong>{live ? t.bannerPublished : t.banner}</strong>
       </p>
       <p class="preview-bar-body">
-        {status === 'draft' ? t.bannerBody : t.bannerBodyPublished}{' '}
+        {live ? t.bannerBodyPublished : t.bannerBody}{' '}
         <span>{fmt(t.expiresIn, { minutes })}</span>
       </p>
     </div>
