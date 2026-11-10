@@ -58,6 +58,8 @@ test.describe('signed in to auth (real QA auth)', () => {
 
     // Clean up: single sign-out of everything
     await page.getByRole('button', { name: 'Sign out of all accounts' }).click();
+    // Signing out of every account asks first, in the site's own dialog
+    await page.getByRole('dialog', { name: 'Sign out of all accounts?' }).getByRole('button', { name: 'Sign out of all accounts' }).click();
     // Auth walks every app's logout and returns to the locale home: wait for that page
     // (the current /en/articles/ already satisfies a looser "back on www" check)
     await page.waitForURL((u) => u.origin === WWW_ORIGIN && u.pathname === '/en/', { timeout: 30_000 });

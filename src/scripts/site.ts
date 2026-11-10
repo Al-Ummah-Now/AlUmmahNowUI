@@ -4,11 +4,13 @@
  *  - language switch remembers the choice (aun_locale cookie, read by `/`)
  *  - account: fetch /auth/me and auth's account list ({AUTH}/session/accounts);
  *    signed in → name + disclosure menu listing every account in this browser (switch,
- *    add, sign out of one); signed in to auth but not to www → silent sign-in
+ *    add, sign out of one); signing out of one account or of all of them asks first in
+ *    the in-app dialog (./confirm.ts); signed in to auth but not to www → silent sign-in
  *    (prompt=none, once per tab); anything failing → keep the "Sign in" link
  *  - video facades: swap in the iframe on click
  * HTML is identical for every visitor (edge-cached); signed-in state is client-side only.
  */
+import { confirmDialog, type ConfirmOptions } from './confirm';
 import { initFacades } from './facade';
 import { initTheme } from './theme';
 import {
@@ -144,9 +146,25 @@ function buildMenu(root: HTMLElement, me: Me, result: AccountsResult, focusButto
     silentSignIn();
   };
 
+  // The menu closes while the dialog is up; cancelling returns focus to the menu button
+  const ask = async (options: ConfirmOptions) => {
+    menu.hidden = true;
+    button.setAttribute('aria-expanded', 'false');
+    const ok = await confirmDialog(options);
+    if (!ok) button.focus();
+    return ok;
+  };
+
   const signOutOf = async (a: AuthAccount) => {
+    const text = accountLabel(a);
+    const confirmed = await ask({
+      title: fill(d.labelConfirmSignOutOfTitle, text),
+      body: fill(d.labelConfirmSignOutOfBody, text),
+      confirmLabel: d.labelSignOut ?? '',
+    });
+    if (!confirmed) return;
     // Last account: the normal single sign-out (auth /logout, every app's front channel)
-    if (accounts.length <= 1) return signOutForm.requestSubmit();
+    if (accounts.length <= 1) return signOutForm.submit();
     busy(true);
     const ok = await authCall(authUrl, `/session/accounts/${encodeURIComponent(a.userId)}`, { method: 'DELETE', headers: { Accept: 'application/json' } });
     if (!ok) return busy(false);
@@ -194,6 +212,15 @@ function buildMenu(root: HTMLElement, me: Me, result: AccountsResult, focusButto
   const li = el('li');
   signOutForm.append(el('input', { type: 'hidden', name: 'locale', value: d.locale ?? 'en' }));
   signOutForm.append(el('button', { type: 'submit' }, accounts.length > 1 ? d.labelSignOutAll : d.labelSignOut));
+  // Signing out of every account asks first; signing out of the only account does not
+  if (accounts.length > 1) {
+    signOutForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      void ask({ title: d.labelConfirmSignOutAllTitle ?? '', body: d.labelConfirmSignOutAllBody ?? '', confirmLabel: d.labelSignOutAll ?? '' }).then((ok) => {
+        if (ok) signOutForm.submit();
+      });
+    });
+  }
   li.append(signOutForm);
   menu.append(li);
 

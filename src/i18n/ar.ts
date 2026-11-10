@@ -47,6 +47,11 @@ export const ar: Messages = {
     addAccount: 'إضافة حساب آخر',
     signOutOf: 'تسجيل الخروج من {name}',
     signOutAll: 'تسجيل الخروج من جميع الحسابات',
+    cancel: 'إلغاء',
+    confirmSignOutOfTitle: 'تسجيل الخروج من {name}؟',
+    confirmSignOutOfBody: 'سيُسجَّل خروج {name} في هذا المتصفح، وتبقى حساباتك الأخرى مسجّلة الدخول.',
+    confirmSignOutAllTitle: 'تسجيل الخروج من جميع الحسابات؟',
+    confirmSignOutAllBody: 'سيُسجَّل خروج جميع الحسابات في هذا المتصفح وفي كل تطبيقات الأمة الآن.',
   },
   home: {
     wordmarkLatin: 'Al Ummah Now',

@@ -45,6 +45,11 @@ export const en = {
     addAccount: 'Add another account',
     signOutOf: 'Sign out of {name}',
     signOutAll: 'Sign out of all accounts',
+    cancel: 'Cancel',
+    confirmSignOutOfTitle: 'Sign out of {name}?',
+    confirmSignOutOfBody: '{name} will be signed out in this browser. Your other accounts stay signed in.',
+    confirmSignOutAllTitle: 'Sign out of all accounts?',
+    confirmSignOutAllBody: 'Every account will be signed out in this browser and in all Al Ummah Now apps.',
   },
   home: {
     wordmarkLatin: 'Al Ummah Now',
