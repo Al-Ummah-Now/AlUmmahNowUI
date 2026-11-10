@@ -5,14 +5,14 @@ import { expect, test, type Page } from '@playwright/test';
  * a sized <img> (no layout shift), the cover eager + fetchpriority=high (LCP), inline ones lazy,
  * and the browser actually receives a modern format.
  *
- * Needs a published post with a cover; QA keeps one (`/en/news/image-variants-demo/`). Other
+ * Needs a published post with a cover; QA keeps one (`/en/articles/image-variants-demo/`). Other
  * environments are searched through the sitemap; with none, the test is skipped (local runs use
  * the built-in fallback content, which has no images).
  */
 async function postWithCover(page: Page): Promise<string | null> {
-  const candidates = ['/en/news/image-variants-demo/'];
+  const candidates = ['/en/articles/image-variants-demo/'];
   const sitemap = await page.request.get('/sitemap.xml');
-  if (sitemap.ok()) for (const m of (await sitemap.text()).matchAll(/<loc>[^<]*?(\/(?:en|ar)\/news\/[^<]+\/)<\/loc>/g)) candidates.push(m[1]!);
+  if (sitemap.ok()) for (const m of (await sitemap.text()).matchAll(/<loc>[^<]*?(\/(?:en|ar)\/articles\/[^<]+\/)<\/loc>/g)) candidates.push(m[1]!);
   for (const path of [...new Set(candidates)].slice(0, 12)) {
     const res = await page.request.get(path);
     if (res.ok() && (await res.text()).includes('class="cover"')) return path;

@@ -18,7 +18,7 @@ export const ar: Messages = {
   },
   nav: {
     home: 'الرئيسية',
-    news: 'الأخبار',
+    articles: 'المقالات',
     videos: 'المرئيات',
     about: 'من نحن',
   },
@@ -57,8 +57,8 @@ export const ar: Messages = {
     whatTitle: 'ماذا تجد هنا',
     curatedTitle: 'اخترناها لك',
     curatedAll: 'كل المرئيات المختارة',
-    newsTitle: 'آخر الأخبار',
-    newsAll: 'كل الأخبار',
+    articlesTitle: 'أحدث المقالات',
+    articlesAll: 'كل المقالات',
     appsTitle: 'تابع رحلتك',
   },
   apps: {
@@ -69,10 +69,10 @@ export const ar: Messages = {
     signInTitle: 'تسجيل الدخول',
     signInBody: 'حساب واحد لكل تطبيقات الأمة الآن.',
   },
-  news: {
-    title: 'الأخبار',
+  articles: {
+    title: 'المقالات',
     intro: 'إعلانات ومستجدات من فريق الأمة الآن.',
-    empty: 'لم تُنشر أي أخبار بعد.',
+    empty: 'لم يُنشر أي مقال بعد.',
     emptyHint: 'وإلى ذلك الحين، هناك الكثير مما يمكنك مشاهدته.',
     by: 'بقلم {author}',
     published: 'نُشر في {date}',
@@ -80,7 +80,7 @@ export const ar: Messages = {
     newer: 'الأحدث',
     older: 'الأقدم',
     tags: 'الموضوعات',
-    backToNews: 'العودة إلى الأخبار',
+    backToArticles: 'العودة إلى المقالات',
   },
   videos: {
     title: 'مرئيات مختارة',
@@ -124,7 +124,7 @@ export const ar: Messages = {
   },
   timeline: {
     title: 'الجديد',
-    intro: 'أخبار وإعلانات ومقاطع من الأمة الآن، الأحدث أولًا.',
+    intro: 'مقالات وإعلانات ومقاطع من الأمة الآن، الأحدث أولًا.',
     pinned: 'مثبّت',
     today: 'اليوم',
     yesterday: 'أمس',
@@ -134,7 +134,7 @@ export const ar: Messages = {
     addedOne: 'أُضيف عنصر واحد',
     failed: 'تعذّر تحميل المزيد. حاول مرة أخرى.',
     end: 'وصلت إلى النهاية.',
-    allNews: 'كل الأخبار',
+    allArticles: 'كل المقالات',
     empty: 'لم يُنشر شيء بعد.',
     video: 'مقطع',
     cardsOne: 'بطاقة واحدة',
@@ -149,6 +149,6 @@ export const ar: Messages = {
   footer: {
     contact: 'اتصل بنا',
     rights: '© {year} الأمة الآن',
-    rss: 'خلاصة الأخبار (RSS)',
+    rss: 'خلاصة المقالات (RSS)',
   },
 };

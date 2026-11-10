@@ -7,8 +7,9 @@
 import { randomBytes } from 'node:crypto';
 import { existsSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const path = resolve(new URL('..', import.meta.url).pathname, '.dev.vars');
+const path = resolve(fileURLToPath(new URL('..', import.meta.url)), '.dev.vars');
 if (existsSync(path)) {
   process.stdout.write('.dev.vars exists, leaving it as is\n');
 } else {

@@ -180,7 +180,8 @@ describe('smoke', () => {
       }
       if (url.includes('/this/does/not/exist')) return new Response('', { status: 404 });
       if (url.endsWith('/robots.txt')) return ok('User-agent: *\nAllow: /\n\nSitemap: x');
-      if (url.startsWith(e.apex!)) return new Response(null, { status: 301, headers: { location: `${e.www}/ar/news/?page=2&smoke=1` } });
+      if (url.startsWith(`${e.www}/ar/news/`)) return new Response(null, { status: 301, headers: { location: '/ar/articles/?page=2&smoke=1' } });
+      if (url.startsWith(e.apex!)) return new Response(null, { status: 301, headers: { location: `${e.www}/ar/articles/?page=2&smoke=1` } });
       return new Response('', { status: 500 });
     }) as typeof fetch;
   }

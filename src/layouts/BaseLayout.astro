@@ -49,7 +49,7 @@ const robots = noindex || !cfg.isProduction ? 'noindex, nofollow' : 'index, foll
     <meta name="robots" content={robots} />
     <link rel="canonical" href={canonical} />
     {hreflangLinks(cfg, alternates).map((l) => <link rel="alternate" hreflang={l.hreflang} href={l.href} />)}
-    <link rel="alternate" type="application/rss+xml" title={`${siteName}: ${t.news.title}`} href={`/${locale}/rss.xml`} />
+    <link rel="alternate" type="application/rss+xml" title={`${siteName}: ${t.articles.title}`} href={`/${locale}/rss.xml`} />
     <meta property="og:site_name" content={siteName} />
     <meta property="og:type" content={ogType} />
     <meta property="og:title" content={title} />

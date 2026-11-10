@@ -4,6 +4,7 @@
  * Prints names only. A Worker that does not exist yet passes with a warning (first deploy).
  */
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parseEnvArg, type EnvName } from '../environments.ts';
 import { SECRETS_MANIFEST } from '../secrets-manifest.ts';
 import { getWorkerBindings, type WorkerBinding } from './cf-api.ts';
@@ -22,7 +23,7 @@ export function evaluateSecrets(env: EnvName, worker: string, bindings: WorkerBi
   return { worker, missing: entry.required.filter((r) => !secrets.has(r.name)).map((r) => r.name), exists: true };
 }
 
-const isMain = process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname);
+const isMain = process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(new URL(import.meta.url)));
 if (isMain) {
   const env = parseEnvArg(process.argv.slice(2));
   let failed = false;

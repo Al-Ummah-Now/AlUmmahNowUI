@@ -2,7 +2,7 @@
 
 The public front door of **Al Ummah Now / الأمة الآن**, an Islamic video and community
 platform. It shows what the platform is, where to go next (videos, profile, sign-in), and
-editorial content (pages, news, curated videos) written by staff in the CMS
+editorial content (pages, articles, curated videos) written by staff in the CMS
 ([AlUmmahNowCMS](https://github.com/Al-Ummah-Now/AlUmmahNowCMS)).
 
 Astro 5 (SSR) on Cloudflare Workers, Tailwind 4, English and Arabic (RTL) throughout.
@@ -80,7 +80,7 @@ every QA deploy and every promote.
 ```
 src/
   worker.ts            edge wrapper around Astro
-  pages/               [locale]/ (home, news, videos, CMS pages, rss), auth/, healthz, sitemap, robots, 404, 500
+  pages/               [locale]/ (home, articles, videos, CMS pages, rss), auth/, healthz, sitemap, robots, 404, 500
   lib/                 cms (fallback chain), videos, embeds, markdown, auth, session, edge, seo
   i18n/                en.ts, ar.ts (same keys, tested)
   content/fallback/    built-in content

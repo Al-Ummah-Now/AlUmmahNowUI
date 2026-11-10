@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { apexRedirect, applySecurityHeaders, contentSecurityPolicy, formActionSources, HTML_FRESH_SEC, HTML_LEASE_SEC, HTML_SWR_SEC, htmlCacheKey, isCacheableRequest, withHtmlCache } from '../src/lib/edge';
+import { apexRedirect, applySecurityHeaders, legacyArticlesRedirect, contentSecurityPolicy, formActionSources, HTML_FRESH_SEC, HTML_LEASE_SEC, HTML_SWR_SEC, htmlCacheKey, isCacheableRequest, withHtmlCache } from '../src/lib/edge';
 import { config } from '../src/lib/env';
 import { normalizeImageUrl } from '../src/lib/images';
 import { robotsTxt } from '../src/lib/seo';
@@ -8,11 +8,35 @@ import { MemoryCache, waiter } from './helpers';
 const prod = config({ APP_ENV: 'production', SITE_URL: 'https://www.alummahnow.net', AUTH_URL: 'https://auth.alummahnow.net', VIDEOS_WEB_URL: 'https://videos.alummahnow.net', CMS_PUBLIC_URL: 'https://cms.alummahnow.net' });
 const qa = config({ APP_ENV: 'qa', SITE_URL: 'https://www.qa.alummahnow.net' });
 
+describe('News → Articles', () => {
+  it('301s every old /{l}/news url to /{l}/articles, query kept', () => {
+    const cases: [string, string][] = [
+      ['https://w/en/news/', '/en/articles/'],
+      ['https://w/en/news', '/en/articles/'],
+      ['https://w/ar/news/?page=2', '/ar/articles/?page=2'],
+      ['https://w/ar/news?page=2&x=%20y', '/ar/articles/?page=2&x=%20y'],
+      ['https://w/en/news/a-post/', '/en/articles/a-post/'],
+      ['https://w/en/news/a-post', '/en/articles/a-post'],
+    ];
+    for (const [from, to] of cases) {
+      const res = legacyArticlesRedirect(from)!;
+      expect(res.status, from).toBe(301);
+      expect(res.headers.get('Location'), from).toBe(to);
+    }
+  });
+
+  it('leaves everything else alone', () => {
+    for (const url of ['https://w/en/articles/', 'https://w/en/newsletter/', 'https://w/en/a/news/', 'https://w/fr/news/', 'https://w/news/', 'https://w/en/']) {
+      expect(legacyArticlesRedirect(url), url).toBeNull();
+    }
+  });
+});
+
 describe('apex → www', () => {
   it('301s the apex keeping path and query', () => {
-    const res = apexRedirect('https://alummahnow.net/ar/news/?page=2&x=%20y', prod.siteUrl)!;
+    const res = apexRedirect('https://alummahnow.net/ar/articles/?page=2&x=%20y', prod.siteUrl)!;
     expect(res.status).toBe(301);
-    expect(res.headers.get('Location')).toBe('https://www.alummahnow.net/ar/news/?page=2&x=%20y');
+    expect(res.headers.get('Location')).toBe('https://www.alummahnow.net/ar/articles/?page=2&x=%20y');
   });
   it('301s the bare apex root', () => {
     expect(apexRedirect('https://alummahnow.net/', prod.siteUrl)!.headers.get('Location')).toBe('https://www.alummahnow.net/');
@@ -73,7 +97,7 @@ describe('HTML edge cache', () => {
   const html = (source = 'cms') => new Response('<h1>hi</h1>', { headers: { 'Content-Type': 'text/html', 'X-Content-Source': source } });
 
   it('only caches anonymous-identical locale pages', () => {
-    expect(isCacheableRequest(new Request('https://w/en/news/?page=2'))).toBe(true);
+    expect(isCacheableRequest(new Request('https://w/en/articles/?page=2'))).toBe(true);
     expect(isCacheableRequest(new Request('https://w/en/?utm_source=x'))).toBe(false);
     expect(isCacheableRequest(new Request('https://w/auth/me'))).toBe(false);
     expect(isCacheableRequest(new Request('https://w/en/', { method: 'POST' }))).toBe(false);
@@ -98,7 +122,7 @@ describe('HTML edge cache', () => {
   });
 
   it('the cache key is the URL plus the version (none in local dev)', () => {
-    expect(htmlCacheKey('https://w/en/news?page=2', 'v1')).toBe('https://w/en/news?page=2&__v=v1');
+    expect(htmlCacheKey('https://w/en/articles?page=2', 'v1')).toBe('https://w/en/articles?page=2&__v=v1');
     expect(htmlCacheKey('https://w/en/', '')).toBe('https://w/en/');
   });
 

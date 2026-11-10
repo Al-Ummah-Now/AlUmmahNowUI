@@ -12,13 +12,13 @@ const settings: SiteSettings = {
 };
 
 const headerNav = [
-  { label: 'الأخبار', url: '/news/' },
+  { label: 'المقالات', url: '/articles/' },
   { label: 'المرئيات', url: '/videos/' },
   { label: 'من نحن', url: '/about/' },
 ];
 const footerNav = [
   { label: 'من نحن', url: '/about/' },
-  { label: 'الأخبار', url: '/news/' },
+  { label: 'المقالات', url: '/articles/' },
   { label: 'المرئيات', url: '/videos/' },
 ];
 

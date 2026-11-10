@@ -5,7 +5,7 @@
 import { embedOrigin } from './embeds';
 import type { Config } from './env';
 import { imgSrcSources } from './images';
-import { negotiateLocale } from './locale';
+import { articlesPath, isLocale, negotiateLocale } from './locale';
 import { isPreviewPath } from './preview';
 import { MODE_SCRIPT_HASH } from './theme-mode';
 
@@ -19,6 +19,21 @@ export function apexRedirect(requestUrl: string, siteUrl: string): Response | nu
   return new Response(null, {
     status: 301,
     headers: { Location: target, 'Cache-Control': 'public, max-age=3600' },
+  });
+}
+
+/**
+ * The News section is now Articles: `/{l}/news/…` → 301 `/{l}/articles/…`, query kept. Runs
+ * before Astro and the HTML cache, so old links, bookmarks and search results keep working.
+ */
+export function legacyArticlesRedirect(requestUrl: string): Response | null {
+  const url = new URL(requestUrl);
+  if (!isLocale(url.pathname.split('/')[1])) return null;
+  const path = articlesPath(url.pathname);
+  if (!path) return null;
+  return new Response(null, {
+    status: 301,
+    headers: { Location: `${path}${url.search}`, 'Cache-Control': 'public, max-age=86400' },
   });
 }
 

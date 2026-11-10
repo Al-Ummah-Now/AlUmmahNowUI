@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test';
 import { AUTH_URL, CLIENT_ID, LOCALES, REDIRECT_URI } from './env';
 
 const HEADINGS = {
-  en: { news: 'News', videos: 'Featured videos', notFound: 'We could not find that page' },
-  ar: { news: 'الأخبار', videos: 'مرئيات مختارة', notFound: 'لم نعثر على هذه الصفحة' },
+  en: { articles: 'Articles', videos: 'Featured videos', notFound: 'We could not find that page' },
+  ar: { articles: 'المقالات', videos: 'مرئيات مختارة', notFound: 'لم نعثر على هذه الصفحة' },
 };
 
 test.describe('rendering', () => {
@@ -21,9 +21,9 @@ test.describe('rendering', () => {
       expect(['cms', 'cache', 'snapshot', 'builtin']).toContain(res?.headers()['x-content-source']);
     });
 
-    test(`${l}: news and videos pages`, async ({ page }) => {
-      await page.goto(`/${l}/news/`);
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText(HEADINGS[l].news);
+    test(`${l}: articles and videos pages`, async ({ page }) => {
+      await page.goto(`/${l}/articles/`);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(HEADINGS[l].articles);
       await page.goto(`/${l}/videos/`);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(HEADINGS[l].videos);
     });
@@ -57,6 +57,31 @@ test.describe('routing', () => {
     expect(cookie.headers().location).toBe('/en/');
   });
 
+  test('old /news/ urls 301 to /articles/, query kept', async ({ request }) => {
+    const cases: [string, string][] = [
+      ['/en/news/', '/en/articles/'],
+      ['/ar/news', '/ar/articles/'],
+      ['/ar/news/?page=2', '/ar/articles/?page=2'],
+      ['/en/news/some-post/', '/en/articles/some-post/'],
+      ['/ar/news/%D9%85%D9%82%D8%A7%D9%84/?utm_source=x&a=%20b', '/ar/articles/%D9%85%D9%82%D8%A7%D9%84/?utm_source=x&a=%20b'],
+    ];
+    for (const [from, to] of cases) {
+      const res = await request.get(from, { maxRedirects: 0 });
+      expect(res.status(), from).toBe(301);
+      expect(res.headers().location, from).toBe(to);
+    }
+    // /newsletter and other locales are not part of the old section
+    expect((await request.get('/en/newsletter/', { maxRedirects: 0 })).status()).not.toBe(301);
+    expect((await request.get('/fr/news/', { maxRedirects: 0 })).status()).toBe(404);
+  });
+
+  test('following an old /news/ link lands on the Articles page', async ({ page }) => {
+    await page.goto('/ar/news/?page=1');
+    await expect(page).toHaveURL(/\/ar\/articles\/\?page=1$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(HEADINGS.ar.articles);
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  });
+
   test('invalid locale is a 404', async ({ request }) => {
     expect((await request.get('/fr/')).status()).toBe(404);
   });
@@ -68,7 +93,7 @@ test.describe('routing', () => {
     expect(body.ok).toBe(true);
     expect(['ok', 'degraded']).toContain(body.cms);
     expect((await request.get('/robots.txt')).ok()).toBe(true);
-    expect(await (await request.get('/sitemap.xml')).text()).toContain('/ar/news/');
+    expect(await (await request.get('/sitemap.xml')).text()).toContain('/ar/articles/');
     expect(await (await request.get('/en/rss.xml')).text()).toContain('<rss');
   });
 
@@ -92,14 +117,14 @@ test.describe('routing', () => {
 
 test.describe('language switch', () => {
   test('en → ar keeps the page and remembers the choice', async ({ page, context }) => {
-    await page.goto('/en/news/');
+    await page.goto('/en/articles/');
     await page.getByRole('link', { name: 'العربية' }).click();
-    await expect(page).toHaveURL(/\/ar\/news\/$/);
+    await expect(page).toHaveURL(/\/ar\/articles\/$/);
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     const cookies = await context.cookies();
     expect(cookies.find((c) => c.name === 'aun_locale')?.value).toBe('ar');
     await page.getByRole('link', { name: 'English' }).click();
-    await expect(page).toHaveURL(/\/en\/news\/$/);
+    await expect(page).toHaveURL(/\/en\/articles\/$/);
   });
 });
 
@@ -107,7 +132,7 @@ test.describe('sign-in', () => {
   test('the Sign in link goes to auth /authorize with the exact client_id, redirect_uri and a PKCE challenge', async ({ page }) => {
     // Never actually load auth: capture the request and stop it
     await page.route(`${AUTH_URL}/**`, (route) => route.fulfill({ status: 200, body: 'auth stub' }));
-    await page.goto('/en/news/');
+    await page.goto('/en/articles/');
     const [req] = await Promise.all([page.waitForRequest((r) => r.url().startsWith(`${AUTH_URL}/authorize`)), page.getByRole('link', { name: 'Sign in' }).first().click()]);
     const url = new URL(req.url());
     expect(url.searchParams.get('client_id')).toBe(CLIENT_ID);
@@ -138,7 +163,7 @@ test.describe('CMS content', () => {
     await expect
       .poll(
         async () => {
-          for (const path of ['/en/', '/en/news/', '/en/videos/', '/ar/', '/ar/news/']) {
+          for (const path of ['/en/', '/en/articles/', '/en/videos/', '/ar/', '/ar/articles/']) {
             const html = await (await request.get(`${path}?e2e=${Date.now()}`)).text();
             if (html.includes(title!)) return true;
           }

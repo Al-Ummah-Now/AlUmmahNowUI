@@ -7,11 +7,11 @@ interface Props { locale: Locale; posts: PostSummary[]; headingLevel?: 2 | 3 }
 const { locale, posts, headingLevel = 2 } = Astro.props;
 const H = `h${headingLevel}`;
 ---
-<ul class="news-list">
+<ul class="articles-list">
   {posts.map((p) => (
-    <li class="news-item">
+    <li class="articles-item">
       <time datetime={p.published_at}>{formatDate(p.published_at, locale)}</time>
-      <H><a href={`/${locale}/news/${encodeURIComponent(p.slug)}/`}>{p.title}</a></H>
+      <H><a href={`/${locale}/articles/${encodeURIComponent(p.slug)}/`}>{p.title}</a></H>
       {p.excerpt && <p>{p.excerpt}</p>}
     </li>
   ))}

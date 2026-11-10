@@ -1,10 +1,10 @@
 ---
 import Icon from '../../../components/Icon.astro';
-import NewsList from '../../../components/NewsList.astro';
+import ArticlesList from '../../../components/ArticlesList.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { fmt } from '../../../i18n';
 import { libraryUrl } from '../../../lib/embeds';
-import { NEWS_PAGE_SIZE as PAGE_SIZE } from '../../../lib/cms';
+import { ARTICLES_PAGE_SIZE as PAGE_SIZE } from '../../../lib/cms';
 import { loadChrome, markSource, requestContext, routeLocale } from '../../../lib/context';
 
 const locale = routeLocale(Astro);
@@ -21,40 +21,40 @@ const pages = Math.max(1, Math.ceil(list.total / PAGE_SIZE));
 if (page > 1 && list.items.length === 0 && posts.source === 'cms') return new Response(null, { status: 404 });
 markSource(Astro, rc);
 const qs = (p: number) => (p === 1 ? '' : `?page=${p}`);
-const title = page > 1 ? `${t.news.title}: ${fmt(t.news.pageOf, { page, pages })}` : t.news.title;
+const title = page > 1 ? `${t.articles.title}: ${fmt(t.articles.pageOf, { page, pages })}` : t.articles.title;
 ---
 <BaseLayout
   cfg={cfg}
   locale={locale}
   title={title}
-  description={t.news.intro}
-  alternates={{ en: `/en/news/${qs(page)}`, ar: `/ar/news/${qs(page)}` }}
+  description={t.articles.intro}
+  alternates={{ en: `/en/articles/${qs(page)}`, ar: `/ar/articles/${qs(page)}` }}
   nav={chrome.nav}
   settings={chrome.settings}
 >
   <div class="page-head">
     <div class="wrap">
-      <h1>{t.news.title}</h1>
-      <p class="lede">{t.news.intro}</p>
+      <h1>{t.articles.title}</h1>
+      <p class="lede">{t.articles.intro}</p>
     </div>
   </div>
-  <section class="section" aria-label={t.news.title}>
+  <section class="section" aria-label={t.articles.title}>
     <div class="wrap">
       {list.items.length > 0 ? (
         <>
-          <NewsList locale={locale} posts={list.items} />
+          <ArticlesList locale={locale} posts={list.items} />
           {pages > 1 && (
             <nav class="pagination" aria-label={t.a11y.pagination}>
-              {page > 1 && <a href={`/${locale}/news/${qs(page - 1)}`} rel="prev"><Icon name="chevron" class="flip" />{t.news.newer}</a>}
-              <p aria-current="page">{fmt(t.news.pageOf, { page, pages })}</p>
-              {page < pages && <a href={`/${locale}/news/${qs(page + 1)}`} rel="next">{t.news.older}<Icon name="chevron" /></a>}
+              {page > 1 && <a href={`/${locale}/articles/${qs(page - 1)}`} rel="prev"><Icon name="chevron" class="flip" />{t.articles.newer}</a>}
+              <p aria-current="page">{fmt(t.articles.pageOf, { page, pages })}</p>
+              {page < pages && <a href={`/${locale}/articles/${qs(page + 1)}`} rel="next">{t.articles.older}<Icon name="chevron" /></a>}
             </nav>
           )}
         </>
       ) : (
         <div class="empty">
-          <p>{t.news.empty}</p>
-          <p>{t.news.emptyHint}</p>
+          <p>{t.articles.empty}</p>
+          <p>{t.articles.emptyHint}</p>
           <a class="button button-quiet" href={libraryUrl(cfg.videosWebUrl, locale)}>{t.home.watchCta}</a>
         </div>
       )}

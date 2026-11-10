@@ -5,7 +5,7 @@ import { LOCALES } from './env';
 
 const PAGES = [
   { name: 'home', path: (l: string) => `/${l}/` },
-  { name: 'news', path: (l: string) => `/${l}/news/` },
+  { name: 'articles', path: (l: string) => `/${l}/articles/` },
   { name: 'videos', path: (l: string) => `/${l}/videos/` },
   { name: 'about', path: (l: string) => `/${l}/about/` },
   { name: '404', path: (l: string) => `/${l}/this/does/not/exist/` },

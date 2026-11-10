@@ -42,13 +42,13 @@ export function websiteLd(cfg: Config, name: string, locale: Locale) {
   };
 }
 
-export function newsArticleLd(
+export function articleLd(
   cfg: Config,
   a: { title: string; description: string; url: string; image: string | null; published: string; modified: string; author: string | null; locale: Locale },
 ) {
   return {
     '@context': 'https://schema.org',
-    '@type': 'NewsArticle',
+    '@type': 'Article',
     headline: a.title.slice(0, 110),
     description: a.description,
     mainEntityOfPage: absolute(cfg, a.url),

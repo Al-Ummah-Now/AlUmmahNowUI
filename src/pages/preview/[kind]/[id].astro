@@ -37,7 +37,7 @@ const body = data ? await renderBody(rc, data.content.body, data.content.locale,
 const here = Astro.url.pathname;
 // The switcher and hreflang point at published translations; this locale stays on the preview.
 const alternates = data
-  ? { ...documentAlternates(data.content, data.content.alternates, (l, s) => (data.kind === 'post' ? `/${l}/news/${encodeURIComponent(s)}/` : `/${l}/${encodeURIComponent(s)}/`)), [locale]: here }
+  ? { ...documentAlternates(data.content, data.content.alternates, (l, s) => (data.kind === 'post' ? `/${l}/articles/${encodeURIComponent(s)}/` : `/${l}/${encodeURIComponent(s)}/`)), [locale]: here }
   : { [locale]: here };
 const t = strings(locale);
 if (result.state !== 'ok') Astro.response.status = { expired: 410, invalid: 400, gone: 404, unavailable: 503 }[result.state];

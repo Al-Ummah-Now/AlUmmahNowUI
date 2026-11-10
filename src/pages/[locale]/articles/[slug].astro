@@ -6,7 +6,7 @@ import { documentAlternates, renderBody } from '../../../lib/body';
 import { loadChrome, markSource, requestContext, routeLocale } from '../../../lib/context';
 import { otherLocale } from '../../../lib/locale';
 import { plainText } from '../../../lib/markdown';
-import { newsArticleLd, videoObjectLd } from '../../../lib/seo';
+import { articleLd, videoObjectLd } from '../../../lib/seo';
 
 const locale = routeLocale(Astro);
 const slug = Astro.params.slug ?? '';
@@ -26,12 +26,12 @@ if (result.status === 'unavailable') Astro.response.status = 503;
 
 const post = result.status === 'ok' ? result.data : null;
 const body = post ? await renderBody(rc, post.body, post.locale, post.images) : null;
-const alternates = post ? documentAlternates(post, post.alternates, (l, s) => `/${l}/news/${encodeURIComponent(s)}/`) : {};
+const alternates = post ? documentAlternates(post, post.alternates, (l, s) => `/${l}/articles/${encodeURIComponent(s)}/`) : {};
 const translated = post && post.locale !== locale;
 const description = post ? post.seo_description || post.excerpt || plainText(post.body, 180) : '';
 const jsonLd = post
   ? [
-      newsArticleLd(cfg, {
+      articleLd(cfg, {
         title: post.title,
         description,
         url: alternates[post.locale] ?? Astro.url.pathname,

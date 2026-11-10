@@ -32,9 +32,9 @@ test.describe('signed in to auth (real QA auth)', () => {
     await page.evaluate(() => sessionStorage.clear());
 
     // Fresh page: the probe signs www in silently
-    await page.goto('/en/news/');
+    await page.goto('/en/articles/');
     await expect(accountButton(page)).toBeVisible({ timeout: 20_000 });
-    await expect(page).toHaveURL(/\/en\/news\/$/);
+    await expect(page).toHaveURL(/\/en\/articles\/$/);
 
     // Add a second account
     await openMenu(page);
@@ -52,14 +52,14 @@ test.describe('signed in to auth (real QA auth)', () => {
     await menu.locator('button.account-entry').click();
     await reloaded;
     await expect(accountButton(page)).toContainText(first.split('@')[0]!, { timeout: 30_000 });
-    await expect(page).toHaveURL(/\/en\/news\/$/);
+    await expect(page).toHaveURL(/\/en\/articles\/$/);
     await openMenu(page);
     await expect(page.locator('#account-menu .account-entry[aria-current="true"]')).toContainText(first.split('@')[0]!);
 
     // Clean up: single sign-out of everything
     await page.getByRole('button', { name: 'Sign out of all accounts' }).click();
     // Auth walks every app's logout and returns to the locale home: wait for that page
-    // (the current /en/news/ already satisfies a looser "back on www" check)
+    // (the current /en/articles/ already satisfies a looser "back on www" check)
     await page.waitForURL((u) => u.origin === WWW_ORIGIN && u.pathname === '/en/', { timeout: 30_000 });
     await expect(page.getByRole('link', { name: 'Sign in' }).first()).toBeVisible();
     await expect(accountButton(page)).toHaveCount(0);

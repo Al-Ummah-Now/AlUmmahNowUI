@@ -37,14 +37,28 @@ export function negotiateLocale(cookieHeader: string | null, acceptLanguage: str
   return DEFAULT_LOCALE;
 }
 
-/** The locale prefix of a path (`/ar/news/` → ar), or null. */
+/** The locale prefix of a path (`/ar/articles/` → ar), or null. */
 export function localeFromPath(pathname: string): Locale | null {
   const seg = pathname.split('/')[1];
   return isLocale(seg) ? seg : null;
 }
 
-/** Same path in another locale: `/en/news/?page=2` → `/ar/news/?page=2`. */
+/** Same path in another locale: `/en/articles/?page=2` → `/ar/articles/?page=2`. */
 export function swapLocale(pathname: string, to: Locale): string {
   const rest = localeFromPath(pathname) ? pathname.split('/').slice(2).join('/') : pathname.replace(/^\//, '');
   return `/${to}/${rest}`;
+}
+
+/** The articles section was called News until 2026-11 (`/{l}/news/…`). */
+const LEGACY_ARTICLES = /^(\/(?:en|ar))?\/news(?=[/?#]|$)/;
+
+/**
+ * A path in the old News section, moved to Articles: `/ar/news/x/` → `/ar/articles/x/`,
+ * `/en/news` → `/en/articles/`, `/news/` (a locale-less CMS nav url) → `/articles/`. Null otherwise.
+ */
+export function articlesPath(path: string): string | null {
+  const m = LEGACY_ARTICLES.exec(path);
+  if (!m) return null;
+  const rest = path.slice(m[0].length);
+  return `${m[1] ?? ''}/articles${rest === '' || /^[?#]/.test(rest) ? `/${rest}` : rest}`;
 }

@@ -12,6 +12,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { FeedItem } from '../src/lib/feed.ts';
 import { layoutFeed, post, video } from '../tests/feed-fixture.ts';
 
@@ -48,13 +49,13 @@ export function seedItems(locale: 'en' | 'ar'): FeedItem[] {
   return items;
 }
 
-const isMain = process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname);
+const isMain = process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(new URL(import.meta.url)));
 if (isMain) {
   const entries: { key: string; value: string }[] = [];
   for (const l of ['en', 'ar'] as const) for (const [key, value] of layoutFeed(l, seedItems(l), 'e2e', new Date(SEED_NOW).toISOString())) entries.push({ key, value });
   const file = join(mkdtempSync(join(tmpdir(), 'feed-seed-')), 'feed.json');
   writeFileSync(file, JSON.stringify(entries));
-  const root = resolve(new URL('..', import.meta.url).pathname);
+  const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
   execFileSync('npx', ['wrangler', 'kv', 'bulk', 'put', file, '--binding', 'FEED', '--local'], { cwd: root, stdio: ['ignore', 'ignore', 'inherit'], env: { ...process.env, CI: 'true' } });
   process.stdout.write(`seeded ${entries.length} FEED keys (local)\n`);
 }

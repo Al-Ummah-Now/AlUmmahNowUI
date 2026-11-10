@@ -37,7 +37,7 @@ test.describe('light / dark / system', () => {
     await expect(page.getByRole('button', { name: 'Theme: Dark' })).toBeFocused();
     expect(await pageBg(page)).toBe(DARK_BG);
 
-    await page.goto('/en/news/');
+    await page.goto('/en/articles/');
     await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
     expect(await pageBg(page)).toBe(DARK_BG);
 

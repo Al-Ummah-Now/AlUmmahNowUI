@@ -11,6 +11,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { ENVIRONMENTS, parseEnvArg, type EnvName } from '../environments.ts';
 import { runSmoke, type CheckResult } from './smoke.ts';
 
@@ -210,12 +211,12 @@ export async function waitForWwwVersion(
   throw new Error(`${worker} did not serve ${version} within ${timeoutMs / 1000}s (last: ${last})`);
 }
 
-const isMain = process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname);
+const isMain = process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(new URL(import.meta.url)));
 if (isMain) {
   const argv = process.argv.slice(2);
   const env = parseEnvArg(argv, ['stage', 'production']) as ReleaseEnv;
   const message = argv.includes('--message') ? (argv[argv.indexOf('--message') + 1] ?? 'release') : `release ${process.env.GITHUB_SHA?.slice(0, 7) ?? 'local'}`;
-  const root = resolve(new URL('../..', import.meta.url).pathname);
+  const root = resolve(fileURLToPath(new URL('../..', import.meta.url)));
   if (!existsSync(join(root, 'dist/_worker.js/index.js'))) {
     process.stderr.write('dist/ is missing: run `npm run build` (or download the build artifact) first\n');
     process.exit(2);

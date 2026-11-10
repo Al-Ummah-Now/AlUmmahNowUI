@@ -1,5 +1,5 @@
 ---
-/** A CMS post as published (src/pages/[locale]/news/[slug].astro) and as previewed (src/pages/preview/). */
+/** A CMS post as published (src/pages/[locale]/articles/[slug].astro) and as previewed (src/pages/preview/). */
 import Icon from './Icon.astro';
 import { fmt, formatDate, strings } from '../i18n';
 import type { Post } from '../lib/cms-types';
@@ -15,12 +15,12 @@ const t = strings(locale);
 <article>
   <header class="page-head">
     <div class="wrap">
-      <p><a class="more-link" href={`/${locale}/news/`}><Icon name="chevron" class="flip" />{t.news.backToNews}</a></p>
+      <p><a class="more-link" href={`/${locale}/articles/`}><Icon name="chevron" class="flip" />{t.articles.backToArticles}</a></p>
       <h1>{post.title}</h1>
       {post.excerpt && <p class="lede">{post.excerpt}</p>}
       <p class="byline">
         <time datetime={post.published_at}>{formatDate(post.published_at, post.locale)}</time>
-        {post.author_name && <span>{' '}{fmt(t.news.by, { author: post.author_name })}</span>}
+        {post.author_name && <span>{' '}{fmt(t.articles.by, { author: post.author_name })}</span>}
       </p>
       {coverHtml && <Fragment set:html={coverHtml} />}
     </div>
@@ -30,7 +30,7 @@ const t = strings(locale);
       <div class="prose" lang={post.locale} dir={dir(post.locale)} set:html={html} />
       {post.tags.length > 0 && (
         <div class="section-tags">
-          <h2 class="visually-hidden">{t.news.tags}</h2>
+          <h2 class="visually-hidden">{t.articles.tags}</h2>
           <ul class="tags">{post.tags.map((tag) => <li>{tag}</li>)}</ul>
         </div>
       )}
