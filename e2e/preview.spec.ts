@@ -63,6 +63,17 @@ test.describe('draft preview', () => {
     await axeAndShot(page, 'ar-preview', info.project.name);
   });
 
+  test('dark scheme: the banner and the draft follow the site theme', async ({ page, browserName }, info) => {
+    test.skip(!LOCAL, 'needs the stub CMS');
+    test.skip(browserName === 'webkit', WEBKIT_HTTP);
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto(`/preview?token=${token('pages', 1)}`);
+    await expect(page.getByRole('region', { name: 'Preview — not published' })).toBeVisible();
+    await axeAndShot(page, 'en-preview-dark', info.project.name);
+    await page.goto('/preview/invalid');
+    await axeAndShot(page, 'en-preview-invalid-dark', info.project.name);
+  });
+
   test('the CMS says expired, deleted or invalid: friendly pages', async ({ page, browserName }, info) => {
     test.skip(!LOCAL, 'needs the stub CMS');
     test.skip(browserName === 'webkit', WEBKIT_HTTP);

@@ -72,8 +72,12 @@ export function enterPreview(url: URL, nowSec = Math.floor(Date.now() / 1000)): 
 }
 
 export type PreviewData =
-  | { kind: 'page'; status: 'draft' | 'published'; expiresAt: string; editUrl: string; content: Page }
-  | { kind: 'post'; status: 'draft' | 'published'; expiresAt: string; editUrl: string; content: Post };
+  | { kind: 'page'; status: PreviewStatus; expiresAt: string; editUrl: string; content: Page }
+  | { kind: 'post'; status: PreviewStatus; expiresAt: string; editUrl: string; content: Post };
+
+/** `scheduled`: published in the CMS with a go-live time still ahead, so not on the site yet. */
+export type PreviewStatus = 'draft' | 'scheduled' | 'published';
+const STATUSES: readonly unknown[] = ['draft', 'scheduled', 'published'];
 
 export type PreviewResult =
   | { state: 'ok'; data: PreviewData }
@@ -88,7 +92,7 @@ export function parsePreview(kind: PreviewKind, body: unknown): PreviewData | nu
   if (!body || typeof body !== 'object') return null;
   const b = body as Record<string, unknown>;
   const want = kind === 'pages' ? 'page' : 'post';
-  if (b.kind !== want || (b.status !== 'draft' && b.status !== 'published') || typeof b.expires_at !== 'string' || typeof b.edit_url !== 'string') return null;
+  if (b.kind !== want || !STATUSES.includes(b.status) || typeof b.expires_at !== 'string' || typeof b.edit_url !== 'string') return null;
   const ok = kind === 'pages' ? validate.page(b.content) : validate.post(b.content);
   if (!ok) return null;
   return { kind: want, status: b.status, expiresAt: b.expires_at, editUrl: b.edit_url, content: b.content } as PreviewData;

@@ -77,6 +77,11 @@ describe('loading a preview', () => {
     expect(await loadPreview(slow, 'pages', 7, 't', 10)).toEqual({ state: 'unavailable' });
   });
 
+  it('accepts a scheduled row (published with a go-live time ahead) and rejects unknown states', () => {
+    expect(parsePreview('pages', { ...okBody, status: 'scheduled' })?.status).toBe('scheduled');
+    expect(parsePreview('pages', { ...okBody, status: 'archived' })).toBeNull();
+  });
+
   it('validates the post shape too', () => {
     expect(parsePreview('posts', { ...okBody, kind: 'post', content: { ...page, tags: [], excerpt: null, author_name: null } })?.kind).toBe('post');
     expect(parsePreview('posts', { ...okBody, kind: 'post', content: { title: 'x' } })).toBeNull();

@@ -72,7 +72,7 @@ arrays and `settings: null`, never an error.
 Used only by www's draft preview (`src/lib/preview.ts`), server-side through the `CMS` binding,
 with `Authorization: Bearer <token>`. The source of truth is the CMS repo's `docs/PUBLIC_API.md`
 "Preview API". In short: `kind` is `pages` | `posts`; 200 →
-`{ kind: 'page' | 'post', id, status: 'draft' | 'published', expires_at, edit_url, content: Page | Post }`;
+`{ kind: 'page' | 'post', id, status: 'draft' | 'scheduled' | 'published', expires_at, edit_url, content: Page | Post }`;
 401 `{ error: 'invalid_token' | 'expired_token' }`; 404 when the row was deleted. Always
 `private, no-store`. Tokens are minted by the CMS editor's "Preview on site" (30 min, one row) and
 verified by the CMS on every call; www never checks the signature.
