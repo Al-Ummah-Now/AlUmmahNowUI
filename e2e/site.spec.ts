@@ -72,6 +72,14 @@ test.describe('routing', () => {
     expect(await (await request.get('/en/rss.xml')).text()).toContain('<rss');
   });
 
+  test('/{en,ar}/contact sends visitors to the videos site Contact us page', async ({ request }) => {
+    for (const locale of ['en', 'ar']) {
+      const res = await request.get(`/${locale}/contact`, { maxRedirects: 0 });
+      expect(res.status()).toBe(302);
+      expect(res.headers().location).toMatch(new RegExp(`^https://videos\\.[a-z.]*alummahnow\\.net/${locale}/contact$`));
+    }
+  });
+
   test('HTML carries the CSP and security headers', async ({ request }) => {
     const res = await request.get('/en/');
     const h = res.headers();

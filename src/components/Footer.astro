@@ -25,6 +25,7 @@ const year = new Date().getUTCFullYear();
       <nav aria-label={t.a11y.footerNav}>
         <ul>
           {items.map((i) => <li><a href={i.href}>{i.label}</a></li>)}
+          <li><a href={`/${locale}/contact/`}>{t.footer.contact}</a></li>
           <li><a href={`/${locale}/rss.xml`}>{t.footer.rss}</a></li>
         </ul>
       </nav>
