@@ -80,7 +80,17 @@ test.describe('SSO journey from www (real QA auth)', () => {
       // A link to www's sign-out: single sign-out through auth and every app, back to www
       // From a settled www page (the videos page may still be reloading after its silent sign-in,
       // which would cancel the sign-out navigation)
-      await page.goto(`${WWW_ORIGIN}/${locale}/`, { waitUntil: 'load' });
+      // The videos site's silent sign-in ends with a ?session_updated=true reload that can land
+      // after the check above (seen on iPhone/WebKit), so retry the navigation if it interrupts it
+      for (let attempt = 1; ; attempt++) {
+        try {
+          await page.goto(`${WWW_ORIGIN}/${locale}/`, { waitUntil: 'load' });
+          break;
+        } catch (error) {
+          if (attempt >= 3 || !/interrupted by another navigation/.test(String(error))) throw error;
+          await page.waitForLoadState('load').catch(() => {});
+        }
+      }
       await page.waitForLoadState('networkidle').catch(() => {});
       // The chain hops through every app; WebKit reports the hops as an interrupted goto
       await page.goto(`${WWW_ORIGIN}/auth/logout?locale=${locale}`).catch(() => {});
