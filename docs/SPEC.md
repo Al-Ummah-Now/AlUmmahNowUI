@@ -35,14 +35,14 @@ All pages exist in `en` and `ar` under a locale prefix: `/en/…` and `/ar/…`.
 | Route | Content |
 |---|---|
 | `/` | 302 to `/en/` or `/ar/` (`aun_locale` cookie, then `Accept-Language`, default `en`). `Vary: Cookie, Accept-Language`, `Cache-Control: private` |
-| `/{l}/` | Home: hero (CMS `home` page or built-in default), the "What is Al Ummah Now" blocks, curated videos rail (CMS), latest articles (CMS), app links (Videos, Profile, Sign in) |
-| `/{l}/articles/` | Articles list (CMS posts, paginated `?page=`) |
+| `/{l}/` | Home: the hero, then one timeline (Workers KV feed: articles, card posts, videos, playlists, channels; pinned first, newest first, "Load more"). No rail, no tabs (AlUmmahNowCMS docs/specs/WWW-PAGES.md) |
+| `/{l}/articles/` | List page `articles` (CMS `/lists/articles`, timeline cards, numbered `?page=`); built-in fallback from `/posts` |
 | `/{l}/articles/{slug}/` | Article |
 | `/{l}/news/…` | 301 to the same `/{l}/articles/…` url, query kept (the section was called News until 2026-11; src/lib/edge.ts `legacyArticlesRedirect`) |
-| `/{l}/{slug}/` | CMS page (about, contact, privacy, terms…) |
+| `/{l}/{slug}/` | CMS page (about, contact, privacy, terms…); a page with `list_kind` (curated or filter) is a list page (`/lists/:slug`) |
 | `/{l}/scholars/` | Scholars directory (CMS `/scholars`), by name, paginated `?page=` |
 | `/{l}/scholars/{slug}/` | A scholar's page: photo, name, bio; **Articles** (every live post they wrote, card posts included, `?page=`) and **Videos** (their first channel's latest public videos from the videos API, `?after=<cursor>`, facade embeds). `ProfilePage`/`Person` JSON-LD, hreflang (same slug), `rss.xml` per scholar. Paged views are `noindex`. AlUmmahNowCMS `docs/SCHOLARS.md` |
-| `/{l}/videos/` | Curated videos (CMS curation: videos, playlists, channels), embeds plus a link to videos.alummahnow.net |
+| `/{l}/videos/` | List page `videos` (CMS `/lists/videos`: the CMS video library, newest added first; channels as channel cards), plus a link to videos.alummahnow.net; built-in fallback: the empty state |
 | `/auth/login`, `/auth/callback`, `/auth/logout`, `/auth/me` | Sign-in (§7) |
 | `/sitemap.xml`, `/robots.txt`, `/{l}/rss.xml` | SEO |
 | `/healthz` | `{ ok, version, cms: "ok"|"degraded" }` |

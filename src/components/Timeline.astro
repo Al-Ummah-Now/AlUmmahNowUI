@@ -7,6 +7,9 @@
  *
  * Day headings are plain (not sticky): each is short, the cards carry their own time, and a
  * sticky bar would cover the players on phones.
+ *
+ * `paged` (a list page, src/components/ListPage.astro): no "Load more" foot, the page renders
+ * numbered pages instead; `dayLevel` sets the day headings' level (cards are one below).
  */
 import FeedCard from './FeedCard.astro';
 import { strings } from '../i18n';
@@ -23,8 +26,12 @@ interface Props {
   /** First page: the first image is the LCP candidate (eager); later pages are all lazy. */
   first: boolean;
   now: Date;
+  paged?: boolean;
+  dayLevel?: 2 | 3;
 }
-const { locale, pinned, items, nextHref, cmsOrigin, videosWebUrl, first, now } = Astro.props;
+const { locale, pinned, items, nextHref, cmsOrigin, videosWebUrl, first, now, paged = false, dayLevel = 3 } = Astro.props;
+const D = `h${dayLevel}` as 'h2' | 'h3';
+const titleLevel = (dayLevel + 1) as 3 | 4;
 const t = strings(locale).timeline;
 const groups = groupByDay(items);
 // Only the first image of the first page loads eagerly.
@@ -42,33 +49,34 @@ const firstImage = first ? all.find((it) => (it.post && (it.post.cover || it.pos
   data-t-loading={t.loading}
   data-t-failed={t.failed}
   data-t-end={t.end}
+  data-day-level={dayLevel}
 >
   {pinned.length > 0 && (
     <section class="tl-day tl-pinned" aria-labelledby="tl-pinned-h">
-      <h3 class="tl-date" id="tl-pinned-h">{t.pinned}</h3>
+      <D class="tl-date" id="tl-pinned-h">{t.pinned}</D>
       <ol class="tl-list">
-        {pinned.map((it) => <FeedCard item={it} locale={locale} cmsOrigin={cmsOrigin} videosWebUrl={videosWebUrl} priority={it === firstImage} now={now} />)}
+        {pinned.map((it) => <FeedCard item={it} locale={locale} cmsOrigin={cmsOrigin} videosWebUrl={videosWebUrl} priority={it === firstImage} now={now} titleLevel={titleLevel} />)}
       </ol>
     </section>
   )}
   <div class="tl-days" data-days>
     {groups.map((g) => (
       <section class="tl-day" data-day={g.day} aria-labelledby={`tl-d-${g.day}`}>
-        <h3 class="tl-date" id={`tl-d-${g.day}`}>{dayLabel(g.day, now, locale, t)}</h3>
+        <D class="tl-date" id={`tl-d-${g.day}`}>{dayLabel(g.day, now, locale, t)}</D>
         <ol class="tl-list">
-          {g.items.map((it) => <FeedCard item={it} locale={locale} cmsOrigin={cmsOrigin} videosWebUrl={videosWebUrl} priority={it === firstImage} now={now} />)}
+          {g.items.map((it) => <FeedCard item={it} locale={locale} cmsOrigin={cmsOrigin} videosWebUrl={videosWebUrl} priority={it === firstImage} now={now} titleLevel={titleLevel} />)}
         </ol>
       </section>
     ))}
   </div>
-  <div class="tl-foot">
+  {!paged && <div class="tl-foot">
     {nextHref ? (
       <a class="button button-quiet tl-more" href={nextHref} data-more rel="next">{t.loadMore}</a>
     ) : (
       items.length > 0 && <p class="tl-end">{t.end}</p>
     )}
     <p class="visually-hidden" aria-live="polite" data-live></p>
-  </div>
+  </div>}
 </div>
 <script>
   import { initTimeline } from '../scripts/timeline';

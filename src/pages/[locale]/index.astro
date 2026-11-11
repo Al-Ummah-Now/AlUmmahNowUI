@@ -1,23 +1,21 @@
 ---
 /**
- * Home: the hero, the editors' "Chosen for you" videos (CMS curated, placement home) and the home
- * timeline: the CMS-managed feed of posts and videos, read from Workers KV (src/lib/feed.ts), newest
- * first, with "Load more" (?before=<cursor>). When the feed is missing the timeline is the CMS posts
- * list (cache → CMS → snapshot → built-in), so the page never fails.
+ * Home (docs/specs/WWW-PAGES.md D1): the hero, then the timeline, nothing else. The timeline is the
+ * CMS-managed feed of posts, card posts, videos, playlists and channels, read from Workers KV
+ * (src/lib/feed.ts), pinned first then newest first, with "Load more" (?before=<cursor>). When the
+ * feed is missing the timeline is the CMS posts list (cache → CMS → snapshot → built-in), so the
+ * page never fails. Videos and Articles are reached from the site menu.
  *
  * ?before= pages (no-JS "Load more", and what the script fetches) show only the timeline.
  */
 import Icon from '../../components/Icon.astro';
 import Timeline from '../../components/Timeline.astro';
-import VideoRail from '../../components/VideoRail.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { builtinContent } from '../../content/fallback';
 import { libraryUrl } from '../../lib/embeds';
 import { loadChrome, markSource, requestContext, routeLocale } from '../../lib/context';
 import { parseCursor } from '../../lib/feed';
 import { organizationLd, websiteLd } from '../../lib/seo';
 import { loadTimeline } from '../../lib/timeline';
-import { resolveCurated } from '../../lib/videos';
 
 const locale = routeLocale(Astro);
 if (!locale) return new Response(null, { status: 404 });
@@ -31,15 +29,11 @@ const later = rawBefore !== null || page > 1;
 const rc = requestContext(Astro, locale);
 const { cfg, t } = rc;
 const now = new Date();
-const [chrome, home, timeline] = await Promise.all([
+const [chrome, timeline] = await Promise.all([
   loadChrome(rc),
-  later ? Promise.resolve(null) : rc.cms.home(locale),
   loadTimeline({ kv: rc.env.FEED, cms: rc.cms, locale, before: rawBefore, page, log: (msg, data) => console.warn(JSON.stringify({ msg, ...data })) }),
 ]);
-const builtin = builtinContent(locale);
-const data = home ? (home.status === 'ok' ? home.data : builtin.home) : null;
-const settings = data?.settings ?? chrome.settings;
-const curated = data ? await resolveCurated(rc.videos, data.videos, locale) : [];
+const settings = chrome.settings;
 markSource(Astro, rc);
 Astro.response.headers.set('X-Feed-Source', timeline.source);
 
@@ -80,25 +74,11 @@ const empty = timeline.pinned.length === 0 && timeline.items.length === 0;
     </section>
   )}
 
-  {/* The editors' home videos stay above the timeline (an empty rail is hidden; /videos has the empty state) */}
-  {curated.length > 0 && (
-    <section class="section tl-curated" aria-labelledby="curated-title">
-      <div class="wrap">
-        <div class="section-head">
-          <h2 id="curated-title">{t.home.curatedTitle}</h2>
-          <a class="more-link" href={`/${locale}/videos/`}>{t.home.curatedAll}<Icon name="chevron" /></a>
-        </div>
-        <VideoRail cfg={cfg} locale={locale} items={curated} />
-      </div>
-    </section>
-  )}
-
   <section class="section tl-section" aria-labelledby="timeline-title">
     <div class="tl-wrap">
       <div class="tl-head">
         {later ? <h1 id="timeline-title">{t.timeline.olderTitle}</h1> : <h2 id="timeline-title">{t.timeline.title}</h2>}
         <p class="tl-intro">{t.timeline.intro}</p>
-        <a class="more-link" href={`/${locale}/articles/`}>{t.timeline.allArticles}<Icon name="chevron" /></a>
       </div>
       {empty ? (
         <div class="empty">

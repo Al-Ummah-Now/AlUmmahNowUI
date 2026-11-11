@@ -1,5 +1,6 @@
 ---
 import ErrorView from '../../components/ErrorView.astro';
+import ListPage from '../../components/ListPage.astro';
 import PageArticle from '../../components/PageArticle.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { builtinContent } from '../../content/fallback';
@@ -7,6 +8,7 @@ import { documentAlternates, renderBody } from '../../lib/body';
 import { prepareBlocks } from '../../lib/blocks';
 import type { Page } from '../../lib/cms-types';
 import { loadChrome, markSource, requestContext, routeLocale } from '../../lib/context';
+import { loadList, otherLocaleList, pageQuery, parsePage, type ListLoad } from '../../lib/list-page';
 import { otherLocale } from '../../lib/locale';
 import { plainText } from '../../lib/markdown';
 import { videoObjectLd } from '../../lib/seo';
@@ -24,18 +26,49 @@ if (first.status === 'not_found') {
   const other = await rc.cms.page(otherLocale(locale), slug);
   page = other.status === 'ok' && other.source !== 'builtin' ? other.data : (builtinContent(locale).pages[slug] ?? null);
 }
+// A list page (docs/specs/WWW-PAGES.md §6) renders its items from /lists; should that fail, the page
+// renders as a content page, as before.
+let list: Extract<ListLoad, { status: 'ok' }> | null = null;
+let listOther: string | null = null;
+const listPage = page?.list_kind ? parsePage(Astro.url.searchParams.get('page')) : 1;
+if (page?.list_kind) {
+  if (listPage === null) return new Response(null, { status: 404 });
+  const r = await loadList({ cms: rc.cms, locale: page.locale, slug: page.slug, page: listPage });
+  if (r.status === 'not_found' && listPage > 1) return new Response(null, { status: 404 });
+  if (r.status === 'ok') {
+    list = r;
+    if (page.locale === locale) listOther = await otherLocaleList(rc.cms, locale, r.view);
+  }
+}
 markSource(Astro, rc);
 if (!page && first.status !== 'unavailable') return new Response(null, { status: 404 });
 if (!page) Astro.response.status = 503;
+const listAlternates = list
+  ? Object.fromEntries(Object.entries(list.view.slugs).map(([l, s]) => [l, `/${l}/${encodeURIComponent(s!)}/${pageQuery(list!.view.page)}`]))
+  : {};
 
-const body = page ? await renderBody(rc, page.body, page.locale, page.images) : null;
+const body = page && !list ? await renderBody(rc, page.body, page.locale, page.images) : null;
 // A page built from blocks renders them; `body` stays as the text fallback (and the description).
-const built = page?.blocks?.length ? await prepareBlocks(rc, page, { pathname: Astro.url.pathname, search: Astro.url.searchParams }) : null;
+const built = page?.blocks?.length && !list ? await prepareBlocks(rc, page, { pathname: Astro.url.pathname, search: Astro.url.searchParams }) : null;
 const alternates = page ? documentAlternates(page, page.alternates, (l, s) => `/${l}/${encodeURIComponent(s)}/`) : {};
 const translated = page && page.locale !== locale;
 const description = page ? page.seo_description || page.summary || plainText(page.body, 180) : '';
 const jsonLd = page ? [...(body?.videos ?? []), ...(built?.videos ?? [])].map((v) => videoObjectLd(cfg, v, page.locale)).filter(Boolean) : [];
 ---
+{list && page ? (
+<ListPage
+  cfg={cfg}
+  locale={locale}
+  nav={chrome.nav}
+  settings={chrome.settings}
+  view={list.view}
+  path={`/${locale}/${encodeURIComponent(slug)}/`}
+  alternates={listAlternates}
+  otherHref={listOther}
+  notice={translated ? t.lang.notAvailable : null}
+  contentLocale={page.locale}
+/>
+) : (
 <BaseLayout
   cfg={cfg}
   locale={locale}
@@ -56,3 +89,4 @@ const jsonLd = page ? [...(body?.videos ?? []), ...(built?.videos ?? [])].map((v
     <ErrorView locale={locale} kind="unavailable" />
   )}
 </BaseLayout>
+)}

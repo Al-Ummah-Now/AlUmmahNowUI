@@ -1501,9 +1501,6 @@ html:not([data-js]) .theme {
   margin: 0;
   color: var(--text-soft);
 }
-.tl-head .more-link {
-  justify-self: start;
-}
 .tl-day {
   margin-block-start: 1.75rem;
 }
@@ -1680,6 +1677,111 @@ html:not([data-js]) .theme {
 }
 .tl-section .facade-frame {
   box-shadow: 0 0 0 1px var(--line);
+}
+
+/* a channel entry (docs/specs/WWW-PAGES.md D7): avatar, name, @handle, latest videos, visit */
+.tl-channel-head {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+.tl-channel-avatar {
+  flex: none;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--color-night) url('/brand/pattern.svg');
+  background-size: 48px 48px;
+}
+.tl-channel-name {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+.tl-channel-latest {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.625rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tl-channel-latest a {
+  display: grid;
+  gap: 0.375rem;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+.tl-channel-latest a:hover .tl-channel-vtitle {
+  text-decoration: underline;
+}
+.tl-channel-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-media);
+  overflow: hidden;
+  background: var(--color-night) url('/brand/pattern.svg');
+  background-size: 48px 48px;
+}
+.tl-channel-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: var(--media-filter);
+}
+.tl-channel-dur {
+  position: absolute;
+  inset-block-end: 0.25rem;
+  inset-inline-end: 0.25rem;
+  padding: 0 0.3125rem;
+  border-radius: 0.25rem;
+  background: var(--color-night);
+  color: var(--color-paper);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.tl-channel-vtitle {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tl-channel-visit {
+  margin: 0.25rem 0 0;
+}
+
+/* a list page's numbered pages (src/components/ListPage.astro) */
+.pagination-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pagination-pages a,
+.pagination-pages [aria-current] {
+  justify-content: center;
+  min-width: 2.75rem;
+  padding-inline: 0.75rem;
+}
+.pagination-pages [aria-current] {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  border-radius: 999px;
+  background: var(--accent-text);
+  color: var(--surface);
+  font-weight: 700;
+}
+.pagination-gap {
+  align-self: center;
+  color: var(--text-soft);
 }
 
 /* ---------- search boxes (src/components/SearchBox.astro) ---------- */

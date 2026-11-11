@@ -92,12 +92,11 @@ interface CuratedSnapshot {
 | GET | Query | Response |
 |---|---|---|
 | `/site` | `locale` | `{ settings: SiteSettings \| null, nav: { header: NavItem[], footer: NavItem[] } }` |
-| `/home` | `locale` | `{ settings: SiteSettings \| null, videos: CuratedVideo[], posts: PostSummary[] }` (videos: placement `home`, locale = l or `all`, by sort, at most 48; posts: latest 3) |
-| `/pages/:slug` | `locale` | `Page` or 404 |
+| `/lists/:slug` | `locale`, `page` (1-based) | `{ page: { slug, locale, title, summary, seo_title, seo_description, list_kind: 'curated' \| 'filter', list_filter, alternates: Alternate[] }, pinned: FeedItem[], items: FeedItem[], page_number, pages, total, limit }` (20 per page; `pinned` on a curated page's first page only) or 404 (no such list page, or a content page). AlUmmahNowCMS docs/specs/WWW-PAGES.md |
+| `/pages/:slug` | `locale` | `Page` (with `list_kind`: `curated` \| `filter` \| null) or 404 |
 | `/posts` | `locale`, `page` (1-based, default 1), `limit` (1–20, default 10) | `{ items: PostSummary[], page: number, limit: number, total: number }` newest first |
 | `/posts/:slug` | `locale` | `Post` or 404 |
 | `/cards` | `locale`, `tag` (optional), `page` (1-based, default 1), `limit` (1–24, default 12) | `{ items: PostSummary[], page: number, limit: number, total: number, tags: string[] }` card posts only, newest first; `tags` = every tag on this locale's live card posts (for the filter) |
-| `/videos` | `locale`, `placement` (`home` \| `videos`, default `videos`) | `{ items: CuratedVideo[] }` (by sort, at most 48) |
 | `/sitemap` | — | `{ items: { type: 'page' \| 'post', locale: Locale, slug: string, updated_at: string }[] }` (pages with show_in_sitemap only) |
 | `/media/*` | — | the R2 object, `Cache-Control: public, max-age=31536000, immutable` |
 | `/media/*` | `w` (1–1600), `f` (`avif` \| `webp` \| `jpeg` \| `png`) | the variant: `Content-Type` of `f`, immutable cache, `X-Variant: hit`. Not made yet: the **original**, `Cache-Control: public, max-age=60, s-maxage=60`, `X-Variant: pending`, and the job is queued. Malformed `w`/`f` → 400 |

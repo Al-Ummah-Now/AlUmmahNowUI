@@ -8,8 +8,9 @@
  * other than 404, and bad JSON are failures.
  */
 import { builtinContent } from '../content/fallback';
-import type { CardsResponse, HomeResponse, Page, Post, PostsResponse, ScholarPageResponse, ScholarsResponse, SiteResponse, SitemapResponse, VideosResponse } from './cms-types';
-import { validate } from './cms-types';
+import type { CardsResponse, ListResponse, ListWire, Page, Post, PostsResponse, ScholarPageResponse, ScholarsResponse, SiteResponse, SitemapResponse } from './cms-types';
+import { listHead, validate } from './cms-types';
+import { validItem } from './feed';
 import type { KVNamespace } from './cf';
 import type { Config, WwwEnv } from './env';
 import type { Locale } from './locale';
@@ -145,19 +146,24 @@ const enc = encodeURIComponent;
 /** CMS paths (also the KV snapshot keys, `v1:<path>`): shared by the client and the snapshot writer. */
 export const cmsPaths = {
   site: (l: Locale) => `/site${q({ locale: l })}`,
-  home: (l: Locale) => `/home${q({ locale: l })}`,
   page: (l: Locale, slug: string) => `/pages/${enc(slug)}${q({ locale: l })}`,
   posts: (l: Locale, page: number, limit: number) => `/posts${q({ locale: l, page, limit })}`,
   post: (l: Locale, slug: string) => `/posts/${enc(slug)}${q({ locale: l })}`,
-  videos: (l: Locale, placement: 'home' | 'videos') => `/videos${q({ locale: l, placement })}`,
+  /** A list page (docs/specs/WWW-PAGES.md): LIST_PAGE_SIZE items per numbered page. */
+  list: (l: Locale, slug: string, page: number) => `/lists/${enc(slug)}${q({ locale: l, page })}`,
   sitemap: () => '/sitemap',
   cards: (l: Locale, page: number, limit: number, tag?: string | null) => `/cards${q({ locale: l, ...(tag ? { tag } : {}), page, limit })}`,
   scholars: (l: Locale, page: number, limit: number) => `/scholars${q({ locale: l, page, limit })}`,
   scholar: (l: Locale, slug: string, page: number, limit: number) => `/scholars/${enc(slug)}${q({ locale: l, page, limit })}`,
 };
 export const snapshotKey = (path: string) => `v1:${path}`;
-/** Page sizes the site requests (/articles and the RSS feed): the snapshot writer covers exactly these. */
-export const ARTICLES_PAGE_SIZE = 10;
+/**
+ * Page sizes the site requests: a list page (the CMS fixes it at 20), the built-in /articles list's
+ * /posts pages (the same, so its pages match the CMS list's) and the RSS feed. The snapshot writer
+ * covers exactly these.
+ */
+export const LIST_PAGE_SIZE = 20;
+export const ARTICLES_PAGE_SIZE = LIST_PAGE_SIZE;
 export const RSS_ITEMS = 20;
 /** Scholars directory and a scholar's articles (page and RSS). */
 export const SCHOLARS_PAGE_SIZE = 24;
@@ -175,13 +181,18 @@ export function cmsClient(deps: CmsDeps) {
     sources,
     source: () => worstSource(sources),
     site: (l: Locale) => track(load<SiteResponse>(deps, cmsPaths.site(l), validate.site, () => builtinContent(l).site)),
-    home: (l: Locale) => track(load<HomeResponse>(deps, cmsPaths.home(l), validate.home, () => builtinContent(l).home)),
     page: (l: Locale, slug: string) => track(load<Page>(deps, cmsPaths.page(l, slug), validate.page, () => builtinContent(l).pages[slug] ?? null)),
     posts: (l: Locale, page: number, limit = 10) =>
       track(load<PostsResponse>(deps, cmsPaths.posts(l, page, limit), validate.posts, () => ({ items: [], page, limit, total: 0 }))),
     post: (l: Locale, slug: string) => track(load<Post>(deps, cmsPaths.post(l, slug), validate.post, () => null)),
-    videos: (l: Locale, placement: 'home' | 'videos' = 'videos') =>
-      track(load<VideosResponse>(deps, cmsPaths.videos(l, placement), validate.videos, () => ({ items: [] }))),
+    /**
+     * A curated or filter page's items. No built-in answer (`unavailable` when the CMS, the cache
+     * and the snapshot all fail): the page decides its own fallback (src/lib/list-page.ts).
+     */
+    list: async (l: Locale, slug: string, page: number): Promise<Result<ListResponse>> => {
+      const r = await track(load<ListWire>(deps, cmsPaths.list(l, slug, page), validate.list, () => null));
+      return r.status === 'ok' ? { ...r, data: toList(r.data, page) } : r;
+    },
     sitemap: () => track(load<SitemapResponse>(deps, cmsPaths.sitemap(), validate.sitemap, () => ({ items: [] }))),
     scholars: (l: Locale, page: number, limit = SCHOLARS_PAGE_SIZE) =>
       track(load<ScholarsResponse>(deps, cmsPaths.scholars(l, page, limit), validate.scholars, () => ({ items: [], page, limit, total: 0 }))),
@@ -192,3 +203,34 @@ export function cmsClient(deps: CmsDeps) {
   };
 }
 export type CmsClient = ReturnType<typeof cmsClient>;
+
+/**
+ * A /lists answer as www uses it (cms-types ListWire): malformed items dropped (one bad item never
+ * breaks the page), keys unique across pinned and items.
+ */
+export function toList(wire: ListWire, requested: number): ListResponse {
+  const head = listHead(wire as unknown as Record<string, unknown>)!;
+  const seen = new Set<string>();
+  const clean = (list: unknown[] | undefined) =>
+    (list ?? []).filter(validItem).filter((it) => !seen.has(it.key) && (seen.add(it.key), true));
+  const pinned = clean(wire.pinned);
+  const items = clean(wire.items);
+  const page = typeof wire.page_number === 'number' ? wire.page_number : requested;
+  return {
+    head: {
+      ...head,
+      summary: head.summary ?? null,
+      seo_title: head.seo_title ?? null,
+      seo_description: head.seo_description ?? null,
+      list_kind: head.list_kind === 'curated' ? 'curated' : 'filter',
+      list_filter: head.list_filter ?? null,
+      alternates: Array.isArray(head.alternates) ? head.alternates.filter((a) => a && (a.locale === 'en' || a.locale === 'ar') && typeof a.slug === 'string' && a.slug) : [],
+    },
+    pinned,
+    items,
+    page,
+    pages: Math.max(1, Math.floor(wire.pages) || 1),
+    total: Math.max(0, wire.total),
+    limit: wire.limit ?? LIST_PAGE_SIZE,
+  };
+}

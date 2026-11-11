@@ -2,6 +2,7 @@
  * Block and card-post fixtures for the stub CMS (e2e/stub-cms.ts), shaped like the CMS public API
  * (docs/CMS_PUBLIC_API.md "Blocks", "Card posts"):
  *  - /pages/stories (en) and /pages/qisas (ar): pages built from every block type;
+ *  - /lists/articles, /lists/videos and /lists/picks (list pages, docs/specs/WWW-PAGES.md);
  *  - /posts/<slug> for the card posts below (404 for one only in the other locale), /posts (the
  *    Articles list: summaries carry ≤ 10 slides) and /cards (newest first, ?tag=, paging);
  *  - /media/<id>.png: generated images at the sizes the refs declare.
@@ -174,6 +175,7 @@ const pageOf = (slug: string, locale: 'en' | 'ar', title: string, summary: strin
 });
 
 const PAGES: Record<string, unknown> = {
+  'picks:en': { ...pageOf('picks', 'en', 'Editors’ picks', 'A page the editors put together by hand.', []), list_kind: 'curated' },
   'stories:en': pageOf('stories', 'en', 'Stories', 'Card stories, pictures and news from the community.', EN_BLOCKS),
   'qisas:ar': pageOf('qisas', 'ar', 'قصص', 'قصص بالصور من المجتمع.', AR_BLOCKS),
 };
@@ -183,6 +185,48 @@ export const PREVIEW_ROWS: Record<string, unknown> = {
   'pages/3': { ...pageOf('stories-draft', 'en', 'Stories (draft)', 'A draft built from blocks.', EN_BLOCKS.filter((b) => b.type !== 'cards')) },
   'posts/4': { ...postOf(CARD_POSTS.find((p) => p.slug === 'rihla-ila-al-quds')!), slug: 'rihla-draft', title: 'رحلة (مسودة)' },
 };
+
+/* List pages (docs/specs/WWW-PAGES.md §4 "Public API"): /lists/articles (the Articles list as feed
+   items), /lists/videos (a channel with its latest videos, then 24 videos: two pages in English)
+   and the curated page `picks` (en only, with a pinned post). */
+const LIST_SIZE = 20;
+const ago = (h: number) => new Date(Date.parse(now) - h * 3_600_000).toISOString();
+const feedPost = (p: ReturnType<typeof summaryOf> | (typeof ARTICLES)[number], id: number, pinned = false) => ({ key: `p${id}`, type: 'post', date: p.published_at, pinned, post: { ...p, videos: [] } });
+const feedVideo = (id: number, kind: 'video' | 'channel', refId: string, title: string, h: number, extra: Record<string, unknown> = {}) => ({
+  key: `v${id}`, type: 'video', date: ago(h), pinned: false,
+  video: { kind, ref_id: refId, title_override: null, snapshot: { title, thumbnail_url: null, channel_name: kind === 'video' ? 'Knowledge channel' : null, ...extra } },
+});
+const CHANNEL = (ar: boolean) =>
+  feedVideo(1, 'channel', 'stub-channel', ar ? 'قناة العلم' : 'Knowledge channel', 1, {
+    handle: 'knowledge',
+    latest: [1, 2, 3].map((n) => ({ id: `stub-latest-${n}`, title: ar ? `الدرس ${n}` : `Lesson ${n}`, thumbnail_url: null, duration_seconds: 600 + n * 65 })),
+  });
+const listHead = (slug: string, locale: string, title: string, summary: string, kind: 'curated' | 'filter', alternates: { locale: string; slug: string }[]) => ({
+  slug, locale, title, summary, seo_title: null, seo_description: null, list_kind: kind,
+  list_filter: kind === 'filter' ? { kinds: slug === 'videos' ? ['video', 'playlist', 'channel'] : ['article', 'cards'], tag: null } : null, alternates,
+});
+function listsFixture(slug: string, locale: string, n: number): { status: number; body: unknown } {
+  const ar = locale === 'ar';
+  let head;
+  let pinned: unknown[] = [];
+  let all: unknown[];
+  if (slug === 'articles') {
+    head = listHead('articles', locale, ar ? 'المقالات' : 'Articles', ar ? 'إعلانات ومستجدات من فريق الأمة الآن.' : 'Announcements and updates from the Al Ummah Now team.', 'filter', [{ locale: ar ? 'en' : 'ar', slug: 'articles' }]);
+    const posts = [...CARD_POSTS.filter((p) => p.locale === locale).map(summaryOf), ...(ar ? [] : ARTICLES)].sort((a, b) => b.published_at.localeCompare(a.published_at));
+    all = posts.map((p, i) => feedPost(p, i + 1));
+  } else if (slug === 'videos') {
+    head = listHead('videos', locale, ar ? 'مرئيات مختارة' : 'Featured videos', ar ? 'دروس وسلاسل وقنوات اختارها فريق التحرير.' : 'Lessons, series and channels chosen by our editors.', 'filter', [{ locale: ar ? 'en' : 'ar', slug: 'videos' }]);
+    all = [CHANNEL(ar), ...(ar ? [] : Array.from({ length: 24 }, (_, i) => feedVideo(i + 2, 'video', `stub-video-${i + 1}`, `Lesson video ${i + 1}`, 2 + i * 5)))];
+  } else if (slug === 'picks' && !ar) {
+    head = listHead('picks', 'en', 'Editors’ picks', 'A page the editors put together by hand.', 'curated', []);
+    pinned = [feedPost(ARTICLES[1]!, 900, true)];
+    all = [CHANNEL(false), feedPost(ARTICLES[0]!, 901)];
+  } else {
+    return { status: 404, body: { error: 'not_found' } };
+  }
+  const pages = Math.max(1, Math.ceil(all.length / LIST_SIZE));
+  return { status: 200, body: { page: head, pinned: n === 1 ? pinned : [], items: all.slice((n - 1) * LIST_SIZE, n * LIST_SIZE), page_number: n, pages, total: all.length, limit: LIST_SIZE } };
+}
 
 /** The public API answers the stub knows, or null (→ 503). */
 export function publicFixture(url: URL): { status: number; body: unknown } | null {
@@ -194,6 +238,8 @@ export function publicFixture(url: URL): { status: number; body: unknown } | nul
     const row = PAGES[`${decodeURIComponent(page[1]!)}:${locale}`];
     return row ? { status: 200, body: row } : null;
   }
+  const list = /^\/lists\/([^/]+)$/.exec(path);
+  if (list) return listsFixture(decodeURIComponent(list[1]!), locale, Math.max(1, Number(url.searchParams.get('page')) || 1));
   const post = /^\/posts\/([^/]+)$/.exec(path);
   if (post) {
     const slug = decodeURIComponent(post[1]!);

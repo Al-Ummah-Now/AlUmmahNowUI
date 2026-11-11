@@ -7,6 +7,9 @@
  * Card posts show every card inline (CardViewer `inline`): the feed carries a card post's first 10
  * slides (docs/CMS_PUBLIC_API.md "Card posts"); a longer post ends with a "See all N cards" link.
  * A feed built before the CMS sent `slides` gives the first card only, with that link.
+ *
+ * A channel entry (docs/specs/WWW-PAGES.md D7) is its own card: avatar, name and @handle, its
+ * newest ≤ 3 videos as small linked thumbnails, and "Visit channel".
  */
 import CardViewer from './CardViewer.astro';
 import { fmt, strings } from '../i18n';
@@ -17,10 +20,12 @@ import type { FeedItem } from '../lib/feed';
 import { relativeTime } from '../lib/feed';
 import { dir, type Locale } from '../lib/locale';
 import { pictureHtml } from '../lib/picture';
-import { absoluteTime, feedVideoItem } from '../lib/timeline';
+import { absoluteTime, channelCard, feedVideoItem } from '../lib/timeline';
 
-interface Props { item: FeedItem; locale: Locale; cmsOrigin: string; videosWebUrl: string; priority: boolean; now: Date }
-const { item, locale, cmsOrigin, videosWebUrl, priority, now } = Astro.props;
+/** `titleLevel`: the card title's heading level (4 under the home's h2/h3 days; 3 on a list page). */
+interface Props { item: FeedItem; locale: Locale; cmsOrigin: string; videosWebUrl: string; priority: boolean; now: Date; titleLevel?: 3 | 4 }
+const { item, locale, cmsOrigin, videosWebUrl, priority, now, titleLevel = 4 } = Astro.props;
+const H = `h${titleLevel}` as 'h3' | 'h4';
 const t = strings(locale);
 const tl = t.timeline;
 const id = `tl-${item.key}`;
@@ -32,7 +37,9 @@ const href = post ? `/${locale}/articles/${encodeURIComponent(post.slug)}/` : nu
 const cards = post ? inlineCards(post) : null;
 const videos = post ? post.videos.filter((v) => v.kind === 'video' || v.kind === 'playlist') : [];
 
-const videoEntry = item.type === 'video' && item.video ? feedVideoItem(item.video, locale, tl.video, now.getTime()) : null;
+const isChannel = item.type === 'video' && item.video?.kind === 'channel';
+const channel = isChannel ? channelCard(item.video!, locale, videosWebUrl, tl.channel, now.getTime()) : null;
+const videoEntry = item.type === 'video' && item.video && !isChannel ? feedVideoItem(item.video, locale, tl.video, now.getTime()) : null;
 const title = post ? post.title : (videoEntry?.title ?? '');
 
 // Media: a post's videos replace its cover (they are its media); a card post shows its first card.
@@ -44,6 +51,46 @@ const coverHtml = post && !cards && !videos.length && post.cover ? pictureHtml(p
 const entryHtml = videoEntry ? facadeHtml(videoEntry, { videosWebUrl, lang: locale, caption: false, className: 'tl-facade' }) : null;
 const watch = videoEntry && videoEntry.kind !== 'channel' ? watchUrl(videosWebUrl, { kind: videoEntry.kind, id: videoEntry.id, lang: locale }) : null;
 ---
+{channel ? (
+<li class="tl-item" data-date={item.date} data-key={item.key}>
+  <article class:list={['tl-card', 'tl-channel', item.pinned && 'tl-card-pinned']} aria-labelledby={id}>
+    <div class="tl-channel-head">
+      {channel.avatarUrl ? (
+        <img class="tl-channel-avatar" src={channel.avatarUrl} alt="" width="64" height="64" loading="lazy" decoding="async" />
+      ) : (
+        <span class="tl-channel-avatar" aria-hidden="true" />
+      )}
+      <div class="tl-channel-name">
+        <H class="tl-title" id={id} dir="auto"><a href={channel.href}>{channel.name}</a></H>
+        {channel.handle && <p class="tl-excerpt"><bdi dir="ltr">@{channel.handle}</bdi></p>}
+      </div>
+    </div>
+    {channel.latest.length > 0 && (
+      <ul class="tl-channel-latest" aria-label={fmt(tl.channelLatest, { name: channel.name })}>
+        {channel.latest.map((v) => (
+          <li>
+            <a href={v.href}>
+              <span class="tl-channel-thumb">
+                {v.thumbnailUrl ? <img src={v.thumbnailUrl} alt="" width="320" height="180" loading="lazy" decoding="async" /> : null}
+                {v.duration && <span class="tl-channel-dur" dir="ltr">{v.duration}</span>}
+              </span>
+              <span class="tl-channel-vtitle" dir="auto">{v.title}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+    <div class="tl-body">
+      <p class="tl-meta">
+        <span class="tl-kind">{tl.channel}</span>
+        <time datetime={item.date} data-rel title={absoluteTime(item.date, locale)}>{relativeTime(item.date, now, locale)}</time>
+        <span class="tl-abs" data-abs>{absoluteTime(item.date, locale)}</span>
+      </p>
+      <p class="tl-channel-visit"><a class="button button-quiet" href={channel.href}>{tl.visitChannel}</a></p>
+    </div>
+  </article>
+</li>
+) : !isChannel && (
 <li class="tl-item" data-date={item.date} data-key={item.key}>
   <article class:list={['tl-card', item.pinned && 'tl-card-pinned']} aria-labelledby={id}>
     {entryHtml && <Fragment set:html={entryHtml} />}
@@ -66,9 +113,9 @@ const watch = videoEntry && videoEntry.kind !== 'channel' ? watchUrl(videosWebUr
       />
     )}
     <div class="tl-body">
-      <h4 class="tl-title" id={id} lang={contentLocale} dir={dir(contentLocale)}>
+      <H class="tl-title" id={id} lang={contentLocale} dir={dir(contentLocale)}>
         {href ? <a href={href}>{title}</a> : watch ? <a href={watch}>{title}</a> : title}
-      </h4>
+      </H>
       {post?.excerpt && <p class="tl-excerpt" lang={contentLocale} dir={dir(contentLocale)}>{post.excerpt}</p>}
       {videoEntry?.channelName && <p class="tl-excerpt" dir="auto">{videoEntry.channelName}</p>}
       <p class="tl-meta">
@@ -80,3 +127,4 @@ const watch = videoEntry && videoEntry.kind !== 'channel' ? watchUrl(videosWebUr
     </div>
   </article>
 </li>
+)}
