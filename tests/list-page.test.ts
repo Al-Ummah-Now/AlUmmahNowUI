@@ -105,7 +105,7 @@ describe('loadList', () => {
   it('no CMS page: /videos page 1 is the built-in empty page; past it 404', async () => {
     const { cms } = setup(async () => json({ error: 'not_found' }, 404));
     const r = await loadList({ cms, locale: 'ar', slug: 'videos', page: 1, builtin: 'videos' });
-    expect(r).toMatchObject({ status: 'ok', view: { origin: 'builtin', title: 'مرئيات مختارة', items: [], pages: 1 } });
+    expect(r).toMatchObject({ status: 'ok', view: { origin: 'builtin', title: 'المرئيات', items: [], pages: 1 } });
     expect((await loadList({ cms, locale: 'ar', slug: 'videos', page: 2, builtin: 'videos' })).status).toBe('not_found');
   });
 
