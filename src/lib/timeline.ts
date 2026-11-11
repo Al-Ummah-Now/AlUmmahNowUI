@@ -2,12 +2,13 @@
  * The home timeline's page model: which page to show (KV feed, or the CMS posts list when the feed
  * is missing), and the small pure helpers its components share with the client script.
  */
-import type { PostSummary, CuratedVideo } from './cms-types';
+import type { ChannelLatest, PostSummary, CuratedVideo } from './cms-types';
 import type { CmsClient } from './cms';
 import { FeedMissing, kvGetter, postItem, readPage, PAGE_SIZE, type FeedItem, type FeedVideo } from './feed';
 import type { KVNamespace } from './cf';
 import type { Locale } from './locale';
-import { snapshotItem, localizeItem, type VideoItem } from './videos';
+import { channelUrl, VIDEO_ID, watchUrl } from './embeds';
+import { clockDuration, liveThumb, snapshotItem, localizeItem, type VideoItem } from './videos';
 
 export interface TimelinePage {
   pinned: FeedItem[];
@@ -71,6 +72,57 @@ export function feedVideoItem(v: FeedVideo & { title_override?: string | null },
     videoCount: null,
   };
   return v.title_override ? { ...base, title: v.title_override } : base;
+}
+
+/** At most this many of a channel's latest videos show on its card (the CMS stores ≤ 3). */
+export const CHANNEL_LATEST_MAX = 3;
+
+export interface ChannelCardLatest { id: string; title: string; thumbnailUrl: string | null; duration: string | null; href: string }
+export interface ChannelCard {
+  id: string;
+  name: string;
+  /** Without the @. */
+  handle: string | null;
+  avatarUrl: string | null;
+  href: string;
+  latest: ChannelCardLatest[];
+}
+
+/**
+ * A channel timeline entry (docs/specs/WWW-PAGES.md D7) as its card: name (localized, or the
+ * editor's override), @handle, avatar, the newest ≤ 3 videos from the snapshot's `latest` (each
+ * linking to its watch page; an expired signed thumbnail is dropped) and the channel's link.
+ * Null when the id is not a videos-site id (nothing safe to link to: the card is skipped).
+ */
+export function channelCard(
+  v: FeedVideo & { title_override?: string | null },
+  locale: Locale,
+  videosWebUrl: string,
+  fallbackTitle: string,
+  now = Date.now(),
+): ChannelCard | null {
+  if (v.kind !== 'channel' || !VIDEO_ID.test(v.ref_id)) return null;
+  const item = feedVideoItem(v, locale, fallbackTitle, now);
+  const handle = item.handle?.replace(/^@/, '') || null;
+  const stored: unknown = v.snapshot?.latest;
+  const latest = (Array.isArray(stored) ? (stored as Partial<ChannelLatest>[]) : [])
+    .filter((x): x is ChannelLatest => !!x && typeof x.id === 'string' && VIDEO_ID.test(x.id) && typeof x.title === 'string' && !!x.title.trim())
+    .slice(0, CHANNEL_LATEST_MAX)
+    .map((x) => ({
+      id: x.id,
+      title: x.title.trim().replace(/\.(mp4|mov|mkv|webm)$/i, ''),
+      thumbnailUrl: liveThumb(x.thumbnail_url, now),
+      duration: clockDuration(typeof x.duration_seconds === 'number' && x.duration_seconds > 0 ? x.duration_seconds : null),
+      href: watchUrl(videosWebUrl, { kind: 'video', id: x.id, lang: locale }),
+    }));
+  return {
+    id: v.ref_id,
+    name: item.title,
+    handle,
+    avatarUrl: item.thumbnailUrl,
+    href: channelUrl(videosWebUrl, { id: v.ref_id, handle, lang: locale }),
+    latest,
+  };
 }
 
 /** "10 November 2026, 14:05" in UTC (the client script rewrites it in the reader's zone). */

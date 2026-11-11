@@ -139,6 +139,13 @@ export const SNAPSHOT_MAX_AGE_MS = 3 * 60 * 60_000;
 
 const EXPIRES = /[?&]expires=(\d+)/;
 
+/** A stored thumbnail URL, normalised, or null once its signed `expires` has passed. */
+export function liveThumb(url: string | null | undefined, nowMs: number): string | null {
+  const thumb = normalizeImageUrl(url ?? null);
+  const expires = thumb ? EXPIRES.exec(thumb) : null;
+  return expires && Number(expires[1]) * 1000 <= nowMs ? null : thumb;
+}
+
 /**
  * The item from the CMS snapshot, when it is fresh (refreshed recently) or `stale` is allowed.
  * A stale snapshot's signed thumbnail is dropped once its `expires` has passed.
@@ -149,9 +156,7 @@ export function snapshotItem(c: CuratedVideo, nowMs: number, allowStale = false)
   const refreshed = s.refreshed_at ? Date.parse(s.refreshed_at) : NaN;
   const fresh = Number.isFinite(refreshed) && nowMs - refreshed < SNAPSHOT_MAX_AGE_MS && refreshed - nowMs < 5 * 60_000;
   if (!fresh && !allowStale) return null;
-  let thumb = normalizeImageUrl(s.thumbnail_url ?? null);
-  const expires = thumb ? EXPIRES.exec(thumb) : null;
-  if (expires && Number(expires[1]) * 1000 <= nowMs) thumb = null;
+  const thumb = liveThumb(s.thumbnail_url, nowMs);
   const title = str(s.title)!;
   return {
     kind: c.kind,

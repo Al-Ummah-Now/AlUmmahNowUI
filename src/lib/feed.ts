@@ -53,8 +53,9 @@ export interface FeedPost {
   videos: FeedVideo[];
 }
 
+/** A body video (`::video[ID]`, video or playlist) or a timeline video entry (also channel, D7). */
 export interface FeedVideo {
-  kind: 'video' | 'playlist';
+  kind: 'video' | 'playlist' | 'channel';
   ref_id: string;
   snapshot: CuratedSnapshot | null;
 }
@@ -161,7 +162,7 @@ export function validItem(v: unknown): v is FeedItem {
   }
   if (v.type === 'video') {
     const x = v.video;
-    return isObj(x) && (x.kind === 'video' || x.kind === 'playlist') && isStr(x.ref_id);
+    return isObj(x) && (x.kind === 'video' || x.kind === 'playlist' || x.kind === 'channel') && isStr(x.ref_id);
   }
   return false;
 }

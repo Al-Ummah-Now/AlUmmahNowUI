@@ -36,7 +36,7 @@ function regroup(root: HTMLElement, locale: Locale) {
       const section = document.createElement('section');
       section.className = 'tl-day';
       section.dataset.day = day;
-      const h = document.createElement('h3');
+      const h = document.createElement(root.dataset.dayLevel === '2' ? 'h2' : 'h3');
       h.className = 'tl-date';
       h.id = `tl-d-${day}`;
       h.textContent = dayLabel(day, now, locale, words, zone);

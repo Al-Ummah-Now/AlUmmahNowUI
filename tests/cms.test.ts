@@ -114,7 +114,7 @@ describe('CMS fallback chain', () => {
     const cms = cmsClient(deps);
     await cms.posts('ar', 2, 10);
     await cms.post('en', 'hello world');
-    await cms.videos('en', 'home');
-    expect(seen).toEqual(['/posts?locale=ar&page=2&limit=10', '/posts/hello%20world?locale=en', '/videos?locale=en&placement=home']);
+    await cms.list('ar', 'مرئيات', 2);
+    expect(seen).toEqual(['/posts?locale=ar&page=2&limit=10', '/posts/hello%20world?locale=en', '/lists/%D9%85%D8%B1%D8%A6%D9%8A%D8%A7%D8%AA?locale=ar&page=2']);
   });
 });

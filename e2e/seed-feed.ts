@@ -5,7 +5,7 @@
  *
  *   node --experimental-strip-types --no-warnings e2e/seed-feed.ts
  *
- * Content (both locales): a pinned post, a video entry, a post with two body videos, a card post,
+ * Content (both locales): a pinned post, a video entry, a channel entry, a post with two body videos, a card post,
  * and 50 dated posts back to last year, so "Load more" walks past the head into the week buckets.
  */
 import { execFileSync } from 'node:child_process';
@@ -37,6 +37,22 @@ export function seedItems(locale: 'en' | 'ar'): FeedItem[] {
   const items: FeedItem[] = [
     post(900, at(400), { title: ar ? 'مرحبًا بكم في الأمة الآن' : 'Welcome to Al Ummah Now', excerpt: ar ? 'ما الذي ستجده هنا.' : 'What you will find here.', locale }, true),
     { ...video(10, at(1)), video: { kind: 'video', ref_id: 'feed-video-1', title_override: ar ? 'درس الأسبوع' : 'Lesson of the week', snapshot: { title: 'Lesson', thumbnail_url: null, channel_name: ar ? 'قناة العلم' : 'Knowledge channel' } } },
+    // A channel entry (docs/specs/WWW-PAGES.md D7): name, @handle and its three latest videos
+    {
+      ...video(11, at(2)),
+      video: {
+        kind: 'channel',
+        ref_id: 'feed-channel-1',
+        title_override: null,
+        snapshot: {
+          title: ar ? 'قناة العلم' : 'Knowledge channel',
+          thumbnail_url: null,
+          channel_name: null,
+          handle: 'knowledge',
+          latest: [1, 2, 3].map((n) => ({ id: `feed-latest-${n}`, title: ar ? `الدرس ${n}` : `Lesson ${n}`, thumbnail_url: null, duration_seconds: 600 + n * 65 })),
+        },
+      },
+    },
     post(20, at(3), {
       title: ar ? 'محاضرتان جديدتان' : 'Two new lectures',
       excerpt: ar ? 'شاهدهما هنا مباشرة.' : 'Watch both right here.',

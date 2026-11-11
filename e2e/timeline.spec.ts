@@ -1,6 +1,6 @@
 /**
  * The home timeline (src/components/Timeline.astro). Locally the FEED KV is seeded by
- * e2e/seed-feed.ts (a pinned post, a video entry, a post with two body videos, a card post and 50
+ * e2e/seed-feed.ts (a pinned post, a video entry, a channel, a post with two body videos, a card post and 50
  * dated posts); the seeded-content tests skip against a deployed site (WWW_URL), where only the
  * shape is checked.
  */
@@ -8,7 +8,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
 const local = !process.env.WWW_URL;
-const SEEDED_DATED = 53; // 1 video entry + 2 posts + 50 dated posts (the pinned post is separate)
+const SEEDED_DATED = 54; // 1 video entry + 1 channel + 2 posts + 50 dated posts (the pinned post is separate)
 
 const items = (page: Page) => page.locator('[data-days] li.tl-item');
 
@@ -83,7 +83,7 @@ test.describe('home timeline', () => {
       await expect(items(page)).toHaveCount(40);
       await expect(page).toHaveURL(/\/en\/$/);
       await expect(page.locator('.tl-foot [data-live]')).toHaveText('20 more items added');
-      await expect(page.locator(':focus')).toHaveText('News item 18');
+      await expect(page.locator(':focus')).toHaveText('News item 17');
       // Day headings stay unique after the merge.
       const days = await page.locator('[data-days] .tl-day').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.day));
       expect(new Set(days).size).toBe(days.length);
@@ -105,7 +105,7 @@ test.describe('home timeline', () => {
         await expect(page.getByRole('heading', { level: 1 })).toHaveText('Earlier posts');
         await expect(items(page)).toHaveCount(20);
         await expect(page.locator('.tl-pinned')).toHaveCount(0);
-        await expect(page.locator('li.tl-item', { hasText: 'News item 18' })).toHaveCount(1);
+        await expect(page.locator('li.tl-item', { hasText: 'News item 17' })).toHaveCount(1);
         await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
       });
     });

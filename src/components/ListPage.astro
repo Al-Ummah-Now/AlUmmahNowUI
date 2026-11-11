@@ -1,0 +1,108 @@
+---
+/**
+ * A list page (docs/specs/WWW-PAGES.md §6): the page head, then the items with the home timeline's
+ * cards (mixed kinds, pinned first on page 1), then numbered pages (?page=N, rel prev/next). Used by
+ * /videos, /articles and any CMS page whose `list_kind` is set (src/lib/list-page.ts loads them).
+ *
+ * Slots: `actions` (under the intro, e.g. "Browse the full library") and `empty` (the zero-items
+ * state; the default says the list is empty, or points at the other language's list when that has
+ * items).
+ */
+import Icon from './Icon.astro';
+import Timeline from './Timeline.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { fmt, strings } from '../i18n';
+import type { NavItem, SiteSettings } from '../lib/cms-types';
+import type { Config } from '../lib/env';
+import { listTitle, pageNumbers, pageQuery, type ListView } from '../lib/list-page';
+import { otherLocale, type Locale } from '../lib/locale';
+import { videoObjectLd } from '../lib/seo';
+import { feedVideoItem } from '../lib/timeline';
+
+type Alternates = Partial<Record<Locale, string>>;
+interface Props {
+  cfg: Config;
+  locale: Locale;
+  nav: { header: NavItem[]; footer: NavItem[] };
+  settings: SiteSettings | null;
+  view: ListView;
+  /** This list's path without the query (e.g. /en/articles/). */
+  path: string;
+  alternates: Alternates;
+  /** The same list in the other language, when this one is empty and that one is not. */
+  otherHref?: string | null;
+  /** A missing translation: the notice above the content, and the list's own language. */
+  notice?: string | null;
+  contentLocale?: Locale;
+}
+const { cfg, locale, nav, settings, view, path, alternates, otherHref = null, notice = null, contentLocale } = Astro.props;
+const t = strings(locale);
+const now = new Date();
+const all = [...view.pinned, ...view.items];
+const empty = all.length === 0;
+const pageOf = (page: number, pages: number) => fmt(t.articles.pageOf, { page, pages });
+const description = view.seoDescription || view.summary || t.meta.defaultDescription;
+const jsonLd = all
+  .flatMap((it) => (it.type === 'video' && it.video?.kind === 'video' ? [feedVideoItem(it.video, locale, t.timeline.video, now.getTime())] : []))
+  .map((v) => videoObjectLd(cfg, v, locale))
+  .filter(Boolean);
+const numbers = pageNumbers(view.page, view.pages);
+const href = (n: number) => `${path}${pageQuery(n)}`;
+const other = otherLocale(locale);
+---
+<BaseLayout cfg={cfg} locale={locale} title={listTitle(view, pageOf)} description={description} alternates={alternates} nav={nav} settings={settings} jsonLd={jsonLd} notice={notice} contentLocale={contentLocale}>
+  <div class="page-head">
+    <div class="wrap">
+      <h1>{view.title}</h1>
+      {view.summary && <p class="lede">{view.summary}</p>}
+      <slot name="actions" />
+    </div>
+  </div>
+  <section class="section tl-section list-page" aria-label={view.title}>
+    <div class="tl-wrap">
+      {empty ? (
+        otherHref ? (
+          <div class="empty">
+            <p>{fmt(t.lang.otherHas, { language: t.lang.names[other] })}</p>
+            <a class="button button-quiet" href={otherHref} hreflang={other}>{fmt(t.lang.listIn, { language: t.lang.names[other] })}</a>
+          </div>
+        ) : Astro.slots.has('empty') ? (
+          <slot name="empty" />
+        ) : (
+          <div class="empty"><p>{t.list.empty}</p></div>
+        )
+      ) : (
+        <Timeline
+          locale={locale}
+          pinned={view.pinned}
+          items={view.items}
+          nextHref={null}
+          cmsOrigin={new URL(cfg.cmsPublicUrl).origin}
+          videosWebUrl={cfg.videosWebUrl}
+          first={view.page === 1}
+          now={now}
+          paged
+          dayLevel={2}
+        />
+      )}
+      {view.pages > 1 && (
+        <nav class="pagination" aria-label={t.a11y.pagination}>
+          {view.page > 1 && <a href={href(view.page - 1)} rel="prev"><Icon name="chevron" class="flip" />{t.articles.newer}</a>}
+          <ol class="pagination-pages">
+            {numbers.map((n) =>
+              n === 'gap' ? (
+                <li class="pagination-gap" aria-hidden="true">…</li>
+              ) : n === view.page ? (
+                <li><span aria-current="page" aria-label={fmt(t.list.pageLink, { page: n })}>{n}</span></li>
+              ) : (
+                <li><a href={href(n)} aria-label={fmt(t.list.pageLink, { page: n })}>{n}</a></li>
+              ),
+            )}
+          </ol>
+          {view.page < view.pages && <a href={href(view.page + 1)} rel="next">{t.articles.older}<Icon name="chevron" /></a>}
+          <p class="visually-hidden">{pageOf(view.page, view.pages)}</p>
+        </nav>
+      )}
+    </div>
+  </section>
+</BaseLayout>

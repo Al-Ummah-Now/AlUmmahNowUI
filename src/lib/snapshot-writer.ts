@@ -8,9 +8,10 @@
  * `fetchedAt` and a content hash in its metadata: unchanged content is not rewritten, and a write
  * never replaces a snapshot fetched later (should two runs ever overlap).
  */
-import type { PostsResponse, SitemapResponse } from './cms-types';
+import type { ListWire, PostsResponse, SitemapResponse } from './cms-types';
 import { validate } from './cms-types';
 import { cmsPaths, ARTICLES_PAGE_SIZE, RSS_ITEMS, snapshotKey } from './cms';
+import { BUILTIN_LISTS } from './list-page';
 import type { KVNamespace } from './cf';
 import { LOCALES, type Locale } from './locale';
 
@@ -103,8 +104,15 @@ async function runAll(deps: WriterDeps, entries: Entry[], out: WriterResult): Pr
   await Promise.all(Array.from({ length: Math.min(WRITER_CONCURRENCY, entries.length) }, worker));
 }
 
-/** Every key the site reads, given the sitemap and the post totals per locale. */
-export function contentEntries(sitemap: SitemapResponse | undefined, postTotals: Partial<Record<Locale, number>>): Entry[] {
+/**
+ * Every key the site reads, given the sitemap, the post totals per locale and the page count of
+ * each built-in list page (/videos, /articles) per locale.
+ */
+export function contentEntries(
+  sitemap: SitemapResponse | undefined,
+  postTotals: Partial<Record<Locale, number>>,
+  listPages: Partial<Record<`${Locale}:${string}`, number>> = {},
+): Entry[] {
   const entries: Entry[] = [];
   for (const item of sitemap?.items ?? []) {
     entries.push(
@@ -116,6 +124,10 @@ export function contentEntries(sitemap: SitemapResponse | undefined, postTotals:
   for (const l of LOCALES) {
     const pages = Math.ceil((postTotals[l] ?? 0) / ARTICLES_PAGE_SIZE);
     for (let p = 2; p <= pages; p++) entries.push({ path: cmsPaths.posts(l, p, ARTICLES_PAGE_SIZE), isValid: validate.posts });
+    for (const slug of BUILTIN_LISTS) {
+      const n = Math.min(listPages[`${l}:${slug}`] ?? 1, 500);
+      for (let p = 2; p <= n; p++) entries.push({ path: cmsPaths.list(l, slug, p), isValid: validate.list });
+    }
   }
   return entries;
 }
@@ -127,26 +139,30 @@ export async function writeSnapshots(deps: WriterDeps, run = Math.floor((deps.no
   for (const l of LOCALES) {
     core.push(
       { path: cmsPaths.site(l), isValid: validate.site },
-      { path: cmsPaths.home(l), isValid: validate.home },
-      { path: cmsPaths.videos(l, 'videos'), isValid: validate.videos },
+      ...BUILTIN_LISTS.map((slug) => ({ path: cmsPaths.list(l, slug, 1), isValid: validate.list })),
       { path: cmsPaths.posts(l, 1, ARTICLES_PAGE_SIZE), isValid: validate.posts },
-      { path: cmsPaths.posts(l, 1, RSS_ITEMS), isValid: validate.posts },
     );
+    // The RSS feed's first page, when its size differs from the articles list's
+    if (RSS_ITEMS !== ARTICLES_PAGE_SIZE) core.push({ path: cmsPaths.posts(l, 1, RSS_ITEMS), isValid: validate.posts });
   }
   // The sitemap and the first articles page per locale tell us the rest.
   let sitemap: SitemapResponse | undefined;
   const totals: Partial<Record<Locale, number>> = {};
+  const listPages: Partial<Record<`${Locale}:${string}`, number>> = {};
   const capture: Entry[] = core.map((e) => ({
     path: e.path,
     isValid: (v: unknown) => {
       if (!e.isValid(v)) return false;
       if (e.path === cmsPaths.sitemap()) sitemap = v as SitemapResponse;
-      for (const l of LOCALES) if (e.path === cmsPaths.posts(l, 1, ARTICLES_PAGE_SIZE)) totals[l] = (v as PostsResponse).total;
+      for (const l of LOCALES) {
+        if (e.path === cmsPaths.posts(l, 1, ARTICLES_PAGE_SIZE)) totals[l] = (v as PostsResponse).total;
+        for (const slug of BUILTIN_LISTS) if (e.path === cmsPaths.list(l, slug, 1)) listPages[`${l}:${slug}`] = (v as ListWire).pages;
+      }
       return true;
     },
   }));
   await runAll(deps, capture, out);
-  const rest = contentEntries(sitemap, totals);
+  const rest = contentEntries(sitemap, totals, listPages);
   const window =
     rest.length <= MAX_KEYS_PER_RUN
       ? rest

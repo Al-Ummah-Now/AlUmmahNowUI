@@ -3,7 +3,8 @@
  * Articles list and the home timeline show every card a summary carries, with the title and date
  * linking to the post. Also the one-language article rule (docs/SPEC.md §4).
  *
- * Local only: the stub CMS (e2e/stub-blocks.ts) serves /posts and the card posts; the home timeline
+ * The Articles list is a list page (docs/specs/WWW-PAGES.md): the home timeline's cards.
+ * Local only: the stub CMS (e2e/stub-blocks.ts) serves /lists/articles and the card posts; the home timeline
  * comes from the seeded FEED KV (e2e/seed-feed.ts).
  */
 import AxeBuilder from '@axe-core/playwright';
@@ -71,7 +72,7 @@ test.describe('Articles list: card posts inline', () => {
     await expect(madinah.locator('.ci-count')).toHaveText('5 cards');
     // Real, selectable text on every card, in the HTML (not only the visible one).
     await expect(madinah.locator('.ci-slide').nth(3).locator('.cv-heading')).toHaveText('Cool marble');
-    const item = page.locator('.articles-item', { has: madinah });
+    const item = page.locator('li.tl-item', { has: madinah });
     await expect(item.getByRole('heading', { name: 'A day in Madinah' }).getByRole('link')).toHaveAttribute('href', '/en/articles/a-day-in-madinah/');
     await expect(item.locator('time')).toHaveAttribute('datetime', '2026-11-07T08:00:00.000Z');
     // The first card of the first item is the LCP candidate; every later card waits (lazy).
@@ -85,7 +86,7 @@ test.describe('Articles list: card posts inline', () => {
     // CMS variants: AVIF/WebP sources would be here with a srcset; the stub has none, so a sized <img>.
     await expect(imgs.first()).toHaveAttribute('width', '1080');
     // Articles without cards keep their excerpt.
-    await expect(page.locator('.articles-item', { hasText: 'Community iftar this Friday' })).toContainText('A short excerpt for the list.');
+    await expect(page.locator('li.tl-item', { hasText: 'Community iftar this Friday' })).toContainText('A short excerpt for the list.');
     await axeAndShot(page, 'articles-inline-en', info.project.name);
   });
 

@@ -24,7 +24,6 @@ const footerNav = [
 
 export const en: Builtin = {
   site: { settings, nav: { header: headerNav, footer: footerNav } },
-  home: { settings, videos: [], posts: [] },
   headerNav,
   footerNav,
   pillars: [

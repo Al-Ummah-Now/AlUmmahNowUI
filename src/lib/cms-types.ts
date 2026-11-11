@@ -1,4 +1,5 @@
 /** CMS public read API v1 (docs/CMS_PUBLIC_API.md). Keep in step with the contract. */
+import type { FeedItem } from './feed';
 import type { Locale } from './locale';
 
 export interface MediaRef {
@@ -37,6 +38,54 @@ export interface Page {
   images?: MediaRef[];
   /** The page as blocks, in order (additive; absent on older CMS builds: render `body`). */
   blocks?: Block[];
+  /**
+   * A list page (AlUmmahNowCMS docs/specs/WWW-PAGES.md): render it from GET /lists/:slug. Null or
+   * absent (older CMS builds) = a content page.
+   */
+  list_kind?: ListKind | null;
+}
+
+export type ListKind = 'curated' | 'filter';
+export type ListFilterKind = 'article' | 'cards' | 'video' | 'playlist' | 'channel';
+
+/** GET /lists/:slug: a curated or filter page's head (docs/specs/WWW-PAGES.md §4 "Public API"). */
+export interface ListPageHead {
+  slug: string;
+  locale: Locale;
+  title: string;
+  summary: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  list_kind: ListKind;
+  list_filter: { kinds: ListFilterKind[]; tag: string | null } | null;
+  /** The other live translations (the same shape as /pages/:slug `alternates`). */
+  alternates: Alternate[];
+}
+
+/**
+ * GET /lists/:slug?locale&page as www uses it: 20 items per page, numbered pages from 1; `pinned`
+ * only on a curated page's first page. Items are the home feed's FeedItem (src/lib/feed.ts).
+ * The wire shape (ListWire) is normalised into this by src/lib/cms.ts `toList`.
+ */
+export interface ListResponse {
+  head: ListPageHead;
+  pinned: FeedItem[];
+  items: FeedItem[];
+  page: number;
+  pages: number;
+  total: number;
+  limit: number;
+}
+
+/** The wire shape: `page` is the head, `page_number` the page number. */
+export interface ListWire {
+  page: ListPageHead;
+  pinned?: unknown[];
+  items: unknown[];
+  page_number?: number;
+  pages: number;
+  total: number;
+  limit?: number;
 }
 
 /** A scholar's post (AlUmmahNowCMS docs/SCHOLARS.md): their name and page. Null for staff posts. */
@@ -100,6 +149,8 @@ export type Block =
  */
 export interface CuratedSnapshot {
   title: string;
+  /** Channels (docs/specs/WWW-PAGES.md D7): their newest ≤ 3 public videos, newest first. */
+  latest?: ChannelLatest[];
   thumbnail_url: string | null;
   channel_name: string | null;
   refreshed_at?: string;
@@ -112,6 +163,8 @@ export interface CuratedSnapshot {
   video_count?: number | null;
 }
 
+export interface ChannelLatest { id: string; title: string; thumbnail_url: string | null; duration_seconds: number | null }
+
 export interface CuratedVideo {
   id: number;
   kind: 'video' | 'playlist' | 'channel';
@@ -122,9 +175,7 @@ export interface CuratedVideo {
 }
 
 export interface SiteResponse { settings: SiteSettings | null; nav: { header: NavItem[]; footer: NavItem[] } }
-export interface HomeResponse { settings: SiteSettings | null; videos: CuratedVideo[]; posts: PostSummary[] }
 export interface PostsResponse { items: PostSummary[]; page: number; limit: number; total: number }
-export interface VideosResponse { items: CuratedVideo[] }
 /** GET /cards: card posts only, newest first; `tags` = every tag on this locale's card posts. */
 export interface CardsResponse { items: PostSummary[]; page: number; limit: number; total: number; tags: string[] }
 export interface SitemapResponse {
@@ -162,16 +213,22 @@ export interface ScholarPageResponse {
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const isArr = Array.isArray;
 
+const isHead = (v: unknown): v is ListPageHead =>
+  isObj(v) && typeof v.slug === 'string' && typeof v.title === 'string';
+/** The head of a /lists answer (its `page` object), or null. */
+export function listHead(v: Record<string, unknown>): ListPageHead | null {
+  return isHead(v.page) ? v.page : null;
+}
+
 export const validate = {
   site: (v: unknown): v is SiteResponse => isObj(v) && 'settings' in v && isObj(v.nav) && isArr(v.nav.header) && isArr(v.nav.footer),
-  home: (v: unknown): v is HomeResponse => isObj(v) && 'settings' in v && isArr(v.videos) && isArr(v.posts),
   page: (v: unknown): v is Page => isObj(v) && typeof v.slug === 'string' && typeof v.title === 'string' && typeof v.body === 'string',
   posts: (v: unknown): v is PostsResponse => isObj(v) && isArr(v.items) && typeof v.total === 'number',
   post: (v: unknown): v is Post => isObj(v) && typeof v.slug === 'string' && typeof v.title === 'string' && typeof v.body === 'string',
-  videos: (v: unknown): v is VideosResponse => isObj(v) && isArr(v.items),
   cards: (v: unknown): v is CardsResponse => isObj(v) && isArr(v.items) && typeof v.total === 'number' && isArr(v.tags),
   sitemap: (v: unknown): v is SitemapResponse => isObj(v) && isArr(v.items),
   scholars: (v: unknown): v is ScholarsResponse => isObj(v) && isArr(v.items) && typeof v.total === 'number',
+  list: (v: unknown): v is ListWire => isObj(v) && isArr(v.items) && typeof v.pages === 'number' && typeof v.total === 'number' && listHead(v) !== null,
   scholar: (v: unknown): v is ScholarPageResponse =>
     isObj(v) && isObj(v.scholar) && typeof v.scholar.slug === 'string' && typeof v.scholar.name === 'string' && isObj(v.posts) && isArr(v.posts.items) && isObj(v.post_counts),
 };
