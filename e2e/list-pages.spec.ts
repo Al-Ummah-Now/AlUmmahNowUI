@@ -63,7 +63,7 @@ test.describe('list pages from /lists (stub CMS)', () => {
 
   test('/videos: the timeline cards, a channel card, numbered pages with rel prev/next', async ({ page, request }) => {
     await page.goto('/en/videos/');
-    await expect(page.locator('h1')).toHaveText('Featured videos');
+    await expect(page.locator('h1')).toHaveText('Videos');
     await expect(items(page)).toHaveCount(20);
     // Pages are numbered, never "Load more"
     await expect(page.getByRole('link', { name: 'Load more' })).toHaveCount(0);

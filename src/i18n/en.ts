@@ -132,7 +132,7 @@ export const en = {
     swipeHint: 'Swipe or use the arrows to read every card',
   },
   videos: {
-    title: 'Featured videos',
+    title: 'Videos',
     intro: 'Lessons, series and channels chosen by our editors. The full library lives on Al Ummah Now Videos.',
     browseAll: 'Browse the full library',
     empty: 'No featured videos yet.',
