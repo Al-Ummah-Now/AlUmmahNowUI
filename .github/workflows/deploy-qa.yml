@@ -59,8 +59,10 @@ jobs:
         run: npm run release:smoke -- --env qa
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium webkit
-
+        uses: ./.github/actions/playwright-install
+        with:
+          runner: npx
+          browsers: chromium webkit
       - name: E2E against QA
         env:
           WWW_URL: https://www.qa.alummahnow.net

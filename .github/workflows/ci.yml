@@ -57,8 +57,10 @@ jobs:
         run: python3 scripts/scan-artifacts-for-secrets.py --self-test
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium webkit
-
+        uses: ./.github/actions/playwright-install
+        with:
+          runner: npx
+          browsers: chromium webkit
       # playwright.config.ts starts `wrangler dev` (scripts/dev-vars.ts writes a throwaway .dev.vars)
       - name: E2E against local wrangler dev
         run: npx playwright test
