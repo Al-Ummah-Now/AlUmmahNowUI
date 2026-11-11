@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test';
 import { AUTH_URL, CLIENT_ID, LOCALES, REDIRECT_URI } from './env';
 
 const HEADINGS = {
-  en: { articles: 'Articles', videos: 'Featured videos', notFound: 'We could not find that page' },
-  ar: { articles: 'المقالات', videos: 'مرئيات مختارة', notFound: 'لم نعثر على هذه الصفحة' },
+  en: { articles: 'Articles', videos: 'Videos', notFound: 'We could not find that page' },
+  ar: { articles: 'المقالات', videos: 'المرئيات', notFound: 'لم نعثر على هذه الصفحة' },
 };
 
 test.describe('rendering', () => {
