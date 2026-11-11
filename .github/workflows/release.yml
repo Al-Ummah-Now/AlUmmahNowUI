@@ -164,8 +164,10 @@ jobs:
         run: npm run release:promote -- --env stage --message "release ${GITHUB_SHA::7}"
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium webkit
-
+        uses: ./.github/actions/playwright-install
+        with:
+          runner: npx
+          browsers: chromium webkit
       - name: E2E against stage
         env:
           WWW_URL: https://www.stage.alummahnow.net
