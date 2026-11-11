@@ -215,7 +215,7 @@ function listsFixture(slug: string, locale: string, n: number): { status: number
     const posts = [...CARD_POSTS.filter((p) => p.locale === locale).map(summaryOf), ...(ar ? [] : ARTICLES)].sort((a, b) => b.published_at.localeCompare(a.published_at));
     all = posts.map((p, i) => feedPost(p, i + 1));
   } else if (slug === 'videos') {
-    head = listHead('videos', locale, ar ? 'مرئيات مختارة' : 'Featured videos', ar ? 'دروس وسلاسل وقنوات اختارها فريق التحرير.' : 'Lessons, series and channels chosen by our editors.', 'filter', [{ locale: ar ? 'en' : 'ar', slug: 'videos' }]);
+    head = listHead('videos', locale, ar ? 'المرئيات' : 'Videos', ar ? 'دروس وسلاسل وقنوات اختارها فريق التحرير.' : 'Lessons, series and channels chosen by our editors.', 'filter', [{ locale: ar ? 'en' : 'ar', slug: 'videos' }]);
     all = [CHANNEL(ar), ...(ar ? [] : Array.from({ length: 24 }, (_, i) => feedVideo(i + 2, 'video', `stub-video-${i + 1}`, `Lesson video ${i + 1}`, 2 + i * 5)))];
   } else if (slug === 'picks' && !ar) {
     head = listHead('picks', 'en', 'Editors’ picks', 'A page the editors put together by hand.', 'curated', []);
