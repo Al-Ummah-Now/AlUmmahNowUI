@@ -1,0 +1,10 @@
+{
+  "repo": "Al-Ummah-Now/AlUmmahNow",
+  "ref": "fce0a88b60a78fcaea09d57a279bf17c6394223a",
+  "source": "apps/web/src/theme/site-themes.css",
+  "sourceSha256": "63c52b84ae61da0bc3b6e320c5c2769e3bb3515bdd814661ffb728838e6dd425",
+  "outputs": {
+    "src/styles/fanous-themes.generated.css": "d0483c48682680c33c34bae9eb7d74f68c29210f392a2f18d9db655efcda95ac",
+    "src/lib/site-themes.generated.ts": "3df2e949992aa69725f015141852c5cf0ff0407a170902ecd07c5d5beff95009"
+  }
+}

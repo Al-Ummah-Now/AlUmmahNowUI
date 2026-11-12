@@ -23,3 +23,6 @@ secrets-check.txt
 
 .DS_Store
 .idea/
+
+# theme sweep report (e2e/theme-sweep.spec.ts)
+test-results-themes/

@@ -5,6 +5,7 @@
  * shape is checked.
  */
 import AxeBuilder from '@axe-core/playwright';
+import { token, type ThemeId } from './site-theme';
 import { expect, test, type Page } from '@playwright/test';
 
 const local = !process.env.WWW_URL;
@@ -125,11 +126,12 @@ test.describe('home timeline', () => {
       expect(await axe(page)).toEqual([]);
     });
 
-    test('dark mode: cards on the Fawanees night surfaces', async ({ page }) => {
+    test('dark mode: cards on the site theme night surfaces', async ({ page }) => {
       await page.emulateMedia({ colorScheme: 'dark' });
       await page.goto('/en/');
+      const theme = (await page.locator('html').getAttribute('data-theme')) as ThemeId;
       const bg = await page.locator('.tl-card').first().evaluate((e) => getComputedStyle(e).backgroundImage);
-      expect(bg).toContain('rgb(19, 58, 78)'); // --surface-raised (dark)
+      expect(bg).toContain(token(theme, 'dark', '--fanous-color-surface-raised'));
       expect(await axe(page)).toEqual([]);
     });
 

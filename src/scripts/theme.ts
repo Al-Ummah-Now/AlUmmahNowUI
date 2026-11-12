@@ -3,7 +3,7 @@
  * The head script (MODE_SCRIPT) already applied the saved choice before paint; this wires
  * the menu, saves changes (localStorage, never throwing) and keeps other tabs in step.
  */
-import { MODE_KEY, THEME_COLOR, parseMode, type Mode } from '../lib/theme-mode';
+import { MODE_KEY, parseMode, type Mode } from '../lib/theme-mode';
 
 function readMode(): Mode {
   try {
@@ -26,10 +26,11 @@ function applyMode(mode: Mode) {
   const html = document.documentElement;
   if (mode === 'system') html.removeAttribute('data-mode');
   else html.setAttribute('data-mode', mode);
-  // Browser chrome follows a forced choice too
+  // Browser chrome follows a forced choice too (each meta carries the site theme's light and dark colour)
   document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((meta) => {
     const scheme = meta.media.includes('dark') ? 'dark' : 'light';
-    meta.content = THEME_COLOR[mode === 'system' ? scheme : mode];
+    const colour = meta.dataset[mode === 'system' ? scheme : mode];
+    if (colour) meta.content = colour;
   });
 }
 

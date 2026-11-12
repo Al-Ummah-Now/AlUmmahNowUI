@@ -7,7 +7,8 @@ import type { NavItem, SiteSettings } from '../lib/cms-types';
 import type { Config } from '../lib/env';
 import { dir, otherLocale, type Locale } from '../lib/locale';
 import { absolute, hreflangLinks, jsonLdText, type Alternates } from '../lib/seo';
-import { MODE_SCRIPT, THEME_COLOR } from '../lib/theme-mode';
+import { MODE_SCRIPT } from '../lib/theme-mode';
+import { THEME_CHROME, themeFromRequest } from '../lib/site-theme';
 import { tabIconLinks } from '../lib/favicon';
 
 interface Props {
@@ -42,10 +43,13 @@ const canonical = absolute(cfg, alternates[contentLocale ?? locale] ?? alternate
 const other = otherLocale(locale);
 const switchHref = alternates[other] ?? `/${other}/`;
 const image = absolute(cfg, ogImage || '/brand/og-default.jpg');
+// The admin's site theme, resolved by the Worker (src/worker.ts); rendered here so the first paint is right
+const theme = themeFromRequest(Astro.request).id;
+const chrome = THEME_CHROME[theme];
 const robots = noindex || !cfg.isProduction ? 'noindex, nofollow' : 'index, follow';
 ---
 <!doctype html>
-<html lang={locale} dir={dir(locale)}>
+<html lang={locale} dir={dir(locale)} data-theme={theme}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -71,8 +75,8 @@ const robots = noindex || !cfg.isProduction ? 'noindex, nofollow' : 'index, foll
     <meta name="color-scheme" content="light dark" />
     {/* In <head>, before the body paints: the saved Light/Dark choice is on <html> before first paint (CSP: by hash) */}
     <script is:inline set:html={MODE_SCRIPT} />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content={THEME_COLOR.light} />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content={THEME_COLOR.dark} />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content={chrome.light} data-light={chrome.light} data-dark={chrome.dark} />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content={chrome.dark} data-light={chrome.light} data-dark={chrome.dark} />
     {tabIconLinks(cfg.appEnv).map((l) => <link rel="icon" href={l.href} type={l.type} sizes={l.sizes} />)}
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="manifest" href="/icons/site.webmanifest" />

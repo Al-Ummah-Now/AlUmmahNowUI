@@ -25,6 +25,7 @@ const vars = (sub: string, clientId: string, env: string) => ({
   VIDEOS_API_URL: `https://videos.api.${sub}alummahnow.net`,
   PROFILE_URL: `https://profile.auth.${sub}alummahnow.net`,
   CMS_PUBLIC_URL: `https://cms.${sub}alummahnow.net`,
+  ADMIN_API_URL: `https://admin.api.${sub}alummahnow.net`,
 });
 
 const PROD_STAGE_CLIENT = 'd34701ed-03de-43f8-95a8-91cd1e1874bb';

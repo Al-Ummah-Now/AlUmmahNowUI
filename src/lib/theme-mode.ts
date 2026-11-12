@@ -1,6 +1,9 @@
 /**
  * Light / Dark / System for www.
  *
+ * This is the mode only; the theme (Fawanees, Lantern, Zujaj, Nahas) is the admin's choice for the
+ * whole site, rendered by the server as <html data-theme> (src/lib/site-theme.ts).
+ *
  * HTML is edge-cached and identical for every visitor, so the choice lives in the browser
  * (localStorage `aun_mode`) and is applied client-side:
  *  - CSS follows `prefers-color-scheme` unless `<html data-mode="light|dark">` forces one
@@ -33,6 +36,3 @@ export const MODE_SCRIPT =
 
 /** CSP source for MODE_SCRIPT: 'sha256-<base64>'. */
 export const MODE_SCRIPT_HASH = "'sha256-G9ckqte957DoMW1eHPIgDRmq0td7ikw4uMApZmt2XZs='";
-
-/** Browser chrome colour (meta theme-color) per resolved scheme. */
-export const THEME_COLOR = { light: '#0b3443', dark: '#0b1d2a' } as const;

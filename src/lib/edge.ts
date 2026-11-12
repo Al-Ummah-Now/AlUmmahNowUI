@@ -7,6 +7,7 @@ import type { Config } from './env';
 import { imgSrcSources } from './images';
 import { articlesPath, isLocale, negotiateLocale } from './locale';
 import { isPreviewPath } from './preview';
+import { THEME_SOURCE_HEADER } from './site-theme';
 import { MODE_SCRIPT_HASH } from './theme-mode';
 
 /** alummahnow.net/x?y → 301 https://www.alummahnow.net/x?y (only when SITE_URL is a www host). */
@@ -163,6 +164,9 @@ export function isCacheableResponse(response: Response): boolean {
   if (response.status !== 200) return false;
   if (response.headers.has('Set-Cookie')) return false;
   if (response.headers.get('X-Content-Source') === 'builtin') return false;
+  // Rendered without the admin's theme (admin API down or slow): don't keep it for everyone
+  const theme = response.headers.get(THEME_SOURCE_HEADER);
+  if (theme && theme !== 'admin') return false;
   const type = response.headers.get('Content-Type') ?? '';
   return type.includes('text/html') || type.includes('xml');
 }
@@ -173,11 +177,16 @@ export function isCacheableResponse(response: Response): boolean {
  * by the previous deploy would load without its stylesheet (404) for up to FRESH+SWR after every
  * deploy. Keying by version starts each deploy on its own cache; during a gradual rollout each
  * version serves only pages that match its own assets.
+ *
+ * The site theme is in the key too: the page's <html data-theme> is rendered by the server, so when
+ * the admin switches the theme every page starts afresh (a MISS) instead of serving the old theme
+ * until its entry expires.
  */
-export function htmlCacheKey(url: string, version: string): string {
-  if (!version) return url;
+export function htmlCacheKey(url: string, version: string, theme = ''): string {
+  if (!version && !theme) return url;
   const u = new URL(url);
-  u.searchParams.set('__v', version);
+  if (version) u.searchParams.set('__v', version);
+  if (theme) u.searchParams.set('__t', theme);
   return u.toString();
 }
 
@@ -192,9 +201,10 @@ export async function withHtmlCache(
   now: () => number = Date.now,
   inflight: Map<string, Promise<unknown>> = revalidating,
   version = '',
+  theme = '',
 ): Promise<Response> {
   if (!cache || !isCacheableRequest(request)) return render();
-  const key = new Request(htmlCacheKey(request.url, version), { method: 'GET' });
+  const key = new Request(htmlCacheKey(request.url, version, theme), { method: 'GET' });
   const put = (res: Response, storedAt: number, renderedAt: number) => {
     const copy = new Response(res.body, res);
     copy.headers.set(STORED_AT, String(storedAt));
@@ -225,15 +235,15 @@ export async function withHtmlCache(
     const life = (now() - renderedAt) / 1000;
     if (life < HTML_FRESH_SEC + HTML_SWR_SEC) {
       if (age < HTML_FRESH_SEC) return finish(hit, 'HIT');
-      if (!inflight.has(request.url)) {
+      if (!inflight.has(key.url)) {
         // Lease first (the stale copy, fresh for HTML_LEASE_SEC), then render and store.
         const lease = put(hit.clone(), now() - (HTML_FRESH_SEC - HTML_LEASE_SEC) * 1000, renderedAt);
         const job = lease
           .then(render)
           .then(store)
           .catch(() => undefined)
-          .finally(() => inflight.delete(request.url));
-        inflight.set(request.url, job);
+          .finally(() => inflight.delete(key.url));
+        inflight.set(key.url, job);
         waitUntil(job);
       }
       return finish(hit, 'STALE');

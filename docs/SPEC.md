@@ -165,13 +165,24 @@ JSON-LD (`Organization` + `WebSite` on home, `Article` on posts (a scholar's pos
 - **Security headers:** CSP (no nonce: HTML is edge-cached; the only inline script is the
   light/dark head script, allowed by its sha256 hash, see src/lib/theme-mode.ts), HSTS, `X-Content-Type-Options`,
   `Referrer-Policy`, `Permissions-Policy`, `frame-ancestors 'none'`.
+- **Site theme:** www renders the theme the admin chose for the whole site (videos admin → Site
+  theme), the same one the videos app and the CMS use: the Worker reads `GET <ADMIN_API_URL>/public/site-theme`
+  (30 s per isolate, served stale while it refreshes, 500 ms timeout, Fawanees on failure, and such a
+  page is never stored in the HTML cache) and renders `<html data-theme>`, so the first paint is right.
+  The theme is in the HTML cache key, so a switch reaches every page within about a minute, no deploy.
+  Colours are the videos app's Fanous tokens for all four themes (Fawanees, Lantern, Zujaj, Nahas),
+  vendored by `npm run sync:fanous` at a pinned AlUmmahNow commit (`fanous.lock.json`, checked in CI);
+  Light / Dark / System on top (src/lib/theme-mode.ts). The header is dark in every theme and mode;
+  its menus are surfaces of their own. QA, stage and local preview any built-in theme with `?theme=<id>`
+  (uncached; production ignores it). A theme package made in the admin's theme builder is not vendored
+  yet and renders the default. Contrast: `SWEEP=1 npx playwright test e2e/theme-sweep.spec.ts`.
 - **Empty and error states:** no articles yet; no curated videos; CMS down (builtin); a video removed
   upstream; 404; 500 (a localized error page, never a stack trace).
 
 ## 10. Configuration per env (wrangler `env.qa`, `env.stage`, top level = production)
 
 Vars: `APP_ENV`, `SITE_URL`, `AUTH_URL`, `WWW_CLIENT_ID`, `VIDEOS_WEB_URL`, `VIDEOS_API_URL`,
-`PROFILE_URL`, `CMS_PUBLIC_URL`. Bindings: `CMS` (service), `CONTENT_SNAPSHOT` (KV), `ASSETS`.
+`PROFILE_URL`, `CMS_PUBLIC_URL`, `ADMIN_API_URL` (the videos admin API, for the site theme). Bindings: `CMS` (service), `CONTENT_SNAPSHOT` (KV), `ASSETS`.
 Secret: `SESSION_SECRET` (64 hex characters, `openssl rand -hex 32`, set with `wrangler secret put`,
 never printed).
 
