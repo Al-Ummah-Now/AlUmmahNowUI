@@ -29,6 +29,11 @@ export interface VideoItem {
   /** Per-locale title/name and description from the API (titleLocalized / nameLocalized). */
   titles?: Partial<Record<Locale, string>>;
   descriptions?: Partial<Record<Locale, string>>;
+  /** Videos: their channel's name per language (CMS snapshot `channel_names`). */
+  channelNames?: Partial<Record<Locale, string>>;
+  /** Videos: the encoded size, so the player frame takes the video's shape (facade.ts). */
+  width?: number | null;
+  height?: number | null;
 }
 
 export interface VideosDeps {
@@ -79,12 +84,23 @@ export function toVideoItem(kind: VideoKind, id: string, body: unknown): VideoIt
     videoCount: kind === 'playlist' ? num(b.videosCount) ?? (Array.isArray(b.videos) ? b.videos.length : null) : null,
     titles: localized(kind === 'channel' ? b.nameLocalized : b.titleLocalized),
     descriptions: localized(b.descriptionLocalized),
+    width: kind === 'video' ? num(b.width) : null,
+    height: kind === 'video' ? num(b.height) : null,
   };
 }
 
-/** The item in the page's language: the API's localized title/description when it has one. */
+/**
+ * The item in the page's language: the API's localized title/description when it has one, and the
+ * channel's name in that language (else its plain name, else the other language's).
+ */
 export function localizeItem(item: VideoItem, locale: Locale): VideoItem {
-  return { ...item, title: item.titles?.[locale] ?? item.title, description: item.descriptions?.[locale] ?? item.description };
+  const other: Locale = locale === 'ar' ? 'en' : 'ar';
+  return {
+    ...item,
+    title: item.titles?.[locale] ?? item.title,
+    description: item.descriptions?.[locale] ?? item.description,
+    channelName: item.channelNames?.[locale] ?? item.channelName ?? item.channelNames?.[other] ?? null,
+  };
 }
 
 export async function fetchVideoItem(deps: VideosDeps, kind: VideoKind, id: string): Promise<VideoItem | null> {
@@ -171,6 +187,9 @@ export function snapshotItem(c: CuratedVideo, nowMs: number, allowStale = false)
     videoCount: c.kind === 'playlist' ? num(s.video_count) : null,
     titles: localized(s.titles),
     descriptions: localized(s.descriptions),
+    channelNames: c.kind === 'video' ? localized(s.channel_names) : {},
+    width: c.kind === 'video' ? num(s.width) : null,
+    height: c.kind === 'video' ? num(s.height) : null,
   };
 }
 

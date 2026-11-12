@@ -74,14 +74,12 @@ test.describe('signed-in home', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
   });
 
-  test('no profile name: @handle, then the email (truncated, not overflowing)', async ({ page }) => {
+  test('no profile name: the email, never a handle (truncated, not overflowing)', async ({ page }) => {
+    // handles belong to channels (owner, 2026-11-12): a profile without a name shows the email
     await signedIn(page, { displayName: null, displayNameLocalized: {}, handle: 'meywd' });
     await page.goto('/en/');
-    await expect(button(page)).toContainText('@meywd');
-    await page.unrouteAll({ behavior: 'ignoreErrors' });
-    await signedIn(page, null);
-    await page.reload();
     await expect(button(page)).toContainText(email);
+    await expect(button(page)).not.toContainText('@meywd');
     const width = page.viewportSize()!.width;
     const box = (await button(page).boundingBox())!;
     expect(box.x + box.width).toBeLessThanOrEqual(width);

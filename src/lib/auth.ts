@@ -18,11 +18,10 @@ export const LOGIN_TTL_SEC = 10 * 60;
 
 /** The user's own videos profile, read once at sign-in with their access token (auth-routes.ts). */
 export interface SessionProfile {
-  /** Display name per language: displayNameLocalized, else first + last name in that language. */
+  /** The resolved name per language (auth-routes.ts resolveDisplayName). */
   names: Partial<Record<'en' | 'ar', string>>;
-  /** displayName, else first + last name. */
+  /** Any resolved name (English first). */
   name: string | null;
-  handle: string | null;
   avatarUrl: string | null;
 }
 

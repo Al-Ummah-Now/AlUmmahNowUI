@@ -38,7 +38,6 @@ interface Me {
   signedIn: boolean;
   sub?: string | null;
   name?: string | null;
-  authName?: string | null;
   email?: string | null;
   canEditContent?: boolean;
   profile?: (MeProfileView & { avatarUrl?: string | null }) | null;

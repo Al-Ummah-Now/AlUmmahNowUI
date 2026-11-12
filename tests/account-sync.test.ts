@@ -127,33 +127,31 @@ describe('login links', () => {
 
 describe('header name', () => {
   const email = 'meywd@msn.com';
-  it('prefers the profile name in the page language, like the videos site', () => {
-    const profile = { displayName: 'Mahmoud', displayNameLocalized: { en: 'Mahmoud', ar: 'محمود' }, handle: 'meywd' };
-    expect(displayLabel({ email, name: email, authName: null, profile }, 'ar')).toBe('محمود');
-    expect(displayLabel({ email, name: email, authName: null, profile }, 'en')).toBe('Mahmoud');
-    expect(displayLabel({ email, authName: null, profile: { displayNameLocalized: { en: 'Mahmoud' } } }, 'ar')).toBe('Mahmoud');
+  it('the display name in the page language, then the plain one, then the other language', () => {
+    const profile = { displayName: 'Mahmoud', displayNameLocalized: { en: 'Mahmoud', ar: 'محمود' } };
+    expect(displayLabel({ email, name: email, profile }, 'ar')).toBe('محمود');
+    expect(displayLabel({ email, name: email, profile }, 'en')).toBe('Mahmoud');
+    expect(displayLabel({ email, profile: { displayName: 'Plain', displayNameLocalized: { en: 'English' } } }, 'ar')).toBe('Plain');
+    expect(displayLabel({ email, profile: { displayNameLocalized: { en: 'Mahmoud' } } }, 'ar')).toBe('Mahmoud');
   });
-  it('then auth\'s name, then the @handle, and the email only without a profile name', () => {
-    expect(displayLabel({ email, authName: 'M D', profile: { handle: 'meywd' } }, 'en')).toBe('M D');
-    expect(displayLabel({ email, name: email, authName: null, profile: { handle: 'meywd', displayName: '' } }, 'ar')).toBe('@meywd');
-    expect(displayLabel({ email, name: email, authName: null, profile: null }, 'ar')).toBe(email);
-    // an older /auth/me without authName: name equal to the email is not a name
-    expect(displayLabel({ email, name: email, profile: { handle: 'meywd' } }, 'en')).toBe('@meywd');
+  it('the email only when the profile has no name; never a handle', () => {
+    expect(displayLabel({ email, name: email, profile: { displayName: '' } }, 'ar')).toBe(email);
+    expect(displayLabel({ email, name: email, profile: null }, 'en')).toBe(email);
+    expect(displayLabel({ email, name: email, profile: { handle: 'meywd' } as never }, 'en')).toBe(email);
   });
 });
 
 describe('switcher names', () => {
-  const owner = { sub: 'u1', email: 'meywd@msn.com', authName: null, profile: { displayName: 'Mahmoud Darwish', displayNameLocalized: { en: 'Mahmoud Darwish' } } };
+  const owner = { sub: 'u1', email: 'meywd@msn.com', profile: { displayName: 'Mahmoud Darwish', displayNameLocalized: { en: 'Mahmoud Darwish' } } };
   it('remembers real names only, never the email', () => {
     const k = rememberNames({}, owner);
     expect(k).toEqual({ u1: { en: 'Mahmoud Darwish', ar: 'Mahmoud Darwish' } });
     expect(rememberNames({}, { sub: 'u2', email: 'x@y', name: 'x@y', profile: null })).toEqual({});
   });
-  it('rows: remembered name in the page language, then auth name, then email', () => {
+  it('rows: the remembered name in the page language, else the email', () => {
     const k = { u2: { en: 'Test', ar: 'تجربة' } };
-    expect(rowLabel({ userId: 'u2', name: null, email: 't@x' }, k, 'ar')).toBe('تجربة');
-    expect(rowLabel({ userId: 'u3', name: 'Auth Name', email: 't@x' }, k, 'en')).toBe('Auth Name');
-    expect(rowLabel({ userId: 'u4', name: null, email: 't@x' }, k, 'en')).toBe('t@x');
+    expect(rowLabel({ userId: 'u2', email: 't@x' }, k, 'ar')).toBe('تجربة');
+    expect(rowLabel({ userId: 'u4', email: 't@x' }, k, 'en')).toBe('t@x');
   });
   it('a bad or oversized store is safe', () => {
     expect(parseKnownNames('nope')).toEqual({});

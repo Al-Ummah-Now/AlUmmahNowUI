@@ -36,7 +36,17 @@ export function seedItems(locale: 'en' | 'ar'): FeedItem[] {
   const ar = locale === 'ar';
   const items: FeedItem[] = [
     post(900, at(400), { title: ar ? 'مرحبًا بكم في الأمة الآن' : 'Welcome to Al Ummah Now', excerpt: ar ? 'ما الذي ستجده هنا.' : 'What you will find here.', locale }, true),
-    { ...video(10, at(1)), video: { kind: 'video', ref_id: 'feed-video-1', title_override: ar ? 'درس الأسبوع' : 'Lesson of the week', snapshot: { title: 'Lesson', thumbnail_url: null, channel_name: ar ? 'قناة العلم' : 'Knowledge channel' } } },
+    // As production stores it (CMS FEED_FORMAT 3): the video's plain channel name is English, the
+    // channel's names per language and the video's size travel in the snapshot
+    {
+      ...video(10, at(1)),
+      video: {
+        kind: 'video',
+        ref_id: 'feed-video-1',
+        title_override: ar ? 'درس الأسبوع' : 'Lesson of the week',
+        snapshot: { title: 'Lesson', thumbnail_url: null, channel_name: 'Knowledge channel', channel_names: { en: 'Knowledge channel', ar: 'قناة العلم' }, width: 1280, height: 720 },
+      },
+    },
     // A channel entry (docs/specs/WWW-PAGES.md D7): name, @handle and its three latest videos
     {
       ...video(11, at(2)),
@@ -58,8 +68,10 @@ export function seedItems(locale: 'en' | 'ar'): FeedItem[] {
       excerpt: ar ? 'شاهدهما هنا مباشرة.' : 'Watch both right here.',
       locale,
       videos: [
-        { kind: 'video', ref_id: 'body-video-1', snapshot: { title: ar ? 'المحاضرة الأولى' : 'First lecture', thumbnail_url: null, channel_name: null } },
+        // a vertical Short and a square video: the frame takes each one's shape
+        { kind: 'video', ref_id: 'body-video-1', snapshot: { title: ar ? 'المحاضرة الأولى' : 'First lecture', thumbnail_url: null, channel_name: null, width: 720, height: 1256 } },
         { kind: 'video', ref_id: 'body-video-2', snapshot: null },
+        { kind: 'video', ref_id: 'body-video-3', snapshot: { title: ar ? 'مقطع مربع' : 'Square clip', thumbnail_url: null, channel_name: null, width: 1080, height: 1080 } },
       ],
     }),
     post(30, at(26), {

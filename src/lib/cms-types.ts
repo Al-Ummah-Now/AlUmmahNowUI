@@ -161,6 +161,11 @@ export interface CuratedSnapshot {
   duration_seconds?: number | null;
   upload_date?: string | null;
   video_count?: number | null;
+  /** Videos (CMS FEED_FORMAT 3): the encoded size, for the player frame's shape. */
+  width?: number | null;
+  height?: number | null;
+  /** Videos (CMS FEED_FORMAT 3): their channel's name per language. */
+  channel_names?: Partial<Record<Locale, string>>;
 }
 
 export interface ChannelLatest { id: string; title: string; thumbnail_url: string | null; duration_seconds: number | null }

@@ -54,7 +54,7 @@ test.describe('home timeline', () => {
     test('inline video: poster first, the player loads only on a click', async ({ page }) => {
       await page.goto('/en/');
       const card = page.locator('li.tl-item', { hasText: 'Two new lectures' });
-      await expect(card.locator('.facade')).toHaveCount(2);
+      await expect(card.locator('.facade')).toHaveCount(3);
       await expect(page.locator('iframe')).toHaveCount(0);
       await card.getByRole('button', { name: 'Play: First lecture' }).click();
       const frame = card.locator('iframe.facade-iframe');

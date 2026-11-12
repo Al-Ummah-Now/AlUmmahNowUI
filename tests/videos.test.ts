@@ -141,3 +141,35 @@ describe('resolveCurated fan-out (audit UI-1)', () => {
     expect(logs.filter((l) => l.includes('budget'))).toHaveLength(20 - LIVE_LOOKUPS_MAX);
   });
 });
+
+describe('timeline video frame and channel name (2026-11-12)', () => {
+  it('frameShape: the nearest frame to the video, 16:9 when unknown', async () => {
+    const { frameShape } = await import('../src/lib/facade');
+    expect(frameShape(1280, 720)).toBe('ar-16x9');
+    expect(frameShape(427, 240)).toBe('ar-16x9');
+    expect(frameShape(720, 1256)).toBe('ar-9x16');
+    expect(frameShape(1080, 1920)).toBe('ar-9x16');
+    expect(frameShape(1080, 1080)).toBe('ar-1x1');
+    expect(frameShape(1080, 1350)).toBe('ar-4x5');
+    expect(frameShape(640, 480)).toBe('ar-4x3');
+    expect(frameShape(2560, 1080)).toBe('ar-21x9');
+    expect(frameShape(null, null)).toBe('ar-16x9');
+    expect(frameShape(0, 720)).toBe('ar-16x9');
+  });
+
+  it('the channel in the page language: its name there, else the plain name, else the other language', async () => {
+    const { localizeItem } = await import('../src/lib/videos');
+    const base = { kind: 'video' as const, id: 'v1', title: 'T', description: null, thumbnailUrl: null, handle: null, durationSeconds: null, uploadDate: null, videoCount: null };
+    const item = { ...base, channelName: 'Al Ummah Now', channelNames: { en: 'Al Ummah Now', ar: 'الأمة الآن' } };
+    expect(localizeItem(item, 'ar').channelName).toBe('الأمة الآن');
+    expect(localizeItem(item, 'en').channelName).toBe('Al Ummah Now');
+    expect(localizeItem({ ...item, channelNames: { en: 'Al Ummah Now' } }, 'ar').channelName).toBe('Al Ummah Now');
+    expect(localizeItem({ ...item, channelName: null, channelNames: { ar: 'الأمة الآن' } }, 'en').channelName).toBe('الأمة الآن');
+  });
+
+  it('snapshots carry the size and the channel names (videos only)', () => {
+    const snap = { title: 'T', thumbnail_url: null, channel_name: 'Al Ummah Now', channel_names: { en: 'Al Ummah Now', ar: 'الأمة الآن' }, width: 720, height: 1256 };
+    const v = snapshotItem({ id: 1, kind: 'video', ref_id: 'v1', title_override: null, snapshot: snap, sort: 0 } as CuratedVideo, Date.now(), true)!;
+    expect(v).toMatchObject({ width: 720, height: 1256, channelNames: { en: 'Al Ummah Now', ar: 'الأمة الآن' } });
+  });
+});

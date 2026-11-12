@@ -118,7 +118,6 @@ export async function readSession(request: Request, secret: string | undefined):
 export interface MeProfile {
   displayName: string | null;
   displayNameLocalized: Partial<Record<'en' | 'ar', string>>;
-  handle: string | null;
   avatarUrl: string | null;
 }
 
@@ -130,22 +129,35 @@ const joinName = (...parts: (string | null)[]) => parts.filter(Boolean).join(' '
 const locOf = (v: unknown, l: Loc) => (v && typeof v === 'object' ? str((v as Record<string, unknown>)[l], 120) : null);
 
 /**
- * The names the videos site's profile holds, resolved the way it shows them: a display name
- * when one is set, else first + last name (per language, then the plain fields). In production
- * most profiles have only first/last names (displayName is ""), so both are needed.
+ * The name a user is shown by, the platform's one rule (AlUmmahNow shared-types
+ * `resolveDisplayName`, owner rule 2026-11-12): the display name in `locale`, the plain display
+ * name, first + last name (in `locale` when localized, else the plain ones), then a name in the
+ * other language. Never the email (the caller falls back to it) and never a handle (handles
+ * belong to channels). '' when the profile has no name.
  */
+export function resolveDisplayName(p: Record<string, unknown>, locale: Loc): string {
+  const full = (l: Loc | null) =>
+    joinName(l ? locOf(p.firstNameLocalized, l) : str(p.firstName, 60), l ? locOf(p.lastNameLocalized, l) : str(p.lastName, 60));
+  const other: Loc = locale === 'en' ? 'ar' : 'en';
+  return (
+    locOf(p.displayNameLocalized, locale) ??
+    str(p.displayName, 120) ??
+    full(locale) ??
+    full(null) ??
+    locOf(p.displayNameLocalized, other) ??
+    full(other) ??
+    ''
+  );
+}
+
+/** The user's own profile as the session keeps it: the resolved name per language, and the avatar. */
 export function profileNames(p: Record<string, unknown>): SessionProfile {
   const names: SessionProfile['names'] = {};
   for (const l of LOCS) {
-    const n = locOf(p.displayNameLocalized, l) ?? joinName(locOf(p.firstNameLocalized, l), locOf(p.lastNameLocalized, l));
+    const n = resolveDisplayName(p, l);
     if (n) names[l] = n;
   }
-  return {
-    names,
-    name: str(p.displayName, 120) ?? joinName(str(p.firstName, 60), str(p.lastName, 60)),
-    handle: str(p.userName, 60)?.replace(/^@+/, '') || null,
-    avatarUrl: normalizeImageUrl(str(p.avatarUrl, 500)),
-  };
+  return { names, name: names.en ?? names.ar ?? null, avatarUrl: normalizeImageUrl(str(p.avatarUrl, 500)) };
 }
 
 /** GET {VIDEOS_API}/api/profile with the user's access token (the full view, incl. first/last name). */
@@ -192,9 +204,8 @@ export async function fetchProfile(sub: string, cfg: Config, fetchImpl: typeof f
       if (v) displayNameLocalized[l] = v;
     }
     return {
-      displayName: str(p.displayName, 120),
+      displayName: str(p.displayName, 120) ?? str(p.resolvedDisplayName, 120),
       displayNameLocalized,
-      handle: str(p.userName, 60)?.replace(/^@+/, '') || null,
       avatarUrl: normalizeImageUrl(str(p.avatarUrl, 500)),
     };
   } catch {
@@ -216,7 +227,6 @@ export function mergeProfile(own: SessionProfile | null, pub: MeProfile | null):
   return {
     displayName: pub?.displayName ?? own?.name ?? null,
     displayNameLocalized,
-    handle: pub?.handle ?? own?.handle ?? null,
     avatarUrl: pub?.avatarUrl ?? own?.avatarUrl ?? null,
   };
 }
@@ -229,7 +239,6 @@ export async function me(request: Request, deps: AuthDeps): Promise<Response> {
         signedIn: true,
         sub: s.sub,
         name: s.name ?? s.email,
-        authName: s.name,
         email: s.email,
         roles: s.roles,
         canEditContent: canEditContent(s.roles),
