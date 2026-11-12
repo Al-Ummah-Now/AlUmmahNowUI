@@ -28,11 +28,13 @@ export const parseMode = (v: unknown): Mode => (isMode(v) ? v : 'system');
 
 /**
  * Inline <head> script. Also marks the page as scripted (data-js) so the theme control,
- * which needs JS, only shows when it can work. Keep it tiny and ES5; any change needs a
+ * which needs JS, only shows when it can work, and marks a signed-in browser (data-signed-in,
+ * from the `aun_www_si` hint cookie, src/lib/auth.ts) so the cached HTML shows the signed-in
+ * hero and header from the first paint. Keep it tiny and ES5; any change needs a
  * new MODE_SCRIPT_HASH (the unit test prints it).
  */
 export const MODE_SCRIPT =
-  '(function(){var d=document.documentElement;d.setAttribute("data-js","");try{var m=localStorage.getItem("aun_mode");if(m==="light"||m==="dark")d.setAttribute("data-mode",m)}catch(e){}})();';
+  '(function(){var d=document.documentElement;d.setAttribute("data-js","");try{var m=localStorage.getItem("aun_mode");if(m==="light"||m==="dark")d.setAttribute("data-mode",m)}catch(e){}if(/(?:^|; )aun_www_si=1/.test(document.cookie))d.setAttribute("data-signed-in","")})();';
 
 /** CSP source for MODE_SCRIPT: 'sha256-<base64>'. */
-export const MODE_SCRIPT_HASH = "'sha256-G9ckqte957DoMW1eHPIgDRmq0td7ikw4uMApZmt2XZs='";
+export const MODE_SCRIPT_HASH = "'sha256-RK8pQJM7hmwo+yL9x1n282dJU8o1vsp5dJp9EDX026U='";

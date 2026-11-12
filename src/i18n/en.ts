@@ -64,6 +64,7 @@ export const en = {
     heroBody: 'Lessons, lectures and reminders from scholars and creators you can trust, in Arabic and English. Watch, follow channels, and keep learning with one account.',
     watchCta: 'Watch videos',
     profileCta: 'Create your account',
+    libraryCta: 'Your library',
   },
   apps: {
     videosTitle: 'Videos',

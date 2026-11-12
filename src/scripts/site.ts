@@ -21,19 +21,38 @@ import {
   accountLabel,
   accountsResult,
   decide,
+  displayLabel,
   loginHref,
   menuAccounts,
   shouldFetchAccounts,
   type AccountsResult,
   type AuthAccount,
+  type MeProfileView,
 } from '../lib/account-sync';
 
 interface Me {
   signedIn: boolean;
   sub?: string | null;
   name?: string | null;
+  authName?: string | null;
   email?: string | null;
   canEditContent?: boolean;
+  profile?: (MeProfileView & { avatarUrl?: string | null }) | null;
+}
+
+/**
+ * The signed-in hint (src/lib/auth.ts SIGNED_IN_HINT): the head script set <html data-signed-in>
+ * from it before first paint; /auth/me is the truth, so correct both here.
+ */
+const HINT = 'aun_www_si';
+function setSignedIn(on: boolean) {
+  const html = document.documentElement;
+  if (on) html.setAttribute('data-signed-in', '');
+  else html.removeAttribute('data-signed-in');
+  const has = /(?:^|; )aun_www_si=1/.test(document.cookie);
+  if (on === has) return;
+  const secure = location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = on ? `${HINT}=1; Path=/; Max-Age=28800; SameSite=Lax${secure}` : `${HINT}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
 }
 
 /** sessionStorage that never throws (private mode, blocked storage → ok=false). */
@@ -121,9 +140,16 @@ function buildMenu(root: HTMLElement, me: Me, result: AccountsResult, focusButto
   const authUrl = d.authUrl ?? '';
   const { accounts, fromAuth } = menuAccounts(result, me);
   const current = accounts.find((a) => a.isActive) ?? accounts[0]!;
-  const name = (me.name || '').trim() || accountLabel(current);
+  const name = displayLabel(me, d.locale ?? 'en') || accountLabel(current);
+  const labelOf = (a: AuthAccount) => (a.isActive && (!me.sub || a.userId === me.sub) ? name : accountLabel(a));
   const button = el('button', { type: 'button', class: 'account-button', 'aria-expanded': 'false', 'aria-controls': 'account-menu' });
-  const label = el('span', {}, name);
+  const avatar = me.profile?.avatarUrl;
+  if (avatar) {
+    const img = el('img', { class: 'account-avatar', src: avatar, alt: '', width: '24', height: '24', decoding: 'async', referrerpolicy: 'no-referrer' });
+    img.addEventListener('error', () => img.remove(), { once: true });
+    button.append(img);
+  }
+  const label = el('span', { class: 'account-label', dir: 'auto' }, name);
   button.append(el('span', { class: 'visually-hidden' }, `${d.labelMenu}: `), label);
   const caret = document.getElementById('caret-icon') as HTMLTemplateElement | null;
   if (caret) button.append(caret.content.cloneNode(true));
@@ -158,7 +184,7 @@ function buildMenu(root: HTMLElement, me: Me, result: AccountsResult, focusButto
   };
 
   const signOutOf = async (a: AuthAccount) => {
-    const text = accountLabel(a);
+    const text = labelOf(a);
     const confirmed = await ask({
       title: fill(d.labelConfirmSignOutOfTitle, text),
       body: fill(d.labelConfirmSignOutOfBody, text),
@@ -183,7 +209,7 @@ function buildMenu(root: HTMLElement, me: Me, result: AccountsResult, focusButto
     const list = el('ul', { class: 'account-list', 'aria-labelledby': 'account-list-label' });
     for (const a of accounts) {
       const row = el('li', { class: 'account-row' });
-      const text = accountLabel(a);
+      const text = labelOf(a);
       const who = el(a.isActive ? 'div' : 'button', a.isActive ? { class: 'account-entry', 'aria-current': 'true' } : { type: 'button', class: 'account-entry', 'aria-label': fill(d.labelSwitchTo, text) });
       who.append(el('span', { class: 'account-name', dir: 'auto' }, text));
       if (a.email && a.email !== text) who.append(el('span', { class: 'account-email', dir: 'auto' }, a.email));
@@ -288,6 +314,7 @@ async function initAccount() {
   } catch {
     // treat as signed out
   }
+  setSignedIn(me.signedIn);
   // Signed in now: if this session later ends (8 h), the next page may probe again
   if (me.signedIn) tabStore.remove(PROBE_KEY);
   const probed = tabStore.get(PROBE_KEY);

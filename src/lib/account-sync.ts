@@ -122,3 +122,27 @@ export function menuAccounts(
     fromAuth: false,
   };
 }
+
+export interface MeProfileView {
+  displayName?: string | null;
+  displayNameLocalized?: Partial<Record<string, string>> | null;
+  handle?: string | null;
+}
+
+/**
+ * The header's name for the signed-in account, as the videos site shows it: the profile's
+ * display name in the page language, its plain display name, the other language's, the name
+ * auth has, the @handle, and only then the email.
+ */
+export function displayLabel(
+  me: { authName?: string | null; name?: string | null; email?: string | null; sub?: string | null; profile?: MeProfileView | null },
+  locale: string,
+): string {
+  const p = me.profile ?? {};
+  const loc = p.displayNameLocalized ?? {};
+  const other = locale === 'ar' ? 'en' : 'ar';
+  const authName = me.authName !== undefined ? me.authName : me.name && me.name !== me.email ? me.name : null;
+  const pick = [loc[locale], p.displayName, loc[other], authName, p.handle ? `@${p.handle}` : null, me.email, me.name, me.sub];
+  for (const v of pick) if (typeof v === 'string' && v.trim()) return v.trim();
+  return '';
+}

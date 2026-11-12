@@ -160,3 +160,12 @@ export function cookie(name: string, value: string, maxAge: number, path = '/'):
   return `${name}=${value}; Path=${path}; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Lax`;
 }
 export const clearCookie = (name: string) => cookie(name, '', 0);
+
+/**
+ * Not a secret, readable by scripts: "this browser has a www session". The pre-paint head
+ * script (theme-mode.ts) turns it into <html data-signed-in>, so the edge-cached HTML (the
+ * same for every visitor) shows the signed-in hero and header from the first paint. Set with
+ * the session, cleared on sign-out; site.ts corrects it from /auth/me on every page.
+ */
+export const SIGNED_IN_HINT = 'aun_www_si';
+export const hintCookie = (on: boolean) => `${SIGNED_IN_HINT}=${on ? '1' : ''}; Path=/; Max-Age=${on ? SESSION_TTL_SEC : 0}; Secure; SameSite=Lax`;
