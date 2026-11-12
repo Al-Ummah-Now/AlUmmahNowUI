@@ -35,7 +35,8 @@ export function frameShape(width: number | null | undefined, height: number | nu
 export function facadeHtml(item: VideoItem, opts: { videosWebUrl: string; lang: Locale; headingLevel?: 2 | 3; caption?: boolean; className?: string }): string {
   if (item.kind === 'channel') throw new Error('channels have no embed');
   const t = strings(opts.lang);
-  const src = embedUrl(opts.videosWebUrl, { kind: item.kind, id: item.id, lang: opts.lang, autoplay: true });
+  // The iframe is inserted only on the viewer's click (scripts/facade.ts): a gesture start, with sound
+  const src = embedUrl(opts.videosWebUrl, { kind: item.kind, id: item.id, lang: opts.lang, autoplay: true, gesture: true });
   const watch = watchUrl(opts.videosWebUrl, { kind: item.kind, id: item.id, lang: opts.lang });
   const duration = clockDuration(item.durationSeconds);
   const h = `h${opts.headingLevel ?? 3}`;

@@ -134,6 +134,10 @@ describe('header name', () => {
     expect(displayLabel({ email, profile: { displayName: 'Plain', displayNameLocalized: { en: 'English' } } }, 'ar')).toBe('Plain');
     expect(displayLabel({ email, profile: { displayNameLocalized: { en: 'Mahmoud' } } }, 'ar')).toBe('Mahmoud');
   });
+  it('auth\'s name before the email (not the email echoed in name)', () => {
+    expect(displayLabel({ email, name: 'Amina', profile: null }, 'en')).toBe('Amina');
+    expect(displayLabel({ email, name: email, profile: null }, 'en')).toBe(email);
+  });
   it('the email only when the profile has no name; never a handle', () => {
     expect(displayLabel({ email, name: email, profile: { displayName: '' } }, 'ar')).toBe(email);
     expect(displayLabel({ email, name: email, profile: null }, 'en')).toBe(email);
@@ -148,10 +152,11 @@ describe('switcher names', () => {
     expect(k).toEqual({ u1: { en: 'Mahmoud Darwish', ar: 'Mahmoud Darwish' } });
     expect(rememberNames({}, { sub: 'u2', email: 'x@y', name: 'x@y', profile: null })).toEqual({});
   });
-  it('rows: the remembered name in the page language, else the email', () => {
+  it('rows: the remembered name in the page language, then auth\'s name, else the email', () => {
     const k = { u2: { en: 'Test', ar: 'تجربة' } };
-    expect(rowLabel({ userId: 'u2', email: 't@x' }, k, 'ar')).toBe('تجربة');
-    expect(rowLabel({ userId: 'u4', email: 't@x' }, k, 'en')).toBe('t@x');
+    expect(rowLabel({ userId: 'u2', name: null, email: 't@x' }, k, 'ar')).toBe('تجربة');
+    expect(rowLabel({ userId: 'u3', name: 'Bilal', email: 't@x' }, k, 'en')).toBe('Bilal');
+    expect(rowLabel({ userId: 'u4', name: null, email: 't@x' }, k, 'en')).toBe('t@x');
   });
   it('a bad or oversized store is safe', () => {
     expect(parseKnownNames('nope')).toEqual({});

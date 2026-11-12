@@ -131,7 +131,7 @@ export interface MeProfileView {
 /**
  * The header's name for the signed-in account (owner's order, 2026-11-12): the profile's display
  * name in the page language, its plain display name (already first + last when that is all the
- * profile has), a name in the other language, and only then the email. Handles belong to channels, never to the user's name.
+ * profile has), a name in the other language, auth's name for the user, and only then the email. Handles belong to channels, never to the user's name.
  */
 export function displayLabel(
   me: { name?: string | null; email?: string | null; sub?: string | null; profile?: MeProfileView | null },
@@ -139,7 +139,9 @@ export function displayLabel(
 ): string {
   const p = me.profile ?? {};
   const other = locale === 'ar' ? 'en' : 'ar';
-  const pick = [p.displayNameLocalized?.[locale], p.displayName, p.displayNameLocalized?.[other], me.email, me.name, me.sub];
+  // auth's own name for the user (a name, never a handle); /auth/me sends the email in `name` when there is none
+  const authName = me.name && me.name !== me.email ? me.name : null;
+  const pick = [p.displayNameLocalized?.[locale], p.displayName, p.displayNameLocalized?.[other], authName, me.email, me.sub];
   for (const v of pick) if (typeof v === 'string' && v.trim()) return v.trim();
   return '';
 }
@@ -186,7 +188,7 @@ export function rememberNames(known: KnownNames, me: Parameters<typeof displayLa
   return Object.fromEntries(rest.slice(-NAMES_MAX));
 }
 
-/** A switcher row's name: the remembered profile name in the page language, else the email. */
-export function rowLabel(a: Pick<AuthAccount, 'email' | 'userId'>, known: KnownNames, locale: string): string {
-  return known[a.userId]?.[locale as 'en' | 'ar'] || a.email || a.userId;
+/** A switcher row's name: the remembered profile name in the page language, auth's name, else the email. */
+export function rowLabel(a: Pick<AuthAccount, 'name' | 'email' | 'userId'>, known: KnownNames, locale: string): string {
+  return known[a.userId]?.[locale as 'en' | 'ar'] || accountLabel(a);
 }
