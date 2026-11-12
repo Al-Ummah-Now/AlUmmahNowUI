@@ -22,6 +22,10 @@ import {
   accountsResult,
   decide,
   displayLabel,
+  NAMES_KEY,
+  parseKnownNames,
+  rememberNames,
+  rowLabel,
   loginHref,
   menuAccounts,
   shouldFetchAccounts,
@@ -91,6 +95,22 @@ const tabStore = (() => {
   };
 })();
 
+/** Remembered account names (../lib/account-sync.ts NAMES_KEY); storage may be blocked. */
+function readKnownNames() {
+  try {
+    return parseKnownNames(localStorage.getItem(NAMES_KEY));
+  } catch {
+    return {};
+  }
+}
+function writeKnownNames(v: ReturnType<typeof parseKnownNames>) {
+  try {
+    localStorage.setItem(NAMES_KEY, JSON.stringify(v));
+  } catch {
+    // ignore
+  }
+}
+
 const herePath = () => `${location.pathname}${location.search}`;
 const fill = (template: string | undefined, name: string) => (template ?? '{name}').replace('{name}', name);
 
@@ -141,7 +161,8 @@ function buildMenu(root: HTMLElement, me: Me, result: AccountsResult, focusButto
   const { accounts, fromAuth } = menuAccounts(result, me);
   const current = accounts.find((a) => a.isActive) ?? accounts[0]!;
   const name = displayLabel(me, d.locale ?? 'en') || accountLabel(current);
-  const labelOf = (a: AuthAccount) => (a.isActive && (!me.sub || a.userId === me.sub) ? name : accountLabel(a));
+  const known = readKnownNames();
+  const labelOf = (a: AuthAccount) => (a.isActive && (!me.sub || a.userId === me.sub) ? name : rowLabel(a, known, d.locale ?? 'en'));
   const button = el('button', { type: 'button', class: 'account-button', 'aria-expanded': 'false', 'aria-controls': 'account-menu' });
   const avatar = me.profile?.avatarUrl;
   if (avatar) {
@@ -315,6 +336,7 @@ async function initAccount() {
     // treat as signed out
   }
   setSignedIn(me.signedIn);
+  if (me.signedIn) writeKnownNames(rememberNames(readKnownNames(), me));
   // Signed in now: if this session later ends (8 h), the next page may probe again
   if (me.signedIn) tabStore.remove(PROBE_KEY);
   const probed = tabStore.get(PROBE_KEY);

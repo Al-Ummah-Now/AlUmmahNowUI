@@ -7,6 +7,7 @@ import {
   LOGIN_TTL_SEC,
   SESSION_COOKIE,
   SESSION_TTL_SEC,
+  SESSION_VERSION,
   authorizeUrl,
   canEditContent,
   clearCookie,
@@ -21,6 +22,7 @@ import {
   tokenRequestBody,
   type LoginState,
   type Session,
+  type SessionProfile,
 } from './auth';
 import type { Config } from './env';
 import { normalizeImageUrl } from './images';
@@ -99,14 +101,17 @@ export async function callback(request: Request, deps: AuthDeps): Promise<Respon
     console.warn(JSON.stringify({ msg: 'sign-in: token rejected', error: String(error) }));
     return failed();
   }
+  // The user's own profile (names are not in the public profile view): best effort, never blocks sign-in
+  const profile = await fetchOwnProfile(tokenJson.access_token, deps.cfg, deps.fetchImpl);
   const exp = Math.floor((deps.now?.() ?? Date.now()) / 1000) + SESSION_TTL_SEC;
-  const session = await seal(deps.secret, { ...fields, exp } satisfies Session);
+  const session = await seal(deps.secret, { ...fields, exp, v: SESSION_VERSION, profile } satisfies Session);
   return redirect(login.returnTo, 302, {}, [clearLogin, cookie(SESSION_COOKIE, session, SESSION_TTL_SEC), hintCookie(true)]);
 }
 
 export async function readSession(request: Request, secret: string | undefined): Promise<Session | null> {
   if (!isValidSecret(secret)) return null;
-  return unseal<Session>(secret, readCookie(request.headers.get('Cookie'), SESSION_COOKIE));
+  const s = await unseal<Session>(secret, readCookie(request.headers.get('Cookie'), SESSION_COOKIE));
+  return s && s.v === SESSION_VERSION ? s : null;
 }
 
 /** The public profile fields the header shows (the videos site's profile, same record). */
@@ -118,6 +123,50 @@ export interface MeProfile {
 }
 
 const str = (v: unknown, max: number) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
+
+type Loc = 'en' | 'ar';
+const LOCS: readonly Loc[] = ['en', 'ar'];
+const joinName = (...parts: (string | null)[]) => parts.filter(Boolean).join(' ').trim().slice(0, 120) || null;
+const locOf = (v: unknown, l: Loc) => (v && typeof v === 'object' ? str((v as Record<string, unknown>)[l], 120) : null);
+
+/**
+ * The names the videos site's profile holds, resolved the way it shows them: a display name
+ * when one is set, else first + last name (per language, then the plain fields). In production
+ * most profiles have only first/last names (displayName is ""), so both are needed.
+ */
+export function profileNames(p: Record<string, unknown>): SessionProfile {
+  const names: SessionProfile['names'] = {};
+  for (const l of LOCS) {
+    const n = locOf(p.displayNameLocalized, l) ?? joinName(locOf(p.firstNameLocalized, l), locOf(p.lastNameLocalized, l));
+    if (n) names[l] = n;
+  }
+  return {
+    names,
+    name: str(p.displayName, 120) ?? joinName(str(p.firstName, 60), str(p.lastName, 60)),
+    handle: str(p.userName, 60)?.replace(/^@+/, '') || null,
+    avatarUrl: normalizeImageUrl(str(p.avatarUrl, 500)),
+  };
+}
+
+/** GET {VIDEOS_API}/api/profile with the user's access token (the full view, incl. first/last name). */
+export async function fetchOwnProfile(accessToken: string, cfg: Config, fetchImpl: typeof fetch = fetch): Promise<SessionProfile | null> {
+  try {
+    const res = await fetchImpl(`${cfg.videosApiUrl}/api/profile`, {
+      headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(2500),
+    });
+    if (!res.ok) {
+      console.warn(JSON.stringify({ msg: 'sign-in: own profile unavailable', status: res.status }));
+      return null;
+    }
+    const body = (await res.json()) as { result?: { profile?: unknown } } | null;
+    const p = body?.result?.profile;
+    return p && typeof p === 'object' ? profileNames(p as Record<string, unknown>) : null;
+  } catch (error) {
+    console.warn(JSON.stringify({ msg: 'sign-in: own profile failed', error: String(error) }));
+    return null;
+  }
+}
 
 /**
  * The signed-in user's public profile from the videos API (GET /api/profiles/:id, public; the
@@ -153,9 +202,28 @@ export async function fetchProfile(sub: string, cfg: Config, fetchImpl: typeof f
   }
 }
 
+/**
+ * The header's profile: the public view is fresh (60 s) but has no first/last name; the session
+ * has the names from sign-in. Public values win when set (a display name or avatar changed since).
+ */
+export function mergeProfile(own: SessionProfile | null, pub: MeProfile | null): MeProfile | null {
+  if (!own && !pub) return null;
+  const displayNameLocalized: MeProfile['displayNameLocalized'] = {};
+  for (const l of LOCS) {
+    const n = pub?.displayNameLocalized[l] ?? own?.names[l];
+    if (n) displayNameLocalized[l] = n;
+  }
+  return {
+    displayName: pub?.displayName ?? own?.name ?? null,
+    displayNameLocalized,
+    handle: pub?.handle ?? own?.handle ?? null,
+    avatarUrl: pub?.avatarUrl ?? own?.avatarUrl ?? null,
+  };
+}
+
 export async function me(request: Request, deps: AuthDeps): Promise<Response> {
   const s = await readSession(request, deps.secret);
-  const profile = s ? await fetchProfile(s.sub, deps.cfg, deps.fetchImpl) : null;
+  const profile = s ? mergeProfile(s.profile ?? null, await fetchProfile(s.sub, deps.cfg, deps.fetchImpl)) : null;
   const body = s
     ? {
         signedIn: true,

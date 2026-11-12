@@ -1,12 +1,25 @@
 import { SignJWT, exportJWK, generateKeyPair, createLocalJWKSet } from 'jose';
 import { describe, expect, it } from 'vitest';
 import { canEditContent, codeChallenge, normalizeRole, parsePrompt, safeReturnPath, sessionFromAccessToken, LOGIN_COOKIE, SESSION_COOKIE, SIGNED_IN_HINT } from '../src/lib/auth';
-import { callback, fetchProfile, login, logout, me } from '../src/lib/auth-routes';
+import { callback, fetchProfile, login, logout, me, profileNames } from '../src/lib/auth-routes';
 import { config } from '../src/lib/env';
 import { readCookie } from '../src/lib/locale';
 import { seal, unseal } from '../src/lib/session';
 
 const SECRET = 'a'.repeat(64);
+// The owner's production profile, 2026-11-12: names only in firstName/lastName, displayName empty
+const OWN_PROFILE = {
+  id: 'u1',
+  email: 'a@x',
+  displayName: '',
+  displayNameLocalized: { en: '', ar: '' },
+  firstName: 'Mahmoud',
+  firstNameLocalized: { en: 'Mahmoud', ar: '' },
+  lastName: 'Darwish',
+  lastNameLocalized: { en: 'Darwish', ar: '' },
+  avatarUrl: 'https://images.alummahnow.net/u1_avatar.jpeg',
+};
+const PUBLIC_PROFILE = { id: 'u1', displayName: '', displayNameLocalized: { en: '', ar: '' }, avatarUrl: 'https://images.alummahnow.net/u1_avatar.jpeg' };
 const cfg = config({ APP_ENV: 'qa', SITE_URL: 'https://www.qa.alummahnow.net', AUTH_URL: 'https://auth.qa.alummahnow.net', WWW_CLIENT_ID: 'ecda6f18-89cb-415c-b746-7e77184d75a2' });
 
 describe('return-path guard', () => {
@@ -129,16 +142,23 @@ describe('callback, me, logout', () => {
   it('exchanges the code with the verifier, sets an 8h session and returns', async () => {
     const { cookie, state } = await loginCookie();
     let body = '';
+    let ownProfileAuth: string | null = null;
     const res = await callback(new Request(`https://www.qa.alummahnow.net/auth/callback?code=c1&state=${state}`, { headers: { Cookie: cookie } }), {
       cfg,
       secret: SECRET,
-      fetchImpl: (async (_url: string, init: RequestInit) => {
+      fetchImpl: (async (url: string, init: RequestInit) => {
+        if (url === `${cfg.videosApiUrl}/api/profile`) {
+          ownProfileAuth = new Headers(init.headers).get('Authorization');
+          return Response.json({ success: true, result: { profile: OWN_PROFILE } });
+        }
         body = String(init.body);
         return new Response(JSON.stringify({ access_token: 'tok' }));
       }) as never,
       verify: async () => ({ sub: 'u1', name: 'Amina', email: 'a@x', roles: ['Admin'] }),
     });
     expect(res.status).toBe(302);
+    // the user's own profile is read with their access token at sign-in
+    expect(ownProfileAuth).toBe('Bearer tok');
     expect(res.headers.get('Location')).toBe('/en/articles/');
     const params = new URLSearchParams(body);
     expect(params.get('grant_type')).toBe('authorization_code');
@@ -156,15 +176,14 @@ describe('callback, me, logout', () => {
     expect(hint).toContain('Max-Age=28800');
     expect(hint).not.toContain('HttpOnly');
 
+    // The public view (what /auth/me can read on every page) has no first/last name: production's
+    // shape for the owner, 2026-11-12 (displayName "", names only in firstName/lastName)
     const profileUrls: string[] = [];
-    const profileFetch = (async (url: string) => {
+    const publicFetch = (async (url: string) => {
       profileUrls.push(url);
-      return Response.json({
-        success: true,
-        result: { profile: { id: 'u1', userName: '@amina', displayName: 'Amina K', displayNameLocalized: { en: 'Amina K', ar: 'أمينة' }, avatarUrl: 'https://images.alummahnow.net/u1_avatar.jpeg' } },
-      });
+      return Response.json({ success: true, result: { profile: PUBLIC_PROFILE } });
     }) as never;
-    const meRes = await me(new Request('https://www.qa.alummahnow.net/auth/me', { headers: { Cookie: session.split(';')[0]! } }), { cfg, secret: SECRET, fetchImpl: profileFetch });
+    const meRes = await me(new Request('https://www.qa.alummahnow.net/auth/me', { headers: { Cookie: session.split(';')[0]! } }), { cfg, secret: SECRET, fetchImpl: publicFetch });
     expect(meRes.headers.get('Cache-Control')).toBe('private, no-store');
     expect(profileUrls).toEqual([`${cfg.videosApiUrl}/api/profiles/u1`]);
     expect(await meRes.json()).toEqual({
@@ -175,8 +194,14 @@ describe('callback, me, logout', () => {
       email: 'a@x',
       roles: ['Admin'],
       canEditContent: true,
-      profile: { displayName: 'Amina K', displayNameLocalized: { en: 'Amina K', ar: 'أمينة' }, handle: 'amina', avatarUrl: 'https://images.alummahnow.net/u1_avatar.jpeg' },
+      profile: { displayName: 'Mahmoud Darwish', displayNameLocalized: { en: 'Mahmoud Darwish' }, handle: null, avatarUrl: 'https://images.alummahnow.net/u1_avatar.jpeg' },
     });
+  });
+
+  it('a session sealed before profiles (no version) is no session: the header renews it silently', async () => {
+    const old = await seal(SECRET, { sub: 'u1', name: null, email: 'a@x', roles: [], exp: Math.floor(Date.now() / 1000) + 600 });
+    const res = await me(new Request('https://www.qa.alummahnow.net/auth/me', { headers: { Cookie: `${SESSION_COOKIE}=${old}` } }), { cfg, secret: SECRET });
+    expect(await res.json()).toEqual({ signedIn: false });
   });
 
   it('rejects a state mismatch by restarting sign-in', async () => {
@@ -244,6 +269,13 @@ describe('callback, me, logout', () => {
     expect(ok.headers.get('Location')).toBe('https://auth.qa.alummahnow.net/logout?return=https%3A%2F%2Fwww.qa.alummahnow.net%2Far%2F');
     expect(ok.headers.get('Set-Cookie')).toContain(`${SESSION_COOKIE}=; Path=/; Max-Age=0`);
     expect(ok.headers.getSetCookie()).toContain(`${SIGNED_IN_HINT}=; Path=/; Max-Age=0; Secure; SameSite=Lax`);
+  });
+
+  it('profile names: display name per language, else first + last name; handle without @', () => {
+    expect(profileNames(OWN_PROFILE)).toEqual({ names: { en: 'Mahmoud Darwish' }, name: 'Mahmoud Darwish', handle: null, avatarUrl: OWN_PROFILE.avatarUrl });
+    expect(
+      profileNames({ displayName: 'Abu Bakr', displayNameLocalized: { ar: 'أبو بكر' }, firstName: 'A', firstNameLocalized: { en: 'A' }, lastName: 'B', userName: '@abubakr', avatarUrl: '/avatar.png' }),
+    ).toEqual({ names: { en: 'A', ar: 'أبو بكر' }, name: 'Abu Bakr', handle: 'abubakr', avatarUrl: null });
   });
 
   it('me: signed out never asks the videos API; a missing or failing profile is null', async () => {

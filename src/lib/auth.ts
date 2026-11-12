@@ -16,12 +16,30 @@ export const LOGIN_COOKIE = '__Host-aun_www_login';
 export const SESSION_TTL_SEC = 8 * 60 * 60;
 export const LOGIN_TTL_SEC = 10 * 60;
 
+/** The user's own videos profile, read once at sign-in with their access token (auth-routes.ts). */
+export interface SessionProfile {
+  /** Display name per language: displayNameLocalized, else first + last name in that language. */
+  names: Partial<Record<'en' | 'ar', string>>;
+  /** displayName, else first + last name. */
+  name: string | null;
+  handle: string | null;
+  avatarUrl: string | null;
+}
+
+/**
+ * Sessions sealed by older code lack fields the header needs (v2: `profile`). readSession treats
+ * any other version as no session; the header's silent sign-in then renews it without a click.
+ */
+export const SESSION_VERSION = 2;
+
 export interface Session {
   sub: string;
   name: string | null;
   email: string | null;
   roles: string[];
   exp: number;
+  v?: number;
+  profile?: SessionProfile | null;
 }
 
 export interface LoginState {
