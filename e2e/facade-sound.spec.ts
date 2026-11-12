@@ -21,6 +21,8 @@ function tone(): Buffer {
 }
 
 test('a click on a timeline video gives the embed sound (Chromium); WebKit falls back', async ({ page, browserName }) => {
+  // The seeded local FEED KV ("Lesson of the week"): a deployed site (WWW_URL) has other content
+  test.skip(!!process.env.WWW_URL, 'needs the seeded local FEED KV');
   const seen: string[] = [];
   await page.route('**/embed/v/**', (r) => {
     seen.push(r.request().url());

@@ -30,7 +30,8 @@ const CASES = [
 ] as const;
 
 test.describe('timeline videos: shape, dark media surface, embed fit, channel name', () => {
-  test.skip(IS_PRODUCTION, 'uses the seeded feed and the non-production ?theme= preview');
+  // The seeded local FEED KV (e2e/seed-feed.ts): a deployed site (WWW_URL: stage, QA, production) has other content
+  test.skip(!!process.env.WWW_URL || IS_PRODUCTION, 'needs the seeded local FEED KV and the non-production ?theme= preview');
 
   for (const l of LOCALES) {
     test(`every theme, light and dark (${l})`, async ({ page }) => {
