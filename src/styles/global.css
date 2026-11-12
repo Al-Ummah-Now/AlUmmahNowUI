@@ -1156,6 +1156,21 @@ main {
   background: var(--color-night) url('/brand/pattern.svg');
   background-size: 96px 96px;
 }
+/* the frame takes the video's shape (lib/facade.ts frameShape); tall shapes stay within the screen */
+.facade-frame.ar-21x9 { aspect-ratio: 21 / 9; }
+.facade-frame.ar-4x3 { aspect-ratio: 4 / 3; }
+.facade-frame.ar-1x1 { aspect-ratio: 1; }
+.facade-frame.ar-4x5 { aspect-ratio: 4 / 5; }
+.facade-frame.ar-9x16 { aspect-ratio: 9 / 16; }
+.facade-frame.ar-1x1,
+.facade-frame.ar-4x5,
+.facade-frame.ar-9x16 {
+  --frame-max-h: min(80vh, 40rem);
+  margin-inline: auto;
+}
+.facade-frame.ar-1x1 { width: min(100%, var(--frame-max-h)); }
+.facade-frame.ar-4x5 { width: min(100%, calc(var(--frame-max-h) * 4 / 5)); }
+.facade-frame.ar-9x16 { width: min(100%, calc(var(--frame-max-h) * 9 / 16)); }
 .facade-thumb {
   position: absolute;
   inset: 0;

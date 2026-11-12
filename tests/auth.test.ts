@@ -1,7 +1,7 @@
 import { SignJWT, exportJWK, generateKeyPair, createLocalJWKSet } from 'jose';
 import { describe, expect, it } from 'vitest';
 import { canEditContent, codeChallenge, normalizeRole, parsePrompt, safeReturnPath, sessionFromAccessToken, LOGIN_COOKIE, SESSION_COOKIE, SIGNED_IN_HINT } from '../src/lib/auth';
-import { callback, fetchProfile, login, logout, me, profileNames } from '../src/lib/auth-routes';
+import { callback, fetchProfile, login, logout, me, profileNames, resolveDisplayName } from '../src/lib/auth-routes';
 import { config } from '../src/lib/env';
 import { readCookie } from '../src/lib/locale';
 import { seal, unseal } from '../src/lib/session';
@@ -190,11 +190,11 @@ describe('callback, me, logout', () => {
       signedIn: true,
       sub: 'u1',
       name: 'Amina',
-      authName: 'Amina',
       email: 'a@x',
       roles: ['Admin'],
       canEditContent: true,
-      profile: { displayName: 'Mahmoud Darwish', displayNameLocalized: { en: 'Mahmoud Darwish' }, handle: null, avatarUrl: 'https://images.alummahnow.net/u1_avatar.jpeg' },
+      // the owner's English-only first/last name resolves on Arabic pages too (another language's name before the email)
+      profile: { displayName: 'Mahmoud Darwish', displayNameLocalized: { en: 'Mahmoud Darwish', ar: 'Mahmoud Darwish' }, avatarUrl: 'https://images.alummahnow.net/u1_avatar.jpeg' },
     });
   });
 
@@ -271,11 +271,18 @@ describe('callback, me, logout', () => {
     expect(ok.headers.getSetCookie()).toContain(`${SIGNED_IN_HINT}=; Path=/; Max-Age=0; Secure; SameSite=Lax`);
   });
 
-  it('profile names: display name per language, else first + last name; handle without @', () => {
-    expect(profileNames(OWN_PROFILE)).toEqual({ names: { en: 'Mahmoud Darwish' }, name: 'Mahmoud Darwish', handle: null, avatarUrl: OWN_PROFILE.avatarUrl });
-    expect(
-      profileNames({ displayName: 'Abu Bakr', displayNameLocalized: { ar: 'أبو بكر' }, firstName: 'A', firstNameLocalized: { en: 'A' }, lastName: 'B', userName: '@abubakr', avatarUrl: '/avatar.png' }),
-    ).toEqual({ names: { en: 'A', ar: 'أبو بكر' }, name: 'Abu Bakr', handle: 'abubakr', avatarUrl: null });
+  it('names follow the platform rule: localized display, plain display, first + last, other language; no handle', () => {
+    expect(profileNames(OWN_PROFILE)).toEqual({ names: { en: 'Mahmoud Darwish', ar: 'Mahmoud Darwish' }, name: 'Mahmoud Darwish', avatarUrl: OWN_PROFILE.avatarUrl });
+    // plain display name beats first + last; the localized display name beats both
+    expect(resolveDisplayName({ displayName: 'Abu Bakr', displayNameLocalized: { ar: 'أبو بكر' }, firstName: 'A', lastName: 'B', userName: 'abubakr' }, 'en')).toBe('Abu Bakr');
+    expect(resolveDisplayName({ displayName: 'Abu Bakr', displayNameLocalized: { ar: 'أبو بكر' } }, 'ar')).toBe('أبو بكر');
+    // first + last in the page language before the plain ones
+    expect(resolveDisplayName({ firstName: 'Mahmoud', lastName: 'Darwish', firstNameLocalized: { ar: 'محمود' }, lastNameLocalized: { ar: 'درويش' } }, 'ar')).toBe('محمود درويش');
+    // Arabic-only profile on an English page
+    expect(resolveDisplayName({ displayNameLocalized: { ar: 'أمينة' } }, 'en')).toBe('أمينة');
+    // nothing: '' (the caller falls back to the email), never the handle
+    expect(resolveDisplayName({ displayName: '', userName: 'meywd', email: 'x@y' }, 'en')).toBe('');
+    expect(profileNames({ avatarUrl: '/avatar.png' })).toEqual({ names: {}, name: null, avatarUrl: null });
   });
 
   it('me: signed out never asks the videos API; a missing or failing profile is null', async () => {
@@ -291,7 +298,7 @@ describe('callback, me, logout', () => {
     expect(await fetchProfile('u1', cfg, (async () => { throw new Error('offline'); }) as never)).toBeNull();
     // blank names, the default relative avatar and a foreign host are dropped
     const blank = (async () => Response.json({ result: { profile: { displayName: ' ', displayNameLocalized: { en: '', ar: '' }, avatarUrl: '/avatar.png' } } })) as never;
-    expect(await fetchProfile('u1', cfg, blank)).toEqual({ displayName: null, displayNameLocalized: {}, handle: null, avatarUrl: null });
+    expect(await fetchProfile('u1', cfg, blank)).toEqual({ displayName: null, displayNameLocalized: {}, avatarUrl: null });
     const foreign = (async () => Response.json({ result: { profile: { avatarUrl: 'https://evil.example/a.png' } } })) as never;
     expect((await fetchProfile('u1', cfg, foreign))?.avatarUrl).toBeNull();
   });
