@@ -146,3 +146,52 @@ export function displayLabel(
   for (const v of pick) if (typeof v === 'string' && v.trim()) return v.trim();
   return '';
 }
+
+/**
+ * Names of the accounts this browser signed in to www with, so the switcher can name the other
+ * accounts too (www holds only the current account's session; auth's list has just emails).
+ * localStorage `aun_www_names`: { [userId]: { en?, ar? } }, newest last, at most NAMES_MAX.
+ */
+export const NAMES_KEY = 'aun_www_names';
+const NAMES_MAX = 10;
+export type KnownNames = Record<string, Partial<Record<'en' | 'ar', string>>>;
+
+export function parseKnownNames(raw: string | null): KnownNames {
+  try {
+    const v: unknown = raw ? JSON.parse(raw) : null;
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return {};
+    const out: KnownNames = {};
+    for (const [id, n] of Object.entries(v as Record<string, unknown>)) {
+      if (!n || typeof n !== 'object') continue;
+      const e: Partial<Record<'en' | 'ar', string>> = {};
+      for (const l of ['en', 'ar'] as const) {
+        const s = (n as Record<string, unknown>)[l];
+        if (typeof s === 'string' && s.trim()) e[l] = s.trim().slice(0, 120);
+      }
+      if (e.en || e.ar) out[id] = e;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/** The signed-in account's names (only real names: never its email) merged into the store. */
+export function rememberNames(known: KnownNames, me: Parameters<typeof displayLabel>[0]): KnownNames {
+  if (!me.sub) return known;
+  const entry: Partial<Record<'en' | 'ar', string>> = {};
+  for (const l of ['en', 'ar'] as const) {
+    const n = displayLabel(me, l);
+    if (n && n !== me.email && n !== me.sub) entry[l] = n;
+  }
+  const rest = Object.entries(known).filter(([id]) => id !== me.sub);
+  if (entry.en || entry.ar) rest.push([me.sub, entry]);
+  return Object.fromEntries(rest.slice(-NAMES_MAX));
+}
+
+/** A switcher row's name: a remembered profile name in the page language, auth's name, the email. */
+export function rowLabel(a: Pick<AuthAccount, 'name' | 'email' | 'userId'>, known: KnownNames, locale: string): string {
+  const k = known[a.userId];
+  const other = locale === 'ar' ? 'en' : 'ar';
+  return k?.[locale as 'en' | 'ar'] || k?.[other] || accountLabel(a);
+}

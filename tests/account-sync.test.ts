@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   displayLabel,
+  parseKnownNames,
+  rememberNames,
+  rowLabel,
   PROBE_KEY,
   SYNC_KEY,
   accountLabel,
@@ -136,5 +139,28 @@ describe('header name', () => {
     expect(displayLabel({ email, name: email, authName: null, profile: null }, 'ar')).toBe(email);
     // an older /auth/me without authName: name equal to the email is not a name
     expect(displayLabel({ email, name: email, profile: { handle: 'meywd' } }, 'en')).toBe('@meywd');
+  });
+});
+
+describe('switcher names', () => {
+  const owner = { sub: 'u1', email: 'meywd@msn.com', authName: null, profile: { displayName: 'Mahmoud Darwish', displayNameLocalized: { en: 'Mahmoud Darwish' } } };
+  it('remembers real names only, never the email', () => {
+    const k = rememberNames({}, owner);
+    expect(k).toEqual({ u1: { en: 'Mahmoud Darwish', ar: 'Mahmoud Darwish' } });
+    expect(rememberNames({}, { sub: 'u2', email: 'x@y', name: 'x@y', profile: null })).toEqual({});
+  });
+  it('rows: remembered name in the page language, then auth name, then email', () => {
+    const k = { u2: { en: 'Test', ar: 'تجربة' } };
+    expect(rowLabel({ userId: 'u2', name: null, email: 't@x' }, k, 'ar')).toBe('تجربة');
+    expect(rowLabel({ userId: 'u3', name: 'Auth Name', email: 't@x' }, k, 'en')).toBe('Auth Name');
+    expect(rowLabel({ userId: 'u4', name: null, email: 't@x' }, k, 'en')).toBe('t@x');
+  });
+  it('a bad or oversized store is safe', () => {
+    expect(parseKnownNames('nope')).toEqual({});
+    expect(parseKnownNames('[1]')).toEqual({});
+    let k = {};
+    for (let i = 0; i < 15; i++) k = rememberNames(k, { sub: `u${i}`, email: 'e', profile: { displayName: `N${i}` } });
+    expect(Object.keys(k)).toHaveLength(10);
+    expect(Object.keys(k).at(-1)).toBe('u14');
   });
 });
