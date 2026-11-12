@@ -21,6 +21,12 @@ async function expectThemeColours(page: Page, theme: ThemeId, scheme: (typeof SC
   expect(await css(page, '.site-header .brand', 'color')).toBe(token(theme, scheme, '--fanous-c-nav-text'));
   // The footer's text is readable on the footer
   expect(await css(page, '.site-footer a', 'color')).toBe(token(theme, scheme, '--fanous-c-nav-text'));
+  // The hero is page content: the theme's light surface and text in Light, the night in Dark
+  if (await page.locator('.hero').count()) {
+    const light = scheme === 'light';
+    expect(await css(page, '.hero', 'background-color')).toBe(token(theme, scheme, light ? '--fanous-color-surface' : '--fanous-c-nav-bg'));
+    expect(await css(page, '.hero h1', 'color')).toBe(token(theme, scheme, light ? '--fanous-color-text-primary' : '--fanous-c-nav-text'));
+  }
 }
 
 test.describe('site theme', () => {

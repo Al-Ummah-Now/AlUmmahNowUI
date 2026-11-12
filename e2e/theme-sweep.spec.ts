@@ -46,6 +46,8 @@ const STEPS: Step[] = [
   { name: 'articles', path: '/articles/' },
   { name: 'videos', path: '/videos/' },
   { name: 'about', path: '/about/' },
+  // CMS blocks incl. the primary call-to-action block (e2e/stub-blocks.ts; en only is primary)
+  { name: 'stories', path: '/stories/' },
   { name: 'search', path: '/search?q=salah' },
   { name: '404', path: '/this/does/not/exist/' },
   { name: 'header', path: '/', root: '.site-header' },
