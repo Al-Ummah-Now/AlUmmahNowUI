@@ -19,6 +19,11 @@ export interface EmbedTarget {
   start?: number;
   /** Facades load the iframe on a click, so the player may start at once. */
   autoplay?: boolean;
+  /**
+   * With autoplay: the viewer's own click started it (the facade), so the embed plays with sound
+   * (gesture=1; AlUmmahNow docs/embeds/README.md). Only for a real click.
+   */
+  gesture?: boolean;
 }
 
 /** Ids from the videos platform: uuids and similar. Anything else is rejected. */
@@ -38,6 +43,7 @@ export function embedUrl(videosWebUrl: string, t: EmbedTarget): string {
   url.searchParams.set('lang', t.lang);
   if (t.kind === 'video' && t.start && Number.isInteger(t.start) && t.start > 0) url.searchParams.set('start', String(t.start));
   if (t.autoplay) url.searchParams.set('autoplay', '1');
+  if (t.autoplay && t.gesture) url.searchParams.set('gesture', '1');
   return url.toString();
 }
 

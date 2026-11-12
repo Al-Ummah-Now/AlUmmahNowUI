@@ -59,7 +59,8 @@ test.describe('home timeline', () => {
       await card.getByRole('button', { name: 'Play: First lecture' }).click();
       const frame = card.locator('iframe.facade-iframe');
       await expect(frame).toHaveCount(1);
-      await expect(frame).toHaveAttribute('src', /\/embed\/v\/body-video-1\?lang=en&autoplay=1/);
+      await expect(frame).toHaveAttribute('src', /\/embed\/v\/body-video-1\?lang=en&autoplay=1&gesture=1$/);
+      await expect(frame).toHaveAttribute('allow', /\bautoplay\b/);
       await expect(page.locator('iframe')).toHaveCount(1);
       // A video entry is a player too.
       const entry = page.locator('li.tl-item', { hasText: 'Lesson of the week' });

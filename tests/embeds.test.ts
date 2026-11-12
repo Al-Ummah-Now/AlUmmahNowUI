@@ -10,6 +10,9 @@ describe('embeds adapter', () => {
   it('builds video and playlist embed URLs with lang and start', () => {
     expect(embedUrl(BASE, { kind: 'video', id: ID, lang: 'ar' })).toBe(`https://videos.qa.alummahnow.net/embed/v/${ID}?lang=ar`);
     expect(embedUrl(BASE, { kind: 'video', id: ID, lang: 'en', start: 90 })).toBe(`https://videos.qa.alummahnow.net/embed/v/${ID}?lang=en&start=90`);
+    // gesture only means something with autoplay
+    expect(embedUrl(BASE, { kind: 'video', id: ID, lang: 'en', autoplay: true, gesture: true })).toBe(`https://videos.qa.alummahnow.net/embed/v/${ID}?lang=en&autoplay=1&gesture=1`);
+    expect(embedUrl(BASE, { kind: 'video', id: ID, lang: 'en', gesture: true })).toBe(`https://videos.qa.alummahnow.net/embed/v/${ID}?lang=en`);
     expect(embedUrl(BASE, { kind: 'playlist', id: 'pl_1', lang: 'en' })).toBe('https://videos.qa.alummahnow.net/embed/p/pl_1?lang=en');
   });
   it('drops invalid start values and start on playlists', () => {
@@ -42,7 +45,8 @@ describe('facade', () => {
     const html = facadeHtml(item, { videosWebUrl: BASE, lang: 'en' });
     expect(html).toContain('<button type="button" class="facade-play" aria-label="Play: Tafsir &quot;Al-Fatiha&quot; &lt;1&gt;">');
     expect(html).not.toContain('<iframe');
-    expect(html).toContain(`data-embed-src="https://videos.qa.alummahnow.net/embed/v/${ID}?lang=en&amp;autoplay=1"`);
+    // inserted on the viewer's click: autoplay with sound (gesture=1)
+    expect(html).toContain(`data-embed-src="https://videos.qa.alummahnow.net/embed/v/${ID}?lang=en&amp;autoplay=1&amp;gesture=1"`);
     expect(html).toContain('2:05');
   });
   it('localizes the play label', () => {
