@@ -30,6 +30,12 @@ import { isLocale, localeFromPath, readCookie } from './locale';
 import { isValidSecret, seal, unseal } from './session';
 
 const noStore = { 'Cache-Control': 'private, no-store' };
+/**
+ * A silent sign-in that failed on auth's side (an auth hiccup, not "signed out"): the page's probe
+ * (account-sync.ts PROBE_RETRY_COOKIE) clears its "checked" mark and asks again, at most
+ * SILENT_ATTEMPTS_MAX round trips per tab. Readable by scripts, short-lived, not a secret.
+ */
+const probeRetryCookie = 'aun_www_probe_retry=1; Path=/; Max-Age=120; Secure; SameSite=Lax';
 const redirect = (location: string, status = 302, extra: Record<string, string> = {}, cookies: string[] = []) => {
   const h = new Headers({ Location: location, ...noStore, ...extra });
   for (const c of cookies) h.append('Set-Cookie', c);
@@ -69,37 +75,48 @@ export async function callback(request: Request, deps: AuthDeps): Promise<Respon
   const clearLogin = clearCookie(LOGIN_COOKIE);
   // The user cancelled or auth refused (prompt=none → error=login_required): back where
   // they came from, unchanged. No error page and no retry, so a silent probe cannot loop.
-  if (url.searchParams.get('error')) return redirect(fallback, 302, {}, [clearLogin]);
+  // Auth's own trouble (server_error, temporarily_unavailable) is no answer: the page asks again.
+  const authError = url.searchParams.get('error');
+  if (authError) {
+    const transient = login?.silent && (authError === 'server_error' || authError === 'temporarily_unavailable');
+    return redirect(fallback, 302, {}, transient ? [clearLogin, probeRetryCookie] : [clearLogin]);
+  }
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
   if (!login || !code || !state || state !== login.state) {
     if (login?.silent) return redirect(fallback, 302, {}, [clearLogin]);
     return redirect(`/auth/login?return=${encodeURIComponent(fallback)}`, 302, {}, [clearLogin]);
   }
-  // A silent sign-in never ends on an error page: it just returns without a session
-  const failed = () => (login.silent ? redirect(fallback, 302, {}, [clearLogin]) : text('Sign-in failed. Please try again.', 502));
+  // A silent sign-in never ends on an error page: it just returns without a session, marked as
+  // "not answered" (auth or its keys did not respond) so the page's probe tries again, a few times
+  const failed = (transient: boolean) =>
+    login.silent ? redirect(fallback, 302, {}, transient ? [clearLogin, probeRetryCookie] : [clearLogin]) : text('Sign-in failed. Please try again.', 502);
 
   let tokenJson: { access_token?: string };
+  let tokenStatus = 0;
   try {
     const res = await (deps.fetchImpl ?? fetch)(`${deps.cfg.authUrl}/token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
       body: tokenRequestBody(deps.cfg, code, login.verifier).toString(),
     });
+    tokenStatus = res.status;
     if (!res.ok) throw new Error(`token endpoint ${res.status}`);
     tokenJson = (await res.json()) as { access_token?: string };
   } catch (error) {
     console.warn(JSON.stringify({ msg: 'sign-in: token exchange failed', error: String(error) }));
-    return failed();
+    // No answer (network) or auth's trouble (5xx, 429): ask again; a 4xx (bad or used code) is an answer
+    return failed(tokenStatus === 0 || tokenStatus === 429 || tokenStatus >= 500);
   }
-  if (!tokenJson.access_token) return failed();
+  if (!tokenJson.access_token) return failed(false);
 
   let fields: Omit<Session, 'exp'>;
   try {
     fields = await (deps.verify ?? ((t: string) => sessionFromAccessToken(t, deps.cfg)))(tokenJson.access_token);
   } catch (error) {
     console.warn(JSON.stringify({ msg: 'sign-in: token rejected', error: String(error) }));
-    return failed();
+    // The keys could not be fetched (auth unreachable) or the token is bad: let the page ask again (capped)
+    return failed(true);
   }
   // The user's own profile (names are not in the public profile view): best effort, never blocks sign-in
   const profile = await fetchOwnProfile(tokenJson.access_token, deps.cfg, deps.fetchImpl);

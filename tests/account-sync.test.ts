@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  mayTrySilent,
+  probeOutcome,
+  PROBE_BACKOFF_MS,
+  SILENT_ATTEMPTS_MAX,
   displayLabel,
   parseKnownNames,
   rememberNames,
@@ -45,10 +49,11 @@ describe('accounts mapping', () => {
     expect(parseAccounts({ error: 'x' })).toBeNull();
     expect(parseAccounts([])).toBeNull();
   });
-  it('status mapping: 200 ok, 401 signed-out, anything else unavailable', () => {
+  it('status mapping: 200 ok, 401 signed-out, no answer (network, timeout, 5xx, 429) error, anything else unavailable', () => {
     expect(ok.status).toBe('ok');
     expect(accountsResult(401, null)).toEqual({ status: 'signed-out' });
-    expect(accountsResult(500, null)).toEqual({ status: 'unavailable' });
+    for (const s of [0, 408, 429, 500, 502, 503, 504]) expect(accountsResult(s, null), String(s)).toEqual({ status: 'error' });
+    expect(accountsResult(404, null)).toEqual({ status: 'unavailable' });
     expect(accountsResult(200, 'garbage')).toEqual({ status: 'unavailable' });
   });
   it('label falls back name → email → id', () => {
@@ -165,5 +170,31 @@ describe('switcher names', () => {
     for (let i = 0; i < 15; i++) k = rememberNames(k, { sub: `u${i}`, email: 'e', profile: { displayName: `N${i}` } });
     expect(Object.keys(k)).toHaveLength(10);
     expect(Object.keys(k).at(-1)).toBe('u14');
+  });
+});
+
+describe('silent check: retry after an auth hiccup (2026-11-12)', () => {
+  const active = accountsResult(200, { accounts: [{ userId: 'u1', isActive: true }] });
+  it('no answer from www or auth is "retry", never a reason to mark the tab checked', () => {
+    expect(probeOutcome('error', { status: 'ok', accounts: [] })).toBe('retry');
+    expect(probeOutcome({ signedIn: false }, { status: 'error' })).toBe('retry');
+  });
+  it('a definitive answer: signed in, signed out per auth, or auth with no active account', () => {
+    expect(probeOutcome({ signedIn: true }, { status: 'error' })).toBe('answer');
+    expect(probeOutcome({ signedIn: false }, { status: 'signed-out' })).toBe('answer');
+    expect(probeOutcome({ signedIn: false }, { status: 'ok', accounts: [] })).toBe('answer');
+    expect(probeOutcome({ signedIn: false }, { status: 'unavailable' })).toBe('answer');
+  });
+  it('after a failed first check, the retry still signs in silently (the tab was not marked)', () => {
+    // first check: auth did not answer → retry, PROBE_KEY not set (probed stays null)
+    expect(probeOutcome({ signedIn: false }, accountsResult(0, null))).toBe('retry');
+    // the retry: auth answers with an active account → silent sign-in
+    expect(decide({ signedIn: false, sub: null, accounts: active, probed: null, synced: null, storageOk: true })).toEqual({ action: 'silent-login', guard: { key: PROBE_KEY, value: '1' } });
+  });
+  it('silent round trips are capped per tab; backoff is short', () => {
+    expect(mayTrySilent(null)).toBe(true);
+    expect(mayTrySilent(String(SILENT_ATTEMPTS_MAX - 1))).toBe(true);
+    expect(mayTrySilent(String(SILENT_ATTEMPTS_MAX))).toBe(false);
+    expect(PROBE_BACKOFF_MS.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(5000);
   });
 });

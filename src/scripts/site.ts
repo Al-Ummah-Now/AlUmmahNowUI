@@ -21,6 +21,14 @@ import {
   accountLabel,
   accountsResult,
   decide,
+  mayTrySilent,
+  probeOutcome,
+  PROBE_BACKOFF_MS,
+  PROBE_RECHECKS_MAX,
+  PROBE_RETRY_COOKIE,
+  PROBE_TIMEOUT_MS,
+  SILENT_ATTEMPTS_KEY,
+  type MeCheck,
   displayLabel,
   NAMES_KEY,
   parseKnownNames,
@@ -115,14 +123,32 @@ const fill = (template: string | undefined, name: string) => (template ?? '{name
 
 async function fetchAccounts(authUrl: string): Promise<AccountsResult> {
   try {
-    const res = await fetch(`${authUrl}/session/accounts`, { credentials: 'include', headers: { Accept: 'application/json' } });
+    const res = await fetch(`${authUrl}/session/accounts`, { credentials: 'include', headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) });
     const body: unknown = res.status === 200 ? await res.json().catch(() => null) : null;
     return accountsResult(res.status, body);
   } catch {
-    // CORS (origin not allowed), offline, blocked: behave as before
-    return { status: 'unavailable' };
+    // Offline, timeout, blocked or CORS: no answer (status 0), asked again (account-sync.ts)
+    return accountsResult(0, null);
   }
 }
+
+/** www's own session: signed in or out, or 'error' when there was no answer (network, timeout, 5xx). */
+async function fetchMe(url: string): Promise<{ me: Me; check: MeCheck }> {
+  try {
+    const res = await fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) });
+    if (!res.ok) return { me: { signedIn: false }, check: 'error' };
+    const me = (await res.json()) as Me;
+    return { me, check: { signedIn: !!me.signedIn } };
+  } catch {
+    return { me: { signedIn: false }, check: 'error' };
+  }
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const readCookie = (name: string) => document.cookie.split('; ').some((c) => c.startsWith(`${name}=`));
+const clearCookie = (name: string) => {
+  document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
+};
 
 async function authCall(authUrl: string, path: string, init: RequestInit): Promise<boolean> {
   try {
@@ -324,38 +350,78 @@ function buildMenu(root: HTMLElement, me: Me, result: AccountsResult, focusButto
   if (focusButton) button.focus();
 }
 
-async function initAccount() {
-  const root = document.getElementById('account');
-  if (!root?.dataset.me) return;
-  let me: Me = { signedIn: false };
-  try {
-    const res = await fetch(root.dataset.me, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
-    if (res.ok) me = (await res.json()) as Me;
-  } catch {
-    // treat as signed out
-  }
+/** One check: www's session, then auth's accounts. 'retry' when either gave no answer. */
+async function checkAccount(root: HTMLElement): Promise<'done' | 'retry'> {
+  const { me, check } = await fetchMe(root.dataset.me!);
+  // No answer from www itself: keep the page as it is (the head script's hint), ask again
+  if (check === 'error') return 'retry';
   setSignedIn(me.signedIn);
   if (me.signedIn) writeKnownNames(rememberNames(readKnownNames(), me));
   // Signed in now: if this session later ends (8 h), the next page may probe again
-  if (me.signedIn) tabStore.remove(PROBE_KEY);
+  if (me.signedIn) {
+    tabStore.remove(PROBE_KEY);
+    tabStore.remove(SILENT_ATTEMPTS_KEY);
+  }
   const probed = tabStore.get(PROBE_KEY);
   const authUrl = root.dataset.authUrl;
   const accounts: AccountsResult =
     authUrl && shouldFetchAccounts(me.signedIn, probed, tabStore.ok) ? await fetchAccounts(authUrl) : { status: 'unavailable' };
 
+  if (me.signedIn) {
+    // The menu shows now; a hiccup on auth's list only means the local account alone
+    if (accounts.status === 'ok' && accounts.accounts.some((a) => a.isActive && a.userId === me.sub)) tabStore.remove(SYNC_KEY);
+  }
   const decision = decide({ signedIn: me.signedIn, sub: me.sub ?? null, accounts, probed, synced: tabStore.get(SYNC_KEY), storageOk: tabStore.ok });
-  if (decision.action === 'silent-login') {
+  if (decision.action === 'silent-login' && mayTrySilent(tabStore.get(SILENT_ATTEMPTS_KEY))) {
     tabStore.set(decision.guard.key, decision.guard.value);
+    tabStore.set(SILENT_ATTEMPTS_KEY, String((Number(tabStore.get(SILENT_ATTEMPTS_KEY)) || 0) + 1));
     location.assign(loginHref(herePath(), 'none'));
-    return;
+    return 'done';
   }
-  if (!me.signedIn) {
-    // Probed (401, no active account, or unavailable): do not ask auth again in this tab
-    tabStore.set(PROBE_KEY, '1');
-    return;
+  if (me.signedIn) {
+    buildMenu(root, me, accounts);
+    return 'done';
   }
-  if (accounts.status === 'ok' && accounts.accounts.some((a) => a.isActive && a.userId === me.sub)) tabStore.remove(SYNC_KEY);
-  buildMenu(root, me, accounts);
+  // Signed out on www, and auth gave no answer: not checked yet, ask again (never mark the tab)
+  if (probeOutcome(check, accounts) === 'retry') return 'retry';
+  // A definitive answer (signed out per auth, or auth's list without an active account): checked
+  tabStore.set(PROBE_KEY, '1');
+  return 'done';
+}
+
+let rechecks = 0;
+let listening = false;
+let checking = false;
+async function initAccount(): Promise<void> {
+  const root = document.getElementById('account');
+  if (!root?.dataset.me || checking) return;
+  checking = true;
+  try {
+    // A silent sign-in that failed on auth's side (callback): this tab has not really been checked
+    if (readCookie(PROBE_RETRY_COOKIE)) {
+      clearCookie(PROBE_RETRY_COOKIE);
+      tabStore.remove(PROBE_KEY);
+    }
+    for (let attempt = 0; ; attempt++) {
+      if ((await checkAccount(root)) === 'done') return;
+      if (attempt >= PROBE_BACKOFF_MS.length) break;
+      await sleep(PROBE_BACKOFF_MS[attempt]!);
+    }
+    // Still no answer: check again when the tab is back in view or the network returns
+    if (!listening) {
+      listening = true;
+      const again = () => {
+        if (document.visibilityState !== 'visible' || rechecks >= PROBE_RECHECKS_MAX) return;
+        rechecks++;
+        void initAccount();
+      };
+      addEventListener('online', again);
+      addEventListener('focus', again);
+      document.addEventListener('visibilitychange', again);
+    }
+  } finally {
+    checking = false;
+  }
 }
 
 rememberLocale();

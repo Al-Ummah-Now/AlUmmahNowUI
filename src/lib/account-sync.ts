@@ -22,8 +22,10 @@ export type AccountsResult =
   | { status: 'ok'; accounts: AuthAccount[] }
   /** 401: auth has no browser session */
   | { status: 'signed-out' }
-  /** CORS, network, 5xx or an unexpected body: behave as before (plain "Sign in" / local menu) */
-  | { status: 'unavailable' };
+  /** An unexpected answer (malformed body, 4xx): auth answered, so it counts as checked */
+  | { status: 'unavailable' }
+  /** Network error, timeout, 5xx or 429 (an auth hiccup): not an answer, ask again */
+  | { status: 'error' };
 
 /** Set when this tab already probed while anonymous; cleared whenever www is signed in. */
 export const PROBE_KEY = 'aun_www_probed';
@@ -52,9 +54,10 @@ export function parseAccounts(json: unknown): AuthAccount[] | null {
   return out.sort((a, b) => Number(b.isActive) - Number(a.isActive));
 }
 
-/** Maps the accounts fetch outcome (status + body) to an AccountsResult. */
+/** Maps the accounts fetch outcome (status + body) to an AccountsResult; status 0 = the fetch failed. */
 export function accountsResult(status: number, body: unknown): AccountsResult {
   if (status === 401) return { status: 'signed-out' };
+  if (isTransientStatus(status)) return { status: 'error' };
   if (status !== 200) return { status: 'unavailable' };
   const accounts = parseAccounts(body);
   return accounts ? { status: 'ok', accounts } : { status: 'unavailable' };
@@ -72,6 +75,37 @@ export function shouldFetchAccounts(signedIn: boolean, probed: string | null, st
   // Without sessionStorage the loop guard cannot persist, so never probe
   return storageOk && !probed;
 }
+
+/**
+ * Retrying the silent check (2026-11-12: one auth hiccup kept a signed-in tab signed out until it
+ * was closed). A network error, a timeout, 5xx or 429 is not an answer: the check is retried after
+ * PROBE_BACKOFF_MS, and the tab is marked checked (PROBE_KEY) only after a definitive answer
+ * (signed in, or signed out per auth). Once the retries are used up, focus and "online" recheck,
+ * at most PROBE_RECHECKS_MAX times per tab. A silent sign-in that failed on auth's side comes back
+ * with the PROBE_RETRY_COOKIE; at most SILENT_ATTEMPTS_MAX silent round trips per tab.
+ */
+export const PROBE_BACKOFF_MS = [1000, 3000] as const;
+export const PROBE_TIMEOUT_MS = 5000;
+export const PROBE_RECHECKS_MAX = 5;
+export const SILENT_ATTEMPTS_KEY = 'aun_www_silent_n';
+export const SILENT_ATTEMPTS_MAX = 3;
+export const PROBE_RETRY_COOKIE = 'aun_www_probe_retry';
+
+/** status 0 = the fetch failed (network, timeout, CORS). */
+export const isTransientStatus = (status: number) => status === 0 || status === 408 || status === 429 || status >= 500;
+
+/** /auth/me's answer: signed in or out, or 'error' (no answer: network, timeout, 5xx). */
+export type MeCheck = { signedIn: boolean } | 'error';
+
+/** The check's outcome: a definitive answer, or 'retry' (not an answer yet). */
+export function probeOutcome(me: MeCheck, accounts: AccountsResult): 'answer' | 'retry' {
+  if (me === 'error') return 'retry';
+  if (me.signedIn) return 'answer';
+  return accounts.status === 'error' ? 'retry' : 'answer';
+}
+
+/** Another silent round trip in this tab? (count of the ones already made) */
+export const mayTrySilent = (attempts: string | null) => (Number(attempts) || 0) < SILENT_ATTEMPTS_MAX;
 
 export type Decision =
   | { action: 'stay' }

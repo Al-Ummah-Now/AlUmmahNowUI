@@ -71,15 +71,55 @@ test.describe('client probe (auth stubbed)', () => {
     expect(errors).toEqual([]);
   });
 
-  test('accounts unreachable (CORS/network): plain "Sign in", no errors', async ({ page }) => {
+  test('accounts unreachable (CORS/network): plain "Sign in", no errors, retried, and the tab is not marked as checked', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(String(e)));
     const calls = await stubAuth(page, (r) => r.abort('failed'));
     await page.goto('/en/');
-    await expect.poll(() => calls.accounts).toBe(1);
     await expect(page.getByRole('link', { name: 'Sign in' }).first()).toBeVisible();
+    // the first try and two retries (1 s, 3 s), then it waits for focus / the network
+    await expect.poll(() => calls.accounts, { timeout: 10000 }).toBe(3);
     expect(calls.authorize).toHaveLength(0);
+    expect(await page.evaluate(() => sessionStorage.getItem('aun_www_probed'))).toBeNull();
     expect(errors).toEqual([]);
+  });
+
+  // 2026-11-12: one auth hiccup used to mark the tab as checked, so a signed-in visitor stayed
+  // signed out on www until the tab was closed
+  test('a failed first check is retried: the next answer signs in silently', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'WebKit cannot fulfill a route with a redirect (the stub needs one)');
+    let n = 0;
+    const calls = await stubAuth(page, (r) =>
+      ++n === 1
+        ? r.fulfill({ status: 503, headers: cors, body: '{"error":"unavailable"}' })
+        : r.fulfill({ status: 200, headers: cors, body: JSON.stringify({ accounts: [{ userId: 'u1', isActive: true, email: 'a@example.com', name: 'A' }] }) }),
+    );
+    await page.goto('/en/articles/');
+    await expect.poll(() => calls.authorize.length, { timeout: 10000 }).toBe(1);
+    expect(calls.accounts).toBe(2);
+    expect(calls.authorize[0]!.searchParams.get('prompt')).toBe('none');
+    // login_required brings it back: now a definitive answer, so no loop
+    await expect(page).toHaveURL(/\/en\/articles\/$/);
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    expect(calls.authorize).toHaveLength(1);
+  });
+
+  test('auth down for every try: rechecks when the network returns, then signs in silently', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'WebKit cannot fulfill a route with a redirect (the stub needs one)');
+    let down = true;
+    const calls = await stubAuth(page, (r) =>
+      down
+        ? r.abort('timedout')
+        : r.fulfill({ status: 200, headers: cors, body: JSON.stringify({ accounts: [{ userId: 'u1', isActive: true, email: 'a@example.com', name: 'A' }] }) }),
+    );
+    await page.goto('/en/');
+    await expect.poll(() => calls.accounts, { timeout: 10000 }).toBe(3);
+    expect(await page.evaluate(() => sessionStorage.getItem('aun_www_probed'))).toBeNull();
+    // auth is back; the browser reports the network back
+    down = false;
+    await page.evaluate(() => window.dispatchEvent(new Event('online')));
+    await expect.poll(() => calls.authorize.length, { timeout: 10000 }).toBe(1);
   });
 
   test('the Sign in link never forces a prompt; /auth/login forwards only none|login', async ({ request }) => {
