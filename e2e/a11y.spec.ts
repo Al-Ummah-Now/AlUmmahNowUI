@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { LOCALES } from './env';
+import { IS_PRODUCTION, THEME_IDS } from './site-theme';
 
 const PAGES = [
   { name: 'home', path: (l: string) => `/${l}/` },
@@ -33,4 +34,31 @@ for (const l of LOCALES) {
     });
   }
 }
+}
+
+// Every site theme, not only the one this environment runs: the admin can switch at any time.
+// Non-production ?theme= previews; desktop only (the layout does not change with the theme).
+for (const theme of THEME_IDS) {
+  for (const scheme of SCHEMES) {
+    for (const l of LOCALES) {
+      test(`a11y: ${theme} ${scheme} ${l}`, async ({ page }, info) => {
+        test.skip(IS_PRODUCTION, 'production ignores ?theme=');
+        test.skip(info.project.name !== 'desktop', 'desktop covers the colours');
+        test.setTimeout(120_000);
+        await page.emulateMedia({ colorScheme: scheme });
+        const failures: string[] = [];
+        for (const p of PAGES) {
+          const path = p.path(l);
+          await page.goto(`${path}${path.includes('?') ? '&' : '?'}theme=${theme}`);
+          await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+          await page.evaluate(() => document.fonts.ready);
+          const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+          for (const v of results.violations.filter((x) => x.impact === 'serious' || x.impact === 'critical')) {
+            failures.push(`${p.name}: ${v.id}: ${v.help} -> ${v.nodes.map((n) => n.target.join(' ')).slice(0, 3).join(', ')}`);
+          }
+        }
+        expect(failures).toEqual([]);
+      });
+    }
+  }
 }

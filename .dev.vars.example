@@ -9,3 +9,5 @@ VIDEOS_WEB_URL=https://videos.qa.alummahnow.net
 VIDEOS_API_URL=https://videos.api.qa.alummahnow.net
 PROFILE_URL=https://profile.auth.qa.alummahnow.net
 CMS_PUBLIC_URL=http://localhost:8585
+# The videos admin API: /public/site-theme picks the site theme (none answering: Fawanees)
+ADMIN_API_URL=http://localhost:8585

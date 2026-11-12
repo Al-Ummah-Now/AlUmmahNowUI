@@ -18,6 +18,8 @@ export interface WwwEnv {
   VIDEOS_API_URL?: string;
   PROFILE_URL?: string;
   CMS_PUBLIC_URL?: string;
+  /** The videos admin API: its public /public/site-theme is the site theme (src/lib/site-theme.ts). Empty: the default theme. */
+  ADMIN_API_URL?: string;
   /** Service binding to the env's CMS Worker (absent in local dev). */
   CMS?: ServiceBinding;
   /** Last-known-good CMS JSON. */
@@ -42,6 +44,8 @@ export interface Config {
   videosApiUrl: string;
   profileUrl: string;
   cmsPublicUrl: string;
+  /** No trailing slash; '' when unset (the default theme renders). */
+  adminApiUrl: string;
   isProduction: boolean;
   version: string;
 }
@@ -59,6 +63,7 @@ export function config(env: WwwEnv): Config {
     videosApiUrl: trim(env.VIDEOS_API_URL || 'https://videos.api.qa.alummahnow.net'),
     profileUrl: trim(env.PROFILE_URL || 'https://profile.auth.qa.alummahnow.net'),
     cmsPublicUrl: trim(env.CMS_PUBLIC_URL || 'http://localhost:8585'),
+    adminApiUrl: trim(env.ADMIN_API_URL || ''),
     isProduction: appEnv === 'production',
     version: env.CF_VERSION_METADATA?.id || 'dev',
   };

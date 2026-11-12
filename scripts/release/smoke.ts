@@ -12,6 +12,7 @@
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ENVIRONMENTS, parseEnvArg, type EnvName } from '../environments.ts';
+import { THEME_IDS } from '../../src/lib/site-themes.generated.ts';
 
 export interface CheckResult {
   name: string;
@@ -24,7 +25,11 @@ export interface SmokeOptions {
   /** worker name → version id */
   overrides?: Record<string, string>;
   fetchImpl?: typeof fetch;
+  /** Wait between site-theme retries (tests: 0). */
+  retryMs?: number;
 }
+
+const SITE_THEMES: readonly string[] = THEME_IDS;
 
 export function overrideHeader(overrides: Record<string, string>): string {
   return Object.entries(overrides)
@@ -79,6 +84,25 @@ export async function runSmoke(opts: SmokeOptions): Promise<CheckResult[]> {
       return `source ${res.headers.get('x-content-source')}, timeline ${res.headers.get('x-feed-source') ?? 'unknown'}`;
     });
   }
+
+  // The admin's site theme is what www renders (src/lib/site-theme.ts); read-only, never changes it
+  await check('site theme', async () => {
+    const admin = await doFetch(`${e.vars.ADMIN_API_URL}/public/site-theme`, { headers, signal: AbortSignal.timeout(15_000) });
+    assert(admin.ok, `${e.vars.ADMIN_API_URL}/public/site-theme: status ${admin.status}`);
+    const wanted = ((await admin.json()) as { theme?: string }).theme;
+    const rendered = async () => /<html[^>]*\sdata-theme="([a-z][a-z0-9-]*)"/.exec(await (await get(`${e.www}/en/`)).text())?.[1];
+    let theme = await rendered();
+    // A switch in the admin takes up to a minute to arrive (admin API and www each cache 30 s)
+    for (let i = 0; i < 3 && theme !== wanted && SITE_THEMES.includes(wanted ?? ''); i++) {
+      await new Promise((r) => setTimeout(r, opts.retryMs ?? 20_000));
+      theme = await rendered();
+    }
+    assert(theme, 'no data-theme on <html>');
+    // A theme package from the admin's theme builder is not vendored in www: the default renders
+    const expected = SITE_THEMES.includes(wanted ?? '') ? wanted : 'fawanees';
+    assert(theme === expected, `renders ${theme}, the admin chose ${wanted}`);
+    return `data-theme ${theme}`;
+  });
 
   await check('root redirect', async () => {
     const res = await get(`${e.www}/`, { 'Accept-Language': 'ar' });

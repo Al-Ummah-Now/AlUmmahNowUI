@@ -1,7 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
+import { token, type ThemeId } from './site-theme';
 
-const DARK_BG = 'rgb(9, 21, 30)'; // Fanous (Fawanees) dark background
-const LIGHT_BG = 'rgb(242, 246, 245)';
+/** The page background of the site theme this page renders (e2e/site-theme.spec.ts checks which one). */
+const themeOf = async (page: Page) => (await page.locator('html').getAttribute('data-theme')) as ThemeId;
+const DARK_BG = async (page: Page) => token(await themeOf(page), 'dark', '--fanous-color-background');
+const LIGHT_BG = async (page: Page) => token(await themeOf(page), 'light', '--fanous-color-background');
 
 const pageBg = (page: Page) => page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
 
@@ -18,9 +21,9 @@ test.describe('light / dark / system', () => {
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.goto('/en/');
     await expect(page.locator('html')).not.toHaveAttribute('data-mode', /./);
-    expect(await pageBg(page)).toBe(DARK_BG);
+    expect(await pageBg(page)).toBe(await DARK_BG(page));
     await page.emulateMedia({ colorScheme: 'light' });
-    expect(await pageBg(page)).toBe(LIGHT_BG);
+    expect(await pageBg(page)).toBe(await LIGHT_BG(page));
   });
 
   test('the header control picks a mode, remembers it, and the head script passes CSP', async ({ page }) => {
@@ -35,18 +38,18 @@ test.describe('light / dark / system', () => {
     await page.getByRole('button', { name: 'Dark', exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
     await expect(page.getByRole('button', { name: 'Theme: Dark' })).toBeFocused();
-    expect(await pageBg(page)).toBe(DARK_BG);
+    expect(await pageBg(page)).toBe(await DARK_BG(page));
 
     await page.goto('/en/articles/');
     await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
-    expect(await pageBg(page)).toBe(DARK_BG);
+    expect(await pageBg(page)).toBe(await DARK_BG(page));
 
     // back to System: the saved choice is cleared and the system setting applies again
     await page.getByRole('button', { name: 'Theme: Dark' }).click();
     await page.getByRole('button', { name: 'System', exact: true }).click();
     await expect(page.locator('html')).not.toHaveAttribute('data-mode', /./);
     expect(await page.evaluate(() => localStorage.getItem('aun_mode'))).toBeNull();
-    expect(await pageBg(page)).toBe(LIGHT_BG);
+    expect(await pageBg(page)).toBe(await LIGHT_BG(page));
     expect(cspErrors).toEqual([]);
   });
 
@@ -69,7 +72,7 @@ test.describe('light / dark / system', () => {
     });
     await page.goto('/ar/');
     expect(await page.evaluate(() => (window as unknown as { __modeAtBody: (string | null)[] }).__modeAtBody)).toEqual(['dark']);
-    expect(await pageBg(page)).toBe(DARK_BG);
+    expect(await pageBg(page)).toBe(await DARK_BG(page));
   });
 
   test('keyboard and Arabic: arrows move, Escape closes and returns focus', async ({ page }) => {

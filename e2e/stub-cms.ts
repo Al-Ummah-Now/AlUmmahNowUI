@@ -2,7 +2,8 @@
  * Stand-in for the CMS in local E2E (playwright.config.ts starts it on :8585 next to `wrangler dev`).
  * /api/preview/v1 answers, plus the block and card-post fixtures in e2e/stub-blocks.ts (two pages,
  * card posts, /cards and their images); everything else is 503, so the rest of the suite still
- * renders from built-in content exactly as with no CMS at all.
+ * renders from built-in content exactly as with no CMS at all. It also answers the videos admin's
+ * `/public/site-theme` (STUB_SITE_THEME, default zujaj).
  *
  * Tokens are `v1.<base64url {k,id,exp}>.<sig>`: sig `good` is valid, `expired` is what the CMS says
  * for an old token, anything else is invalid. Rows: pages/1 (English draft), posts/2 (Arabic draft),
@@ -13,6 +14,7 @@ import { Buffer } from 'node:buffer';
 import { PREVIEW_ROWS, publicFixture, stubImage } from './stub-blocks.ts';
 
 const PORT = Number(process.env.STUB_CMS_PORT || 8585);
+const STUB_SITE_THEME = process.env.STUB_SITE_THEME || 'zujaj';
 const now = '2026-11-08T10:00:00.000Z';
 const ROWS: Record<string, unknown> = {
   'pages/1': {
@@ -37,6 +39,12 @@ createServer((req, res) => {
   if (img) {
     res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=600', 'Access-Control-Allow-Origin': '*' });
     return res.end(stubImage(Number(img[1])));
+  }
+  // The videos admin's site theme (www reads it through ADMIN_API_URL, scripts/dev-vars.ts points it
+  // here). Not the default theme, so the suite proves www renders what the admin chose.
+  if (url.pathname === '/public/site-theme') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30' });
+    return res.end(JSON.stringify({ theme: STUB_SITE_THEME }));
   }
   const fixture = publicFixture(url);
   if (fixture) return send(fixture.status, fixture.body);

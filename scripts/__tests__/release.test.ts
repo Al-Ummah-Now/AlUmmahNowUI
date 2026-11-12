@@ -158,13 +158,14 @@ describe('smoke', () => {
       const headers = new Headers(init?.headers);
       for (const [k, fn] of Object.entries(overrides)) if (url.includes(k)) return fn!();
       const ok = (body: string, h: Record<string, string> = {}) => new Response(body, { status: 200, headers: h });
+      if (url === `${e.vars.ADMIN_API_URL}/public/site-theme`) return ok(JSON.stringify({ theme: 'lantern' }));
       if (url.endsWith('/healthz')) {
         const v = /="([^"]+)"/.exec(headers.get('Cloudflare-Workers-Version-Overrides') ?? '')?.[1] ?? V1;
         return ok(JSON.stringify({ ok: true, version: v, env: 'production', cms: 'ok' }));
       }
       const m = url.includes('/auth/') ? null : /\/(en|ar)\/$/.exec(url);
       if (m) {
-        return ok(`<html lang="${m[1]}" dir="${m[1] === 'ar' ? 'rtl' : 'ltr'}">الأمة الآن`, {
+        return ok(`<html lang="${m[1]}" dir="${m[1] === 'ar' ? 'rtl' : 'ltr'}" data-theme="lantern">الأمة الآن`, {
           'content-security-policy': `frame-src ${e.vars.VIDEOS_WEB_URL}; frame-ancestors 'none'`,
           'strict-transport-security': 'max-age=1',
           'x-content-source': 'cms',
@@ -195,6 +196,16 @@ describe('smoke', () => {
     const ok = await runSmoke({ env: 'production', overrides: { 'al-ummah-now-www': V2 }, fetchImpl: site() });
     expect(ok.find((r) => r.name === 'healthz')).toMatchObject({ ok: true, detail: expect.stringContaining(V2) });
     expect(overrideHeader({ a: V1, b: V2 })).toBe(`a="${V1}", b="${V2}"`);
+  });
+  it('checks www renders the theme the admin chose', async () => {
+    const ok = await runSmoke({ env: 'production', fetchImpl: site(), retryMs: 0 });
+    expect(ok.find((r) => r.name === 'site theme')).toMatchObject({ ok: true, detail: 'data-theme lantern' });
+    const wrong = await runSmoke({
+      env: 'production',
+      retryMs: 0,
+      fetchImpl: site({ '/public/site-theme': () => new Response(JSON.stringify({ theme: 'nahas' }), { status: 200 }) }),
+    });
+    expect(wrong.find((r) => r.name === 'site theme')).toMatchObject({ ok: false, detail: 'renders lantern, the admin chose nahas' });
   });
   it('fails when the apex does not redirect', async () => {
     const results = await runSmoke({ env: 'production', fetchImpl: site({ 'https://alummahnow.net': () => new Response('hi', { status: 200 }) }) });

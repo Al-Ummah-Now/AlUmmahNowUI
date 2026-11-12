@@ -23,6 +23,8 @@ if (existsSync(path)) {
     VIDEOS_API_URL: 'https://videos.api.qa.alummahnow.net',
     PROFILE_URL: 'https://profile.auth.qa.alummahnow.net',
     CMS_PUBLIC_URL: process.env.CMS_PUBLIC_URL || 'http://localhost:8585',
+    // The site theme (/public/site-theme): local E2E's stub answers it on the CMS stub's port
+    ADMIN_API_URL: process.env.ADMIN_API_URL || 'http://localhost:8585',
   };
   writeFileSync(path, Object.entries(vars).map(([k, v]) => `${k}=${v}`).join('\n') + '\n', { mode: 0o600 });
   process.stdout.write('wrote .dev.vars (local vars and a random SESSION_SECRET)\n');
