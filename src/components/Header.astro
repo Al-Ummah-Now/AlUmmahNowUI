@@ -37,16 +37,16 @@ const loginHref = `/auth/login?return=${encodeURIComponent(path + Astro.url.sear
     <SearchBox cfg={cfg} locale={locale} id="site-search" />
     <div class="header-tools">
       <div class="theme" id="theme" data-label-current={t.theme.current} data-label-system={t.theme.system} data-label-light={t.theme.light} data-label-dark={t.theme.dark}>
-        <button type="button" class="theme-button" aria-expanded="false" aria-controls="theme-menu" data-current="system">
+        <button type="button" class="theme-button aun-icon-btn" aria-expanded="false" aria-controls="theme-menu" data-current="system">
           <span class="visually-hidden" data-theme-name>{fmt(t.theme.current, { mode: t.theme.system })}</span>
           <ThemeIcon mode="system" />
           <ThemeIcon mode="light" />
           <ThemeIcon mode="dark" />
         </button>
-        <ul class="theme-menu" id="theme-menu" aria-label={t.theme.label} hidden>
+        <ul class="theme-menu aun-menu" id="theme-menu" aria-label={t.theme.label} hidden>
           {(['system', 'light', 'dark'] as const).map((m) => (
             <li>
-              <button type="button" data-set-mode={m} aria-pressed={m === 'system' ? 'true' : 'false'}>
+              <button type="button" class="aun-menu-item" data-set-mode={m} aria-pressed={m === 'system' ? 'true' : 'false'}>
                 <ThemeIcon mode={m} />
                 <span>{t.theme[m]}</span>
               </button>
@@ -54,7 +54,7 @@ const loginHref = `/auth/login?return=${encodeURIComponent(path + Astro.url.sear
           ))}
         </ul>
       </div>
-      <a class="lang-switch" href={switchHref} hreflang={other} lang={other} data-set-locale={other}>{t.lang.switchTo}</a>
+      <a class="lang-switch aun-lang" href={switchHref} hreflang={other} lang={other} data-set-locale={other}>{t.lang.switchTo}</a>
       <div
         class="account"
         id="account"
@@ -71,6 +71,7 @@ const loginHref = `/auth/login?return=${encodeURIComponent(path + Astro.url.sear
         data-label-profile={t.auth.profile}
         data-label-videos={t.auth.videos}
         data-label-cms={t.auth.cms}
+        data-label-apps={t.auth.apps}
         data-label-sign-out={t.auth.signOut}
         data-label-confirm-sign-out-of-title={t.auth.confirmSignOutOfTitle}
         data-label-confirm-sign-out-of-body={t.auth.confirmSignOutOfBody}
@@ -86,6 +87,7 @@ const loginHref = `/auth/login?return=${encodeURIComponent(path + Astro.url.sear
     </div>
   </div>
   <template id="caret-icon"><Icon name="caret" /></template>
+  <template id="check-icon"><svg class="aun-menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7" /></svg></template>
   <!-- the one in-app confirmation for destructive actions (./scripts/confirm.ts); never window.confirm -->
   <dialog class="confirm-dialog" id="confirm-dialog" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-body">
     <div class="confirm-dialog-inner">
