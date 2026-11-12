@@ -231,6 +231,31 @@ describe('callback, me, logout', () => {
     });
     expect(failed.status).toBe(302);
     expect(failed.headers.get('Location')).toBe('/en/articles/');
+    // a 4xx from the token endpoint is an answer (bad or used code): no retry mark
+    expect(failed.headers.getSetCookie().some((c) => c.startsWith('aun_www_probe_retry='))).toBe(false);
+  });
+
+  it('silent sign-in that failed on auth\'s side (5xx, network, server_error) returns marked "ask again"', async () => {
+    const retry = (res: Response) => res.headers.getSetCookie().find((c) => c.startsWith('aun_www_probe_retry='));
+    const { cookie, state } = await loginCookie('none');
+    const down = await callback(new Request(`https://www.qa.alummahnow.net/auth/callback?code=c1&state=${state}`, { headers: { Cookie: cookie } }), {
+      cfg,
+      secret: SECRET,
+      fetchImpl: (async () => new Response('busy', { status: 503 })) as never,
+    });
+    expect(down.headers.get('Location')).toBe('/en/articles/');
+    expect(retry(down)).toMatch(/Max-Age=120/);
+    const offline = await callback(new Request(`https://www.qa.alummahnow.net/auth/callback?code=c1&state=${state}`, { headers: { Cookie: cookie } }), {
+      cfg,
+      secret: SECRET,
+      fetchImpl: (async () => { throw new TypeError('fetch failed'); }) as never,
+    });
+    expect(retry(offline)).toBeTruthy();
+    const authDown = await callback(new Request(`https://www.qa.alummahnow.net/auth/callback?error=temporarily_unavailable&state=${state}`, { headers: { Cookie: cookie } }), { cfg, secret: SECRET });
+    expect(retry(authDown)).toBeTruthy();
+    // "signed out" is an answer
+    const signedOut = await callback(new Request(`https://www.qa.alummahnow.net/auth/callback?error=login_required&state=${state}`, { headers: { Cookie: cookie } }), { cfg, secret: SECRET });
+    expect(retry(signedOut)).toBeUndefined();
   });
 
   it('silent sign-in with a code creates the session like a normal sign-in', async () => {
