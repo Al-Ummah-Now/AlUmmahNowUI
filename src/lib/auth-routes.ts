@@ -12,6 +12,7 @@ import {
   clearCookie,
   codeChallenge,
   cookie,
+  hintCookie,
   logoutUrl,
   parsePrompt,
   randomToken,
@@ -22,6 +23,7 @@ import {
   type Session,
 } from './auth';
 import type { Config } from './env';
+import { normalizeImageUrl } from './images';
 import { isLocale, localeFromPath, readCookie } from './locale';
 import { isValidSecret, seal, unseal } from './session';
 
@@ -99,7 +101,7 @@ export async function callback(request: Request, deps: AuthDeps): Promise<Respon
   }
   const exp = Math.floor((deps.now?.() ?? Date.now()) / 1000) + SESSION_TTL_SEC;
   const session = await seal(deps.secret, { ...fields, exp } satisfies Session);
-  return redirect(login.returnTo, 302, {}, [clearLogin, cookie(SESSION_COOKIE, session, SESSION_TTL_SEC)]);
+  return redirect(login.returnTo, 302, {}, [clearLogin, cookie(SESSION_COOKIE, session, SESSION_TTL_SEC), hintCookie(true)]);
 }
 
 export async function readSession(request: Request, secret: string | undefined): Promise<Session | null> {
@@ -107,10 +109,64 @@ export async function readSession(request: Request, secret: string | undefined):
   return unseal<Session>(secret, readCookie(request.headers.get('Cookie'), SESSION_COOKIE));
 }
 
+/** The public profile fields the header shows (the videos site's profile, same record). */
+export interface MeProfile {
+  displayName: string | null;
+  displayNameLocalized: Partial<Record<'en' | 'ar', string>>;
+  handle: string | null;
+  avatarUrl: string | null;
+}
+
+const str = (v: unknown, max: number) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
+
+/**
+ * The signed-in user's public profile from the videos API (GET /api/profiles/:id, public; the
+ * profile id is the auth user id). Short edge cache and timeout: the header falls back to the
+ * session's name/email when the profile is missing or slow.
+ */
+export async function fetchProfile(sub: string, cfg: Config, fetchImpl: typeof fetch = fetch): Promise<MeProfile | null> {
+  try {
+    const init: RequestInit & { cf?: Record<string, unknown> } = {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(1500),
+      cf: { cacheTtl: 60, cacheEverything: true },
+    };
+    const res = await fetchImpl(`${cfg.videosApiUrl}/api/profiles/${encodeURIComponent(sub)}`, init);
+    if (!res.ok) return null;
+    const body = (await res.json()) as { result?: { profile?: Record<string, unknown> } } | null;
+    const p = body?.result?.profile;
+    if (!p || typeof p !== 'object') return null;
+    const loc = (p.displayNameLocalized ?? {}) as Record<string, unknown>;
+    const displayNameLocalized: MeProfile['displayNameLocalized'] = {};
+    for (const l of ['en', 'ar'] as const) {
+      const v = str(loc[l], 120);
+      if (v) displayNameLocalized[l] = v;
+    }
+    return {
+      displayName: str(p.displayName, 120),
+      displayNameLocalized,
+      handle: str(p.userName, 60)?.replace(/^@+/, '') || null,
+      avatarUrl: normalizeImageUrl(str(p.avatarUrl, 500)),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function me(request: Request, deps: AuthDeps): Promise<Response> {
   const s = await readSession(request, deps.secret);
+  const profile = s ? await fetchProfile(s.sub, deps.cfg, deps.fetchImpl) : null;
   const body = s
-    ? { signedIn: true, sub: s.sub, name: s.name ?? s.email, email: s.email, roles: s.roles, canEditContent: canEditContent(s.roles) }
+    ? {
+        signedIn: true,
+        sub: s.sub,
+        name: s.name ?? s.email,
+        authName: s.name,
+        email: s.email,
+        roles: s.roles,
+        canEditContent: canEditContent(s.roles),
+        profile,
+      }
     : { signedIn: false };
   return new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json', ...noStore, Vary: 'Cookie' } });
 }
@@ -124,21 +180,21 @@ export async function me(request: Request, deps: AuthDeps): Promise<Response> {
  * Signing out of www alone would leave the other apps signed in.
  */
 export async function logout(request: Request, deps: AuthDeps): Promise<Response> {
-  const clear = clearCookie(SESSION_COOKIE);
+  const clear = [clearCookie(SESSION_COOKIE), hintCookie(false)];
   if (request.method === 'GET') {
     const url = new URL(request.url);
     const next = url.searchParams.get('next');
     if (next) {
       try {
         const u = new URL(next);
-        if (u.origin === new URL(deps.cfg.authUrl).origin && u.pathname === '/logout') return redirect(u.toString(), 302, {}, [clear]);
+        if (u.origin === new URL(deps.cfg.authUrl).origin && u.pathname === '/logout') return redirect(u.toString(), 302, {}, clear);
       } catch {
         // not a URL
       }
     }
     const l = url.searchParams.get('locale');
     const locale = isLocale(l) ? l : 'en';
-    return redirect(logoutUrl(deps.cfg, `${deps.cfg.siteUrl}/${locale}/`), 302, {}, [clear]);
+    return redirect(logoutUrl(deps.cfg, `${deps.cfg.siteUrl}/${locale}/`), 302, {}, clear);
   }
   if (request.method !== 'POST') return text('Method not allowed', 405);
   const origin = request.headers.get('Origin');
@@ -152,5 +208,5 @@ export async function logout(request: Request, deps: AuthDeps): Promise<Response
   } catch {
     // no body
   }
-  return redirect(logoutUrl(deps.cfg, `${deps.cfg.siteUrl}/${locale}/`), 303, {}, [clear]);
+  return redirect(logoutUrl(deps.cfg, `${deps.cfg.siteUrl}/${locale}/`), 303, {}, clear);
 }

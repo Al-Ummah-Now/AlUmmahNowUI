@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  displayLabel,
   PROBE_KEY,
   SYNC_KEY,
   accountLabel,
@@ -118,5 +119,22 @@ describe('login links', () => {
     expect(loginHref('/ar/articles/?page=2', 'none')).toBe('/auth/login?prompt=none&return=%2Far%2Farticles%2F%3Fpage%3D2');
     expect(loginHref('/en/', 'login')).toBe('/auth/login?prompt=login&return=%2Fen%2F');
     expect(loginHref('/en/')).toBe('/auth/login?return=%2Fen%2F');
+  });
+});
+
+describe('header name', () => {
+  const email = 'meywd@msn.com';
+  it('prefers the profile name in the page language, like the videos site', () => {
+    const profile = { displayName: 'Mahmoud', displayNameLocalized: { en: 'Mahmoud', ar: 'محمود' }, handle: 'meywd' };
+    expect(displayLabel({ email, name: email, authName: null, profile }, 'ar')).toBe('محمود');
+    expect(displayLabel({ email, name: email, authName: null, profile }, 'en')).toBe('Mahmoud');
+    expect(displayLabel({ email, authName: null, profile: { displayNameLocalized: { en: 'Mahmoud' } } }, 'ar')).toBe('Mahmoud');
+  });
+  it('then auth\'s name, then the @handle, and the email only without a profile name', () => {
+    expect(displayLabel({ email, authName: 'M D', profile: { handle: 'meywd' } }, 'en')).toBe('M D');
+    expect(displayLabel({ email, name: email, authName: null, profile: { handle: 'meywd', displayName: '' } }, 'ar')).toBe('@meywd');
+    expect(displayLabel({ email, name: email, authName: null, profile: null }, 'ar')).toBe(email);
+    // an older /auth/me without authName: name equal to the email is not a name
+    expect(displayLabel({ email, name: email, profile: { handle: 'meywd' } }, 'en')).toBe('@meywd');
   });
 });

@@ -66,7 +66,9 @@ const empty = timeline.pinned.length === 0 && timeline.items.length === 0;
           <p class="hero-body">{heroBody}</p>
           <div class="hero-actions">
             <a class="button button-primary" href={videosHref}>{t.home.watchCta}<Icon name="arrow" /></a>
-            <a class="button button-ghost" href={cfg.profileUrl}>{t.home.profileCta}</a>
+            {/* HTML is the same for every visitor: <html data-signed-in> (head script, site.ts) picks one */}
+            <a class="button button-ghost hero-cta-signed-out" href={cfg.profileUrl}>{t.home.profileCta}</a>
+            <a class="button button-ghost hero-cta-signed-in" href={`${videosHref}/library`}>{t.home.libraryCta}</a>
           </div>
         </div>
         <img class="hero-lantern" src="/brand/logo-512.webp" alt="" width="512" height="512" fetchpriority="high" />

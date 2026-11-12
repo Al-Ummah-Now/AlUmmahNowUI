@@ -1,7 +1,7 @@
 import { SignJWT, exportJWK, generateKeyPair, createLocalJWKSet } from 'jose';
 import { describe, expect, it } from 'vitest';
-import { canEditContent, codeChallenge, normalizeRole, parsePrompt, safeReturnPath, sessionFromAccessToken, LOGIN_COOKIE, SESSION_COOKIE } from '../src/lib/auth';
-import { callback, login, logout, me } from '../src/lib/auth-routes';
+import { canEditContent, codeChallenge, normalizeRole, parsePrompt, safeReturnPath, sessionFromAccessToken, LOGIN_COOKIE, SESSION_COOKIE, SIGNED_IN_HINT } from '../src/lib/auth';
+import { callback, fetchProfile, login, logout, me } from '../src/lib/auth-routes';
 import { config } from '../src/lib/env';
 import { readCookie } from '../src/lib/locale';
 import { seal, unseal } from '../src/lib/session';
@@ -151,9 +151,32 @@ describe('callback, me, logout', () => {
     expect(session).toContain('Max-Age=28800');
     expect(session).not.toContain('tok');
 
-    const meRes = await me(new Request('https://www.qa.alummahnow.net/auth/me', { headers: { Cookie: session.split(';')[0]! } }), { cfg, secret: SECRET });
+    // the signed-in hint for the pre-paint head script: readable by scripts, same lifetime
+    const hint = cookies.find((c) => c.startsWith(`${SIGNED_IN_HINT}=1`))!;
+    expect(hint).toContain('Max-Age=28800');
+    expect(hint).not.toContain('HttpOnly');
+
+    const profileUrls: string[] = [];
+    const profileFetch = (async (url: string) => {
+      profileUrls.push(url);
+      return Response.json({
+        success: true,
+        result: { profile: { id: 'u1', userName: '@amina', displayName: 'Amina K', displayNameLocalized: { en: 'Amina K', ar: 'أمينة' }, avatarUrl: 'https://images.alummahnow.net/u1_avatar.jpeg' } },
+      });
+    }) as never;
+    const meRes = await me(new Request('https://www.qa.alummahnow.net/auth/me', { headers: { Cookie: session.split(';')[0]! } }), { cfg, secret: SECRET, fetchImpl: profileFetch });
     expect(meRes.headers.get('Cache-Control')).toBe('private, no-store');
-    expect(await meRes.json()).toEqual({ signedIn: true, sub: 'u1', name: 'Amina', email: 'a@x', roles: ['Admin'], canEditContent: true });
+    expect(profileUrls).toEqual([`${cfg.videosApiUrl}/api/profiles/u1`]);
+    expect(await meRes.json()).toEqual({
+      signedIn: true,
+      sub: 'u1',
+      name: 'Amina',
+      authName: 'Amina',
+      email: 'a@x',
+      roles: ['Admin'],
+      canEditContent: true,
+      profile: { displayName: 'Amina K', displayNameLocalized: { en: 'Amina K', ar: 'أمينة' }, handle: 'amina', avatarUrl: 'https://images.alummahnow.net/u1_avatar.jpeg' },
+    });
   });
 
   it('rejects a state mismatch by restarting sign-in', async () => {
@@ -220,6 +243,25 @@ describe('callback, me, logout', () => {
     expect(ok.status).toBe(303);
     expect(ok.headers.get('Location')).toBe('https://auth.qa.alummahnow.net/logout?return=https%3A%2F%2Fwww.qa.alummahnow.net%2Far%2F');
     expect(ok.headers.get('Set-Cookie')).toContain(`${SESSION_COOKIE}=; Path=/; Max-Age=0`);
+    expect(ok.headers.getSetCookie()).toContain(`${SIGNED_IN_HINT}=; Path=/; Max-Age=0; Secure; SameSite=Lax`);
+  });
+
+  it('me: signed out never asks the videos API; a missing or failing profile is null', async () => {
+    let calls = 0;
+    const count = (async () => {
+      calls++;
+      return new Response('{}', { status: 404 });
+    }) as never;
+    const out = await me(new Request('https://www.qa.alummahnow.net/auth/me'), { cfg, secret: SECRET, fetchImpl: count });
+    expect(await out.json()).toEqual({ signedIn: false });
+    expect(calls).toBe(0);
+    expect(await fetchProfile('u1', cfg, count)).toBeNull();
+    expect(await fetchProfile('u1', cfg, (async () => { throw new Error('offline'); }) as never)).toBeNull();
+    // blank names, the default relative avatar and a foreign host are dropped
+    const blank = (async () => Response.json({ result: { profile: { displayName: ' ', displayNameLocalized: { en: '', ar: '' }, avatarUrl: '/avatar.png' } } })) as never;
+    expect(await fetchProfile('u1', cfg, blank)).toEqual({ displayName: null, displayNameLocalized: {}, handle: null, avatarUrl: null });
+    const foreign = (async () => Response.json({ result: { profile: { avatarUrl: 'https://evil.example/a.png' } } })) as never;
+    expect((await fetchProfile('u1', cfg, foreign))?.avatarUrl).toBeNull();
   });
 
   it('front-channel GET follows next only on the auth origin', async () => {

@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { test, type Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { LOCALES } from './env';
+import { AUTH_URL, LOCALES, WWW_URL } from './env';
 import { SCHEMES, THEME_IDS } from './site-theme';
 
 /**
@@ -11,8 +11,10 @@ import { SCHEMES, THEME_IDS } from './site-theme';
  * app's (AlUmmahNow apps/web/e2e/themes/harness.ts): it sees text over gradients and images.
  *
  *   SWEEP=1 npx playwright test e2e/theme-sweep.spec.ts --project=desktop
+ *   SWEEP=1 SWEEP_ONLY=signed-in …  (only the steps whose name matches)
  */
 test.skip(!process.env.SWEEP, 'audit run only: SWEEP=1');
+const ONLY = process.env.SWEEP_ONLY ? new RegExp(process.env.SWEEP_ONLY) : null;
 // The probe hides text with an injected <style> and decodes screenshots from data: URLs
 test.use({ bypassCSP: true });
 
@@ -21,7 +23,24 @@ const SUGGESTIONS = [
   { id: 2, type: 'cards', title: 'أحاديث في الصلاة', slug: 'cards', locale: 'ar', href: '/ar/articles/cards/', thumbnailUrl: null, excerpt: null, publishedAt: '2026-11-02T00:00:00.000Z' },
 ];
 
-interface Step { name: string; path: string; open?: (page: Page) => Promise<void>; root?: string }
+interface Step { name: string; path: string; open?: (page: Page) => Promise<void>; root?: string; signedIn?: boolean }
+
+/** Signed in (stubbed /auth/me + auth's list, the hint cookie): the hero CTA and the account button/menu. */
+async function signIn(page: Page) {
+  const origin = new URL(WWW_URL).origin;
+  const email = 'meywd@example.com';
+  await page.context().addCookies([{ name: 'aun_www_si', value: '1', url: origin }]);
+  const profile = { displayName: 'Mahmoud', displayNameLocalized: { en: 'Mahmoud', ar: 'محمود' }, handle: 'meywd', avatarUrl: null };
+  await page.route((u) => u.origin === origin && u.pathname === '/auth/me', (r) =>
+    r.fulfill({ contentType: 'application/json', body: JSON.stringify({ signedIn: true, sub: 'u1', name: email, authName: null, email, roles: [], profile }) }),
+  );
+  await page.route(`${AUTH_URL}/session/accounts`, (r) =>
+    r.fulfill({
+      headers: { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Credentials': 'true', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accounts: [{ userId: 'u1', isActive: true, email, name: null }, { userId: 'u2', isActive: false, email: 'other@example.com', name: 'Other' }] }),
+    }),
+  );
+}
 const STEPS: Step[] = [
   { name: 'home', path: '/' },
   { name: 'articles', path: '/articles/' },
@@ -32,6 +51,17 @@ const STEPS: Step[] = [
   { name: 'header', path: '/', root: '.site-header' },
   { name: 'footer', path: '/', root: '.site-footer', open: async (p) => p.locator('.site-footer').scrollIntoViewIfNeeded() },
   { name: 'theme-menu', path: '/', root: '.site-header', open: async (p) => p.locator('.theme-button').click() },
+  { name: 'hero-signed-in', path: '/', root: '.hero', signedIn: true },
+  {
+    name: 'account-menu-signed-in',
+    path: '/',
+    root: '.site-header',
+    signedIn: true,
+    open: async (p) => {
+      await p.locator('#account .account-button').click();
+      await p.locator('#account-menu').waitFor();
+    },
+  },
   {
     name: 'search-popup',
     path: '/',
@@ -52,13 +82,14 @@ const STEPS: Step[] = [
 const MIN_RATIO = Number(process.env.SWEEP_MIN || 4.5);
 const withTheme = (path: string, theme: string) => `${path}${path.includes('?') ? '&' : '?'}theme=${theme}`;
 
-for (const step of STEPS) {
+for (const step of STEPS.filter((s) => !ONLY || ONLY.test(s.name))) {
   for (const l of LOCALES) {
     test(`sweep ${step.name} ${l}`, async ({ page }, info) => {
       test.setTimeout(300_000);
       const dir = `test-results-themes/sweep/${info.project.name}`;
       mkdirSync(dir, { recursive: true });
       const findings: unknown[] = [];
+      if (step.signedIn) await signIn(page);
       for (const theme of THEME_IDS) {
         for (const scheme of SCHEMES) {
           await page.emulateMedia({ colorScheme: scheme });

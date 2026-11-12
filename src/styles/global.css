@@ -386,6 +386,26 @@ a:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.account-button .account-label {
+  min-width: 0;
+}
+.account-avatar {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-inline-start: -0.25rem;
+}
+@media (max-width: 30rem) {
+  .account-button {
+    max-width: 10rem;
+  }
+}
+/* signed-in hint (theme-mode.ts head script): no "Sign in" flash while /auth/me answers */
+[data-signed-in] .account > .signin-link {
+  visibility: hidden;
+}
 .account-button svg {
   width: 0.875rem;
   height: 0.875rem;
@@ -575,6 +595,14 @@ a:hover {
 }
 
 /* ---------- hero (the one bold moment) ---------- */
+/* both CTAs are in the cached HTML; <html data-signed-in> picks one before first paint */
+.hero-actions .hero-cta-signed-in,
+[data-signed-in] .hero-actions .hero-cta-signed-out {
+  display: none;
+}
+[data-signed-in] .hero-actions .hero-cta-signed-in {
+  display: inline-flex;
+}
 .hero {
   position: relative;
   overflow: hidden;
