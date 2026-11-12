@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 @import './fanous-themes.generated.css';
+/* The header account button and menus: the shared nav contract (AlUmmahNow docs/design/NAV.md) */
+@import './aun-nav.generated.css';
 
 /*
  * Al Ummah Now / الأمة الآن
@@ -355,9 +357,7 @@ a:hover {
   list-style: none;
 }
 .primary-nav a,
-.lang-switch,
-.signin-link,
-.account-button {
+.signin-link {
   display: inline-flex;
   align-items: center;
   min-height: 2.75rem;
@@ -367,8 +367,7 @@ a:hover {
   text-decoration: none;
   font-weight: 500;
 }
-.primary-nav a:hover,
-.lang-switch:hover {
+.primary-nav a:hover {
   background: var(--hover);
 }
 .primary-nav a[aria-current='page'] {
@@ -378,9 +377,6 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-}
-.lang-switch {
-  border: 1px solid var(--control-line);
 }
 .signin-link {
   background: var(--solid-bg);
@@ -406,95 +402,9 @@ a:hover {
 .account {
   position: relative;
 }
-.account-button {
-  gap: 0.5rem;
-  border: 1px solid var(--control-line);
-  background: var(--surface);
-  cursor: pointer;
-  font: inherit;
-  max-width: 14rem;
-}
-.account-button span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.account-button .account-label {
-  min-width: 0;
-}
-.account-avatar {
-  width: 1.5rem;
-  height: 1.5rem;
-  flex: none;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-inline-start: -0.25rem;
-}
-@media (max-width: 30rem) {
-  .account-button {
-    max-width: 10rem;
-  }
-}
 /* signed-in hint (theme-mode.ts head script): no "Sign in" flash while /auth/me answers */
 [data-signed-in] .account > .signin-link {
   visibility: hidden;
-}
-.account-button svg {
-  width: 0.875rem;
-  height: 0.875rem;
-  flex: none;
-}
-.account-menu {
-  position: absolute;
-  inset-inline-end: 0;
-  inset-block-start: calc(100% + 0.375rem);
-  z-index: 40;
-  min-width: 15rem;
-  margin: 0;
-  padding: 0.375rem;
-  list-style: none;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 0.5rem;
-  box-shadow: var(--menu-shadow);
-}
-.account-menu[hidden] {
-  display: none;
-}
-.account-menu a,
-.account-menu button {
-  display: flex;
-  width: 100%;
-  min-height: 2.75rem;
-  align-items: center;
-  padding-inline: 0.75rem;
-  border-radius: 0.375rem;
-  color: var(--text);
-  text-decoration: none;
-  background: none;
-  border: 0;
-  font: inherit;
-  text-align: start;
-  cursor: pointer;
-}
-.account-menu a:hover,
-.account-menu button:hover,
-.account-menu a:focus-visible,
-.account-menu button:focus-visible {
-  background: var(--hover);
-}
-.account-menu .account-who {
-  padding: 0.5rem 0.75rem;
-  color: var(--text-soft);
-  font-size: 0.875rem;
-  border-block-end: 1px solid var(--line);
-  margin-block-end: 0.25rem;
-}
-.account-menu form {
-  margin: 0;
-  border-block-start: 1px solid var(--line);
-  margin-block-start: 0.25rem;
-  padding-block-start: 0.25rem;
 }
 /* in-app confirmation for destructive actions (./scripts/confirm.ts) */
 .confirm-dialog {
@@ -553,69 +463,6 @@ a:hover {
 .confirm-dialog-ok:hover {
   background: var(--danger-bg-hover);
 }
-/* every account in this browser (from auth's /session/accounts) */
-.account-menu .account-group {
-  border-block-end: 1px solid var(--line);
-  margin-block-end: 0.25rem;
-  padding-block-end: 0.25rem;
-}
-.account-menu .account-group-label {
-  display: block;
-  padding: 0.25rem 0.75rem;
-  color: var(--text-soft);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-.account-menu .account-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.account-menu .account-row {
-  display: flex;
-  align-items: stretch;
-  gap: 0.25rem;
-}
-.account-menu .account-entry {
-  display: flex;
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 2.75rem;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 0.375rem 0.75rem;
-  border-radius: 0.375rem;
-}
-.account-menu .account-entry[aria-current='true'] {
-  background: var(--hover);
-}
-.account-menu .account-name,
-.account-menu .account-email {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.account-menu .account-name {
-  font-weight: 600;
-}
-.account-menu .account-email,
-.account-menu .account-current {
-  color: var(--text-soft);
-  font-size: 0.8125rem;
-}
-.account-menu .account-row > .account-signout {
-  width: auto;
-  flex: none;
-  color: var(--text-soft);
-  font-size: 0.8125rem;
-}
-.account-menu button[disabled] {
-  cursor: progress;
-  opacity: 0.6;
-}
-
 /* ---------- notices ---------- */
 .notice {
   background: var(--notice-bg);
@@ -1399,23 +1246,11 @@ html:not([data-js]) .theme {
 }
 .theme-button {
   display: inline-grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  padding: 0;
-  border: 1px solid var(--control-line);
-  border-radius: 999px;
-  background: none;
-  color: var(--text);
-  cursor: pointer;
-}
-.theme-button:hover {
-  background: var(--hover);
 }
 .theme-button .theme-icon {
   grid-area: 1 / 1;
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.125rem;
+  height: 1.125rem;
 }
 .theme-button[data-current='system'] .theme-icon:not([data-icon='system']),
 .theme-button[data-current='light'] .theme-icon:not([data-icon='light']),
@@ -1423,53 +1258,7 @@ html:not([data-js]) .theme {
   display: none;
 }
 .theme-menu {
-  position: absolute;
-  inset-inline-end: 0;
-  inset-block-start: calc(100% + 0.375rem);
-  z-index: 40;
   min-width: 11rem;
-  margin: 0;
-  padding: 0.375rem;
-  list-style: none;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 0.5rem;
-  box-shadow: var(--menu-shadow);
-}
-.theme-menu[hidden] {
-  display: none;
-}
-.theme-menu button {
-  display: flex;
-  width: 100%;
-  min-height: 2.75rem;
-  align-items: center;
-  gap: 0.625rem;
-  padding-inline: 0.75rem;
-  border: 0;
-  border-radius: 0.375rem;
-  background: none;
-  color: var(--text);
-  font: inherit;
-  text-align: start;
-  cursor: pointer;
-}
-.theme-menu button:hover,
-.theme-menu button:focus-visible {
-  background: var(--hover);
-}
-.theme-menu button[aria-pressed='true'] {
-  font-weight: 600;
-  box-shadow: inset 3px 0 0 var(--color-lantern);
-}
-[dir='rtl'] .theme-menu button[aria-pressed='true'] {
-  box-shadow: inset -3px 0 0 var(--color-lantern);
-}
-.theme-menu .theme-icon {
-  width: 1.125rem;
-  height: 1.125rem;
-  flex: none;
-  color: var(--accent-text);
 }
 
 /* ---------- draft preview (src/components/PreviewBanner.astro) ---------- */

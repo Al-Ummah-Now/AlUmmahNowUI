@@ -40,10 +40,11 @@ export const en = {
     dark: 'Dark',
   },
   auth: {
+    apps: 'Al Ummah Now apps',
     signIn: 'Sign in',
     signOut: 'Sign out',
     profile: 'Your profile',
-    videos: 'Al Ummah Now Videos',
+    videos: 'Videos',
     cms: 'Content management',
     signedInAs: 'Signed in as {name}',
     accounts: 'Your accounts',

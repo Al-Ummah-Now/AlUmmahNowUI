@@ -42,10 +42,11 @@ export const ar: Messages = {
     dark: 'داكن',
   },
   auth: {
+    apps: 'تطبيقات الأمة الآن',
     signIn: 'تسجيل الدخول',
     signOut: 'تسجيل الخروج',
     profile: 'ملفك الشخصي',
-    videos: 'مرئيات الأمة الآن',
+    videos: 'المرئيات',
     cms: 'إدارة المحتوى',
     signedInAs: 'مسجّل الدخول باسم {name}',
     accounts: 'حساباتك',
