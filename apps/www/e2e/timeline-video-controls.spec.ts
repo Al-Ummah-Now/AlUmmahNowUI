@@ -2,7 +2,8 @@
  * Timeline videos and Shorts (owner design pick 2026-11-12, direction A): hover plays a muted
  * preview with play / sound / progress controls; the controls act on the preview and never open the
  * post or the Shorts viewer (owner bug: "why does it open the Short if I unmute it"). A click on a
- * Short's surface opens the Shorts viewer: one Short per screen, ↑ ↓ for the next, Esc returns focus.
+ * Short plays it inline, like a video; the post's "Open in Shorts" button opens the Shorts viewer: one
+ * Short per screen, ↑ ↓ for the next, Esc returns focus to the button.
  *
  * The videos platform's public play API (src/scripts/timeline-media.ts) is routed to fixtures here:
  * GET {api}/videos/{id}/play and GET {api}/shorts?after=…; the files are e2e/fixtures/*.webm served
@@ -48,7 +49,16 @@ async function routeApi(page: Page, opts: { down?: boolean; noFile?: boolean } =
     const items = after === 'feed-short-1' ? [play('next-short-2', 'short', 'Three words before sleep'), play('next-short-3', 'short', 'Why we begin with Bismillah')] : [];
     return r.fulfill({ contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ items, next: null }) });
   });
-  await page.route(`${MEDIA}/**`, (r) => opts.noFile ? r.fulfill({ status: 404, body: '' }) : r.fulfill({ contentType: 'video/webm', body: clip(r.request().url().endsWith('short.mp4') ? 'short' : 'video') }));
+  // Like the CDN: byte ranges, so the browser can seek (the viewer carries on where the inline Short was)
+  await page.route(`${MEDIA}/**`, (r) => {
+    if (opts.noFile) return r.fulfill({ status: 404, body: '' });
+    const body = clip(r.request().url().endsWith('short.mp4') ? 'short' : 'video');
+    const range = /bytes=(\d+)-(\d*)/.exec(r.request().headers()['range'] ?? '');
+    if (!range) return r.fulfill({ contentType: 'video/webm', headers: { 'Accept-Ranges': 'bytes' }, body });
+    const start = Number(range[1]);
+    const end = range[2] ? Math.min(Number(range[2]), body.length - 1) : body.length - 1;
+    return r.fulfill({ status: 206, contentType: 'video/webm', headers: { 'Accept-Ranges': 'bytes', 'Content-Range': `bytes ${start}-${end}/${body.length}` }, body: body.subarray(start, end + 1) });
+  });
   return calls;
 }
 
@@ -124,11 +134,12 @@ test.describe('timeline: preview fallbacks', () => {
 });
 
 test.describe('timeline: the Shorts viewer', () => {
-  test('a click on a Short opens it; ↓ goes to the next Short; Esc closes and returns focus', async ({ page, isMobile }) => {
+  test('"Open in Shorts" opens the viewer; ↓ goes to the next Short; Esc closes and returns focus', async ({ page, isMobile }) => {
     const calls = await routeApi(page);
     await page.goto('/en/');
-    const surface = shortPost(page).locator('.facade-play');
+    const surface = shortPost(page).getByRole('button', { name: 'Open in Shorts, full screen' });
     await surface.scrollIntoViewIfNeeded();
+    await expect(shortPost(page).locator('.tl-mwrap')).toHaveAttribute('data-play-ready', '');
     if (isMobile) await surface.tap();
     else await surface.click();
     const dlg = viewer(page);
@@ -154,15 +165,16 @@ test.describe('timeline: the Shorts viewer', () => {
     await page.keyboard.press('Escape');
     await expect(dlg).toHaveCount(0);
     await expect(surface).toBeFocused();
-    // a Short never plays in place
+    // the viewer plays the platform's file, never the embed
     await expect(shortPost(page).locator('.facade-iframe')).toHaveCount(0);
   });
 
   test('ar: the viewer speaks Arabic and links to the Arabic watch page', async ({ page }) => {
     await routeApi(page);
     await page.goto('/ar/');
-    const surface = shortPost(page).locator('.facade-play');
+    const surface = shortPost(page).getByRole('button', { name: 'افتح في المقاطع القصيرة بملء الشاشة' });
     await surface.scrollIntoViewIfNeeded();
+    await expect(shortPost(page).locator('.tl-mwrap')).toHaveAttribute('data-play-ready', '');
     await surface.click();
     const dlg = viewer(page);
     await expect(dlg.getByRole('button', { name: 'أغلق المقاطع القصيرة' })).toBeFocused();
@@ -212,19 +224,37 @@ test.describe('timeline: one click plays, with sound', () => {
       expect(new URL(page.url()).pathname).toBe(`/${l}/`);
     });
 
-    test(`a Short: one ${l} click or tap opens the viewer already playing, not muted`, async ({ page, isMobile }) => {
+    test(`a Short: one ${l} click or tap plays it inline, vertical, not muted; "Open in Shorts" carries on full screen`, async ({ page, isMobile }) => {
       await routeApi(page);
       await page.goto(`/${l}/`);
-      const wrap = shortPost(page).locator('.tl-mwrap');
+      const post = shortPost(page);
+      const wrap = post.locator('.tl-mwrap');
       await wrap.scrollIntoViewIfNeeded();
       await expect(wrap).toHaveAttribute('data-play-ready', '');
       const surface = wrap.locator('.facade-play');
       if (isMobile) await surface.tap();
       else await surface.click();
+      // inline, in the post's vertical frame: no viewer, no embed, same page
+      await playingWithSound(wrap.locator('video'));
+      await expect(wrap).toHaveAttribute('data-inplace', '');
+      await expect(viewer(page)).toHaveCount(0);
+      await expect(post.locator('.facade-iframe')).toHaveCount(0);
+      const box = (await wrap.boundingBox())!;
+      expect(box.height).toBeGreaterThan(box.width);
+      expect(new URL(page.url()).pathname).toBe(`/${l}/`);
+      // the same controls as a video post act in place
+      await expect(post.locator('[data-vmute]')).toHaveAttribute('aria-pressed', 'true');
+      // "Open in Shorts": the viewer, already playing with sound, carrying on from the inline Short
+      const inlineAt = await wrap.locator('video').evaluate((v: HTMLVideoElement) => v.currentTime);
+      const open = post.locator('[data-shorts-open]');
+      if (isMobile) await open.tap();
+      else await open.click();
       const dlg = viewer(page);
       await expect(dlg).toBeVisible();
-      await playingWithSound(dlg.locator('.sv-item').first().locator('video'));
-      await expect(dlg.locator('.sv-item').first().locator('button[aria-pressed]')).toHaveAttribute('aria-pressed', 'true');
+      const first = dlg.locator('.sv-item').first().locator('video');
+      await playingWithSound(first);
+      expect(await first.evaluate((v: HTMLVideoElement) => v.currentTime)).toBeGreaterThanOrEqual(inlineAt - 0.05);
+      expect(await wrap.locator('video').evaluate((v: HTMLVideoElement) => v.paused)).toBe(true);
     });
   }
 });

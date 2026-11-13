@@ -1661,6 +1661,40 @@ html:not([data-js]) .theme {
 .tl-mwrap[data-inplace] .facade-play svg {
   opacity: 0;
 }
+/* a Short's "Open in Shorts" button: top end corner, always there (also the hint on touch) */
+.tl-sexpand {
+  position: absolute;
+  z-index: 5;
+  inset-block-start: 0.5rem;
+  inset-inline-end: 0.5rem;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-night-deep) 72%, transparent);
+  color: var(--color-paper);
+  cursor: pointer;
+}
+.tl-sexpand:hover {
+  background: var(--color-night-deep);
+}
+.tl-sexpand:focus-visible {
+  outline: 2px solid var(--color-lantern);
+  outline-offset: 2px;
+}
+.tl-sexpand svg {
+  width: 1rem;
+  height: 1rem;
+}
+.tl-mwrap[data-short] .tl-ov {
+  padding-inline-end: 3.25rem;
+}
+/* no play API on this page: nothing to open */
+.tl:not([data-play-api]) .tl-sexpand {
+  display: none;
+}
 /* playing for real (after the click): the controls stay, like any player */
 .tl-mwrap[data-inplace] .tl-vctl {
   opacity: 1;
