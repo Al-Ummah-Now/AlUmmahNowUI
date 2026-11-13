@@ -42,6 +42,7 @@ export const ar: Messages = {
     dark: 'داكن',
   },
   auth: {
+    moreAccounts: 'حسابات أخرى',
     apps: 'تطبيقات الأمة الآن',
     signIn: 'تسجيل الدخول',
     signOut: 'تسجيل الخروج',

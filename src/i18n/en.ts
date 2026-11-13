@@ -40,6 +40,7 @@ export const en = {
     dark: 'Dark',
   },
   auth: {
+    moreAccounts: 'More accounts',
     apps: 'Al Ummah Now apps',
     signIn: 'Sign in',
     signOut: 'Sign out',
