@@ -1,0 +1,362 @@
+/*
+ * Scholar sites: the platform's theme tokens (the site's chosen theme, html[data-theme]) with a
+ * small layout of their own. Colours come only from the vendored Fanous tokens (packages/render),
+ * so every theme keeps the platform's contrast guarantees; sites have no colour input.
+ * Layout uses logical properties only, so RTL needs no mirrored rules.
+ */
+@import '../../../../packages/render/src/styles/fanous-themes.generated.css';
+@import '../../../../packages/render/src/styles/fanous-street.generated.css';
+
+@font-face {
+  font-family: 'Noto Naskh Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/noto-naskh-arabic-arabic-400-normal.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: 'Noto Naskh Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/noto-naskh-arabic-arabic-700-normal.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+
+:root {
+  --gutter: clamp(1rem, 4vw, 2.5rem);
+  --wide: 74rem;
+  --measure: 42rem;
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-ar: 'Noto Naskh Arabic', 'Geeza Pro', 'Segoe UI', Tahoma, sans-serif;
+}
+
+html[data-theme] {
+  color-scheme: light;
+  --bg: var(--fanous-color-background);
+  --surface: var(--fanous-color-surface);
+  --surface-raised: var(--fanous-color-surface-raised);
+  --text: var(--fanous-color-text-primary);
+  --text-soft: var(--fanous-color-text-secondary);
+  --link: var(--fanous-color-link);
+  --line: var(--fanous-color-divider);
+  --focus-color: var(--fanous-color-focus-ring);
+  --header-bg: var(--fanous-c-nav-bg);
+  --header-text: var(--fanous-c-nav-text);
+  --header-active: var(--fanous-c-nav-active-text);
+  --header-hover: var(--fanous-c-nav-hover);
+  --button-bg: var(--fanous-c-button-primary-bg);
+  --button-text: var(--fanous-c-button-primary-text);
+}
+html[data-theme][data-mode='dark'] {
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  html[data-theme]:not([data-mode='light']) {
+    color-scheme: dark;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1.6;
+}
+html[lang='ar'] body {
+  font-family: var(--font-ar);
+}
+a {
+  color: var(--link);
+}
+:focus-visible {
+  outline: 3px solid var(--focus-color);
+  outline-offset: 2px;
+}
+img {
+  max-inline-size: 100%;
+  block-size: auto;
+}
+.wrap {
+  max-inline-size: var(--wide);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+.narrow {
+  max-inline-size: calc(var(--measure) + 2 * var(--gutter));
+}
+.skip-link {
+  position: absolute;
+  inset-inline-start: 1rem;
+  inset-block-start: -10rem;
+  background: var(--surface-raised);
+  color: var(--text);
+  padding: 0.5rem 1rem;
+  z-index: 10;
+}
+.skip-link:focus {
+  inset-block-start: 1rem;
+}
+.preview-bar {
+  margin: 0;
+  padding: 0.5rem var(--gutter);
+  background: var(--fanous-color-accent);
+  color: var(--fanous-color-on-primary);
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Header: dark in every theme (a builder rule) */
+.site-header {
+  background: var(--header-bg);
+  color: var(--header-text);
+}
+.header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  min-block-size: 4rem;
+  padding-block: 0.5rem;
+}
+.site-header a {
+  color: var(--header-text);
+  text-decoration: none;
+}
+.site-header a:hover {
+  color: var(--header-active);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+.brand-logo {
+  inline-size: 40px;
+  block-size: 40px;
+  border-radius: var(--fanous-radius-sm);
+  object-fit: contain;
+}
+.site-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.site-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+}
+.site-nav a[aria-current='page'] {
+  color: var(--header-active);
+  text-decoration: underline;
+  text-underline-offset: 0.35em;
+}
+.header-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-inline-start: auto;
+}
+.header-tools button,
+.header-tools .sign-in {
+  min-block-size: 2.75rem;
+  min-inline-size: 2.75rem;
+  padding-inline: 0.75rem;
+  border: 1px solid var(--fanous-c-nav-border);
+  border-radius: var(--fanous-radius-full);
+  background: transparent;
+  color: var(--header-text);
+  font: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.mode-icon::before {
+  content: '☾';
+}
+.mode-toggle[data-current='dark'] .mode-icon::before {
+  content: '☀';
+}
+.mode-toggle {
+  display: none !important;
+}
+html[data-js] .mode-toggle {
+  display: inline-flex !important;
+}
+.account {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+html[data-signed-in] .account {
+  display: flex;
+}
+html[data-signed-in] .sign-in {
+  display: none;
+}
+
+/* Content */
+.section {
+  padding-block: 2rem;
+}
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding-block: 2.5rem 1rem;
+}
+.hero-logo,
+.about-logo {
+  border-radius: var(--fanous-radius-md);
+  object-fit: contain;
+}
+.hero h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+}
+.hero-intro {
+  color: var(--text-soft);
+  margin: 0.5rem 0 0;
+}
+.empty {
+  color: var(--text-soft);
+}
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.video-card a {
+  color: var(--text);
+  text-decoration: none;
+  display: grid;
+  gap: 0.5rem;
+}
+.thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--fanous-radius-md);
+  overflow: hidden;
+  background: var(--header-bg);
+}
+.thumb img {
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+.duration {
+  position: absolute;
+  inset-block-end: 0.4rem;
+  inset-inline-end: 0.4rem;
+  padding: 0 0.4rem;
+  border-radius: var(--fanous-radius-sm);
+  background: var(--header-bg);
+  color: var(--header-text);
+  font-size: 0.8rem;
+}
+.video-title {
+  font-weight: 600;
+}
+.post-card {
+  padding-block: 1.25rem;
+  border-block-end: 1px solid var(--line);
+}
+.post-date {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.post-date a {
+  color: var(--text-soft);
+}
+.post-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
+  gap: 0.5rem;
+}
+.post-images img {
+  border-radius: var(--fanous-radius-md);
+}
+.post-meta {
+  color: var(--text-soft);
+  font-size: 0.9rem;
+}
+.post-options ul {
+  padding-inline-start: 1.25rem;
+}
+.player {
+  aspect-ratio: 16 / 9;
+  border-radius: var(--fanous-radius-md);
+  overflow: hidden;
+  background: var(--header-bg);
+}
+.player iframe {
+  inline-size: 100%;
+  block-size: 100%;
+  border: 0;
+}
+.pager {
+  display: flex;
+  gap: 1.5rem;
+}
+.prose {
+  max-inline-size: var(--measure);
+}
+
+/* Footer: the legal/report links are always there; the platform mark follows the tier */
+.site-footer {
+  margin-block-start: 3rem;
+  padding-block: 2rem;
+  background: var(--header-bg);
+  color: var(--header-text);
+}
+.site-footer a {
+  color: var(--header-text);
+}
+.site-footer ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.platform-band {
+  font-weight: 600;
+}
+.footer-base {
+  color: var(--header-text);
+  opacity: 0.85;
+  font-size: 0.9rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}

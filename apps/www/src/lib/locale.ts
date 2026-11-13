@@ -1,23 +1,8 @@
-export const LOCALES = ['en', 'ar'] as const;
-export type Locale = (typeof LOCALES)[number];
+// The languages and cookie reader are shared with the sites Worker (packages/render/src/locale.ts)
+import { isLocale, readCookie, type Locale } from '../../../../packages/render/src/locale';
+export { LOCALES, dir, isLocale, otherLocale, readCookie, type Locale } from '../../../../packages/render/src/locale';
 export const DEFAULT_LOCALE: Locale = 'en';
 export const LOCALE_COOKIE = 'aun_locale';
-
-export function isLocale(value: unknown): value is Locale {
-  return typeof value === 'string' && (LOCALES as readonly string[]).includes(value);
-}
-
-export const dir = (l: Locale): 'rtl' | 'ltr' => (l === 'ar' ? 'rtl' : 'ltr');
-export const otherLocale = (l: Locale): Locale => (l === 'ar' ? 'en' : 'ar');
-
-export function readCookie(header: string | null, name: string): string | null {
-  if (!header) return null;
-  for (const part of header.split(';')) {
-    const i = part.indexOf('=');
-    if (i > 0 && part.slice(0, i).trim() === name) return part.slice(i + 1).trim();
-  }
-  return null;
-}
 
 /** Locale for `/`: the aun_locale cookie, then Accept-Language (by q), then en. */
 export function negotiateLocale(cookieHeader: string | null, acceptLanguage: string | null): Locale {

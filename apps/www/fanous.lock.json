@@ -9,8 +9,8 @@
     "packages/fanous-tokens/street/fanous-street.css": "4c357de2e2763f8dcd56baa4cf26f8f1e5df227ba02536b86a6105e38c3b6347"
   },
   "outputs": {
-    "src/styles/fanous-themes.generated.css": "000ca8fc091055cbe3a84837fb2f5a2257f140701156bdcdfb560c32b6a22d83",
-    "src/lib/site-themes.generated.ts": "4fcda56e2ce30d37bcad4116b28b560743cb91cbc7b6d2d2efc0bd650d0c5a8d",
+    "../../packages/render/src/styles/fanous-themes.generated.css": "000ca8fc091055cbe3a84837fb2f5a2257f140701156bdcdfb560c32b6a22d83",
+    "../../packages/render/src/themes/site-themes.generated.ts": "4fcda56e2ce30d37bcad4116b28b560743cb91cbc7b6d2d2efc0bd650d0c5a8d",
     "src/styles/aun-nav.generated.css": "0f44ba40e53cb9902d69df51366e834b126b3922d11260fbb2b4638c0724c04f",
     "public/aun-nav/icons/www.webp": "b0feb2c79ff71890862210489b49db96fb0d90f58d7818279f6bec53ae032b56",
     "public/aun-nav/icons/videos.webp": "856d631b870c5805002379271469e1dd475a23f3b07d61f5141b7f8149fd3366",
@@ -18,8 +18,8 @@
     "public/aun-nav/icons/cms.webp": "54cc87ed54cfdc8c1b9d9cccde57fa753b8974cca8f7a1e61b8fcb5f6b488565",
     "public/aun-nav/icons/admin.webp": "33d3ae62ec9a9cf98b65c3d04007c1cdbfd12a8633b506c0b610c35a43074c81",
     "public/aun-nav/icons/auth-admin.webp": "61f4fd5b7dc27ccc009d7dd0b8f8488d6a989800644d1f69fc5896ad1430764f",
-    "src/lib/fanous-street.generated.js": "ede76b161e704814f8f4fd62a37477ad7a4cc948bdfb8ad593af4908b12b053e",
-    "src/lib/fanous-street.generated.d.ts": "9c37be568dca77896e63fda732cce7bb6b3e209e5569246e32d88bd8e619f70c",
-    "src/styles/fanous-street.generated.css": "1bc3062d503892a5bc0597d5973a95e66cc74db0a3ab6e10148827207f882d5f"
+    "../../packages/render/src/themes/fanous-street.generated.js": "ede76b161e704814f8f4fd62a37477ad7a4cc948bdfb8ad593af4908b12b053e",
+    "../../packages/render/src/themes/fanous-street.generated.d.ts": "9c37be568dca77896e63fda732cce7bb6b3e209e5569246e32d88bd8e619f70c",
+    "../../packages/render/src/styles/fanous-street.generated.css": "1bc3062d503892a5bc0597d5973a95e66cc74db0a3ab6e10148827207f882d5f"
   }
 }

@@ -1,0 +1,25 @@
+---
+import SiteLayout from '../../../layouts/SiteLayout.astro';
+import PostCard from '../../../components/PostCard.astro';
+import { pageContext } from '../../../lib/context';
+import { channelPosts } from '../../../lib/data';
+import { alternates, canonicalUrl } from '../../../lib/seo';
+import { fmt } from '../../../lib/i18n';
+
+const ctx = pageContext(Astro);
+if (!ctx) return new Response('Not found', { status: 404 });
+const { site, locale, t } = ctx;
+const page = Math.min(Math.max(Number(Astro.url.searchParams.get('page')) || 1, 1), 100);
+const posts = await channelPosts(ctx.data, site.channel.id, page, 10);
+const path = page > 1 ? `posts/?page=${page}` : 'posts/';
+---
+<SiteLayout ctx={ctx} title={page > 1 ? `${t.nav.posts} · ${fmt(t.page, { n: page })}` : t.nav.posts} alternates={alternates(site, path)} canonical={canonicalUrl(site, locale, path, ctx.scheme)} active="posts">
+  <section class="wrap section narrow">
+    <h1>{t.nav.posts}</h1>
+    {posts.items.length ? posts.items.map((p) => <PostCard ctx={ctx} post={p} />) : <p class="empty">{t.noPosts}</p>}
+    <p class="pager">
+      {page > 1 && <a href={`/${locale}/posts/${page > 2 ? `?page=${page - 1}` : ''}`} rel="prev">{t.previous}</a>}
+      {posts.hasNext && <a href={`/${locale}/posts/?page=${page + 1}`} rel="next">{t.next}</a>}
+    </p>
+  </section>
+</SiteLayout>

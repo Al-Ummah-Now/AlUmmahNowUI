@@ -1,0 +1,183 @@
+/**
+ * The site's content from the videos API, read anonymously (public items only), each read cached
+ * 60 s in the Cache API. Failures are an empty list (and logged), never an error page.
+ *   - videos: GET /api/channels/:id/videos?sort=latest&limit=&cursor=
+ *   - one video: GET /api/videos/:id (only when it belongs to this site's channel)
+ *   - posts: GET /api/community/channels/:id/posts?page=&limit= (the channel's community posts, SS4/SS6)
+ *   - one post: GET /api/community/channels/:id/posts/:postId
+ */
+import { VIDEO_ID } from '../../../../packages/render/src/embeds';
+import { normalizeImageUrl } from '../../../../packages/render/src/images';
+import type { Locale } from '../../../../packages/render/src/locale';
+
+export const CURSOR = /^[A-Za-z0-9._~:+/=-]{1,512}$/;
+export const POST_ID = /^[A-Za-z0-9_-]{1,80}$/;
+
+export interface DataDeps {
+  apiUrl: string;
+  cache: Cache | null;
+  waitUntil: (p: Promise<unknown>) => void;
+  fetchImpl?: typeof fetch;
+  log?: (message: string, data?: Record<string, unknown>) => void;
+}
+
+export interface SiteVideo {
+  id: string;
+  title: string;
+  titles: Partial<Record<Locale, string>>;
+  description: string | null;
+  descriptions: Partial<Record<Locale, string>>;
+  thumbnailUrl: string | null;
+  durationSeconds: number | null;
+  publishedAt: string | null;
+  channelId: string | null;
+  isShort: boolean;
+  views: number | null;
+}
+
+export type PostKind = 'text' | 'image' | 'poll' | 'quiz' | 'video' | 'gif' | 'article' | 'cards' | 'link';
+
+export interface SitePost {
+  id: string;
+  kind: PostKind;
+  text: string | null;
+  images: { url: string; alt: string; width: number | null; height: number | null }[];
+  videoId: string | null;
+  article: { title: string; excerpt: string | null; coverUrl: string | null; url: string | null } | null;
+  options: string[];
+  likes: number;
+  comments: number;
+  createdAt: string;
+  pinned: boolean;
+}
+
+const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null);
+const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : null);
+const localized = (v: unknown): Partial<Record<Locale, string>> => {
+  const out: Partial<Record<Locale, string>> = {};
+  if (v && typeof v === 'object') for (const l of ['en', 'ar'] as const) { const t = str((v as Record<string, unknown>)[l]); if (t) out[l] = t; }
+  return out;
+};
+
+export function toSiteVideo(body: unknown): SiteVideo | null {
+  const b = body as Record<string, unknown> | null;
+  if (!b || typeof b.id !== 'string' || !VIDEO_ID.test(b.id)) return null;
+  if (b.isDeleted === true || b.isHidden === true || b.isPublic === false || b.isPrivate === true) return null;
+  const title = str(b.title);
+  if (!title) return null;
+  const thumb = str(b.thumbnailUrl) ?? str(b.coverUrl);
+  return {
+    id: b.id,
+    title: title.replace(/\.(mp4|mov|mkv|webm)$/i, ''),
+    titles: localized(b.titleLocalized),
+    description: str(b.description),
+    descriptions: localized(b.descriptionLocalized),
+    thumbnailUrl: normalizeImageUrl(thumb),
+    durationSeconds: num(b.duration),
+    publishedAt: str(b.publishedAt) ?? str(b.dateCreated),
+    channelId: str(b.channelId),
+    isShort: b.format === 'short' || b.isShort === true,
+    views: num(b.views),
+  };
+}
+
+export function toSitePost(body: unknown): SitePost | null {
+  const b = body as Record<string, unknown> | null;
+  if (!b || typeof b.id !== 'string' || !POST_ID.test(b.id)) return null;
+  if (b.isDeleted === true || (b.status && b.status !== 'published') || (b.visibility && b.visibility !== 'public')) return null;
+  const kind = (str(b.type) ?? 'text') as PostKind;
+  const images = (Array.isArray(b.images) ? b.images : [])
+    .map((i) => {
+      const img = i as Record<string, unknown>;
+      const url = normalizeImageUrl(str(img.url));
+      return url ? { url, alt: str(img.alt) ?? str(img.altText) ?? '', width: num(img.width), height: num(img.height) } : null;
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    .slice(0, 10);
+  const a = b.article as Record<string, unknown> | undefined;
+  const optionsSource = (b.poll as { options?: unknown } | undefined)?.options ?? (b.quiz as { options?: unknown } | undefined)?.options;
+  return {
+    id: b.id,
+    kind,
+    text: str(b.content),
+    images,
+    videoId: typeof b.videoId === 'string' && VIDEO_ID.test(b.videoId) ? b.videoId : null,
+    article: a && str(a.title) ? { title: str(a.title) as string, excerpt: str(a.excerpt), coverUrl: normalizeImageUrl(str(a.coverUrl)), url: str(a.url) } : null,
+    options: (Array.isArray(optionsSource) ? optionsSource : []).map((o) => str((o as Record<string, unknown>)?.text) ?? '').filter(Boolean).slice(0, 10),
+    likes: num(b.likes) ?? 0,
+    comments: num(b.comments) ?? 0,
+    createdAt: str(b.createdAt) ?? '',
+    pinned: b.pinned === true,
+  };
+}
+
+async function cachedJson(deps: DataDeps, url: string): Promise<unknown | null> {
+  const key = new Request(`https://sites-data.internal/${encodeURIComponent(url)}`);
+  try {
+    const hit = await deps.cache?.match(key);
+    if (hit) return await hit.json();
+  } catch {
+    // miss
+  }
+  try {
+    const res = await (deps.fetchImpl ?? fetch)(url, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(2_500) });
+    if (!res.ok) {
+      if (res.status !== 404) deps.log?.('sites: data read failed', { url, status: res.status });
+      return null;
+    }
+    const body = await res.json();
+    if (deps.cache) deps.waitUntil(deps.cache.put(key, new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } })).catch(() => undefined));
+    return body;
+  } catch (error) {
+    deps.log?.('sites: data read failed', { url, error: String(error) });
+    return null;
+  }
+}
+
+export async function channelVideos(deps: DataDeps, channelId: string, opts: { cursor?: string | null; limit?: number } = {}): Promise<{ items: SiteVideo[]; cursor: string }> {
+  if (!VIDEO_ID.test(channelId)) return { items: [], cursor: '' };
+  const cursor = opts.cursor && CURSOR.test(opts.cursor) ? opts.cursor : '';
+  const params = new URLSearchParams({ sort: 'latest', limit: String(Math.min(Math.max(opts.limit ?? 12, 1), 24)), ...(cursor ? { cursor } : {}) });
+  const body = (await cachedJson(deps, `${deps.apiUrl}/api/channels/${channelId}/videos?${params}`)) as { data?: unknown; cursor?: unknown } | null;
+  const rows = Array.isArray(body?.data) ? body.data : [];
+  return {
+    items: rows.map(toSiteVideo).filter((v): v is SiteVideo => v !== null),
+    cursor: typeof body?.cursor === 'string' && CURSOR.test(body.cursor) ? body.cursor : '',
+  };
+}
+
+/** A video of THIS site's channel, else null (another channel's video never renders on the site). */
+export async function siteVideo(deps: DataDeps, channelId: string, videoId: string): Promise<SiteVideo | null> {
+  if (!VIDEO_ID.test(videoId)) return null;
+  const video = toSiteVideo(await cachedJson(deps, `${deps.apiUrl}/api/videos/${videoId}`));
+  return video && video.channelId === channelId ? video : null;
+}
+
+export async function channelPosts(deps: DataDeps, channelId: string, page = 1, limit = 10): Promise<{ items: SitePost[]; hasNext: boolean }> {
+  if (!VIDEO_ID.test(channelId)) return { items: [], hasNext: false };
+  const p = Math.min(Math.max(Math.trunc(page) || 1, 1), 100);
+  const body = (await cachedJson(deps, `${deps.apiUrl}/api/community/channels/${channelId}/posts?page=${p}&limit=${limit}`)) as { posts?: unknown; pagination?: { hasNext?: unknown } } | null;
+  const rows = Array.isArray(body?.posts) ? body.posts : [];
+  return { items: rows.map(toSitePost).filter((x): x is SitePost => x !== null), hasNext: body?.pagination?.hasNext === true };
+}
+
+export async function sitePost(deps: DataDeps, channelId: string, postId: string): Promise<SitePost | null> {
+  if (!VIDEO_ID.test(channelId) || !POST_ID.test(postId)) return null;
+  const body = await cachedJson(deps, `${deps.apiUrl}/api/community/channels/${channelId}/posts/${postId}`);
+  const post = toSitePost((body as { post?: unknown } | null)?.post ?? body);
+  const owner = (body as { channelId?: unknown } | null)?.channelId;
+  return post && (owner === undefined || owner === channelId) ? post : null;
+}
+
+export function localizedTitle(v: SiteVideo, locale: Locale): string {
+  return v.titles[locale] ?? v.title;
+}
+
+export function formatDuration(seconds: number | null): string {
+  if (!seconds) return '';
+  const s = Math.round(seconds);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const r = s % 60;
+  return h ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${m}:${String(r).padStart(2, '0')}`;
+}

@@ -1,0 +1,20 @@
+---
+import { formatDuration, localizedTitle, type SiteVideo } from '../lib/data';
+import type { Locale } from '../../../../packages/render/src/locale';
+
+interface Props { videos: SiteVideo[]; locale: Locale; testId?: string }
+const { videos, locale, testId } = Astro.props;
+---
+<ul class="video-grid" data-testid={testId}>
+  {videos.map((v) => (
+    <li class="video-card" data-testid="site-video-card">
+      <a href={`/${locale}/watch/${v.id}/`}>
+        <span class="thumb">
+          {v.thumbnailUrl ? <img src={v.thumbnailUrl} alt="" loading="lazy" decoding="async" width="320" height="180" /> : <span class="thumb-empty" />}
+          {v.durationSeconds && <span class="duration" dir="ltr">{formatDuration(v.durationSeconds)}</span>}
+        </span>
+        <span class="video-title">{localizedTitle(v, locale)}</span>
+      </a>
+    </li>
+  ))}
+</ul>

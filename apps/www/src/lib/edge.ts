@@ -9,6 +9,7 @@ import { articlesPath, isLocale, negotiateLocale } from './locale';
 import { isPreviewPath } from './preview';
 import { THEME_SOURCE_HEADER } from './site-theme';
 import { MODE_SCRIPT_HASH } from './theme-mode';
+import { cacheKeyUrl, cachedHtml } from '../../../../packages/render/src/html-cache';
 
 /** alummahnow.net/x?y → 301 https://www.alummahnow.net/x?y (only when SITE_URL is a www host). */
 export function apexRedirect(requestUrl: string, siteUrl: string): Response | null {
@@ -131,18 +132,8 @@ const FEED_CURSOR = /^\d{1,15}-[pv]\d{1,12}(?:\.\d{4}-W\d{2}\.[a-z0-9]{1,32})?$/
 
 // ---- HTML edge cache (SPEC §5): anonymous-identical HTML, keyed by URL --------------
 
-export const HTML_FRESH_SEC = 60;
-export const HTML_SWR_SEC = 600;
-/**
- * Revalidation lease (audit UI-2): on a STALE hit, the stale entry is first re-stored as fresh for
- * this long, so requests in other isolates of the colo see a HIT instead of each starting their
- * own render. Within one isolate an in-flight map collapses concurrent revalidations completely.
- */
-export const HTML_LEASE_SEC = 15;
-const STORED_AT = 'x-www-stored-at';
-/** When the entry's content was rendered: a lease moves STORED_AT, never this (bounds staleness). */
-const RENDERED_AT = 'x-www-rendered-at';
-export const HTML_CACHE_CONTROL = `public, max-age=0, s-maxage=${HTML_FRESH_SEC}, stale-while-revalidate=${HTML_SWR_SEC}`;
+// The cache itself is shared with the sites Worker (packages/render/src/html-cache.ts)
+export { HTML_CACHE_CONTROL, HTML_FRESH_SEC, HTML_LEASE_SEC, HTML_SWR_SEC } from '../../../../packages/render/src/html-cache';
 
 /** Locale pages only (not /auth, /healthz, feeds are fine to cache too). */
 export function isCacheableRequest(request: Request): boolean {
@@ -186,14 +177,8 @@ export function isCacheableResponse(response: Response): boolean {
  */
 export function htmlCacheKey(url: string, version: string, theme = ''): string {
   if (!version && !theme) return url;
-  const u = new URL(url);
-  if (version) u.searchParams.set('__v', version);
-  if (theme) u.searchParams.set('__t', theme);
-  return u.toString();
+  return cacheKeyUrl(url, { __v: version, __t: theme });
 }
-
-/** Revalidations in flight in this isolate, by URL. */
-const revalidating = new Map<string, Promise<unknown>>();
 
 export async function withHtmlCache(
   request: Request,
@@ -201,57 +186,15 @@ export async function withHtmlCache(
   waitUntil: (p: Promise<unknown>) => void,
   render: () => Promise<Response>,
   now: () => number = Date.now,
-  inflight: Map<string, Promise<unknown>> = revalidating,
+  inflight?: Map<string, Promise<unknown>>,
   version = '',
   theme = '',
 ): Promise<Response> {
-  if (!cache || !isCacheableRequest(request)) return render();
-  const key = new Request(htmlCacheKey(request.url, version, theme), { method: 'GET' });
-  const put = (res: Response, storedAt: number, renderedAt: number) => {
-    const copy = new Response(res.body, res);
-    copy.headers.set(STORED_AT, String(storedAt));
-    copy.headers.set(RENDERED_AT, String(renderedAt));
-    const left = Math.max(1, Math.ceil(HTML_FRESH_SEC + HTML_SWR_SEC - (now() - renderedAt) / 1000));
-    copy.headers.set('Cache-Control', `public, max-age=${left}`);
-    return cache.put(key, copy).catch(() => undefined);
-  };
-  const store = async (res: Response) => {
-    if (!isCacheableResponse(res)) return;
-    const t = now();
-    await put(res.clone(), t, t);
-  };
-  const finish = (res: Response, state: string) => {
-    const out = new Response(res.body, res);
-    out.headers.delete(STORED_AT);
-    out.headers.delete(RENDERED_AT);
-    out.headers.set('Cache-Control', HTML_CACHE_CONTROL);
-    out.headers.set('X-Edge-Cache', state);
-    return out;
-  };
-
-  const hit = await cache.match(key).catch(() => undefined);
-  if (hit) {
-    const storedAt = Number(hit.headers.get(STORED_AT) ?? 0);
-    const renderedAt = Number(hit.headers.get(RENDERED_AT) ?? storedAt);
-    const age = (now() - storedAt) / 1000;
-    const life = (now() - renderedAt) / 1000;
-    if (life < HTML_FRESH_SEC + HTML_SWR_SEC) {
-      if (age < HTML_FRESH_SEC) return finish(hit, 'HIT');
-      if (!inflight.has(key.url)) {
-        // Lease first (the stale copy, fresh for HTML_LEASE_SEC), then render and store.
-        const lease = put(hit.clone(), now() - (HTML_FRESH_SEC - HTML_LEASE_SEC) * 1000, renderedAt);
-        const job = lease
-          .then(render)
-          .then(store)
-          .catch(() => undefined)
-          .finally(() => inflight.delete(key.url));
-        inflight.set(key.url, job);
-        waitUntil(job);
-      }
-      return finish(hit, 'STALE');
-    }
-  }
-  const fresh = await render();
-  waitUntil(store(fresh));
-  return isCacheableResponse(fresh) ? finish(fresh, 'MISS') : fresh;
+  return cachedHtml(request, cache, waitUntil, render, {
+    key: htmlCacheKey(request.url, version, theme),
+    cacheableRequest: isCacheableRequest,
+    cacheableResponse: isCacheableResponse,
+    now,
+    inflight,
+  });
 }

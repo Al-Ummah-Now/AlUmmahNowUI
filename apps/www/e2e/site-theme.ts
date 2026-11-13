@@ -3,7 +3,7 @@
  * from the vendored tokens (src/styles/fanous-themes.generated.css), so no test hard-codes a colour.
  */
 import { readFileSync } from 'node:fs';
-import { THEME_IDS, type ThemeId } from '../src/lib/site-themes.generated.ts';
+import { THEME_IDS, type ThemeId } from '../../../packages/render/src/themes/site-themes.generated.ts';
 import { WWW_URL } from './env';
 
 export { THEME_IDS, type ThemeId };
@@ -26,7 +26,7 @@ export async function configuredTheme(): Promise<string> {
   return ((await res.json()) as { theme: string }).theme;
 }
 
-const CSS = readFileSync(new URL('../src/styles/fanous-themes.generated.css', import.meta.url), 'utf8');
+const CSS = readFileSync(new URL('../../../packages/render/src/styles/fanous-themes.generated.css', import.meta.url), 'utf8');
 
 /** A token's value for a theme and scheme, as the browser reports colours: `rgb(r, g, b)`. */
 export function token(theme: ThemeId, scheme: Scheme, name: string): string {

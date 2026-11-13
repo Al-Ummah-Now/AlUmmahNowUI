@@ -1,0 +1,27 @@
+---
+import { siteFromRequest } from '../lib/site';
+import { strings } from '../lib/i18n';
+import { isLocale } from '../../../../packages/render/src/locale';
+
+const site = siteFromRequest(Astro.request);
+const seg = Astro.url.pathname.split('/')[1];
+const locale = isLocale(seg) ? seg : site?.site.locales[0] ?? 'en';
+const t = strings(locale);
+Astro.response.status = 404;
+---
+<!doctype html>
+<html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>{t.notFoundTitle}</title>
+  </head>
+  <body>
+    <main>
+      <h1>{t.notFoundTitle}</h1>
+      <p>{t.notFoundBody}</p>
+      <p><a href={`/${locale}/`}>{t.backHome}</a></p>
+    </main>
+  </body>
+</html>

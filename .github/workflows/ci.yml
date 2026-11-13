@@ -87,3 +87,72 @@ jobs:
             apps/www/playwright-report/
           if-no-files-found: ignore
           retention-days: 14
+
+  # The scholar sites Worker (apps/sites, wiki AUN-SCHOLAR-SITES): same gates as www, E2E on the
+  # local stack (the built Worker under wrangler dev + the api-videos/auth stub, e2e/stub-api.ts)
+  sites:
+    name: Sites Worker (lint, typecheck, unit, build, E2E local)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: apps/sites
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+        working-directory: .
+
+      - name: Cookies stay host-only (release check, every app in this repo)
+        working-directory: .
+        run: |
+          node scripts/check-cookie-domains.mjs --self-test
+          node scripts/check-cookie-domains.mjs
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck (astro check + scripts)
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: wrangler config check
+        run: npm run check:config
+
+      - name: Build
+        run: npm run build
+
+      - name: Dry-run bundles (production, stage, qa)
+        run: |
+          npx wrangler deploy --dry-run -c wrangler.jsonc --outdir dist-dry/production
+          npx wrangler deploy --dry-run -c wrangler.jsonc --env stage --outdir dist-dry/stage
+          npx wrangler deploy --dry-run -c wrangler.jsonc --env qa --outdir dist-dry/qa
+
+      - name: Install Playwright browsers
+        uses: ./.github/actions/playwright-install
+        with:
+          runner: npx
+          browsers: chromium
+      - name: E2E against local wrangler dev
+        run: npx playwright test
+
+      - name: Keep secrets out of the uploaded E2E output
+        if: always()
+        run: python3 ../../scripts/scan-artifacts-for-secrets.py --remove test-results playwright-report
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sites-local
+          path: |
+            apps/sites/test-results/
+            apps/sites/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14

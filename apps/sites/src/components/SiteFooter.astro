@@ -1,0 +1,30 @@
+---
+import { siteName } from '../lib/seo';
+import type { PageContext } from '../lib/context';
+
+interface Props { ctx: PageContext }
+const { ctx } = Astro.props;
+const { site, locale, t, cfg } = ctx;
+const mark = site.site.platformMark;
+const name = siteName(site, locale);
+const year = new Date().getUTCFullYear();
+// Every site keeps the guidelines and a report link: the platform hosts and moderates it (§5.4)
+const guidelines = `${cfg.videosWebUrl}/${locale}/community-guidelines`;
+const report = `${cfg.videosWebUrl}/${locale}/contact`;
+---
+<footer class="site-footer" data-platform-mark={mark}>
+  <div class="wrap">
+    {mark === 'required' && (
+      <p class="platform-band" data-testid="site-platform-band"><a href={cfg.wwwUrl + `/${locale}/`}>{t.platformBand}</a></p>
+    )}
+    <nav aria-label={t.footerNav}>
+      <ul>
+        <li><a href={ctx.channelHref} data-testid="site-channel-link">{t.channel}</a></li>
+        <li><a href={guidelines}>{t.guidelines}</a></li>
+        <li><a href={report} data-testid="site-report-link">{t.report}</a></li>
+        {mark === 'minimal' && <li><a href={cfg.wwwUrl + `/${locale}/`} data-testid="site-platform-link">{t.platformMinimal}</a></li>}
+      </ul>
+    </nav>
+    <p class="footer-base">© {year} {name}</p>
+  </div>
+</footer>

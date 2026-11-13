@@ -292,3 +292,145 @@ jobs:
           path: apps/www/release-result.json
           if-no-files-found: ignore
           retention-days: 90
+
+  # ---- The scholar sites Worker (apps/sites, wiki AUN-SCHOLAR-SITES). Its own build, deploy and
+  # smoke, so a sites failure never blocks or rolls back www, and the reverse. Stage first; production
+  # only for a tag, after stage passed. Smoke skips while the owner's alummahnow.org DNS step is pending.
+  sites-build:
+    name: Sites build once
+    needs: resolve
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: apps/sites
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+        working-directory: .
+
+      - name: Checks (cookie domains, lint, typecheck, unit, wrangler config)
+        run: |
+          node ../../scripts/check-cookie-domains.mjs
+          npm run lint
+          npm run typecheck
+          npm test
+          npm run check:config
+
+      - name: Build
+        run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sites-release-bundle
+          path: apps/sites/dist/
+          include-hidden-files: true
+          retention-days: 30
+
+  sites-stage:
+    name: Sites stage (deploy, smoke)
+    needs: sites-build
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: apps/sites
+    timeout-minutes: 20
+    environment:
+      name: stage
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+        working-directory: .
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: sites-release-bundle
+          path: apps/sites/dist
+
+      - name: Deploy to stage
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy -c wrangler.jsonc --env stage --message "release ${GITHUB_SHA::7}"
+
+      - name: Secrets (stage)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run check:secrets -- --env stage --ensure
+
+      - name: Smoke (stage)
+        run: npm run release:smoke -- --env stage
+
+  sites-production:
+    name: Sites production (deploy, smoke, roll back on failure)
+    needs: [resolve, sites-stage]
+    if: needs.resolve.outputs.production == 'true'
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: apps/sites
+    timeout-minutes: 20
+    environment:
+      name: production
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Tag still points at this commit?
+        env:
+          TAG: ${{ needs.resolve.outputs.tag }}
+        run: |
+          now=$(git ls-remote origin "refs/tags/$TAG^{}" | cut -f1)
+          [ -n "$now" ] || now=$(git ls-remote origin "refs/tags/$TAG" | cut -f1)
+          if [ "$now" != "$GITHUB_SHA" ]; then
+            echo "::error::$TAG now points at '${now::7}', not ${GITHUB_SHA::7}; not deploying sites."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+        working-directory: .
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: sites-release-bundle
+          path: apps/sites/dist
+
+      - name: Deploy to production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy -c wrangler.jsonc --message "release ${{ needs.resolve.outputs.tag }} (${GITHUB_SHA::7})"
+
+      - name: Secrets (production)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run check:secrets -- --env production --ensure
+
+      - name: Smoke (production), roll back on failure
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if ! npm run release:smoke -- --env production; then
+            echo "::error::sites production smoke failed: rolling back to the previous version"
+            npx wrangler rollback -c wrangler.jsonc --message "auto-rollback after failed smoke (${GITHUB_SHA::7})" -y || true
+            exit 1
+          fi

@@ -1,0 +1,23 @@
+---
+import SiteLayout from '../../../layouts/SiteLayout.astro';
+import PostCard from '../../../components/PostCard.astro';
+import { pageContext } from '../../../lib/context';
+import { sitePost } from '../../../lib/data';
+import { alternates, canonicalUrl, siteName } from '../../../lib/seo';
+
+const ctx = pageContext(Astro);
+if (!ctx) return new Response('Not found', { status: 404 });
+const { site, locale } = ctx;
+const post = await sitePost(ctx.data, site.channel.id, Astro.params.id ?? '');
+if (!post) return new Response('Not found', { status: 404 });
+const path = `posts/${post.id}/`;
+// Posts are canonical on the site (SS7), whichever host kind it has
+const canonical = canonicalUrl(site, locale, path, ctx.scheme);
+const title = post.article?.title || (post.text ?? '').split('\n')[0]?.slice(0, 80) || siteName(site, locale);
+const ld = [{ '@context': 'https://schema.org', '@type': post.article ? 'Article' : 'SocialMediaPosting', headline: title, datePublished: post.createdAt, url: canonical, author: { '@type': 'Person', name: siteName(site, locale) } }];
+---
+<SiteLayout ctx={ctx} title={title} description={post.article?.excerpt ?? post.text} alternates={alternates(site, path)} canonical={canonical} ogType="article" ogImage={post.article?.coverUrl ?? post.images[0]?.url ?? null} jsonLd={ld} active="posts">
+  <section class="wrap section narrow">
+    <PostCard ctx={ctx} post={post} full />
+  </section>
+</SiteLayout>

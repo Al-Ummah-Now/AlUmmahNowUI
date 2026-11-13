@@ -18,7 +18,7 @@ import { initFacades } from './facade';
 import { initSearchBoxes } from './search-combobox';
 import { fitToViewport } from './menu-fit';
 import { initTheme } from './theme';
-import { startStreet } from '../lib/fanous-street.generated.js';
+import { startStreet } from '../../../../packages/render/src/themes/fanous-street.generated.js';
 import {
   PROBE_KEY,
   SYNC_KEY,

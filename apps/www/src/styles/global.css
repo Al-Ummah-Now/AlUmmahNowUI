@@ -1,8 +1,8 @@
 @import 'tailwindcss';
-@import './fanous-themes.generated.css';
+@import '../../../../packages/render/src/styles/fanous-themes.generated.css';
 /* The header account button and menus: the shared nav contract (AlUmmahNow docs/design/NAV.md) */
 @import './aun-nav.generated.css';
-@import './fanous-street.generated.css';
+@import '../../../../packages/render/src/styles/fanous-street.generated.css';
 
 /*
  * Al Ummah Now / الأمة الآن

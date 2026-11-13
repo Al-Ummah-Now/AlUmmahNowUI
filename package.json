@@ -1,6 +1,6 @@
 {
   "name": "al-ummah-now-ui",
-  "description": "Al Ummah Now public sites: apps/www (www.alummahnow.net) and their shared code.",
+  "description": "Al Ummah Now public sites: apps/www (www.alummahnow.net), apps/sites (scholar sites on alummahnow.org) and their shared code (packages/render).",
   "private": true,
   "type": "module",
   "engines": {
@@ -11,6 +11,7 @@
     "packages/*"
   ],
   "scripts": {
-    "check:committed-secrets": "node scripts/check-committed-secrets.mjs"
+    "check:committed-secrets": "node scripts/check-committed-secrets.mjs",
+    "check:cookie-domains": "node scripts/check-cookie-domains.mjs"
   }
 }
