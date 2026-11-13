@@ -15,7 +15,7 @@ import { channelUrl } from '../../../../lib/embeds';
 import { facadeHtml } from '../../../../lib/facade';
 import { otherLocale } from '../../../../lib/locale';
 import { pictureHtml } from '../../../../lib/picture';
-import { scholarLd, videoObjectLd } from '../../../../lib/seo';
+import { itemListLd, scholarLd } from '../../../../lib/seo';
 import { CURSOR, fetchChannelVideos, localizeItem } from '../../../../lib/videos';
 
 const VIDEOS_PER_PAGE = 8;
@@ -53,7 +53,8 @@ const title = s ? fmt(t.scholars.pageTitle, { name: s.name }) : t.errors.unavail
 const jsonLd = s
   ? [
       scholarLd(cfg, { name: s.name, url: base, description: s.bio, image: s.avatar?.url ?? null, locale, sameAs: channelHref ? [channelHref] : [] }),
-      ...items.map((v) => videoObjectLd(cfg, v, locale)).filter(Boolean),
+      // The scholar's videos as a list (their watch pages carry the VideoObject)
+      ...[itemListLd(cfg, items, locale)].filter(Boolean),
     ]
   : [];
 ---

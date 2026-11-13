@@ -184,7 +184,8 @@ export interface PostsResponse { items: PostSummary[]; page: number; limit: numb
 /** GET /cards: card posts only, newest first; `tags` = every tag on this locale's card posts. */
 export interface CardsResponse { items: PostSummary[]; page: number; limit: number; total: number; tags: string[] }
 export interface SitemapResponse {
-  items: { type: 'page' | 'post'; locale: Locale; slug: string; updated_at: string }[];
+  /** translation_key pairs one item's languages (absent from older CMS versions) */
+  items: { type: 'page' | 'post'; locale: Locale; slug: string; updated_at: string; translation_key?: string | null }[];
   /** Scholar pages (both locales each). Absent from older CMS versions. */
   scholars?: { slug: string; updated_at: string }[];
 }

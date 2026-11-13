@@ -47,6 +47,26 @@ export function websiteLd(cfg: Config, name: string, locale: Locale) {
     url: `${cfg.siteUrl}/${locale}/`,
     inLanguage: locale,
     publisher: { '@id': `${cfg.siteUrl}/#organization` },
+    // Sitelinks search box: the site's own search page
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: { '@type': 'EntryPoint', urlTemplate: `${cfg.siteUrl}/${locale}/search?q={search_term_string}` },
+      'query-input': 'required name=search_term_string',
+    },
+  };
+}
+
+/**
+ * A list page's items (wiki AUN-SEO): an ItemList of links, never a VideoObject per item. The
+ * videos' own watch pages carry their VideoObject; a list is not where a video is the main content.
+ */
+export function itemListLd(cfg: Config, items: VideoItem[], locale: Locale) {
+  const urls = items.flatMap((item) => (item.kind === 'video' || item.kind === 'playlist' ? [watchUrl(cfg.videosWebUrl, { kind: item.kind, id: item.id, lang: locale })] : []));
+  if (urls.length === 0) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    itemListElement: urls.map((url, i) => ({ '@type': 'ListItem', position: i + 1, url })),
   };
 }
 
@@ -124,8 +144,20 @@ export function videoObjectLd(cfg: Config, item: VideoItem, locale: Locale) {
 /** JSON for a <script type="application/ld+json">: `<` escaped so content can never close the tag. */
 export const jsonLdText = (data: unknown) => JSON.stringify(data).replace(/</g, '\\u003c');
 
+/**
+ * Training-only AI crawlers, blocked on every public host (owner decision D-SEO-8). AI search and
+ * answer bots that link back (OAI-SearchBot, ChatGPT-User, PerplexityBot, Claude-SearchBot,
+ * Claude-User, DuckAssistBot, Applebot...) fall under the general rules and are allowed.
+ */
+export const AI_TRAINING_CRAWLERS = [
+  'Google-Extended', 'GPTBot', 'CCBot', 'ClaudeBot', 'anthropic-ai', 'Applebot-Extended', 'Bytespider',
+  'meta-externalagent', 'FacebookBot', 'cohere-training-data-crawler', 'Diffbot', 'Omgilibot',
+  'img2dataset', 'PanguBot', 'Timpibot',
+] as const;
+
 /** robots.txt: production is indexable; QA and stage disallow everything (SPEC §8). */
 export function robotsTxt(isProduction: boolean, siteUrl: string): string {
   if (!isProduction) return 'User-agent: *\nDisallow: /\n';
-  return `User-agent: *\nAllow: /\nDisallow: /auth/\n\nSitemap: ${siteUrl}/sitemap.xml\n`;
+  const blocked = AI_TRAINING_CRAWLERS.map((bot) => `User-agent: ${bot}\nDisallow: /\n`).join('\n');
+  return `User-agent: *\nAllow: /\nDisallow: /auth/\nDisallow: /preview\n\n${blocked}\nSitemap: ${siteUrl}/sitemap.xml\n`;
 }
