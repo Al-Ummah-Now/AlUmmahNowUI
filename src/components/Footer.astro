@@ -2,7 +2,7 @@
 import { fmt, strings } from '../i18n';
 import { navHref } from '../lib/context';
 import type { NavItem, SiteSettings } from '../lib/cms-types';
-import type { Locale } from '../lib/locale';
+import { statusPageUrl, type Locale } from '../lib/locale';
 
 interface Props { locale: Locale; nav: NavItem[]; settings: SiteSettings | null }
 const { locale, nav, settings } = Astro.props;
@@ -27,6 +27,7 @@ const year = new Date().getUTCFullYear();
           {items.map((i) => <li><a href={i.href}>{i.label}</a></li>)}
           <li><a href={`/${locale}/contact/`}>{t.footer.contact}</a></li>
           <li><a href={`/${locale}/rss.xml`}>{t.footer.rss}</a></li>
+          <li><a href={statusPageUrl(Astro.url.hostname, locale)} data-testid="footer-status">{t.footer.status}</a></li>
         </ul>
       </nav>
       {social.length > 0 && (

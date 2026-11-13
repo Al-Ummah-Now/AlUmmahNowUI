@@ -62,3 +62,12 @@ export function articlesPath(path: string): string | null {
   const rest = path.slice(m[0].length);
   return `${m[1] ?? ''}/articles${rest === '' || /^[?#]/.test(rest) ? `/${rest}` : rest}`;
 }
+
+/**
+ * The public status page (AlUmmahNow apps/status) of the env serving this request:
+ * status[.qa|.stage].alummahnow.net from www[.qa|.stage]; production otherwise. Arabic opens /ar.
+ */
+export function statusPageUrl(hostname: string, locale: Locale): string {
+  const env = /(?:^|\.)(qa|stage)\.alummahnow\.net$/.exec(hostname)?.[1];
+  return `https://status${env ? `.${env}` : ''}.alummahnow.net${locale === 'ar' ? '/ar' : '/'}`;
+}

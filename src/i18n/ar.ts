@@ -248,6 +248,7 @@ export const ar: Messages = {
   footer: {
     contact: 'اتصل بنا',
     rights: '© {year} الأمة الآن',
+    status: 'حالة الخدمات',
     rss: 'خلاصة المقالات (RSS)',
   },
 };
