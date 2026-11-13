@@ -1768,7 +1768,9 @@ html:not([data-js]) .theme {
   border-radius: var(--radius-media);
   overflow: hidden;
 }
-.tl-mwrap.tl-ar-9x16 { width: min(100%, calc(min(72vh, 36rem) * 9 / 16)); }
+/* A Short is its own post, one at a time: vertical and centred, no taller than 32rem (68% of a short
+   screen), so it never fills a desktop screen. */
+.tl-mwrap.tl-ar-9x16 { width: min(100%, calc(min(68vh, 32rem) * 9 / 16)); }
 .tl-mwrap.tl-ar-4x5 { width: min(100%, calc(min(72vh, 36rem) * 4 / 5)); }
 .tl-mwrap.tl-ar-1x1 { width: min(100%, min(72vh, 36rem)); }
 .tl-mwrap .facade-frame {
