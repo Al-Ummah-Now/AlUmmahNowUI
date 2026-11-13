@@ -78,7 +78,7 @@ createServer(async (req, res) => {
       if (url.searchParams.get('code_challenge_method') !== 'S256') return send(res, 400, { error: 'pkce_required' });
       const code = `code-${++counter}`;
       codes.set(code, redirectUri);
-      return redirect(res, `${redirectUri}?code=${code}&state=${encodeURIComponent(url.searchParams.get('state') ?? '')}`);
+      return redirect(res, `http://${stubSites()[host]?.site?.primaryHost}/auth/callback?code=${code}&state=${encodeURIComponent(url.searchParams.get('state') ?? '')}`);
     }
     if (p === '/token' && req.method === 'POST') {
       const form = new URLSearchParams(await readBody(req));
@@ -102,11 +102,15 @@ createServer(async (req, res) => {
     }
     if (p === '/logout') {
       liveRefresh.clear();
-      return redirect(res, url.searchParams.get('return') ?? '/');
+      // As auth: only back to a site this stub knows
+      const back = new URL(url.searchParams.get('return') ?? '/', ORIGIN);
+      const site = stubSites()[back.hostname]?.site;
+      return site?.primaryHost ? redirect(res, `http://${site.primaryHost}${back.pathname.replace(/[^\w/-]/g, '')}`) : send(res, 400, { error: 'invalid_return' });
     }
     if (p === '/healthz') return send(res, 200, { ok: true });
     return send(res, 404, { error: 'not_found' });
   } catch (error) {
-    return send(res, 500, { error: String(error) });
+    console.error(error);
+    return send(res, 500, { error: 'internal_error' });
   }
 }).listen(STUB_PORT, () => console.log(`stub api + auth on ${ORIGIN}`));
