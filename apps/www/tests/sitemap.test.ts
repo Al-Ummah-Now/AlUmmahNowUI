@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildSitemap } from '../src/lib/sitemap';
 
 const SITE = 'https://www.alummahnow.net';
-const locs = (xml: string) => [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+const locs = (xml: string): string[] => [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1] ?? '');
 
 describe('www sitemap (wiki AUN-SEO)', () => {
   const xml = buildSitemap(

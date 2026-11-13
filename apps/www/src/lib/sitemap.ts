@@ -42,7 +42,7 @@ export function buildSitemap(siteUrl: string, items: Item[], scholars: Scholar[]
   };
   for (const path of Object.values(STATIC_SECTIONS)) {
     const alternates = Object.fromEntries(LOCALES.map((l) => [l, `${siteUrl}/${l}${path}`])) as Record<Locale, string>;
-    for (const l of LOCALES) urls.push(entry(alternates[l], sectionDay[path], alternates));
+    for (const l of LOCALES) urls.push(entry(alternates[l], sectionDay[path] ?? null, alternates));
   }
 
   // CMS pages and posts, paired by translation_key
