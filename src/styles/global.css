@@ -3239,8 +3239,10 @@ html:not([data-js]) .ci-nav {
   color: var(--accent-text);
 }
 
-/* The lantern street (Fawanees; the shared module adds html.fanous-street): on phones the timeline
-   cards stack edge to edge, so their gaps grow enough for a garland of whole lanterns. */
+/* The lantern street (Fawanees; the shared module adds html.fanous-street): a flat page behind the
+   distant lights (no page gradient), and on phones the timeline cards stack edge to edge, so their
+   gaps grow enough for a garland of whole lanterns. */
+html.fanous-street { --page-bg: none; }
 @media (max-width: 767px) {
   html.fanous-street .tl-list { gap: 76px; }
   html.fanous-street .tl-day + .tl-day { margin-block-start: 56px; }
