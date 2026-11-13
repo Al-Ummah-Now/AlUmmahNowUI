@@ -33,22 +33,22 @@ const play = (id: string, format: 'short' | 'video', title: string) => ({
   watchUrl: `https://videos.qa.alummahnow.net/en/watch/${id}`,
 });
 
-async function routeApi(page: Page, opts: { down?: boolean } = {}) {
+async function routeApi(page: Page, opts: { down?: boolean; noFile?: boolean } = {}) {
   const calls: string[] = [];
-  await page.route('**/api/public/v1/videos/*/play', (r) => {
+  await page.route('**/api/v1/videos/*/play', (r) => {
     calls.push(r.request().url());
     if (opts.down) return r.fulfill({ status: 503, body: '' });
     const id = decodeURIComponent(r.request().url().split('/videos/')[1]!.split('/')[0]!);
     const short = id.includes('short');
     return r.fulfill({ contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(play(id, short ? 'short' : 'video', short ? 'A minute with an ayah' : 'Lesson of the week')) });
   });
-  await page.route('**/api/public/v1/shorts?*', (r) => {
+  await page.route('**/api/v1/shorts?*', (r) => {
     calls.push(r.request().url());
     const after = new URL(r.request().url()).searchParams.get('after');
     const items = after === 'feed-short-1' ? [play('next-short-2', 'short', 'Three words before sleep'), play('next-short-3', 'short', 'Why we begin with Bismillah')] : [];
     return r.fulfill({ contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ items, next: null }) });
   });
-  await page.route(`${MEDIA}/**`, (r) => r.fulfill({ contentType: 'video/webm', body: clip(r.request().url().endsWith('short.mp4') ? 'short' : 'video') }));
+  await page.route(`${MEDIA}/**`, (r) => opts.noFile ? r.fulfill({ status: 404, body: '' }) : r.fulfill({ contentType: 'video/webm', body: clip(r.request().url().endsWith('short.mp4') ? 'short' : 'video') }));
   return calls;
 }
 
@@ -109,6 +109,20 @@ test.describe('timeline: video preview controls never open the post', () => {
   });
 });
 
+test.describe('timeline: preview fallbacks', () => {
+  test.skip(({ isMobile }) => isMobile, 'hover preview is for a mouse');
+  test('a file the CDN does not have keeps the poster and shows no controls', async ({ page }) => {
+    await routeApi(page, { noFile: true });
+    await page.goto('/en/');
+    const wrap = videoPost(page).locator('.tl-mwrap');
+    await wrap.scrollIntoViewIfNeeded();
+    await wrap.hover();
+    await expect(wrap.locator('video.tl-preview')).toHaveCount(0);
+    await expect(wrap).not.toHaveAttribute('data-previewing', '');
+    await expect(wrap.locator('[data-vctl]')).toBeHidden();
+  });
+});
+
 test.describe('timeline: the Shorts viewer', () => {
   test('a click on a Short opens it; ↓ goes to the next Short; Esc closes and returns focus', async ({ page, isMobile }) => {
     const calls = await routeApi(page);
@@ -142,6 +156,19 @@ test.describe('timeline: the Shorts viewer', () => {
     await expect(surface).toBeFocused();
     // a Short never plays in place
     await expect(shortPost(page).locator('.facade-iframe')).toHaveCount(0);
+  });
+
+  test('ar: the viewer speaks Arabic and links to the Arabic watch page', async ({ page }) => {
+    await routeApi(page);
+    await page.goto('/ar/');
+    const surface = shortPost(page).locator('.facade-play');
+    await surface.scrollIntoViewIfNeeded();
+    await surface.click();
+    const dlg = viewer(page);
+    await expect(dlg.getByRole('button', { name: 'أغلق المقاطع القصيرة' })).toBeFocused();
+    await expect(dlg.locator('.sv-watch').first()).toHaveAttribute('href', /\/ar\/watch\//);
+    await page.keyboard.press('Escape');
+    await expect(dlg).toHaveCount(0);
   });
 
   test('when the videos platform does not answer, the Short plays in place as before', async ({ page }) => {

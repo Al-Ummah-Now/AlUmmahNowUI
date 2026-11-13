@@ -34,7 +34,7 @@ describe('which timeline videos are Shorts', () => {
 
 describe('the play API answers', () => {
   it('base path from the videos API URL', () => {
-    expect(playApiBase('https://videos.api.alummahnow.net/')).toBe('https://videos.api.alummahnow.net/api/public/v1');
+    expect(playApiBase('https://videos.api.alummahnow.net/')).toBe('https://videos.api.alummahnow.net/api/v1');
   });
   it('playable only with an https MP4', () => {
     expect(playable(info())).toBe(true);

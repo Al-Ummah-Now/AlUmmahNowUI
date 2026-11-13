@@ -2,7 +2,8 @@
  * The home timeline's videos (src/components/FeedCard.astro, Timeline.astro):
  *
  *  - Hover preview: resting the mouse on a video post plays it in place, muted, from the videos
- *    platform's public play API (GET {api}/videos/{id}/play, an MP4 with sound). Play/pause, sound
+ *    platform's public play API (GET {api}/videos/{id}/play, an MP4 with sound; AlUmmahNow
+ *    docs/embeds/README.md §8). Play/pause, sound
  *    and progress controls appear with it; they act on the preview only and never open the post.
  *    No preview under reduced motion, on touch (no hover) or with Save-Data.
  *  - Shorts viewer: a click on a Short (its player surface) opens a full-screen dialog with one
@@ -117,6 +118,13 @@ function initPreview(root: HTMLElement, api: string) {
     v.disablePictureInPicture = true;
     if (info.poster) v.poster = info.poster;
     v.src = info.mp4.url;
+    // A file the CDN does not have (an old import without that rendition): keep the poster, no controls
+    v.addEventListener('error', () => {
+      v.remove();
+      delete wrap.dataset.previewing;
+      const c = wrap.querySelector<HTMLElement>('[data-vctl]');
+      if (c) c.hidden = true;
+    });
     frame.querySelector('.facade-play')?.before(v);
     const ctl = wrap.querySelector<HTMLElement>('[data-vctl]');
     const prog = wrap.querySelector<HTMLElement>('[data-vprog]');
@@ -277,7 +285,8 @@ function initShorts(root: HTMLElement, api: string) {
         item.querySelector('.sv-title')!.textContent = info.title;
         item.querySelector('.sv-meta span')!.textContent = info.channelName ?? '';
         const watch = item.querySelector<HTMLAnchorElement>('.sv-watch')!;
-        watch.href = info.watchUrl;
+        // the API's watch link is English; the viewer speaks the page's language
+        watch.href = document.documentElement.lang === 'ar' ? info.watchUrl.replace('/en/', '/ar/') : info.watchUrl;
         watch.textContent = this.s.tWatchOn ?? '';
         const bar = item.querySelector<HTMLElement>('.sv-prog i')!;
         v.addEventListener('timeupdate', () => {
