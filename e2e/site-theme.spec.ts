@@ -92,7 +92,11 @@ test.describe('site theme', () => {
           const menu = page.locator('#theme-menu');
           await expect(menu).toBeVisible();
           const [bg, fg] = scheme === 'dark' ? ['--fanous-c-menu-bg', '--fanous-c-menu-text'] : ['--fanous-color-background', '--fanous-color-text-primary'];
-          expect(await css(page, '#theme-menu', 'background-color')).toBe(token(theme, scheme, bg));
+          // the menu colour is a layer over an opaque Canvas (the shared nav contract, AlUmmahNow#1147),
+          // so the menu is never see-through even when its colour fails to resolve
+          const want = token(theme, scheme, bg);
+          expect(await css(page, '#theme-menu', 'background-image')).toBe(`linear-gradient(${want}, ${want})`);
+          expect(await css(page, '#theme-menu', 'background-color')).toMatch(/^rgb\(/);
           expect(await css(page, '#theme-menu button', 'color')).toBe(token(theme, scheme, fg));
           await page.keyboard.press('Escape');
         }
