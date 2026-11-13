@@ -266,50 +266,60 @@ function buildMenu(root: HTMLElement, me: Me, result: AccountsResult, focusButto
     btn?.click();
   };
 
-  if (fromAuth) {
+  const icon = (id: string) => (document.getElementById(id) as HTMLTemplateElement | null)?.content.cloneNode(true) ?? null;
+  // More accounts (the Google pattern): the current account is the top of the menu; the others are
+  // listed here, each with a sign-out icon button (AlUmmahNow docs/design/NAV.md)
+  const others = fromAuth ? accounts.filter((a) => !(a.isActive && (!me.sub || a.userId === me.sub))) : [];
+  if (others.length) {
     const group = el('li', { class: 'account-group' });
-    group.append(el('span', { class: 'account-group-label aun-menu-label', id: 'account-list-label' }, d.labelAccounts ?? ''));
+    group.append(el('span', { class: 'account-group-label aun-menu-label', id: 'account-list-label' }, d.labelMoreAccounts ?? d.labelAccounts ?? ''));
     const list = el('ul', { class: 'account-list', 'aria-labelledby': 'account-list-label' });
-    for (const a of accounts) {
+    for (const a of others) {
       const row = el('li', { class: 'account-row aun-acct-row' });
       const text = labelOf(a);
-      const who = el(a.isActive ? 'div' : 'button', a.isActive ? { class: 'account-entry aun-menu-item', 'aria-current': 'true' } : { type: 'button', class: 'account-entry aun-menu-item', 'aria-label': fill(d.labelSwitchTo, text) });
+      const who = el('button', { type: 'button', class: 'account-entry aun-menu-item', 'aria-label': fill(d.labelSwitchTo, text) });
       const lines = el('span', { class: 'aun-acct-text' });
       lines.append(el('span', { class: 'account-name aun-acct-label', dir: 'auto' }, text));
       if (a.email && a.email !== text) lines.append(el('span', { class: 'account-email aun-acct-email', dir: 'auto' }, a.email));
-      if (a.isActive) lines.append(el('span', { class: 'account-current aun-acct-current' }, d.labelCurrent ?? ''));
-      who.append(avatarEl(a.isActive ? avatar : null, text), lines);
-      if (a.isActive) {
-        const check = document.getElementById('check-icon') as HTMLTemplateElement | null;
-        if (check) who.append(check.content.cloneNode(true));
-      } else who.addEventListener('click', () => void switchTo(a));
+      who.append(avatarEl(null, text), lines);
+      who.addEventListener('click', () => void switchTo(a));
       row.append(who);
-      if (accounts.length > 1) {
-        const out = el('button', { type: 'button', class: 'account-signout aun-acct-signout', 'aria-label': fill(d.labelSignOutOf, text) }, d.labelSignOut);
-        out.addEventListener('click', () => void signOutOf(a));
-        row.append(out);
-      }
+      const out = el('button', { type: 'button', class: 'account-signout aun-acct-signout', 'aria-label': fill(d.labelSignOutOf, text), title: fill(d.labelSignOutOf, text) });
+      const svg = icon('signout-icon');
+      if (svg) out.append(svg);
+      out.addEventListener('click', () => void signOutOf(a));
+      row.append(out);
       list.append(row);
     }
     group.append(list);
     menu.append(group);
   }
 
-  const link = (href: string | undefined, text: string | undefined, cls?: string, parent: HTMLElement = menu) => {
+  const link = (href: string | undefined, text: string | undefined, cls?: string, parent: HTMLElement = menu, lead?: Node | null) => {
     if (!href || !text) return;
     const li = el('li', cls ? { class: cls } : {});
-    li.append(el('a', { href, class: 'aun-menu-item' }, text));
+    const a = el('a', { href, class: 'aun-menu-item' });
+    if (lead) a.append(lead);
+    a.append(el('span', { class: 'aun-menu-text' }, text));
+    li.append(a);
     parent.append(li);
   };
-  link(loginHref(herePath(), 'login'), d.labelAddAccount, 'account-add');
+  /** An icon template as a menu-row icon (the shared .aun-menu-icon size and colour) */
+  const menuIcon = (id: string) => {
+    const frag = icon(id) as DocumentFragment | null;
+    frag?.querySelector('svg')?.classList.add('aun-menu-icon');
+    return frag;
+  };
+  const appIcon = (id: string) => el('span', { class: 'aun-app-icon', 'data-app': id, 'aria-hidden': 'true' });
+  link(loginHref(herePath(), 'login'), d.labelAddAccount, 'account-add', menu, icon('signin-icon'));
   // The other Al Ummah Now apps, in the shared order and labels (AlUmmahNow docs/design/NAV.md)
   sep();
   const apps = el('li', { class: 'account-apps' });
   apps.append(el('span', { class: 'aun-menu-label', id: 'account-apps-label' }, d.labelApps ?? ''));
   const appList = el('ul', { 'aria-labelledby': 'account-apps-label' });
-  link(d.videosUrl, d.labelVideos, undefined, appList);
-  link(d.profileUrl, d.labelProfile, undefined, appList);
-  if (me.canEditContent) link(d.cmsUrl, d.labelCms, undefined, appList);
+  link(d.videosUrl, d.labelVideos, undefined, appList, appIcon('videos'));
+  link(d.profileUrl, d.labelProfile, undefined, appList, appIcon('profile'));
+  if (me.canEditContent) link(d.cmsUrl, d.labelCms, undefined, appList, appIcon('cms'));
   apps.append(appList);
   menu.append(apps);
   sep();
@@ -317,14 +327,17 @@ function buildMenu(root: HTMLElement, me: Me, result: AccountsResult, focusButto
   const several = accounts.length > 1;
   if (several) {
     const one = el('li');
-    const btn = el('button', { type: 'button', class: 'aun-menu-item' }, d.labelSignOut);
+    const btn = el('button', { type: 'button', class: 'aun-menu-item' });
+    btn.append(menuIcon('signout-icon') ?? '', el('span', { class: 'aun-menu-text' }, d.labelSignOut ?? ''));
     btn.addEventListener('click', () => void signOutOf(current));
     one.append(btn);
     menu.append(one);
   }
   const li = el('li');
   signOutForm.append(el('input', { type: 'hidden', name: 'locale', value: d.locale ?? 'en' }));
-  signOutForm.append(el('button', { type: 'submit', class: several ? 'aun-menu-item aun-menu-item--danger' : 'aun-menu-item' }, several ? d.labelSignOutAll : d.labelSignOut));
+  const outAll = el('button', { type: 'submit', class: several ? 'aun-menu-item aun-menu-item--danger' : 'aun-menu-item' });
+  outAll.append(menuIcon('signout-icon') ?? '', el('span', { class: 'aun-menu-text' }, (several ? d.labelSignOutAll : d.labelSignOut) ?? ''));
+  signOutForm.append(outAll);
   // Signing out of every account asks first; signing out of the only account does not
   if (several) {
     signOutForm.addEventListener('submit', (e) => {

@@ -47,8 +47,10 @@ test.describe('signed in to auth (real QA auth)', () => {
     await authForm(page, second);
     await openMenu(page);
     const menu = page.locator('#account-menu');
-    await expect(menu.locator('.account-list > li')).toHaveCount(2);
-    await expect(menu.locator('.account-entry[aria-current="true"]')).toContainText(second.split('@')[0]!);
+    // The current account is the top of the menu; the other one is under "More accounts" (the Google pattern)
+    await expect(menu.locator('.account-list > li')).toHaveCount(1);
+    await expect(menu.locator('.aun-menu-who-name')).toContainText(second.split('@')[0]!);
+    await expect(menu.locator('.account-list')).toContainText(first.split('@')[0]!);
 
     // Switch back to the first account. Switching is POST /session/switch, then a silent
     // prompt=none round trip through auth that lands on this same URL, so the URL alone
@@ -59,7 +61,7 @@ test.describe('signed in to auth (real QA auth)', () => {
     await expect(accountButton(page)).toContainText(first.split('@')[0]!, { timeout: 30_000 });
     await expect(page).toHaveURL(/\/en\/articles\/$/);
     await openMenu(page);
-    await expect(page.locator('#account-menu .account-entry[aria-current="true"]')).toContainText(first.split('@')[0]!);
+    await expect(page.locator('#account-menu .aun-menu-who-name')).toContainText(first.split('@')[0]!);
 
     // Clean up: single sign-out of everything
     await page.getByRole('button', { name: 'Sign out of all accounts' }).click();
