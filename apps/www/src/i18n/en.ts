@@ -247,6 +247,7 @@ export const en = {
   },
   footer: {
     contact: 'Contact us',
+    help: 'Help',
     rights: '© {year} Al Ummah Now',
     status: 'Service status',
     rss: 'Articles feed (RSS)',
