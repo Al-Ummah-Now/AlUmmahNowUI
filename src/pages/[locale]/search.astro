@@ -4,6 +4,7 @@ import SearchBox from '../../components/SearchBox.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { fmt, formatDate } from '../../i18n';
 import { loadChrome, markSource, requestContext, routeLocale } from '../../lib/context';
+import { stableImageUrl } from '../../lib/images';
 import { highlightParts } from '../../lib/search/highlight';
 import { normalizeSearchText } from '../../lib/search/normalize';
 import { searchDeps, searchPosts, type SearchResult } from '../../lib/search/server';
@@ -78,7 +79,7 @@ const title = searchable ? fmt(t.search.titleFor, { query: q }) : t.search.title
             <ul class="articles-list search-results">
               {result.data.items.map((hit) => (
                 <li class="articles-item search-result">
-                  {hit.thumbnailUrl && <img class="search-result-thumb" src={hit.thumbnailUrl} alt="" width="96" height="96" loading="lazy" decoding="async" />}
+                  {stableImageUrl(cfg.videosWebUrl, hit.thumbnailUrl) && <img class="search-result-thumb" src={stableImageUrl(cfg.videosWebUrl, hit.thumbnailUrl)} alt="" width="96" height="96" loading="lazy" decoding="async" />}
                   <div>
                     <time datetime={hit.publishedAt}>{formatDate(hit.publishedAt, locale)}</time>
                     {hit.type === 'cards' && <span class="search-kind">{t.search.cardPost}</span>}

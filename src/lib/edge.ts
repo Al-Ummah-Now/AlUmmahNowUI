@@ -78,7 +78,7 @@ export function contentSecurityPolicy(cfg: Config, opts: { analytics?: boolean }
       ? `script-src 'self' ${MODE_SCRIPT_HASH} https://static.cloudflareinsights.com`
       : `script-src 'self' ${MODE_SCRIPT_HASH}`,
     "style-src 'self'",
-    `img-src ${imgSrcSources(cfg.cmsPublicUrl).join(' ')}`,
+    `img-src ${imgSrcSources(cfg.cmsPublicUrl, cfg.videosWebUrl).join(' ')}`,
     "font-src 'self'",
     // the header asks auth which accounts this browser is signed in to (/session/accounts), and
     // search boxes ask the CMS for suggestions (/api/public/v1/search/suggest)

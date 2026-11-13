@@ -9,7 +9,7 @@
  */
 import type { CuratedSnapshot, CuratedVideo } from './cms-types';
 import { VIDEO_ID } from './embeds';
-import { normalizeImageUrl } from './images';
+import { normalizeImageUrl, stableImageUrl, videosWebOrigin } from './images';
 import type { Locale } from './locale';
 
 export type VideoKind = 'video' | 'playlist' | 'channel';
@@ -38,6 +38,8 @@ export interface VideoItem {
 
 export interface VideosDeps {
   apiUrl: string;
+  /** VIDEOS_WEB_URL: signed thumbnails become its stable `/thumb/<id>.jpg` (stableImageUrl). */
+  webUrl?: string;
   now?: () => number;
   fetchImpl?: typeof fetch;
   cache?: Cache | null;
@@ -61,8 +63,11 @@ const localized = (v: unknown): Partial<Record<Locale, string>> => {
 };
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null);
 
-/** Maps an API body to a VideoItem, or null when it is not public. Pure (unit-tested). */
-export function toVideoItem(kind: VideoKind, id: string, body: unknown): VideoItem | null {
+/**
+ * Maps an API body to a VideoItem, or null when it is not public. Pure (unit-tested). With
+ * `webUrl` a signed thumbnail becomes the videos web app's stable one (liveThumb).
+ */
+export function toVideoItem(kind: VideoKind, id: string, body: unknown, webUrl?: string): VideoItem | null {
   if (typeof body !== 'object' || body === null) return null;
   const b = body as Record<string, unknown>;
   if (b.isDeleted === true || b.isHidden === true) return null;
@@ -76,7 +81,7 @@ export function toVideoItem(kind: VideoKind, id: string, body: unknown): VideoIt
     // Upload names like "lesson 4.mp4" read badly as titles
     title: kind === 'video' ? title.replace(/\.(mp4|mov|mkv|webm)$/i, '') : title,
     description: str(b.description),
-    thumbnailUrl: normalizeImageUrl(typeof thumb === 'string' ? thumb : null),
+    thumbnailUrl: stableThumb(typeof thumb === 'string' ? thumb : null, webUrl, kind === 'video' ? id : null),
     channelName: kind === 'channel' ? null : str(b.channelName) ?? str(b.channel),
     handle: kind === 'channel' ? str(b.handle) : null,
     durationSeconds: kind === 'video' ? num(b.duration) : null,
@@ -124,7 +129,7 @@ export async function fetchVideoItem(deps: VideosDeps, kind: VideoKind, id: stri
   try {
     const res = await (deps.fetchImpl ?? fetch)(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
     if (res.ok) {
-      item = toVideoItem(kind, id, await res.json());
+      item = toVideoItem(kind, id, await res.json(), deps.webUrl);
       if (!item) deps.log?.('videos: not public, skipped', { kind, id });
     } else {
       deps.log?.('videos: skipped', { kind, id, status: res.status });
@@ -157,9 +162,20 @@ export const SNAPSHOT_MAX_AGE_MS = 3 * 60 * 60_000;
 
 const EXPIRES = /[?&]expires=(\d+)/;
 
-/** A stored thumbnail URL, normalised, or null once its signed `expires` has passed. */
-export function liveThumb(url: string | null | undefined, nowMs: number): string | null {
-  const thumb = normalizeImageUrl(url ?? null);
+/** A thumbnail URL, normalised; with `webUrl` a signed one is the stable `/thumb/<videoId>.jpg` (stableImageUrl). */
+function stableThumb(url: string | null | undefined, webUrl: string | undefined, ownerVideoId: string | null | undefined): string | null {
+  const normalized = normalizeImageUrl(url ?? null, webUrl ? [videosWebOrigin(webUrl)] : []);
+  return webUrl ? stableImageUrl(webUrl, normalized, ownerVideoId) : normalized;
+}
+
+/**
+ * A stored thumbnail URL, normalised. With `webUrl` (VIDEOS_WEB_URL) a signed one becomes the
+ * stable `/thumb/<videoId>.jpg` (stableImageUrl; `ownerVideoId` = the video it belongs to), so
+ * an old snapshot or API answer never renders a link that dies in hours. Anything still carrying
+ * an `expires` is null once that has passed.
+ */
+export function liveThumb(url: string | null | undefined, nowMs: number, webUrl?: string, ownerVideoId?: string | null): string | null {
+  const thumb = stableThumb(url, webUrl, ownerVideoId);
   const expires = thumb ? EXPIRES.exec(thumb) : null;
   return expires && Number(expires[1]) * 1000 <= nowMs ? null : thumb;
 }
@@ -168,13 +184,13 @@ export function liveThumb(url: string | null | undefined, nowMs: number): string
  * The item from the CMS snapshot, when it is fresh (refreshed recently) or `stale` is allowed.
  * A stale snapshot's signed thumbnail is dropped once its `expires` has passed.
  */
-export function snapshotItem(c: CuratedVideo, nowMs: number, allowStale = false): VideoItem | null {
+export function snapshotItem(c: CuratedVideo, nowMs: number, allowStale = false, webUrl?: string): VideoItem | null {
   const s: CuratedSnapshot | null = c.snapshot;
   if (!s || !str(s.title) || !VIDEO_ID.test(c.ref_id)) return null;
   const refreshed = s.refreshed_at ? Date.parse(s.refreshed_at) : NaN;
   const fresh = Number.isFinite(refreshed) && nowMs - refreshed < SNAPSHOT_MAX_AGE_MS && refreshed - nowMs < 5 * 60_000;
   if (!fresh && !allowStale) return null;
-  const thumb = liveThumb(s.thumbnail_url, nowMs);
+  const thumb = liveThumb(s.thumbnail_url, nowMs, webUrl, c.kind === 'video' ? c.ref_id : null);
   const title = str(s.title)!;
   return {
     kind: c.kind,
@@ -208,13 +224,13 @@ export async function resolveCurated(deps: VideosDeps, curated: CuratedVideo[], 
   let budget = LIVE_LOOKUPS_MAX;
   const items = await Promise.all(
     sorted.map((c) => {
-      const snap = snapshotItem(c, now);
+      const snap = snapshotItem(c, now, false, deps.webUrl);
       if (snap) return snap;
       if (budget > 0) {
         budget--;
         return fetchVideoItem(deps, c.kind, c.ref_id);
       }
-      const stale = snapshotItem(c, now, true);
+      const stale = snapshotItem(c, now, true, deps.webUrl);
       if (!stale) deps.log?.('videos: no fresh snapshot and over the live lookup budget, skipped', { kind: c.kind, id: c.ref_id });
       return stale;
     }),
@@ -286,7 +302,7 @@ export async function fetchChannelVideos(deps: VideosDeps, channelId: string, op
     const body = (await res.json()) as { data?: unknown; cursor?: unknown };
     const rows = Array.isArray(body.data) ? (body.data as Record<string, unknown>[]) : [];
     page = {
-      items: rows.map((r) => (typeof r.id === 'string' ? toVideoItem('video', r.id, r) : null)).filter((x): x is VideoItem => x !== null),
+      items: rows.map((r) => (typeof r.id === 'string' ? toVideoItem('video', r.id, r, deps.webUrl) : null)).filter((x): x is VideoItem => x !== null),
       cursor: typeof body.cursor === 'string' && CURSOR.test(body.cursor) ? body.cursor : '',
     };
   } catch (error) {

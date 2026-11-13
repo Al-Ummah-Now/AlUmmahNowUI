@@ -3,10 +3,18 @@ import type { Config } from './env';
 import type { Locale } from './locale';
 import { embedUrl, watchUrl } from './embeds';
 import { isoDuration, type VideoItem } from './videos';
+import { itemThumb, stableImageUrl } from './images';
 
 export type Alternates = Partial<Record<Locale, string>>;
 
 export const absolute = (cfg: Config, path: string) => (/^https?:\/\//.test(path) ? path : `${cfg.siteUrl}${path}`);
+
+/**
+ * og:image / twitter:image: crawlers and link unfurlers keep it for weeks, so never a signed
+ * (expiring) URL: a video thumbnail becomes the stable /thumb one (stableImageUrl), else the brand image.
+ */
+export const ogImageUrl = (cfg: Config, image: string | null | undefined) =>
+  absolute(cfg, stableImageUrl(cfg.videosWebUrl, image) || '/brand/og-default.jpg');
 
 export function hreflangLinks(cfg: Config, alternates: Alternates): { hreflang: string; href: string }[] {
   const links: { hreflang: string; href: string }[] = [];
@@ -57,13 +65,14 @@ export function articleLd(
     authorUrl?: string | null;
   },
 ) {
+  const image = stableImageUrl(cfg.videosWebUrl, a.image);
   return {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: a.title.slice(0, 110),
     description: a.description,
     mainEntityOfPage: absolute(cfg, a.url),
-    ...(a.image ? { image: [a.image] } : {}),
+    ...(image ? { image: [image] } : {}),
     datePublished: a.published,
     dateModified: a.modified,
     inLanguage: a.locale,
@@ -76,6 +85,7 @@ export function articleLd(
 
 /** A scholar's page: a ProfilePage about a Person (their articles name it as author by @id). */
 export function scholarLd(cfg: Config, s: { name: string; url: string; description: string | null; image: string | null; locale: Locale; sameAs: string[] }) {
+  const image = stableImageUrl(cfg.videosWebUrl, s.image);
   const url = absolute(cfg, s.url);
   return {
     '@context': 'https://schema.org',
@@ -88,7 +98,7 @@ export function scholarLd(cfg: Config, s: { name: string; url: string; descripti
       name: s.name,
       url,
       ...(s.description ? { description: s.description.slice(0, 300) } : {}),
-      ...(s.image ? { image: s.image } : {}),
+      ...(image ? { image } : {}),
       ...(s.sameAs.length ? { sameAs: s.sameAs } : {}),
     },
   };
@@ -96,12 +106,14 @@ export function scholarLd(cfg: Config, s: { name: string; url: string; descripti
 
 export function videoObjectLd(cfg: Config, item: VideoItem, locale: Locale) {
   if (item.kind !== 'video') return null;
+  const thumb = itemThumb(cfg.videosWebUrl, item);
   return {
     '@context': 'https://schema.org',
     '@type': 'VideoObject',
     name: item.title,
     description: item.description ?? item.title,
-    ...(item.thumbnailUrl ? { thumbnailUrl: [item.thumbnailUrl] } : {}),
+    // never a signed URL: crawlers keep it for weeks, a token dies in hours
+    ...(thumb ? { thumbnailUrl: [thumb] } : {}),
     ...(item.uploadDate ? { uploadDate: item.uploadDate } : {}),
     ...(isoDuration(item.durationSeconds) ? { duration: isoDuration(item.durationSeconds) } : {}),
     embedUrl: embedUrl(cfg.videosWebUrl, { kind: 'video', id: item.id, lang: locale }),

@@ -7,6 +7,7 @@ import { fmt, strings } from '../i18n';
 import { embedUrl, watchUrl } from './embeds';
 import { escapeHtml as e } from './html';
 import type { Locale } from './locale';
+import { itemThumb } from './images';
 import { clockDuration, type VideoItem } from './videos';
 
 /**
@@ -40,8 +41,9 @@ export function facadeHtml(item: VideoItem, opts: { videosWebUrl: string; lang: 
   const watch = watchUrl(opts.videosWebUrl, { kind: item.kind, id: item.id, lang: opts.lang });
   const duration = clockDuration(item.durationSeconds);
   const h = `h${opts.headingLevel ?? 3}`;
-  const thumb = item.thumbnailUrl
-    ? `<img class="facade-thumb" src="${e(item.thumbnailUrl)}" alt="" loading="lazy" decoding="async" width="640" height="360">`
+  const thumbUrl = itemThumb(opts.videosWebUrl, item);
+  const thumb = thumbUrl
+    ? `<img class="facade-thumb" src="${e(thumbUrl)}" alt="" loading="lazy" decoding="async" width="640" height="360">`
     : `<span class="facade-thumb facade-thumb-empty" aria-hidden="true"></span>`;
   const badge =
     item.kind === 'playlist'
