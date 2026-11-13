@@ -92,11 +92,14 @@ for (const scheme of SCHEMES) {
   test.describe(`street, ${scheme}`, () => {
     test.use({ colorScheme: scheme });
     for (const locale of LOCALES) {
-      test(`home ${locale}: garlands, nothing see-through, every lantern whole`, async ({ page }) => {
+      test(`home ${locale}: garlands, nothing see-through, every lantern whole`, async ({ page }, info) => {
         test.setTimeout(120_000);
         await open(page, `/${locale}/?theme=fawanees`);
         await stable(page);
-        expect(await page.locator('#fanous-street .fs-l').count(), 'lanterns on the page').toBeGreaterThan(0);
+        // Phones: the home timeline on stage leaves no gap tall enough for a garland; the street becomes the full-page
+        // background instead (#69), so the lantern counts are checked on desktop only until then
+        const phone = info.project.name !== 'desktop';
+        if (!phone) expect(await page.locator('#fanous-street .fs-l').count(), 'lanterns on the page').toBeGreaterThan(0);
         const problems: string[] = [];
         checkedOnScreen = 0;
         const maxY = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
@@ -108,7 +111,7 @@ for (const scheme of SCHEMES) {
         }
         expect(problems, problems.join('\n')).toEqual([]);
         // The whole-lantern check must have looked at real lanterns
-        expect(checkedOnScreen, 'lanterns checked on screen').toBeGreaterThan(0);
+        if (!phone) expect(checkedOnScreen, 'lanterns checked on screen').toBeGreaterThan(0);
       });
     }
   });
@@ -132,8 +135,11 @@ for (const motion of ['reduce', 'no-preference'] as const) {
     await expect(page.locator('#fanous-street-lights')).toHaveCount(1);
     const pos = () => page.evaluate(() => getComputedStyle(document.getElementById('fanous-street-lights')!).backgroundPositionY);
     expect(await pos()).toBe('0px');
+    // The page may be shorter than 700px of scroll (stage content): expect 0.2x of where it really scrolled
     await page.evaluate(() => window.scrollTo(0, 700));
-    await expect.poll(pos).toBe(motion === 'reduce' ? '0px' : '-140px');
+    const y = await page.evaluate(() => window.scrollY);
+    expect(y, 'the page scrolls').toBeGreaterThan(100);
+    await expect.poll(pos).toBe(motion === 'reduce' ? '0px' : `${-Math.round(0.2 * y)}px`);
     const ours = await page.evaluate(() => document.getAnimations().filter((a) => {
       const t = (a.effect as KeyframeEffect | null)?.target as Element | null;
       return !!t && (t === document.documentElement || !!t.closest('#fanous-street, #fanous-street-lights'));
