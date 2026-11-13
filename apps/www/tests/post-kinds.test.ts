@@ -1,7 +1,8 @@
 /** Scholar posts of community kinds (src/lib/post-kinds.ts): text stays text, outside links are safe. */
 import { describe, expect, it } from 'vitest';
-import { isArticleKind, linkHost, plainLines, safeOutsideUrl } from '../src/lib/post-kinds';
-import { POST_FIXTURES, POST_KINDS, postSummary } from '../src/lib/post-schema.generated';
+import { isArticleKind, linkHost, plainLines, safeOutsideUrl } from '../../../packages/render/src/posts/post-kinds';
+import { POST_STRINGS } from '../../../packages/render/src/posts/strings';
+import { POST_FIXTURES, POST_KINDS, postSummary } from '../../../packages/render/src/posts/post-schema.generated';
 
 describe('post kinds', () => {
   it('turns a text post into plain paragraphs (no HTML, entities decoded once)', () => {
@@ -20,5 +21,8 @@ describe('post kinds', () => {
   });
   it('the vendored schema summarises every shared fixture', () => {
     for (const k of POST_KINDS) expect(postSummary(POST_FIXTURES[k]).kind).toBe(k);
+  });
+  it('the shared post strings have the same keys in en and ar', () => {
+    expect(Object.keys(POST_STRINGS.ar).sort()).toEqual(Object.keys(POST_STRINGS.en).sort());
   });
 });

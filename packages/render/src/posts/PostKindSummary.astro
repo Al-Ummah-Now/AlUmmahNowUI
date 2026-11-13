@@ -5,16 +5,16 @@
  * channel), a link's page, an image post's pictures, a video's "Watch". Articles and cards keep their
  * own list rendering. Text is text, never HTML.
  */
-import { fmt, strings } from '../../i18n';
-import type { PostSummary } from '../../lib/cms-types';
-import { normalizeImageUrl } from '../../lib/images';
-import { dir, type Locale } from '../../lib/locale';
-import { isArticleKind, linkHost, safeOutsideUrl } from '../../lib/post-kinds';
+import { fill as fmt, postStrings } from './strings';
+import type { PostSummaryLike } from './types';
+import { normalizeImageUrl } from '../images';
+import { dir, type Locale } from '../locale';
+import { isArticleKind, linkHost, safeOutsideUrl } from './post-kinds';
 
 /** `images: false` where the list already shows the post's cover (the home timeline). */
-interface Props { post: Pick<PostSummary, 'kind' | 'v2' | 'ref' | 'locale'>; locale: Locale; cmsOrigin: string; images?: boolean }
+interface Props { post: PostSummaryLike; locale: Locale; cmsOrigin: string; images?: boolean }
 const { post, locale, cmsOrigin, images: withImages = true } = Astro.props;
-const t = strings(locale).posts;
+const t = postStrings(locale);
 const v2 = post.v2 ?? null;
 const kind = post.kind ?? 'article';
 const show = !!v2 && !isArticleKind(kind);

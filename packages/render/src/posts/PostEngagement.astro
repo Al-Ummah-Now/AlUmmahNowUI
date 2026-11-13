@@ -4,13 +4,13 @@
  * the counts, and "Join the discussion" on the channel. Inline engagement comes later (AUN-SCHOLAR-SITES
  * phase 4).
  */
-import { fmt, strings } from '../../i18n';
-import type { PostRef } from '../../lib/cms-types';
-import type { Locale } from '../../lib/locale';
+import { fill as fmt, postStrings } from './strings';
+import type { PostRef } from './types';
+import type { Locale } from '../locale';
 
 interface Props { postRef: PostRef; locale: Locale; likes?: number | null; comments?: number | null; commentsEnabled?: boolean }
 const { postRef, locale, likes = null, comments = null, commentsEnabled = true } = Astro.props;
-const t = strings(locale).posts;
+const t = postStrings(locale);
 const count = (n: number | null, one: string, many: string) => (n === null ? null : n === 1 ? one : fmt(many, { count: n.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en') }));
 const likeText = count(typeof likes === 'number' ? likes : null, t.oneLike, t.likes);
 const commentText = commentsEnabled ? count(typeof comments === 'number' ? comments : null, t.oneComment, t.comments) : null;

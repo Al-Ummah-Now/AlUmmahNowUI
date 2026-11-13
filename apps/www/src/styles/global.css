@@ -3,6 +3,7 @@
 /* The header account button and menus: the shared nav contract (AlUmmahNow docs/design/NAV.md) */
 @import './aun-nav.generated.css';
 @import '../../../../packages/render/src/styles/fanous-street.generated.css';
+@import '../../../../packages/render/src/posts/posts.css';
 
 /*
  * Al Ummah Now / الأمة الآن
@@ -3251,28 +3252,3 @@ html.fanous-street { --page-bg: none; }
   html.fanous-street .tl-day + .tl-day { margin-block-start: 56px; }
 }
 
-/* Scholar posts of community kinds (src/components/posts; AlUmmahNowCMS docs/SCHOLARS.md §7) */
-.post-kind { display: grid; gap: 1rem; }
-.post-kind-text p { white-space: pre-line; }
-.post-kind-images { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
-.post-kind-images-many { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.post-kind-images img, .post-kind-gif img { display: block; width: 100%; height: auto; border-radius: var(--radius-media); background: var(--surface); }
-.post-kind-images-many img { aspect-ratio: 1; object-fit: cover; }
-.post-kind-more { display: grid; place-items: center; border-radius: var(--radius-media); background: var(--surface); color: var(--text-soft); }
-.post-kind-choices { display: grid; gap: 0.75rem; padding: 1rem; border: 1px solid var(--line); border-radius: var(--radius-media); }
-.post-kind-question { margin: 0; font-weight: 600; color: var(--heading); }
-.post-kind-choices ul, .post-kind-options { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
-.post-kind-choices li, .post-kind-options li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.625rem 0.875rem; border: 1px solid var(--line); border-radius: 999px; color: var(--text); }
-.post-kind-pct { color: var(--text-soft); }
-.post-kind-link { display: flex; gap: 1rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-media); color: var(--text); text-decoration: none; }
-.post-kind-link:hover, .post-kind-link:focus-visible { border-color: var(--accent-text); }
-.post-kind-link img { width: 6rem; height: 6rem; object-fit: cover; border-radius: var(--radius-media); flex: none; }
-.post-kind-link-text { display: grid; gap: 0.25rem; min-width: 0; }
-.post-kind-link-host { font-size: 0.875rem; color: var(--text-soft); }
-.post-kind-link-title { font-weight: 600; overflow-wrap: anywhere; }
-.post-kind-link-desc { color: var(--text-soft); }
-.post-kind-summary { display: grid; gap: 0.5rem; margin-block-start: 0.5rem; }
-.post-kind-summary .post-kind-images-many { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.post-kind-link-line, .post-kind-action { margin: 0; }
-.post-engagement { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-block-start: 2rem; padding-block-start: 1rem; border-block-start: 1px solid var(--line); }
-.post-engagement-counts { display: flex; gap: 1rem; margin: 0; color: var(--text-soft); }

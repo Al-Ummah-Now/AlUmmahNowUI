@@ -6,9 +6,9 @@ import { fmt, formatDate, strings } from '../i18n';
 import type { Post } from '../lib/cms-types';
 import { dir, type Locale } from '../lib/locale';
 import { pictureHtml, SIZES } from '../lib/picture';
-import { isArticleKind } from '../lib/post-kinds';
-import PostEngagement from './posts/PostEngagement.astro';
-import PostKindBody from './posts/PostKindBody.astro';
+import { isArticleKind } from '../../../../packages/render/src/posts/post-kinds';
+import PostEngagement from '../../../../packages/render/src/posts/PostEngagement.astro';
+import PostKindBody from '../../../../packages/render/src/posts/PostKindBody.astro';
 
 /**
  * `slide`: the card shown first (0-based, from `?slide=`); `pathname`: the post's URL (card links).

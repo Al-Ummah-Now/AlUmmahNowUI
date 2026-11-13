@@ -1,6 +1,6 @@
 /**
  * Vendors the shared post format, PostV2 (AlUmmahNow `packages/shared-types/src/post-schema.ts`; wiki
- * AUN-SCHOLAR-SITES §6.3), into `src/lib/post-schema.generated.ts` at a pinned commit, and records the
+ * AUN-SCHOLAR-SITES §6.3), into `packages/render/src/posts/post-schema.generated.ts` (shared with the sites Worker) at a pinned commit, and records the
  * source's sha256 in `post-schema.lock.json`. The same file is vendored by AlUmmahNowCMS, so the CMS,
  * www and the videos platform agree on kinds, limits, validation and the summary.
  *
@@ -15,7 +15,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 const REPO = "Al-Ummah-Now/AlUmmahNow";
 const PATH = "packages/shared-types/src/post-schema.ts";
 const LOCK = "post-schema.lock.json";
-const OUT = "src/lib/post-schema.generated.ts";
+const OUT = "../../packages/render/src/posts/post-schema.generated.ts";
 
 interface Lock {
    repo: string;

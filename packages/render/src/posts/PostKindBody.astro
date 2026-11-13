@@ -5,19 +5,18 @@
  * post (CMS `community`), or the summary (`v2`) when the CMS could not read it. Never renders HTML from
  * the post: text is text. Votes and answers happen on the channel (the quiz's answer is never here).
  *
- * Shared post renderers: the scholar sites Worker will take these from packages/render
- * (wiki AUN-SCHOLAR-SITES §5.2).
+ * Shared by www and the scholar sites Worker (packages/render, wiki AUN-SCHOLAR-SITES §5.2).
  */
-import { strings } from '../../i18n';
-import type { Post } from '../../lib/cms-types';
-import { normalizeImageUrl } from '../../lib/images';
-import { watchUrl } from '../../lib/embeds';
-import { dir, type Locale } from '../../lib/locale';
-import { linkHost, plainLines, safeOutsideUrl } from '../../lib/post-kinds';
+import { postStrings } from './strings';
+import type { PostPageLike } from './types';
+import { normalizeImageUrl } from '../images';
+import { watchUrl } from '../embeds';
+import { dir, type Locale } from '../locale';
+import { linkHost, plainLines, safeOutsideUrl } from './post-kinds';
 
-interface Props { post: Post; locale: Locale; cmsOrigin: string; videosWebUrl: string }
+interface Props { post: PostPageLike; locale: Locale; cmsOrigin: string; videosWebUrl: string }
 const { post, locale, cmsOrigin, videosWebUrl } = Astro.props;
-const t = strings(locale).posts;
+const t = postStrings(locale);
 const c = post.community ?? null;
 const v2 = post.v2 ?? null;
 const kind = post.kind ?? 'text';

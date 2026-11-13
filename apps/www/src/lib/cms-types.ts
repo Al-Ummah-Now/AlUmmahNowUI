@@ -91,44 +91,9 @@ export interface ListWire {
 /** A scholar's post (AlUmmahNowCMS docs/SCHOLARS.md): their name and page. Null for staff posts. */
 export interface PostAuthor { slug: string; name: string; avatar: MediaRef | null }
 
-/** Every post kind (AlUmmahNow post-schema.ts, vendored as src/lib/post-schema.generated.ts). */
-export type PostKind = 'article' | 'cards' | 'text' | 'image' | 'poll' | 'quiz' | 'video' | 'gif' | 'link';
-
-/**
- * A scholar post reference (AlUmmahNowCMS docs/SCHOLARS.md §7): the post is a community post on the
- * scholar's channel, where its likes, votes and comments live (`videos_url`).
- */
-export interface PostRef { post_id: string; channel_id: string; videos_url: string }
-
-/** A reference's kind-specific summary (CMS PostSummary `v2`). */
-export interface PostV2Summary {
-  images: MediaRef[];
-  image_count: number;
-  video_id: string | null;
-  link: { url: string; title: string | null; description: string | null; image: MediaRef | null } | null;
-  poll: { question: string; options: { id: string; text: string }[] } | null;
-  quiz: { question: string; options: { id: string; text: string }[] } | null;
-  gif: MediaRef | null;
-  text: string | null;
-}
-
-/** The community post's public fields (CMS Post `community`), read live by the CMS. */
-export interface CommunityPostData {
-  id: string;
-  type: PostKind;
-  content?: string;
-  images?: { url: string; width?: number; height?: number; caption?: string }[];
-  videoId?: string;
-  gif?: { url: string; width?: number; height?: number };
-  poll?: { question: string; options: { id: string; text?: string; votes?: number; percentage?: number }[]; totalVotes?: number; votingEndsAt?: string; multipleChoice?: boolean };
-  quiz?: { question: string; options: { id: string; text: string }[] };
-  link?: { url: string; title: string | null; description: string | null; image: { url: string; alt: string | null; width: number | null; height: number | null } | null };
-  likes?: number;
-  comments?: number;
-  commentsEnabled?: boolean;
-  channelName?: string;
-  channelNameLocalized?: Partial<Record<Locale, string>>;
-}
+// Post kinds, references and their summaries are shared with the scholar sites Worker.
+export type { PostKind, PostRef, PostV2Summary, CommunityPostData } from '../../../../packages/render/src/posts/types';
+import type { PostKind, PostRef, PostV2Summary, CommunityPostData } from '../../../../packages/render/src/posts/types';
 
 export interface PostSummary {
   author?: PostAuthor | null;
