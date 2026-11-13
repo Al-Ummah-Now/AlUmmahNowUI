@@ -197,7 +197,7 @@ html[data-theme][data-mode='dark'] {
   --solid-edge: none;
   color: var(--text);
 }
-.site-header :is(.account-menu, .theme-menu, .search-popup) {
+.site-header :is(.account-menu, .search-popup) {
   --surface: var(--fanous-c-menu-bg);
   --surface-raised: var(--fanous-c-menu-bg);
   --text: var(--fanous-c-menu-text);
@@ -1238,7 +1238,7 @@ main {
   margin-block-start: 3rem;
 }
 
-/* ---------- Light / Dark / System (needs JS: shown once the head script ran) ---------- */
+/* ---------- Light / Dark toggle (needs JS: shown once the head script ran) ---------- */
 .theme {
   position: relative;
 }
@@ -1253,13 +1253,10 @@ html:not([data-js]) .theme {
   width: 1.125rem;
   height: 1.125rem;
 }
-.theme-button[data-current='system'] .theme-icon:not([data-icon='system']),
+/* the icon of the mode on screen */
 .theme-button[data-current='light'] .theme-icon:not([data-icon='light']),
 .theme-button[data-current='dark'] .theme-icon:not([data-icon='dark']) {
   display: none;
-}
-.theme-menu {
-  min-width: 11rem;
 }
 
 /* ---------- draft preview (src/components/PreviewBanner.astro) ---------- */

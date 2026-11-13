@@ -21,26 +21,30 @@ describe('theme mode', () => {
     expect(MODE_SCRIPT).toContain(`"${MODE_KEY}"`);
   });
 
-  it('parseMode keeps light/dark/system and falls back to system', () => {
+  it('parseMode keeps light/dark and gives null for anything else (no "System" mode)', () => {
     expect(parseMode('light')).toBe('light');
     expect(parseMode('dark')).toBe('dark');
-    expect(parseMode('system')).toBe('system');
-    for (const v of [null, undefined, '', 'DARK', 'sepia', 1]) expect(parseMode(v)).toBe('system');
+    for (const v of ['system', null, undefined, '', 'DARK', 'sepia', 1]) expect(parseMode(v)).toBeNull();
   });
 
-  it('the head script applies a saved choice and survives blocked storage', () => {
-    const run = (getItem: () => string | null) => {
+  it('the head script applies a saved choice, migrates an old "system" once, and survives blocked storage', () => {
+    const run = (getItem: () => string | null, prefersDark = false) => {
       const attrs: Record<string, string> = {};
-      const document = { documentElement: { setAttribute: (k: string, v: string) => (attrs[k] = v) } };
-      const localStorage = { getItem };
-      new Function('document', 'localStorage', MODE_SCRIPT)(document, localStorage);
-      return attrs;
+      const saved: Record<string, string> = {};
+      const document = { documentElement: { setAttribute: (k: string, v: string) => (attrs[k] = v) }, cookie: '' };
+      const localStorage = { getItem, setItem: (k: string, v: string) => (saved[k] = v) };
+      const matchMedia = () => ({ matches: prefersDark });
+      new Function('document', 'localStorage', 'matchMedia', MODE_SCRIPT)(document, localStorage, matchMedia);
+      return { attrs, saved };
     };
-    expect(run(() => 'dark')).toEqual({ 'data-js': '', 'data-mode': 'dark' });
-    expect(run(() => 'light')).toEqual({ 'data-js': '', 'data-mode': 'light' });
-    expect(run(() => 'nonsense')).toEqual({ 'data-js': '' });
+    expect(run(() => 'dark').attrs).toEqual({ 'data-js': '', 'data-mode': 'dark' });
+    expect(run(() => 'light').attrs).toEqual({ 'data-js': '', 'data-mode': 'light' });
+    expect(run(() => null).attrs).toEqual({ 'data-js': '' });
+    expect(run(() => 'nonsense').attrs).toEqual({ 'data-js': '' });
+    expect(run(() => 'system', true)).toEqual({ attrs: { 'data-js': '', 'data-mode': 'dark' }, saved: { aun_mode: 'dark' } });
+    expect(run(() => 'system', false)).toEqual({ attrs: { 'data-js': '', 'data-mode': 'light' }, saved: { aun_mode: 'light' } });
     expect(run(() => {
       throw new Error('SecurityError');
-    })).toEqual({ 'data-js': '' });
+    }).attrs).toEqual({ 'data-js': '' });
   });
 });

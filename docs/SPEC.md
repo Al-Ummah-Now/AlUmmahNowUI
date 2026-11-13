@@ -172,8 +172,10 @@ JSON-LD (`Organization` + `WebSite` on home, `Article` on posts (a scholar's pos
   The theme is in the HTML cache key, so a switch reaches every page within about a minute, no deploy.
   Colours are the videos app's Fanous tokens for all four themes (Fawanees, Lantern, Zujaj, Nahas),
   vendored by `npm run sync:fanous` at a pinned AlUmmahNow commit (`fanous.lock.json`, checked in CI);
-  Light / Dark / System on top (src/lib/theme-mode.ts). The header is dark in every theme and mode;
-  its menus are surfaces of their own. QA, stage and local preview any built-in theme with `?theme=<id>`
+  a Light / Dark toggle on top (src/lib/theme-mode.ts; no "System" option: the first visit follows the
+  device, then the visitor's last choice). The header is dark in every theme and mode; its menus are
+  surfaces of their own, and no menu or popup ever renders outside the viewport (src/scripts/menu-fit.ts,
+  e2e/menus-in-viewport.spec.ts at 320/375/414 px and landscape, en and ar). QA, stage and local preview any built-in theme with `?theme=<id>`
   (uncached; production ignores it). A theme package made in the admin's theme builder is not vendored
   yet and renders the default. Contrast: `SWEEP=1 npx playwright test e2e/theme-sweep.spec.ts`.
 - **Empty and error states:** no articles yet; no curated videos; CMS down (builtin); a video removed
