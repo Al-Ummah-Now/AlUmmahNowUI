@@ -4,10 +4,10 @@ import type { Builtin } from './types';
 const settings: SiteSettings = {
   locale: 'en',
   site_title: 'Al Ummah Now',
-  tagline: 'Islamic videos and community',
-  hero_title: 'Watch, share and explore the community',
+  tagline: 'Share what matters to the Ummah',
+  hero_title: 'Share what matters to the Ummah',
   hero_body:
-    'Videos, Shorts and posts from channels and creators across the community, in Arabic and English. Watch, subscribe and share with one account.',
+    'Upload videos, go live and post to your channel, and see what the community is sharing, in Arabic and English.',
   social: [],
 };
 
