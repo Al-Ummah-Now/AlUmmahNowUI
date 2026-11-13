@@ -47,9 +47,9 @@ export const en: Builtin = {
       title: 'About Al Ummah Now',
       summary: 'An Islamic video and community platform, in Arabic and English.',
       body: [
-        'Al Ummah Now is an Islamic video and community platform where channels and creators share videos, Shorts, live streams and posts.',
+        'Al Ummah Now is a platform where you can share videos, Shorts and community posts.',
         '',
-        '## What we are building',
+        "## What you'll find here",
         '',
         '- **Videos and Shorts** you can watch, share and save to playlists.',
         '- **One account** that works across every Al Ummah Now app.',
