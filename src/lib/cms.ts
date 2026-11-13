@@ -152,6 +152,7 @@ export const cmsPaths = {
   /** A list page (docs/specs/WWW-PAGES.md): LIST_PAGE_SIZE items per numbered page. */
   list: (l: Locale, slug: string, page: number) => `/lists/${enc(slug)}${q({ locale: l, page })}`,
   sitemap: () => '/sitemap',
+  redirect: (type: 'post' | 'page', l: Locale, slug: string) => `/redirects/${type}/${enc(slug)}${q({ locale: l })}`,
   cards: (l: Locale, page: number, limit: number, tag?: string | null) => `/cards${q({ locale: l, ...(tag ? { tag } : {}), page, limit })}`,
   scholars: (l: Locale, page: number, limit: number) => `/scholars${q({ locale: l, page, limit })}`,
   scholar: (l: Locale, slug: string, page: number, limit: number) => `/scholars/${enc(slug)}${q({ locale: l, page, limit })}`,
@@ -168,6 +169,9 @@ export const RSS_ITEMS = 20;
 /** Scholars directory and a scholar's articles (page and RSS). */
 export const SCHOLARS_PAGE_SIZE = 24;
 export const SCHOLAR_POSTS_PAGE_SIZE = 12;
+
+const isSlugRedirect = (v: unknown): v is { slug: string } =>
+  !!v && typeof v === 'object' && typeof (v as { slug?: unknown }).slug === 'string' && /^[\p{L}\p{N}_-]{1,120}$/u.test((v as { slug: string }).slug);
 
 /** Typed endpoints of the CMS public API. Every call tracks its source for the page header. */
 export function cmsClient(deps: CmsDeps) {
@@ -194,6 +198,14 @@ export function cmsClient(deps: CmsDeps) {
       return r.status === 'ok' ? { ...r, data: toList(r.data, page) } : r;
     },
     sitemap: () => track(load<SitemapResponse>(deps, cmsPaths.sitemap(), validate.sitemap, () => ({ items: [] }))),
+    /**
+     * A renamed post's or page's current slug (CMS slug history, D-SEO-7), or null. Not tracked as a
+     * content source: it only decides between a 301 and the 404 the page answers anyway.
+     */
+    redirect: async (type: 'post' | 'page', l: Locale, slug: string): Promise<string | null> => {
+      const r = await load<{ slug: string }>(deps, cmsPaths.redirect(type, l, slug), isSlugRedirect, () => null);
+      return r.status === 'ok' && r.data.slug !== slug ? r.data.slug : null;
+    },
     scholars: (l: Locale, page: number, limit = SCHOLARS_PAGE_SIZE) =>
       track(load<ScholarsResponse>(deps, cmsPaths.scholars(l, page, limit), validate.scholars, () => ({ items: [], page, limit, total: 0 }))),
     scholar: (l: Locale, slug: string, page: number, limit = SCHOLAR_POSTS_PAGE_SIZE) =>
