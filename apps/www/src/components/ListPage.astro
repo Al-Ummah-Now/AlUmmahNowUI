@@ -16,7 +16,7 @@ import type { NavItem, SiteSettings } from '../lib/cms-types';
 import type { Config } from '../lib/env';
 import { listTitle, pageNumbers, pageQuery, type ListView } from '../lib/list-page';
 import { otherLocale, type Locale } from '../lib/locale';
-import { videoObjectLd } from '../lib/seo';
+import { itemListLd } from '../lib/seo';
 import { feedVideoItem } from '../lib/timeline';
 
 type Alternates = Partial<Record<Locale, string>>;
@@ -42,10 +42,14 @@ const all = [...view.pinned, ...view.items];
 const empty = all.length === 0;
 const pageOf = (page: number, pages: number) => fmt(t.articles.pageOf, { page, pages });
 const description = view.seoDescription || view.summary || t.meta.defaultDescription;
-const jsonLd = all
-  .flatMap((it) => (it.type === 'video' && it.video?.kind === 'video' ? [feedVideoItem(it.video, locale, t.timeline.video, now.getTime(), cfg.videosWebUrl)] : []))
-  .map((v) => videoObjectLd(cfg, v, locale))
-  .filter(Boolean);
+// An ItemList of the listed videos (their watch pages carry the VideoObject)
+const jsonLd = [
+  itemListLd(
+    cfg,
+    all.flatMap((it) => (it.type === 'video' && it.video?.kind === 'video' ? [feedVideoItem(it.video, locale, t.timeline.video, now.getTime(), cfg.videosWebUrl)] : [])),
+    locale,
+  ),
+].filter(Boolean);
 const numbers = pageNumbers(view.page, view.pages);
 const href = (n: number) => `${path}${pageQuery(n)}`;
 const other = otherLocale(locale);

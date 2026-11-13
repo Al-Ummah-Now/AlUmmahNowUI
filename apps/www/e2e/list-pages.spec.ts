@@ -80,9 +80,10 @@ test.describe('list pages from /lists (stub CMS)', () => {
     await expect(latest).toHaveCount(3);
     await expect(latest.first()).toHaveAttribute('href', /\/en\/video\/stub-latest-1$/);
     await expect(channel.getByRole('link', { name: 'Visit channel' })).toHaveAttribute('href', /\/en\/@knowledge$/);
-    // VideoObject JSON-LD for the video items
+    // An ItemList of the video items (their watch pages carry the VideoObject; wiki AUN-SEO)
     const ld = await page.locator('script[type="application/ld+json"]').allTextContents();
-    expect(ld.filter((s) => s.includes('"VideoObject"')).length).toBeGreaterThan(0);
+    expect(ld.filter((s) => s.includes('"ItemList"')).length).toBeGreaterThan(0);
+    expect(ld.filter((s) => s.includes('"VideoObject"'))).toHaveLength(0);
     expect(await axe(page)).toEqual([]);
 
     await nav.locator('a[rel="next"]').click();

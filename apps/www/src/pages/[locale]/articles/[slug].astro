@@ -43,7 +43,8 @@ const body = post ? await renderBody(rc, post.body, post.locale, post.images) : 
 const alternates = post ? documentAlternates(post, post.alternates, (l, s) => `/${l}/articles/${encodeURIComponent(s)}/`) : {};
 const translated = post && post.locale !== locale;
 const cardSeo = post ? cardPostSeo(post) : null;
-const description = post ? post.seo_description || post.excerpt || cardSeo?.text || plainText(post.body, 180) : '';
+// Never the site's default text: a post with no text of its own is described by its title
+const description = post ? post.seo_description || post.excerpt || cardSeo?.text || plainText(post.body, 180) || post.title : '';
 // `?slide=3` opens a card post on its third card (the server renders it; `#3` is read by the script).
 const slide = post?.slides?.length ? slideFromLink(Astro.url.search, '', post.slides.length) : 0;
 const jsonLd = post
