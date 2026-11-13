@@ -4,14 +4,20 @@ name: Sites zone
 # token may do there (apps/sites/scripts/sites-zone.ts, apps/sites/docs/DOMAINS.md). By hand only.
 #   check: read-only probes plus one TXT record created and deleted at once (DNS Edit)
 #   apply: proxied AAAA 100:: records, Always Use HTTPS, the Cloudflare for SaaS fallback origin
+#   own-domain-smoke-qa / -stage: a throwaway own domain end to end (custom hostname, records in
+#     the test zone, route to the env's sites Worker, validation, HTTPS /healthz), then removed
 on:
   workflow_dispatch:
     inputs:
       mode:
         description: check or apply
         type: choice
-        options: [check, apply]
+        options: [check, apply, own-domain-smoke-qa, own-domain-smoke-stage]
         default: check
+      test_zone:
+        description: own-domain smoke only, a zone we own where the throwaway records go
+        type: string
+        default: alummahnow.com
 
 permissions:
   contents: read
@@ -24,6 +30,7 @@ jobs:
   zone:
     name: ${{ inputs.mode }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v6
@@ -33,4 +40,12 @@ jobs:
         working-directory: apps/sites
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: node --experimental-strip-types --no-warnings scripts/sites-zone.ts --${{ inputs.mode }} | tee -a "$GITHUB_STEP_SUMMARY"
+          MODE: ${{ inputs.mode }}
+          SMOKE_TEST_ZONE: ${{ inputs.test_zone }}
+        run: |
+          set -o pipefail
+          case "$MODE" in
+            own-domain-smoke-*) args=(--own-domain-smoke "${MODE#own-domain-smoke-}") ;;
+            *) args=("--$MODE") ;;
+          esac
+          node --experimental-strip-types --no-warnings scripts/sites-zone.ts "${args[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
