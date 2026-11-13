@@ -1,11 +1,11 @@
 {
   "repo": "Al-Ummah-Now/AlUmmahNow",
-  "ref": "3bac491fa1d6671c91eeb808796acd651aaf697b",
+  "ref": "81c2c64640f3989c48e8cb415fb98afab07e2914",
   "source": "apps/web/src/theme/site-themes.css",
   "sourceSha256": "63c52b84ae61da0bc3b6e320c5c2769e3bb3515bdd814661ffb728838e6dd425",
   "outputs": {
-    "src/styles/fanous-themes.generated.css": "eec1efd704691f345ca6396da23b4b82157594d27ed0717038ed5a33088f3477",
-    "src/lib/site-themes.generated.ts": "ee5a7ced6d64058e648157bc78bc97a4e00b5a4ceee85490c45c11c1149d8f0f",
-    "src/styles/aun-nav.generated.css": "e5614ad1d4028c95997d23a72d39f51826600b8d7901fa0a4562b4e54d31de84"
+    "src/styles/fanous-themes.generated.css": "84591f9c89059e504676d636cdf0cc563f9eb0f85cad1ba8ac010bc2b0bb40f6",
+    "src/lib/site-themes.generated.ts": "fe7ae5d8b768161b116c8c8d0062f2919072756c89d3ec7d0468337eaad7bdaa",
+    "src/styles/aun-nav.generated.css": "fdbbbfbcd42bc995ad841be7eb88d77a644a1f9f26edd3c22ad2dde4658a7be2"
   }
 }
