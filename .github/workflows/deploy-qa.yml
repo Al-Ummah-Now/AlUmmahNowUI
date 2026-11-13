@@ -1,12 +1,19 @@
 name: Deploy QA
 
-# Every push to main deploys www to QA (https://www.qa.alummahnow.net), smokes it and
-# runs the Playwright suite against it.
+# Every push to main deploys www to QA (https://www.qa.alummahnow.net) and smokes it. The
+# Playwright suite runs against QA only when started by hand with e2e: owner rule (2026-11-13),
+# tests run against QA only on numbered releases (QA's D1 read volume); the release's stage E2E
+# (release.yml) is the gate.
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      e2e:
+        description: 'Also run the Playwright suite against QA'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -17,7 +24,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Deploy, smoke, E2E (QA)
+    name: Deploy, smoke (QA)
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment:
@@ -59,11 +66,13 @@ jobs:
         run: npm run release:smoke -- --env qa
 
       - name: Install Playwright browsers
+        if: inputs.e2e
         uses: ./.github/actions/playwright-install
         with:
           runner: npx
           browsers: chromium webkit
       - name: E2E against QA
+        if: inputs.e2e
         env:
           WWW_URL: https://www.qa.alummahnow.net
           E2E_AUTH_URL: https://auth.qa.alummahnow.net
@@ -75,13 +84,13 @@ jobs:
       # Public repo: artifacts are downloadable by anyone. Never upload a secret
       # (Playwright puts typed values in traces and report step titles) or a storage state.
       - name: Keep secrets out of the uploaded E2E output
-        if: always()
+        if: always() && inputs.e2e
         env:
           QA_SEED_PASSWORD: ${{ secrets.QA_SEED_PASSWORD }}
         run: python3 scripts/scan-artifacts-for-secrets.py --env QA_SEED_PASSWORD --remove e2e-artifacts playwright-report
 
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && inputs.e2e
         with:
           name: screenshots-qa
           path: |

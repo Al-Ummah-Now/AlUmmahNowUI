@@ -144,8 +144,9 @@ Against another env set `E2E_AUTH_URL` and `E2E_CLIENT_ID`.
 
 - **CI** (`ci.yml`, every PR and push): lint, typecheck, unit, config check, build, dry-run bundles
   per env, Playwright against local `wrangler dev`, screenshots as an artifact.
-- **QA** (`deploy-qa.yml`, every push to main): secrets check, `wrangler deploy --env qa`, smoke,
-  Playwright against QA.
+- **QA** (`deploy-qa.yml`, every push to main): secrets check, `wrangler deploy --env qa`, smoke.
+  Playwright against QA only by hand (`e2e` input): tests run against QA only on numbered releases
+  (owner rule 2026-11-13), and the release's stage E2E is the gate.
 - **Stage → production** (`release.yml`, from a release tag `vYYYY.MM.DD` on `main`; a manual run on
   `main` is stage only): resolve (valid tag on `main`?) → build once
   → stage (`scripts/release/promote.ts --env stage`: upload a version, 0 % traffic, smoke through

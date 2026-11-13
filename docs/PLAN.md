@@ -20,7 +20,7 @@ prod only via stage-then-promote; out-of-scope work becomes `queue` issues.
    client secret for either app: the CMS and www are public PKCE clients (auth `0011_www_cms_clients.sql`
    registers them with no secret, and the CMS secrets manifest forbids `CMS_CLIENT_SECRET`). GitHub: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `QA_SEED_PASSWORD`,
    `STAGE_SEED_PASSWORD` in both repos.
-6. **QA** deploys on merge to main (`deploy-qa.yml`) → QA E2E.
+6. **QA** deploys on merge to main (`deploy-qa.yml`); no E2E against QA on a push (owner rule 2026-11-13: tests run against QA only on numbered releases). The release's stage E2E is the gate.
 7. **Release** (`release.yml`, from a `vYYYY.MM.DD` tag): stage → prod for both. Content-wise www
    tolerates a CMS outage (it falls back), but www binds the CMS Worker, so a brand-new env needs
    the CMS Worker released first.
