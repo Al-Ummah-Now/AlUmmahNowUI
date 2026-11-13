@@ -322,7 +322,9 @@ function buildMenu(root: HTMLElement, me: Me, result: AccountsResult, focusButto
     frag?.querySelector('svg')?.classList.add('aun-menu-icon');
     return frag;
   };
-  const appIcon = (id: string) => el('span', { class: 'aun-app-icon', 'data-app': id, 'aria-hidden': 'true' });
+  // Each app's own favicon: a separate static file (never inlined in the CSS), loaded when the menu shows it
+  const appIcon = (id: string) =>
+    el('img', { class: 'aun-app-icon', 'data-app': id, src: `/aun-nav/icons/${id}.webp`, width: '32', height: '32', alt: '', loading: 'lazy', decoding: 'async' });
   link(loginHref(herePath(), 'login'), d.labelAddAccount, 'account-add', menu, icon('signin-icon'));
   // The other Al Ummah Now apps, in the shared order and labels (AlUmmahNow docs/design/NAV.md)
   sep();
