@@ -142,9 +142,10 @@ export function absoluteTime(iso: string, locale: Locale, timeZone = 'UTC'): str
 /**
  * The videos platform's public playback API (AlUmmahNow apps/api-videos): one video's playable
  * files for the timeline's hover preview, and the Shorts that follow one for the Shorts viewer.
- * The client (src/scripts/timeline-media.ts) builds the URLs from this base.
+ * The client (src/scripts/timeline-media.ts) builds the URLs from this base. Contract: AlUmmahNow
+ * docs/embeds/README.md §8 (GET /api/v1/videos/{id}/play, GET /api/v1/shorts?after=&limit=).
  */
-export const playApiBase = (videosApiUrl: string) => `${videosApiUrl.replace(/\/+$/, '')}/api/public/v1`;
+export const playApiBase = (videosApiUrl: string) => `${videosApiUrl.replace(/\/+$/, '')}/api/v1`;
 
 /**
  * A Short on the timeline (the platform's rule, shared-types video-format.ts: at most 3 minutes, and
