@@ -1,0 +1,32 @@
+---
+/**
+ * A site page (Studio → Site → Pages, SS16): /<lang>/<slug>/. Published pages, or drafts in a
+ * Studio preview. The page's blocks for this language; a page with no blocks or title in this
+ * language falls back to the other one (and says which language it is in).
+ */
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import SiteBlocks from '../../components/SiteBlocks.astro';
+import { pageContext } from '../../lib/context';
+import { sitePage } from '../../lib/data';
+import { canonicalUrl, siteName } from '../../lib/seo';
+import { dir, type Locale } from '../../../../../packages/render/src/locale';
+
+const ctx = pageContext(Astro);
+if (!ctx) return new Response('Not found', { status: 404 });
+const { site, locale } = ctx;
+const slug = String(Astro.params.slug ?? '').toLowerCase();
+const page = await sitePage(ctx.data, site.host, slug, site.preview ? Astro.url.searchParams.get('preview') : null);
+if (!page) return new Response('Not found', { status: 404 });
+const other: Locale = locale === 'ar' ? 'en' : 'ar';
+const has = (l: Locale) => !!(page.title[l] || (page.blocks[l] ?? []).length);
+const shown: Locale = has(locale) ? locale : other;
+const title = page.title[shown] || page.title[other] || siteName(site, locale);
+const blocks = page.blocks[shown] ?? [];
+const alts = Object.fromEntries(site.site.locales.filter((l) => has(l as Locale)).map((l) => [l, `/${l}/${page.slug}/`]));
+---
+<SiteLayout ctx={ctx} title={title} description={page.description[shown]} alternates={alts} canonical={canonicalUrl(site, shown, `${page.slug}/`, ctx.scheme)} active={`page:${page.id}`}>
+  <article class="wrap section site-page" lang={shown} dir={dir(shown)} data-testid="site-page" data-status={page.status}>
+    <h1>{title}</h1>
+    <SiteBlocks ctx={ctx} blocks={blocks} testId="site-page-blocks" />
+  </article>
+</SiteLayout>

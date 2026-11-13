@@ -11,6 +11,7 @@ import { normalizeImageUrl } from '../../../../packages/render/src/images';
 import type { Locale } from '../../../../packages/render/src/locale';
 import { safeOutsideUrl } from '../../../../packages/render/src/posts/post-kinds';
 import type { PostLinkData } from '../../../../packages/render/src/posts/types';
+import type { SitePage } from './site-types';
 
 export const CURSOR = /^[A-Za-z0-9._~:+/=-]{1,512}$/;
 export const POST_ID = /^[A-Za-z0-9_-]{1,80}$/;
@@ -219,4 +220,45 @@ export function formatDuration(seconds: number | null): string {
   const m = Math.floor((s % 3600) / 60);
   const r = s % 60;
   return h ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${m}:${String(r).padStart(2, '0')}`;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Site pages (SS16): published pages by slug, the home page, playlist videos for a block
+// ---------------------------------------------------------------------------------------------
+
+const PAGE_SLUG = /^[a-z0-9](?:[a-z0-9-]{0,58}[a-z0-9])?$/;
+const PREVIEW_TOKEN = /^[0-9a-f]{32}$/;
+
+/** Reads a page answer; a preview is never cached (it shows drafts). */
+async function pageJson(deps: DataDeps, url: string, preview: string | null): Promise<SitePage | null> {
+  if (preview) {
+    try {
+      const res = await (deps.fetchImpl ?? fetch)(url, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(2_500) });
+      if (!res.ok) return null;
+      return ((await res.json()) as { page?: SitePage | null }).page ?? null;
+    } catch (error) {
+      deps.log?.('sites: page read failed', { error: String(error) });
+      return null;
+    }
+  }
+  return ((await cachedJson(deps, url)) as { page?: SitePage | null } | null)?.page ?? null;
+}
+
+export async function sitePage(deps: DataDeps, host: string, slug: string, preview: string | null): Promise<SitePage | null> {
+  if (!PAGE_SLUG.test(slug)) return null;
+  const token = preview && PREVIEW_TOKEN.test(preview) ? preview : null;
+  return pageJson(deps, `${deps.apiUrl}/api/sites/by-host/${encodeURIComponent(host)}/pages/${slug}${token ? `?preview=${token}` : ''}`, token);
+}
+
+export async function homePage(deps: DataDeps, host: string, preview: string | null): Promise<SitePage | null> {
+  const token = preview && PREVIEW_TOKEN.test(preview) ? preview : null;
+  return pageJson(deps, `${deps.apiUrl}/api/sites/by-host/${encodeURIComponent(host)}/home${token ? `?preview=${token}` : ''}`, token);
+}
+
+/** A playlist's first videos in its saved order, only when the playlist is this channel's. */
+export async function playlistVideos(deps: DataDeps, channelId: string, playlistId: string, limit: number): Promise<SiteVideo[]> {
+  if (!VIDEO_ID.test(playlistId)) return [];
+  const body = (await cachedJson(deps, `${deps.apiUrl}/api/playlists/${playlistId}/queue?limit=${Math.min(Math.max(limit, 1), 24)}`)) as { result?: { playlist?: { channelId?: unknown }; items?: unknown[] } } | null;
+  if (body?.result?.playlist?.channelId !== channelId) return [];
+  return (body.result.items ?? []).map(toSiteVideo).filter((v): v is SiteVideo => v !== null && v.channelId === channelId).slice(0, limit);
 }

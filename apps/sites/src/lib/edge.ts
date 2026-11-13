@@ -23,6 +23,18 @@ export function zoneRedirect(host: string, cfg: Config): Response | null {
   return null;
 }
 
+/** The site's own path redirects (Studio → Site → Redirects, SS16): exact path, 301. */
+export function pathRedirect(url: URL, site: PublicSite): Response | null {
+  const norm = (p: string) => (p.length > 1 ? p.replace(/\/+$/, '') : p);
+  const path = norm(url.pathname);
+  const hit = (site.site.redirects ?? []).find((r) => typeof r.from === 'string' && r.from.startsWith('/') && norm(r.from) === path);
+  if (!hit) return null;
+  const to = hit.to;
+  // Only our own paths or https:// addresses (api-videos validates; checked again here)
+  if (!(/^\/(?!\/)/.test(to) || /^https:\/\//.test(to))) return null;
+  return new Response(null, { status: 301, headers: { Location: to, 'Cache-Control': 'public, max-age=300' } });
+}
+
 /** `/` → `/<default>/`; `/<lang>/…` for a language the site doesn't serve → the default language (SS13). */
 export function localeRedirect(url: URL, site: PublicSite): Response | null {
   const [, first] = url.pathname.split('/');

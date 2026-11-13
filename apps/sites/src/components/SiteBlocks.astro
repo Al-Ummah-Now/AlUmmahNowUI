@@ -1,0 +1,109 @@
+---
+/**
+ * A site page's blocks (Studio → Site → Pages, SS16; AlUmmahNow site.ts SiteBlock): text (Markdown,
+ * raw HTML escaped, unsafe links dropped), image (our image hosts only, alt text kept), video (the
+ * channel's own video through the embed player), button (own path or https://), quote, divider,
+ * latest posts, latest videos (or a playlist of this channel). Unknown blocks are skipped.
+ */
+import VideoGrid from './VideoGrid.astro';
+import PostCard from './PostCard.astro';
+import { renderMarkdown } from '../../../../packages/render/src/markdown';
+import { normalizeImageUrl } from '../../../../packages/render/src/images';
+import { embedUrl } from '../../../../packages/render/src/embeds';
+import { channelPosts, channelVideos, playlistVideos, siteVideo, localizedTitle, type SitePost, type SiteVideo } from '../lib/data';
+import type { PageContext } from '../lib/context';
+import type { SiteBlock } from '../lib/site-types';
+
+interface Props { ctx: PageContext; blocks: SiteBlock[]; testId?: string }
+const { ctx, blocks, testId = 'site-blocks' } = Astro.props;
+const { site, locale, cfg } = ctx;
+const channelId = site.channel.id;
+
+type Rendered =
+  | { id: string; kind: 'html'; html: string }
+  | { id: string; kind: 'image'; url: string; alt: string; caption: string | null }
+  | { id: string; kind: 'video'; video: SiteVideo }
+  | { id: string; kind: 'cta'; label: string; href: string; external: boolean }
+  | { id: string; kind: 'quote'; text: string; cite: string | null }
+  | { id: string; kind: 'divider' }
+  | { id: string; kind: 'posts'; posts: SitePost[] }
+  | { id: string; kind: 'videos'; videos: SiteVideo[] };
+
+const SAFE_HREF = (h: string) => /^https:\/\//.test(h) || /^\/(?!\/)/.test(h);
+
+const rendered = (
+  await Promise.all(
+    blocks.slice(0, 60).map(async (b): Promise<Rendered | null> => {
+      switch (b.type) {
+        case 'markdown':
+          return b.text?.trim() ? { id: b.id, kind: 'html', html: renderMarkdown(b.text, { renderVideo: () => '' }) } : null;
+        case 'image': {
+          const url = normalizeImageUrl(b.url);
+          return url ? { id: b.id, kind: 'image', url, alt: b.alt ?? '', caption: b.caption ?? null } : null;
+        }
+        case 'video': {
+          const video = await siteVideo(ctx.data, channelId, b.videoId);
+          return video ? { id: b.id, kind: 'video', video } : null;
+        }
+        case 'cta':
+          return b.label?.trim() && SAFE_HREF(b.href) ? { id: b.id, kind: 'cta', label: b.label, href: b.href, external: b.href.startsWith('https://') } : null;
+        case 'quote':
+          return b.text?.trim() ? { id: b.id, kind: 'quote', text: b.text, cite: b.cite ?? null } : null;
+        case 'divider':
+          return { id: b.id, kind: 'divider' };
+        case 'posts': {
+          const { items } = await channelPosts(ctx.data, channelId, 1, Math.min(Math.max(b.count, 1), 12));
+          return items.length ? { id: b.id, kind: 'posts', posts: items } : null;
+        }
+        case 'videos': {
+          const n = Math.min(Math.max(b.count, 1), 24);
+          const videos = b.playlistId ? await playlistVideos(ctx.data, channelId, b.playlistId, n) : (await channelVideos(ctx.data, channelId, { limit: n })).items;
+          return videos.length ? { id: b.id, kind: 'videos', videos } : null;
+        }
+        default:
+          return null;
+      }
+    }),
+  )
+).filter((x): x is Rendered => x !== null);
+---
+<div class="site-blocks" data-testid={testId}>
+  {rendered.map((r) => {
+    switch (r.kind) {
+      case 'html':
+        return <div class="prose block" data-block="markdown" set:html={r.html} />;
+      case 'image':
+        return (
+          <figure class="block block-image" data-block="image">
+            <img src={r.url} alt={r.alt} loading="lazy" />
+            {r.caption && <figcaption>{r.caption}</figcaption>}
+          </figure>
+        );
+      case 'video':
+        return (
+          <div class="block block-video player" data-block="video">
+            <iframe src={embedUrl(cfg.videosWebUrl, { kind: 'video', id: r.video.id, lang: locale })} title={localizedTitle(r.video, locale)} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe>
+          </div>
+        );
+      case 'cta':
+        return (
+          <p class="block block-cta" data-block="cta">
+            <a class="button" href={r.href} rel={r.external ? 'noopener' : undefined}>{r.label}</a>
+          </p>
+        );
+      case 'quote':
+        return (
+          <blockquote class="block block-quote" data-block="quote" dir="auto">
+            <p>{r.text}</p>
+            {r.cite && <footer>{r.cite}</footer>}
+          </blockquote>
+        );
+      case 'divider':
+        return <hr class="block block-divider" data-block="divider" />;
+      case 'posts':
+        return <div class="block block-posts narrow" data-block="posts">{r.posts.map((p) => <PostCard ctx={ctx} post={p} />)}</div>;
+      case 'videos':
+        return <div class="block block-videos" data-block="videos"><VideoGrid videos={r.videos} locale={locale} /></div>;
+    }
+  })}
+</div>

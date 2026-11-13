@@ -2,14 +2,21 @@
 import SiteLayout from '../../layouts/SiteLayout.astro';
 import VideoGrid from '../../components/VideoGrid.astro';
 import PostCard from '../../components/PostCard.astro';
+import SiteBlocks from '../../components/SiteBlocks.astro';
 import { pageContext } from '../../lib/context';
-import { channelPosts, channelVideos } from '../../lib/data';
+import { channelPosts, channelVideos, homePage } from '../../lib/data';
 import { alternates, canonicalUrl, siteName } from '../../lib/seo';
 
 const ctx = pageContext(Astro);
 if (!ctx) return new Response('Not found', { status: 404 });
 const { site, locale, t } = ctx;
-const [videos, posts] = await Promise.all([channelVideos(ctx.data, site.channel.id, { limit: 8 }), channelPosts(ctx.data, site.channel.id, 1, 5)]);
+const [videos, posts, home] = await Promise.all([
+  channelVideos(ctx.data, site.channel.id, { limit: 8 }),
+  channelPosts(ctx.data, site.channel.id, 1, 5),
+  // Studio → Site → Home (SS16): a site page shown above the sections
+  site.site.home?.pageId ? homePage(ctx.data, site.host, site.preview ? Astro.url.searchParams.get('preview') : null) : Promise.resolve(null),
+]);
+const homeBlocks = home?.blocks[locale] ?? [];
 const name = siteName(site, locale);
 const intro = site.channel.descriptionLocalized?.[locale] || site.channel.description;
 const logo = site.site.logoUrl || site.channel.avatarUrl;
@@ -22,6 +29,11 @@ const logo = site.site.logoUrl || site.channel.avatarUrl;
       {intro && <p class="hero-intro">{intro.split('\n')[0]}</p>}
     </div>
   </section>
+  {homeBlocks.length > 0 && (
+    <section class="wrap section" aria-label={home?.title[locale] || name}>
+      <SiteBlocks ctx={ctx} blocks={homeBlocks} testId="site-home-blocks" />
+    </section>
+  )}
   <section class="wrap section" aria-labelledby="latest-videos">
     <div class="section-head">
       <h2 id="latest-videos">{t.latestVideos}</h2>

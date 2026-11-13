@@ -25,8 +25,13 @@ interface Props {
 const { ctx, title, description, alternates, canonical, ogType = 'website', ogImage, jsonLd = [], noindex, active } = Astro.props;
 const { site, locale, t, cfg, scheme } = ctx;
 const name = siteName(site, locale);
-const fullTitle = title === name ? name : `${title} | ${name}`;
-const desc = (description || site.channel.descriptionLocalized?.[locale] || site.channel.description || name).replace(/\s+/g, ' ').slice(0, 300);
+// Studio → Site → Search engines (SS16): the owner's title template (`%s` = this page's title)
+const template = site.site.seo?.titleTemplate;
+const fullTitle = title === name ? name : template && template.includes('%s') ? template.replace('%s', title) : `${title} | ${name}`;
+const desc = (description || site.site.seo?.description?.[locale] || site.channel.descriptionLocalized?.[locale] || site.channel.description || name).replace(/\s+/g, ' ').slice(0, 300);
+const VERIFY = /^[A-Za-z0-9_-]{8,100}$/;
+const google = site.site.seo?.googleVerification && VERIFY.test(site.site.seo.googleVerification) ? site.site.seo.googleVerification : null;
+const bing = site.site.seo?.bingVerification && VERIFY.test(site.site.seo.bingVerification) ? site.site.seo.bingVerification : null;
 const theme = renderTheme(site.site.themeRef).id;
 const chrome = THEME_CHROME[theme];
 // Never indexed: test environments, previews, sites still in setup
@@ -43,6 +48,8 @@ const ld = [...siteJsonLd(site, locale, ctx.channelHref, scheme), ...jsonLd];
     <title>{fullTitle}</title>
     <meta name="description" content={desc} />
     <meta name="robots" content={robots} />
+    {google && <meta name="google-site-verification" content={google} />}
+    {bing && <meta name="msvalidate.01" content={bing} />}
     <link rel="canonical" href={canonical} />
     {hreflangLinks(site, alternates, scheme).map((l) => <link rel="alternate" hreflang={l.hreflang} href={l.href} />)}
     <meta property="og:site_name" content={name} />

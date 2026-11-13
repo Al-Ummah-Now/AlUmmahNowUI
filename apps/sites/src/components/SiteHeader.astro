@@ -9,9 +9,16 @@ const { ctx, alternates, active } = Astro.props;
 const { site, locale, t } = ctx;
 const name = siteName(site, locale);
 const logo = site.site.logoUrl || site.channel.avatarUrl;
-const PATHS: Record<Exclude<SiteNavItem['kind'], 'url'>, string> = { home: '', videos: 'videos/', shorts: 'videos/?kind=shorts', posts: 'posts/', about: 'about/' };
+const PATHS: Record<Exclude<SiteNavItem['kind'], 'url' | 'page'>, string> = { home: '', videos: 'videos/', shorts: 'videos/?kind=shorts', posts: 'posts/', about: 'about/' };
+const pages = site.site.pages ?? [];
 interface Item { id: string; kind: SiteNavItem['kind']; label: string; href: string; external: boolean }
 const items: Item[] = site.site.navigation.flatMap((item): Item[] => {
+  if (item.kind === 'page') {
+    // A site page (SS16): its title unless the menu item has its own label; gone pages are left out
+    const page = pages.find((p) => p.id === item.pageId);
+    if (!page) return [];
+    return [{ id: item.id, kind: item.kind, label: item.label?.[locale] || page.title[locale] || page.title.en || page.title.ar || page.slug, href: `/${locale}/${page.slug}/`, external: false }];
+  }
   const label = item.label?.[locale] || t.nav[item.kind];
   if (item.kind === 'url') return item.url && /^https:\/\//.test(item.url) ? [{ id: item.id, kind: item.kind, label, href: item.url, external: true }] : [];
   // Shorts get their own page in phase 3; until then the menu item opens the videos list
