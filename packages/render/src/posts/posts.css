@@ -15,12 +15,14 @@
 .post-kind-link { display: flex; gap: 1rem; padding: 0.75rem; border: 1px solid var(--line); border-radius: var(--radius-media); color: var(--text); text-decoration: none; }
 .post-kind-link:hover, .post-kind-link:focus-visible { border-color: var(--accent-text); }
 .post-kind-link img { width: 6rem; height: 6rem; object-fit: cover; border-radius: var(--radius-media); flex: none; }
+.post-kind-link-compact { padding: 0.5rem; gap: 0.75rem; }
+.post-kind-link-compact img { width: 4rem; height: 4rem; }
 .post-kind-link-text { display: grid; gap: 0.25rem; min-width: 0; }
 .post-kind-link-host { font-size: 0.875rem; color: var(--text-soft); }
 .post-kind-link-title { font-weight: 600; overflow-wrap: anywhere; }
 .post-kind-link-desc { color: var(--text-soft); }
 .post-kind-summary { display: grid; gap: 0.5rem; margin-block-start: 0.5rem; }
 .post-kind-summary .post-kind-images-many { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.post-kind-link-line, .post-kind-action { margin: 0; }
+.post-kind-action { margin: 0; }
 .post-engagement { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-block-start: 2rem; padding-block-start: 1rem; border-block-start: 1px solid var(--line); }
 .post-engagement-counts { display: flex; gap: 1rem; margin: 0; color: var(--text-soft); }

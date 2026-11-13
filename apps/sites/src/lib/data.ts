@@ -9,6 +9,8 @@
 import { VIDEO_ID } from '../../../../packages/render/src/embeds';
 import { normalizeImageUrl } from '../../../../packages/render/src/images';
 import type { Locale } from '../../../../packages/render/src/locale';
+import { safeOutsideUrl } from '../../../../packages/render/src/posts/post-kinds';
+import type { PostLinkData } from '../../../../packages/render/src/posts/types';
 
 export const CURSOR = /^[A-Za-z0-9._~:+/=-]{1,512}$/;
 export const POST_ID = /^[A-Za-z0-9_-]{1,80}$/;
@@ -45,6 +47,11 @@ export interface SitePost {
   videoId: string | null;
   article: { title: string; excerpt: string | null; coverUrl: string | null; url: string | null } | null;
   options: string[];
+  /** A link post's page (SS14): preview card with image, title and site name. */
+  link: PostLinkData | null;
+  gif: { url: string; width: number | null; height: number | null } | null;
+  /** A cards post's cards: real overlay text, never burned into the image. */
+  slides: { url: string; alt: string; heading: string | null; body: string | null }[];
   likes: number;
   comments: number;
   createdAt: string;
@@ -81,6 +88,27 @@ export function toSiteVideo(body: unknown): SiteVideo | null {
   };
 }
 
+function toLink(v: unknown): PostLinkData | null {
+  const l = v as Record<string, unknown> | null | undefined;
+  const url = l ? safeOutsideUrl(str(l.url)) : null;
+  if (!l || !url) return null;
+  const img = l.image as Record<string, unknown> | null | undefined;
+  const imgUrl = img ? normalizeImageUrl(str(img.url)) : null;
+  return {
+    url,
+    title: str(l.title),
+    description: str(l.description),
+    siteName: str(l.siteName),
+    image: imgUrl ? { url: imgUrl, alt: null, width: num(img?.width), height: num(img?.height) } : null,
+  };
+}
+
+function toGif(v: unknown): SitePost['gif'] {
+  const g = v as Record<string, unknown> | null | undefined;
+  const url = g ? normalizeImageUrl(str(g.url)) : null;
+  return url ? { url, width: num(g?.width), height: num(g?.height) } : null;
+}
+
 export function toSitePost(body: unknown): SitePost | null {
   const b = body as Record<string, unknown> | null;
   if (!b || typeof b.id !== 'string' || !POST_ID.test(b.id)) return null;
@@ -103,6 +131,17 @@ export function toSitePost(body: unknown): SitePost | null {
     images,
     videoId: typeof b.videoId === 'string' && VIDEO_ID.test(b.videoId) ? b.videoId : null,
     article: a && str(a.title) ? { title: str(a.title) as string, excerpt: str(a.excerpt), coverUrl: normalizeImageUrl(str(a.coverUrl)), url: str(a.url) } : null,
+    link: toLink(b.link),
+    gif: toGif(b.gif),
+    slides: (Array.isArray(b.slides) ? b.slides : [])
+      .map((x) => {
+        const sl = x as Record<string, unknown>;
+        const img = (sl.image ?? {}) as Record<string, unknown>;
+        const url = normalizeImageUrl(str(img.url));
+        return url ? { url, alt: str(img.alt) ?? '', heading: str(sl.heading), body: str(sl.body) } : null;
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null)
+      .slice(0, 40),
     options: (Array.isArray(optionsSource) ? optionsSource : []).map((o) => str((o as Record<string, unknown>)?.text) ?? '').filter(Boolean).slice(0, 10),
     likes: num(b.likes) ?? 0,
     comments: num(b.comments) ?? 0,

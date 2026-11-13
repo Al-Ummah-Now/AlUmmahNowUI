@@ -2,6 +2,7 @@
 import type { SitePost } from '../lib/data';
 import type { PageContext } from '../lib/context';
 import { fmt } from '../lib/i18n';
+import PostLinkCard from '../../../../packages/render/src/posts/PostLinkCard.astro';
 
 interface Props { ctx: PageContext; post: SitePost; full?: boolean }
 const { ctx, post, full = false } = Astro.props;
@@ -28,6 +29,26 @@ const discussion = `${ctx.channelHref}/community`;
       {post.images.slice(0, full ? 10 : 4).map((img) => <img src={img.url} alt={img.alt} loading="lazy" width={img.width ?? undefined} height={img.height ?? undefined} />)}
     </div>
   )}
+  {post.gif && (
+    <div class="post-kind-gif"><img src={post.gif.url} alt="" loading="lazy" width={post.gif.width ?? undefined} height={post.gif.height ?? undefined} /></div>
+  )}
+  {post.slides.length > 0 && (
+    <ol class="post-slides" data-testid="site-post-slides">
+      {post.slides.slice(0, full ? 40 : 3).map((sl) => (
+        <li class="post-slide">
+          <img src={sl.url} alt={sl.alt} loading="lazy" />
+          {(sl.heading || sl.body) && (
+            <div class="post-slide-text" dir="auto">
+              {sl.heading && <p class="post-slide-heading">{sl.heading}</p>}
+              {sl.body && <p>{sl.body}</p>}
+            </div>
+          )}
+        </li>
+      ))}
+    </ol>
+  )}
+  {!full && post.slides.length > 3 && <p><a href={href}>{fmt(t.moreCards, { n: post.slides.length - 3 })}</a></p>}
+  {post.link && <PostLinkCard link={post.link} locale={locale} compact={!full} />}
   {post.videoId && (
     <p><a href={`/${locale}/watch/${post.videoId}/`} class="post-video-link">{t.watchOn}</a></p>
   )}
