@@ -168,6 +168,17 @@ describe('content', () => {
     expect(toSitePost({ id: 'p1', type: 'poll', content: 'Q', poll: { options: [{ text: 'a' }, { text: 'b' }] } })?.options).toEqual(['a', 'b']);
     expect(toSitePost({ id: 'p1', type: 'image', images: [{ url: 'https://evil.example/x.png' }] })?.images).toEqual([]);
   });
+
+  it('maps link, GIF and cards posts (SS14): safe link, our images only, site name kept', () => {
+    const img = 'https://images.alummahnow.net/community-posts/c1/link-1.png';
+    const link = toSitePost({ id: 'p1', type: 'link', content: 'Worth a read', link: { url: 'https://example.org/a', title: 'A page', siteName: 'Example', description: null, image: { url: img } } });
+    expect(link?.link).toEqual({ url: 'https://example.org/a', title: 'A page', description: null, siteName: 'Example', image: { url: img, alt: null, width: null, height: null } });
+    expect(toSitePost({ id: 'p1', type: 'link', link: { url: 'javascript:alert(1)' } })?.link).toBeNull();
+    expect(toSitePost({ id: 'p1', type: 'link', link: { url: 'https://example.org/', image: { url: 'https://evil.example/x.png' } } })?.link?.image).toBeNull();
+    expect(toSitePost({ id: 'p1', type: 'gif', gif: { url: 'https://images.alummahnow.net/g.gif', width: 200 } })?.gif).toEqual({ url: 'https://images.alummahnow.net/g.gif', width: 200, height: null });
+    const cards = toSitePost({ id: 'p1', type: 'cards', slides: [{ image: { url: img, alt: 'Card one' }, heading: 'One', body: null }, { image: { url: 'https://evil.example/x.png' } }] });
+    expect(cards?.slides).toEqual([{ url: img, alt: 'Card one', heading: 'One', body: null }]);
+  });
 });
 
 describe('sign-in (SS11): top-level redirect, host-only session, 5-minute re-check', () => {

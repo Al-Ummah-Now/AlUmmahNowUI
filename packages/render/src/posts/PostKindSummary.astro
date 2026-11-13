@@ -2,14 +2,15 @@
 /**
  * What a list shows for a scholar post of a community kind (AlUmmahNowCMS docs/SCHOLARS.md §7), from
  * the summary the CMS caches (PostSummary `v2`): a poll's or quiz's choices (voting happens on the
- * channel), a link's page, an image post's pictures, a video's "Watch". Articles and cards keep their
+ * channel), a link's preview card, an image post's pictures, a video's "Watch". Articles and cards keep their
  * own list rendering. Text is text, never HTML.
  */
 import { fill as fmt, postStrings } from './strings';
 import type { PostSummaryLike } from './types';
 import { normalizeImageUrl } from '../images';
 import { dir, type Locale } from '../locale';
-import { isArticleKind, linkHost, safeOutsideUrl } from './post-kinds';
+import { isArticleKind } from './post-kinds';
+import PostLinkCard from './PostLinkCard.astro';
 
 /** `images: false` where the list already shows the post's cover (the home timeline). */
 interface Props { post: PostSummaryLike; locale: Locale; cmsOrigin: string; images?: boolean }
@@ -20,7 +21,6 @@ const kind = post.kind ?? 'article';
 const show = !!v2 && !isArticleKind(kind);
 const images = (v2?.images ?? []).map((m) => ({ url: normalizeImageUrl(m.url, [cmsOrigin]), alt: m.alt ?? '' })).filter((m): m is { url: string; alt: string } => !!m.url);
 const choices = kind === 'poll' ? v2?.poll : kind === 'quiz' ? v2?.quiz : null;
-const linkUrl = kind === 'link' ? safeOutsideUrl(v2?.link?.url) : null;
 const more = v2 ? v2.image_count - images.length : 0;
 ---
 {show && (
@@ -36,11 +36,7 @@ const more = v2 ? v2.image_count - images.length : 0;
         {choices.options.slice(0, 5).map((o) => <li>{o.text}</li>)}
       </ul>
     )}
-    {linkUrl && (
-      <p class="post-kind-link-line">
-        <a href={linkUrl} rel="noopener noreferrer nofollow ugc" target="_blank"><bdi dir="ltr">{linkHost(linkUrl)}</bdi>{v2?.link?.title ? ` · ${v2.link.title}` : ''}<span class="visually-hidden"> ({t.opensOutside})</span></a>
-      </p>
-    )}
+    {kind === 'link' && v2?.link && <PostLinkCard link={{ ...v2.link, siteName: v2.link.site_name ?? null }} locale={locale} extra={[cmsOrigin]} compact images={withImages} />}
     {post.ref && (kind === 'poll' || kind === 'quiz') && (
       <p class="post-kind-action"><a href={post.ref.videos_url}>{kind === 'poll' ? t.voteOnChannel : t.answerOnChannel}</a></p>
     )}

@@ -9,6 +9,9 @@ export type PostKind = 'article' | 'cards' | 'text' | 'image' | 'poll' | 'quiz' 
 
 export interface PostImageRef { url: string; alt: string | null; width: number | null; height: number | null }
 
+/** A link post's page (SS14): `siteName` is absent on older posts and summaries. */
+export interface PostLinkData { url: string; title: string | null; description: string | null; image: PostImageRef | null; siteName?: string | null }
+
 /** A scholar post reference: the community post, where its likes, votes and comments live. */
 export interface PostRef { post_id: string; channel_id: string; videos_url: string }
 
@@ -17,7 +20,8 @@ export interface PostV2Summary {
   images: PostImageRef[];
   image_count: number;
   video_id: string | null;
-  link: { url: string; title: string | null; description: string | null; image: PostImageRef | null } | null;
+  /** `site_name` from the CMS summary (snake case like its other fields); absent before FEED_FORMAT 5. */
+  link: (Omit<PostLinkData, 'siteName'> & { site_name?: string | null }) | null;
   poll: { question: string; options: { id: string; text: string }[] } | null;
   quiz: { question: string; options: { id: string; text: string }[] } | null;
   gif: PostImageRef | null;
@@ -34,7 +38,7 @@ export interface CommunityPostData {
   gif?: { url: string; width?: number; height?: number };
   poll?: { question: string; options: { id: string; text?: string; votes?: number; percentage?: number }[]; totalVotes?: number; votingEndsAt?: string; multipleChoice?: boolean };
   quiz?: { question: string; options: { id: string; text: string }[] };
-  link?: { url: string; title: string | null; description: string | null; image: PostImageRef | null };
+  link?: PostLinkData;
   likes?: number;
   comments?: number;
   commentsEnabled?: boolean;

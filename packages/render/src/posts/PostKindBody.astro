@@ -12,7 +12,8 @@ import type { PostPageLike } from './types';
 import { normalizeImageUrl } from '../images';
 import { watchUrl } from '../embeds';
 import { dir, type Locale } from '../locale';
-import { linkHost, plainLines, safeOutsideUrl } from './post-kinds';
+import { plainLines } from './post-kinds';
+import PostLinkCard from './PostLinkCard.astro';
 
 interface Props { post: PostPageLike; locale: Locale; cmsOrigin: string; videosWebUrl: string }
 const { post, locale, cmsOrigin, videosWebUrl } = Astro.props;
@@ -28,9 +29,7 @@ const images = (c?.images ?? v2?.images ?? [])
   .filter((i): i is { url: string; alt: string; width: number | null; height: number | null } => !!i.url);
 const poll = c?.poll ?? v2?.poll ?? null;
 const quiz = c?.quiz ?? v2?.quiz ?? null;
-const link = c?.link ?? v2?.link ?? null;
-const linkUrl = link ? safeOutsideUrl(link.url) : null;
-const linkImage = link?.image ? normalizeImageUrl(link.image.url, extra) : null;
+const link = c?.link ?? (v2?.link ? { ...v2.link, siteName: v2.link.site_name ?? null } : null);
 const gifUrl = normalizeImageUrl(c?.gif?.url ?? v2?.gif?.url ?? null, extra);
 const videoId = c?.videoId ?? v2?.video_id ?? null;
 let videoHref: string | null = null;
@@ -77,15 +76,5 @@ const totalVotes = typeof c?.poll?.totalVotes === 'number' ? c.poll.totalVotes :
 
   {kind === 'video' && videoHref && <p><a class="button" href={videoHref}>{t.watchVideo}</a></p>}
 
-  {kind === 'link' && link && linkUrl && (
-    <a class="post-kind-link" href={linkUrl} rel="noopener noreferrer nofollow ugc" target="_blank">
-      {linkImage && <img src={linkImage} alt="" loading="lazy" decoding="async" />}
-      <span class="post-kind-link-text">
-        <span class="post-kind-link-host" dir="ltr">{linkHost(linkUrl)}</span>
-        <span class="post-kind-link-title" dir="auto">{link.title || linkUrl}</span>
-        {link.description && <span class="post-kind-link-desc" dir="auto">{link.description}</span>}
-        <span class="visually-hidden">({t.opensOutside})</span>
-      </span>
-    </a>
-  )}
+  {kind === 'link' && link && <PostLinkCard link={link} locale={locale} extra={extra} />}
 </div>

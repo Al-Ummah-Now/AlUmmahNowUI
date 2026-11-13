@@ -1,0 +1,34 @@
+---
+/**
+ * A link post's preview card (wiki AUN-SCHOLAR-SITES SS14): the outside page's image, site name (else
+ * its host) and title, with its description when `full`. Opens in a new tab with nofollow. Shared by
+ * www post pages, www lists and the scholar sites (packages/render).
+ */
+import { postStrings } from './strings';
+import { normalizeImageUrl } from '../images';
+import type { Locale } from '../locale';
+import { linkHost, safeOutsideUrl } from './post-kinds';
+import type { PostLinkData } from './types';
+
+/**
+ * `compact`: the list form (smaller image, no description). `images: false` where the list already
+ * shows the post's cover. `extra`: image origins to allow.
+ */
+interface Props { link: PostLinkData; locale: Locale; extra?: string[]; compact?: boolean; images?: boolean }
+const { link, locale, extra = [], compact = false, images = true } = Astro.props;
+const t = postStrings(locale);
+const url = safeOutsideUrl(link.url);
+const image = images && link.image ? normalizeImageUrl(link.image.url, extra) : null;
+const site = link.siteName?.trim() || null;
+---
+{url && (
+  <a class:list={['post-kind-link', compact && 'post-kind-link-compact']} href={url} rel="noopener noreferrer nofollow ugc" target="_blank" data-testid="post-link-card">
+    {image && <img src={image} alt="" loading="lazy" decoding="async" />}
+    <span class="post-kind-link-text">
+      <span class="post-kind-link-host" dir={site ? 'auto' : 'ltr'} data-testid="post-link-site">{site ?? linkHost(url)}</span>
+      <span class="post-kind-link-title" dir="auto">{link.title || url}</span>
+      {!compact && link.description && <span class="post-kind-link-desc" dir="auto">{link.description}</span>}
+      <span class="visually-hidden">({t.opensOutside})</span>
+    </span>
+  </a>
+)}
