@@ -88,8 +88,9 @@ every QA deploy and every promote.
   isolate for 30 s with a background refresh, and the server renders it as `<html data-theme>`, so
   the first paint is right. The theme is part of the HTML cache key, so a change reaches every
   page within about a minute with no deploy. Any failure, or a custom theme from the admin's theme
-  builder, renders the default (Fawanees) and that page is not cached. Light / Dark / System is
-  separate: each visitor's choice in localStorage (`src/lib/theme-mode.ts`). On QA, stage and local,
+  builder, renders the default (Fawanees) and that page is not cached. Light / Dark is
+  separate: a header toggle with no "System" option; the first visit follows the device, then each
+  visitor's last choice in localStorage (`src/lib/theme-mode.ts`). On QA, stage and local,
   `?theme=<id>` previews a built-in theme for one request.
 - **Edge** (`src/worker.ts`): apex → www 301, `/` → `/en/` or `/ar/` (cookie, then
   `Accept-Language`), CSP without `unsafe-inline`, HSTS, `frame-ancestors 'none'`, and

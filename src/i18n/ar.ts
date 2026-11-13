@@ -35,11 +35,7 @@ export const ar: Messages = {
     listIn: 'المقالات {language}',
   },
   theme: {
-    label: 'المظهر',
-    current: 'المظهر: {mode}',
-    system: 'حسب الجهاز',
-    light: 'فاتح',
-    dark: 'داكن',
+    dark: 'الوضع الداكن',
   },
   auth: {
     moreAccounts: 'حسابات أخرى',

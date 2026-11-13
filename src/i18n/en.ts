@@ -33,11 +33,8 @@ export const en = {
     listIn: 'Articles in {language}',
   },
   theme: {
-    label: 'Theme',
-    current: 'Theme: {mode}',
-    system: 'System',
-    light: 'Light',
-    dark: 'Dark',
+    // Light / Dark toggle in the header (pressed = dark); no "System" option
+    dark: 'Dark mode',
   },
   auth: {
     moreAccounts: 'More accounts',

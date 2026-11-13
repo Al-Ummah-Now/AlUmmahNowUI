@@ -16,6 +16,7 @@
 import { confirmDialog, type ConfirmOptions } from './confirm';
 import { initFacades } from './facade';
 import { initSearchBoxes } from './search-combobox';
+import { fitToViewport } from './menu-fit';
 import { initTheme } from './theme';
 import { startStreet } from '../lib/fanous-street.generated.js';
 import {
@@ -370,6 +371,7 @@ function buildMenu(root: HTMLElement, me: Me, result: AccountsResult, focusButto
   const items = () => Array.from(menu.querySelectorAll<HTMLElement>('a, button:not([disabled])'));
   const open = (focusFirst: boolean) => {
     menu.hidden = false;
+    fitToViewport(menu);
     button.setAttribute('aria-expanded', 'true');
     if (focusFirst) items()[0]?.focus();
   };

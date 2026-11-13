@@ -52,7 +52,6 @@ const STEPS: Step[] = [
   { name: '404', path: '/this/does/not/exist/' },
   { name: 'header', path: '/', root: '.site-header' },
   { name: 'footer', path: '/', root: '.site-footer', open: async (p) => p.locator('.site-footer').scrollIntoViewIfNeeded() },
-  { name: 'theme-menu', path: '/', root: '.site-header', open: async (p) => p.locator('.theme-button').click() },
   { name: 'hero-signed-in', path: '/', root: '.hero', signedIn: true },
   {
     name: 'account-menu-signed-in',
