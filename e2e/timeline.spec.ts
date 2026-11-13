@@ -9,7 +9,7 @@ import { token, type ThemeId } from './site-theme';
 import { expect, test, type Page } from '@playwright/test';
 
 const local = !process.env.WWW_URL;
-const SEEDED_DATED = 54; // 1 video entry + 1 channel + 2 posts + 50 dated posts (the pinned post is separate)
+const SEEDED_DATED = 55; // 1 video entry + 1 Short + 1 channel + 2 posts + 50 dated posts (the pinned post is separate)
 
 const items = (page: Page) => page.locator('[data-days] li.tl-item');
 
@@ -85,7 +85,7 @@ test.describe('home timeline', () => {
       await expect(items(page)).toHaveCount(40);
       await expect(page).toHaveURL(/\/en\/$/);
       await expect(page.locator('.tl-foot [data-live]')).toHaveText('20 more items added');
-      await expect(page.locator(':focus')).toHaveText('News item 17');
+      await expect(page.locator(':focus')).toHaveText('News item 16');
       // Day headings stay unique after the merge.
       const days = await page.locator('[data-days] .tl-day').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.day));
       expect(new Set(days).size).toBe(days.length);
@@ -117,23 +117,25 @@ test.describe('home timeline', () => {
       await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
       await expect(page.locator('[data-days] .tl-date').first()).toHaveText('اليوم');
       await expect(page.locator('.tl-card .ci-count')).toHaveText('5 بطاقات');
-      const card = page.locator('.tl-card').first();
-      const box = await card.boundingBox();
-      const pin = await page.locator('.tl-card-pinned').evaluate((e) => getComputedStyle(e).borderRightWidth);
-      expect(pin).toBe('3px'); // the pinned edge is on the reading side (right in Arabic)
-      expect(box).not.toBeNull();
+      // pinned posts sit under their own "Pinned" heading (posts have no boxes or edges)
+      await expect(page.locator('.tl-pinned .tl-date')).toHaveText('مثبّت');
+      await expect(page.locator('.tl-pinned .tl-card-pinned')).toHaveCount(1);
       await page.getByRole('link', { name: 'عرض المزيد' }).click();
       await expect(items(page)).toHaveCount(40);
       expect(await axe(page)).toEqual([]);
     });
 
-    test('dark mode: cards on the site theme night surfaces', async ({ page }) => {
-      await page.emulateMedia({ colorScheme: 'dark' });
-      await page.goto('/en/');
-      const theme = (await page.locator('html').getAttribute('data-theme')) as ThemeId;
-      const bg = await page.locator('.tl-card').first().evaluate((e) => getComputedStyle(e).backgroundImage);
-      expect(bg).toContain(token(theme, 'dark', '--fanous-color-surface-raised'));
-      expect(await axe(page)).toEqual([]);
+    test('posts have no box in light or dark: no fill, border or shadow; a hairline between them', async ({ page }) => {
+      for (const scheme of ['light', 'dark'] as const) {
+        await page.emulateMedia({ colorScheme: scheme });
+        await page.goto('/en/');
+        const look = await page.locator('.tl-card').evaluateAll((els) => els.map((e) => { const c = getComputedStyle(e); return [c.backgroundColor, c.backgroundImage, c.borderTopWidth, c.boxShadow].join('|'); }));
+        expect(new Set(look)).toEqual(new Set(['rgba(0, 0, 0, 0)|none|0px|none']));
+        const theme = (await page.locator('html').getAttribute('data-theme')) as ThemeId;
+        const rule = await items(page).nth(1).evaluate((e) => getComputedStyle(e).borderTopColor);
+        expect(rule).toBe(token(theme, scheme, '--fanous-color-divider'));
+        expect(await axe(page)).toEqual([]);
+      }
     });
 
     test('a missing feed falls back to the posts list, never an error page', async ({ request }) => {

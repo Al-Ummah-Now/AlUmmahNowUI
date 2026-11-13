@@ -24,7 +24,8 @@ type CardSlide = Pick<Slide, 'image' | 'heading' | 'body' | 'position'>;
  * adds Next/Back buttons, arrow keys, Home/End and the "Card 3 of 8" live text. `more` > 0 (the
  * list carries at most 10 cards) ends the strip with a "See all N cards" frame linking to the post.
  * On the home timeline (`size: 'timeline'`) the strip is the whole post: the `overlay` slot (title,
- * author, time) and the pager (small side arrows, position, thin segments) are drawn over the cards.
+ * author, time) and the pager (small side arrows, position, thin segments) are drawn over the cards,
+ * and with JS the strip becomes a stacked deck (.ci-deck, src/scripts/cards.ts initDeck).
  */
 interface Inline { href: string; uid: string; total: number; more: number; priority: boolean; size: 'list' | 'timeline' }
 interface Props { slides: CardSlide[]; title: string; contentLocale: Locale; locale: Locale; initial?: number; pathname?: string; cmsOrigin: string; inline?: Inline }
@@ -54,7 +55,7 @@ const showDots = total > 1 && total <= 16;
 ---
 {inline ? (
 <section
-  class:list={['cards-inline', `ci-${inline.size}`, `cv-${frame}`, bare && 'ci-bare']}
+  class:list={['cards-inline', `ci-${inline.size}`, `cv-${frame}`, bare && 'ci-bare ci-deck']}
   data-cards-inline
   data-count={frames}
   data-total={shown}

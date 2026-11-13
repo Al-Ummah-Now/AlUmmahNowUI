@@ -138,3 +138,21 @@ export function absoluteTime(iso: string, locale: Locale, timeZone = 'UTC'): str
     timeZone,
   }).format(d);
 }
+
+/**
+ * The videos platform's public playback API (AlUmmahNow apps/api-videos): one video's playable
+ * files for the timeline's hover preview, and the Shorts that follow one for the Shorts viewer.
+ * The client (src/scripts/timeline-media.ts) builds the URLs from this base.
+ */
+export const playApiBase = (videosApiUrl: string) => `${videosApiUrl.replace(/\/+$/, '')}/api/public/v1`;
+
+/**
+ * A Short on the timeline (the platform's rule, shared-types video-format.ts: at most 3 minutes, and
+ * taller than wide or square): one at a time, in its vertical frame; a click opens the Shorts viewer.
+ * Without a known length the frame decides (a vertical 9:16 or 4:5 frame).
+ */
+export function isShort(shape: string, durationSeconds: number | null | undefined): boolean {
+  if (shape !== 'ar-9x16' && shape !== 'ar-4x5' && shape !== 'ar-1x1') return false;
+  if (typeof durationSeconds === 'number' && durationSeconds > 0) return durationSeconds <= 180;
+  return shape !== 'ar-1x1';
+}

@@ -5,6 +5,12 @@
  */
 export const VIDEO_IMAGE_HOSTS = ['images.alummahnow.net', '*.b-cdn.net'] as const;
 
+/**
+ * Hosts the timeline's video files come from (CSP media-src): the videos platform's public play API
+ * (AlUmmahNow apps/api-videos) answers signed MP4 URLs on its R2 media domains or Bunny's CDN.
+ */
+export const VIDEO_MEDIA_HOSTS = ['media.alummahnow.net', 'media.stage.alummahnow.net', 'media.qa.alummahnow.net', '*.b-cdn.net'] as const;
+
 function hostAllowed(host: string, allowed: readonly string[]): boolean {
   return allowed.some((h) => (h.startsWith('*.') ? host.endsWith(h.slice(1)) && host.length > h.length - 1 : host === h));
 }

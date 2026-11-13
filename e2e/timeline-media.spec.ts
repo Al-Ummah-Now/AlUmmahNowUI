@@ -46,7 +46,7 @@ test.describe('timeline videos: shape, dark media surface, embed fit, channel na
 
           // The channel in the page's language (the video's plain channel name is English)
           const entry = page.locator('li.tl-item', { hasText: CASES[0].item[l] });
-          await expect(entry.locator('.tl-excerpt').first(), at).toHaveText(l === 'ar' ? 'قناة العلم' : 'Knowledge channel');
+          await expect(entry.locator('.tl-ov .tl-author').first(), at).toHaveText(l === 'ar' ? 'قناة العلم' : 'Knowledge channel');
 
           for (const c of CASES) {
             const fig = page.locator('li.tl-item', { hasText: c.item[l] }).locator('figure.facade', { has: page.getByRole('button', { name: new RegExp(c.title[l]) }) });

@@ -5,7 +5,7 @@
  *
  *   node --experimental-strip-types --no-warnings e2e/seed-feed.ts
  *
- * Content (both locales): a pinned post, a video entry, a channel entry, a post with two body videos, a card post,
+ * Content (both locales): a pinned post, a video entry, a Short entry, a channel entry, a post with two body videos, a card post,
  * and 50 dated posts back to last year, so "Load more" walks past the head into the week buckets.
  */
 import { execFileSync } from 'node:child_process';
@@ -45,6 +45,16 @@ export function seedItems(locale: 'en' | 'ar'): FeedItem[] {
         ref_id: 'feed-video-1',
         title_override: ar ? 'درس الأسبوع' : 'Lesson of the week',
         snapshot: { title: 'Lesson', thumbnail_url: null, channel_name: 'Knowledge channel', channel_names: { en: 'Knowledge channel', ar: 'قناة العلم' }, width: 1280, height: 720 },
+      },
+    },
+    // A Short entry (vertical, under 3 minutes): its own post; a click opens the Shorts viewer
+    {
+      ...video(12, at(1.5)),
+      video: {
+        kind: 'video',
+        ref_id: 'feed-short-1',
+        title_override: ar ? 'دقيقة مع آية' : 'A minute with an ayah',
+        snapshot: { title: 'A minute with an ayah', thumbnail_url: null, channel_name: 'Knowledge channel', channel_names: { en: 'Knowledge channel', ar: 'قناة العلم' }, width: 720, height: 1280, duration_seconds: 48 },
       },
     },
     // A channel entry (docs/specs/WWW-PAGES.md D7): name, @handle and its three latest videos

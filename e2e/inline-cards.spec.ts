@@ -19,14 +19,20 @@ const strip = (page: Page, title: string) => page.getByRole('region', { name: ne
 const pos = (viewer: Locator) => viewer.locator('[data-ci-pos]');
 const live = (viewer: Locator) => viewer.locator('[data-ci-live]');
 
-/** The card a strip shows: the slide whose box sits inside the track's box. */
+/**
+ * The card a viewer shows (1-based): the deck's top card (list pages and the home timeline stack their
+ * cards: .ci-deck), else the strip's slide whose box sits inside the track's box.
+ */
 async function shown(viewer: Locator): Promise<number> {
   return viewer.locator('[data-track]').evaluate((track) => {
-    const t = track.getBoundingClientRect();
     const slides = [...track.querySelectorAll<HTMLElement>('.ci-slide')];
+    if (slides.some((s) => s.dataset.o)) return slides.findIndex((s) => s.dataset.o === '0') + 1;
+    const t = track.getBoundingClientRect();
     return slides.findIndex((s) => Math.abs(s.getBoundingClientRect().left - t.left) < 2) + 1;
   });
 }
+/** An image the browser has fetched and decoded. */
+const loaded = (img: Locator) => img.evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0);
 
 /** A box in page coordinates (bounding boxes are viewport-relative, and the page may scroll). */
 async function pageBox(v: Locator) {
@@ -80,9 +86,9 @@ test.describe('Articles list: card posts inline', () => {
     await expect(imgs.first()).toHaveAttribute('loading', 'eager');
     await expect(imgs.first()).toHaveAttribute('fetchpriority', 'high');
     for (const i of [2, 3, 4]) await expect(imgs.nth(i)).toHaveAttribute('loading', 'lazy');
-    // A strip on screen readies its second card (a swipe never lands on a blank frame).
+    // On screen, the card behind the top one shows, so it loads (a throw never lands on a blank card).
     await madinah.scrollIntoViewIfNeeded();
-    await expect(imgs.nth(1)).toHaveAttribute('loading', 'eager');
+    await expect.poll(() => loaded(imgs.nth(1))).toBe(true);
     // CMS variants: AVIF/WebP sources would be here with a srcset; the stub has none, so a sized <img>.
     await expect(imgs.first()).toHaveAttribute('width', '1080');
     // Articles without cards keep their excerpt.
@@ -103,8 +109,8 @@ test.describe('Articles list: card posts inline', () => {
     await expect(pos(v)).toHaveText('2 / 5');
     await expect(live(v)).toHaveText('Card 2 of 5');
     await expect.poll(() => shown(v)).toBe(2);
-    // The neighbours of the card shown load now.
-    await expect(v.locator('.ci-slide').nth(2).locator('img')).toHaveAttribute('loading', 'eager');
+    // The cards behind the one shown are loaded.
+    await expect.poll(() => loaded(v.locator('.ci-slide').nth(2).locator('img'))).toBe(true);
     // Keys while focus is in the viewer: → forward in English, End and Home.
     await v.locator('[data-track]').focus();
     await page.keyboard.press('ArrowRight');
@@ -141,7 +147,7 @@ test.describe('Articles list: card posts inline', () => {
     await expect(page.locator('[data-cards] .cv-slide')).toHaveCount(13);
   });
 
-  test('ar (RTL): Next sits on the left, ← goes forward, the strip scrolls leftward', async ({ page }, info) => {
+  test('ar (RTL): Next sits on the left, ← goes forward, the deck turns toward the left', async ({ page }, info) => {
     await page.goto('/ar/articles/');
     const v = strip(page, 'رحلة إلى القدس');
     await expect(v).toHaveAttribute('data-ready', '');
@@ -153,10 +159,10 @@ test.describe('Articles list: card posts inline', () => {
     await expect(pos(v)).toHaveText('2 من 4');
     await expect(live(v)).toHaveText('البطاقة 2 من 4');
     await expect.poll(() => shown(v)).toBe(2);
-    expect(await v.locator('[data-track]').evaluate((t) => t.scrollLeft)).toBeLessThan(0);
-    // The second card is the one to the left of the first.
-    const [a, b] = [await v.locator('.ci-slide').nth(0).boundingBox(), await v.locator('.ci-slide').nth(1).boundingBox()];
-    expect(b!.x).toBeLessThan(a!.x);
+    expect(await v.evaluate((el) => getComputedStyle(el).getPropertyValue('--deck-dir').trim())).toBe('-1');
+    // The first card is off the deck (reduced motion here: it fades, it is not thrown).
+    await expect(v.locator('.ci-slide').nth(0)).toHaveAttribute('data-o', 'gone');
+    expect(await v.locator('.ci-slide').nth(0).evaluate((e) => getComputedStyle(e).transform)).toBe('none');
     await v.locator('[data-track]').focus();
     await page.keyboard.press('ArrowLeft');
     await expect(pos(v)).toHaveText('3 من 4');
@@ -231,8 +237,11 @@ test.describe('Articles list: card posts inline', () => {
   });
 });
 
-test.describe('home timeline: card posts inline', () => {
-  test('en: all five cards in the feed card, with the title linking to the post', async ({ page }, info) => {
+/** The card on top of a timeline deck (1-based). */
+const top = (viewer: Locator) => viewer.locator('.ci-slide').evaluateAll((cards) => cards.findIndex((c) => (c as HTMLElement).dataset.o === '0') + 1);
+
+test.describe('home timeline: card posts as a deck', () => {
+  test('en: five stacked cards, title links to the post; buttons, keys, drag and "Card N of M"', async ({ page }, info) => {
     await page.goto('/en/');
     const v = strip(page, 'Five lessons from Surat al-Kahf');
     await expect(v).toHaveAttribute('data-ready', '');
@@ -241,29 +250,67 @@ test.describe('home timeline: card posts inline', () => {
     const card = page.locator('.tl-card', { has: v });
     await expect(card.getByRole('heading', { name: 'Five lessons from Surat al-Kahf' }).getByRole('link')).toHaveAttribute('href', /\/en\/articles\/post-30\/$/);
     await expect(card.locator('time[datetime]')).toHaveCount(1);
+    // the deck: the top card, the next two behind it, only the top card reachable
+    await expect(v.locator('.ci-slide[data-o="0"]')).toHaveCount(1);
+    await expect(v.locator('.ci-slide[data-o="1"]')).toHaveCount(1);
+    await expect(v.locator('.ci-slide[data-o="2"]')).toHaveCount(1);
+    await expect(v.locator('.ci-slide[inert]')).toHaveCount(4);
     const box = await pageBox(v);
     await v.getByRole('button', { name: 'Next card' }).click();
     await expect(pos(v)).toHaveText('2 / 5');
     await expect(live(v)).toHaveText('Card 2 of 5');
+    await expect(v.locator('.ci-slide').first()).toHaveAttribute('data-o', 'gone');
     await expect(v.locator('.ci-slide').nth(1).locator('.cv-heading')).toHaveText('Lesson two');
     await v.locator('[data-track]').focus();
+    await page.keyboard.press('ArrowRight');
+    await expect.poll(() => top(v)).toBe(3);
     await page.keyboard.press('End');
-    await expect.poll(() => shown(v)).toBe(5);
+    await expect.poll(() => top(v)).toBe(5);
+    await page.keyboard.press('Home');
+    await expect.poll(() => top(v)).toBe(1);
+    // drag the top card toward the start of the line: the next card
+    const t = (await v.locator('[data-track]').boundingBox())!;
+    await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(t.x + t.width / 2 - t.width / 2, t.y + t.height / 2, { steps: 6 });
+    await page.mouse.up();
+    await expect.poll(() => top(v)).toBe(2);
+    // a drag follows no link and leaves the page where it was
+    expect(new URL(page.url()).pathname).toBe('/en/');
     expect(await pageBox(v)).toEqual(box);
     expect(await cls(page)).toBeLessThan(0.01);
     await axeAndShot(page, 'timeline-inline-en', info.project.name);
   });
 
-  test('ar: the strip runs right to left', async ({ page }, info) => {
+  test('ar: the deck turns toward the left; ← goes forward; a drag to the right throws the card', async ({ page }, info) => {
     await page.goto('/ar/');
     const v = strip(page, 'خمس فوائد من سورة الكهف');
     await expect(v).toHaveAttribute('data-ready', '');
     await expect(v.locator('.ci-count')).toHaveText('5 بطاقات');
+    expect(await v.evaluate((el) => getComputedStyle(el).getPropertyValue('--deck-dir').trim())).toBe('-1');
     await v.getByRole('button', { name: 'البطاقة التالية' }).click();
     await expect(pos(v)).toHaveText('2 من 5');
-    await expect.poll(() => shown(v)).toBe(2);
-    expect(await v.locator('[data-track]').evaluate((t) => t.scrollLeft)).toBeLessThan(0);
+    await expect(live(v)).toHaveText('البطاقة 2 من 5');
+    await v.locator('[data-track]').focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect.poll(() => top(v)).toBe(3);
+    const t = (await v.locator('[data-track]').boundingBox())!;
+    await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(t.x + t.width, t.y + t.height / 2, { steps: 6 });
+    await page.mouse.up();
+    await expect.poll(() => top(v)).toBe(4);
     await axeAndShot(page, 'timeline-inline-ar', info.project.name);
+  });
+
+  test('works without JS: the cards are a scrolling strip', async ({ browser }) => {
+    const ctx = await browser.newContext({ javaScriptEnabled: false });
+    const page = await ctx.newPage();
+    await page.goto('/en/');
+    const v = strip(page, 'Five lessons from Surat al-Kahf');
+    await expect(v.locator('.ci-slide')).toHaveCount(5);
+    expect(await v.locator('[data-track]').evaluate((t) => t.scrollWidth > t.clientWidth)).toBe(true);
+    await ctx.close();
   });
 });
 

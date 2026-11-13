@@ -4,7 +4,7 @@
  */
 import { embedOrigin } from './embeds';
 import type { Config } from './env';
-import { imgSrcSources } from './images';
+import { imgSrcSources, VIDEO_MEDIA_HOSTS } from './images';
 import { articlesPath, isLocale, negotiateLocale } from './locale';
 import { isPreviewPath } from './preview';
 import { THEME_SOURCE_HEADER } from './site-theme';
@@ -82,8 +82,10 @@ export function contentSecurityPolicy(cfg: Config, opts: { analytics?: boolean }
     "font-src 'self'",
     // the header asks auth which accounts this browser is signed in to (/session/accounts), and
     // search boxes ask the CMS for suggestions (/api/public/v1/search/suggest)
-    `connect-src 'self' ${new URL(cfg.authUrl).origin} ${new URL(cfg.cmsPublicUrl).origin}${analytics ? ' https://cloudflareinsights.com' : ''}`,
-    "media-src 'none'",
+    // and the timeline asks the videos platform for a video's preview file and the next Shorts
+    `connect-src 'self' ${new URL(cfg.authUrl).origin} ${new URL(cfg.cmsPublicUrl).origin} ${new URL(cfg.videosApiUrl).origin}${analytics ? ' https://cloudflareinsights.com' : ''}`,
+    // the timeline's hover previews and the Shorts viewer play the platform's MP4s
+    `media-src ${VIDEO_MEDIA_HOSTS.map((h) => `https://${h}`).join(' ')}`,
     `frame-src ${embedOrigin(cfg.videosWebUrl)}`,
     "frame-ancestors 'none'",
     "object-src 'none'",
