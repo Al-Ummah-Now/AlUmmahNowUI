@@ -237,7 +237,7 @@ describe('cards and videos in the feed', () => {
   it('turns a feed video into a facade item: snapshot, title override, or a plain card', () => {
     const snap = { title: 'Lesson 4.mp4', thumbnail_url: 'https://images.alummahnow.net/t.jpg', channel_name: 'Ch', titles: { ar: 'الدرس' } };
     expect(feedVideoItem({ kind: 'video', ref_id: 'abc', snapshot: snap }, 'en', 'Video')).toMatchObject({ id: 'abc', title: 'Lesson 4', thumbnailUrl: 'https://images.alummahnow.net/t.jpg' });
-    expect(feedVideoItem({ kind: 'video', ref_id: 'abc', snapshot: snap }, 'ar', 'مقطع').title).toBe('الدرس');
+    expect(feedVideoItem({ kind: 'video', ref_id: 'abc', snapshot: snap }, 'ar', 'مرئي').title).toBe('الدرس');
     expect(feedVideoItem({ kind: 'video', ref_id: 'abc', snapshot: snap, title_override: 'Picked' }, 'en', 'Video').title).toBe('Picked');
     expect(feedVideoItem({ kind: 'video', ref_id: 'abc', snapshot: null }, 'en', 'Video')).toMatchObject({ title: 'Video', thumbnailUrl: null });
   });

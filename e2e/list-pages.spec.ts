@@ -101,7 +101,7 @@ test.describe('list pages from /lists (stub CMS)', () => {
     await expect(channel.getByRole('heading', { name: 'قناة العلم' })).toHaveCount(1);
     await expect(channel.locator('bdi[dir="ltr"]')).toHaveText('@knowledge');
     await expect(channel.getByRole('link', { name: 'زيارة القناة' })).toHaveAttribute('href', /\/ar\/@knowledge$/);
-    await expect(channel.getByRole('list', { name: 'أحدث مقاطع قناة العلم' }).getByRole('link')).toHaveCount(3);
+    await expect(channel.getByRole('list', { name: 'أحدث مرئيات قناة العلم' }).getByRole('link')).toHaveCount(3);
     await expect(page.locator('.tl-channel .tl-kind')).toHaveText('قناة');
     expect(await axe(page)).toEqual([]);
   });
