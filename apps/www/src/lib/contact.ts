@@ -8,3 +8,11 @@ import { libraryUrl } from './embeds';
 export function contactUrl(videosWebUrl: string, locale: Locale): string {
   return `${libraryUrl(videosWebUrl, locale)}/contact`;
 }
+
+/**
+ * Help (how to watch, take part and share, as yourself or as a channel) lives on the videos site
+ * too (/{locale}/help, AlUmmahNow docs/features/HELP-AND-TOUR.md); the footer links there.
+ */
+export function helpUrl(videosWebUrl: string, locale: Locale): string {
+  return `${libraryUrl(videosWebUrl, locale)}/help`;
+}

@@ -1,11 +1,12 @@
 ---
 import { fmt, strings } from '../i18n';
 import { navHref } from '../lib/context';
+import { helpUrl } from '../lib/contact';
 import type { NavItem, SiteSettings } from '../lib/cms-types';
 import { statusPageUrl, type Locale } from '../lib/locale';
 
-interface Props { locale: Locale; nav: NavItem[]; settings: SiteSettings | null }
-const { locale, nav, settings } = Astro.props;
+interface Props { locale: Locale; nav: NavItem[]; settings: SiteSettings | null; videosWebUrl: string }
+const { locale, nav, settings, videosWebUrl } = Astro.props;
 const t = strings(locale);
 const items = nav.flatMap((n) => {
   const href = navHref(n.url, locale);
@@ -25,6 +26,7 @@ const year = new Date().getUTCFullYear();
       <nav aria-label={t.a11y.footerNav}>
         <ul>
           {items.map((i) => <li><a href={i.href}>{i.label}</a></li>)}
+          <li><a href={helpUrl(videosWebUrl, locale)} data-testid="footer-help">{t.footer.help}</a></li>
           <li><a href={`/${locale}/contact/`}>{t.footer.contact}</a></li>
           <li><a href={`/${locale}/rss.xml`}>{t.footer.rss}</a></li>
           <li><a href={statusPageUrl(Astro.url.hostname, locale)} data-testid="footer-status">{t.footer.status}</a></li>

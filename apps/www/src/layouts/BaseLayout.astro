@@ -95,7 +95,7 @@ const robots = noindex || !cfg.isProduction ? 'noindex, nofollow' : 'index, foll
     <main id="main" tabindex="-1" lang={contentLocale && contentLocale !== locale ? contentLocale : undefined} dir={contentLocale && contentLocale !== locale ? dir(contentLocale) : undefined}>
       <slot />
     </main>
-    <Footer locale={locale} nav={nav.footer} settings={settings ?? null} />
+    <Footer locale={locale} nav={nav.footer} settings={settings ?? null} videosWebUrl={cfg.videosWebUrl} />
     <script>
       import '../scripts/site';
     </script>
