@@ -16,11 +16,22 @@
  * Everything is delegated from the timeline root, so posts appended by "Load more" work too.
  */
 
+/** The channel's name in the page's language, else its default name, else any language's. */
+export function channelNameFor(info: Pick<PlayInfo, 'channelName' | 'channelNameLocalized'>, lang: string): string {
+  const names = info.channelNameLocalized ?? {};
+  const own = lang ? names[lang.slice(0, 2)]?.trim() : '';
+  if (own) return own;
+  if (info.channelName?.trim()) return info.channelName.trim();
+  return Object.values(names).find((n) => n?.trim())?.trim() ?? '';
+}
+
 export interface PlayInfo {
   id: string;
   format: 'short' | 'video';
   title: string;
   channelName: string | null;
+  /** The channel's name per language (videos API) */
+  channelNameLocalized?: Record<string, string> | null;
   channelHandle?: string | null;
   width: number | null;
   height: number | null;
@@ -371,7 +382,7 @@ function initShorts(root: HTMLElement, api: string) {
         v.src = info.mp4!.url;
         if (info.poster) v.poster = info.poster;
         item.querySelector('.sv-title')!.textContent = info.title;
-        item.querySelector('.sv-meta span')!.textContent = info.channelName ?? '';
+        item.querySelector('.sv-meta span')!.textContent = channelNameFor(info, document.documentElement.lang);
         const watch = item.querySelector<HTMLAnchorElement>('.sv-watch')!;
         // the API's watch link is English; the viewer speaks the page's language
         watch.href = document.documentElement.lang === 'ar' ? info.watchUrl.replace('/en/', '/ar/') : info.watchUrl;
