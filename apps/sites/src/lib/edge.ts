@@ -25,7 +25,12 @@ export function zoneRedirect(host: string, cfg: Config): Response | null {
 
 /** The site's own path redirects (Studio → Site → Redirects, SS16): exact path, 301. */
 export function pathRedirect(url: URL, site: PublicSite): Response | null {
-  const norm = (p: string) => (p.length > 1 ? p.replace(/\/+$/, '') : p);
+  // Trailing slashes trimmed with a linear scan (no regex over the request path)
+  const norm = (p: string) => {
+    let end = p.length;
+    while (end > 1 && p.charCodeAt(end - 1) === 47) end--;
+    return p.slice(0, end);
+  };
   const path = norm(url.pathname);
   const hit = (site.site.redirects ?? []).find((r) => typeof r.from === 'string' && r.from.startsWith('/') && norm(r.from) === path);
   if (!hit) return null;
