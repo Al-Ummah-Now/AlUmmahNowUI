@@ -1,0 +1,36 @@
+name: Sites zone
+
+# The one-time alummahnow.org setup for the scholar sites Worker and a check of what the release
+# token may do there (apps/sites/scripts/sites-zone.ts, apps/sites/docs/DOMAINS.md). By hand only.
+#   check: read-only probes plus one TXT record created and deleted at once (DNS Edit)
+#   apply: proxied AAAA 100:: records, Always Use HTTPS, the Cloudflare for SaaS fallback origin
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: check or apply
+        type: choice
+        options: [check, apply]
+        default: check
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sites-zone
+  cancel-in-progress: false
+
+jobs:
+  zone:
+    name: ${{ inputs.mode }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: ${{ inputs.mode }}
+        working-directory: apps/sites
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node --experimental-strip-types --no-warnings scripts/sites-zone.ts --${{ inputs.mode }} | tee -a "$GITHUB_STEP_SUMMARY"
