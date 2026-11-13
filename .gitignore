@@ -1,7 +1,7 @@
 # build output
 dist/
 .astro/
-node_modules/
+node_modules
 
 # logs
 *.log

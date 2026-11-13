@@ -2,7 +2,7 @@
 // Secrets (wrangler secret put, never committed): SESSION_SECRET (64 hex, `openssl rand -hex 32`).
 // See scripts/secrets-manifest.ts and README.md.
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
+  "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "al-ummah-now-www",
   "main": "./dist/_worker.js/index.js",
   "compatibility_date": "2025-09-01",

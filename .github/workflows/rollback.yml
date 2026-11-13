@@ -36,6 +36,9 @@ jobs:
   rollback:
     name: Roll back www (${{ inputs.environment }})${{ inputs.dry_run && ' [dry run]' || '' }}
     runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: apps/www
     environment: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v6
@@ -46,6 +49,7 @@ jobs:
           cache: 'npm'
 
       - run: npm ci
+        working-directory: .
 
       # Inputs go through env, never interpolated into the script
       - name: Roll back and smoke
