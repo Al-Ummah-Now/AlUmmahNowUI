@@ -6,7 +6,7 @@ import { strings } from '../i18n';
 import type { NavItem, SiteSettings } from '../lib/cms-types';
 import type { Config } from '../lib/env';
 import { dir, otherLocale, type Locale } from '../lib/locale';
-import { absolute, hreflangLinks, jsonLdText, type Alternates } from '../lib/seo';
+import { absolute, hreflangLinks, jsonLdText, ogImageUrl, type Alternates } from '../lib/seo';
 import { MODE_SCRIPT } from '../lib/theme-mode';
 import { THEME_CHROME, themeFromRequest } from '../lib/site-theme';
 import { tabIconLinks } from '../lib/favicon';
@@ -42,7 +42,7 @@ const desc = (description || settings?.tagline || t.meta.defaultDescription).sli
 const canonical = absolute(cfg, alternates[contentLocale ?? locale] ?? alternates[locale] ?? Astro.url.pathname);
 const other = otherLocale(locale);
 const switchHref = alternates[other] ?? `/${other}/`;
-const image = absolute(cfg, ogImage || '/brand/og-default.jpg');
+const image = ogImageUrl(cfg, ogImage);
 // The admin's site theme, resolved by the Worker (src/worker.ts); rendered here so the first paint is right
 const theme = themeFromRequest(Astro.request).id;
 const chrome = THEME_CHROME[theme];

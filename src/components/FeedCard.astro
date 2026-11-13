@@ -40,12 +40,12 @@ const videos = post ? post.videos.filter((v) => v.kind === 'video' || v.kind ===
 
 const isChannel = item.type === 'video' && item.video?.kind === 'channel';
 const channel = isChannel ? channelCard(item.video!, locale, videosWebUrl, tl.channel, now.getTime()) : null;
-const videoEntry = item.type === 'video' && item.video && !isChannel ? feedVideoItem(item.video, locale, tl.video, now.getTime()) : null;
+const videoEntry = item.type === 'video' && item.video && !isChannel ? feedVideoItem(item.video, locale, tl.video, now.getTime(), videosWebUrl) : null;
 const title = post ? post.title : (videoEntry?.title ?? '');
 
 // Media: a post's videos replace its cover (they are its media); a card post shows its first card.
 const facades = videos.map((v, i) => {
-  const video = feedVideoItem(v, locale, tl.video, now.getTime());
+  const video = feedVideoItem(v, locale, tl.video, now.getTime(), videosWebUrl);
   return facadeHtml(video, { videosWebUrl, lang: locale, caption: false, className: i === 0 ? 'tl-facade' : 'tl-facade tl-facade-sm' });
 });
 const coverHtml = post && !cards && !videos.length && post.cover ? pictureHtml(post.cover, cmsOrigin, { sizes: COVER_SIZES, priority, className: 'tl-cover' }) : null;
@@ -55,7 +55,7 @@ const watch = videoEntry && videoEntry.kind !== 'channel' ? watchUrl(videosWebUr
 // Card posts and videos are the media alone (no box): title, channel or author and time sit over it,
 // shown on hover, focus or a tap. Articles read as text: byline (avatar, name, time), cover, title, excerpt.
 const mediaFirst = !!(cards && href) || !!entryHtml || facades.length > 0;
-const firstVideo = videoEntry ?? (videos[0] ? feedVideoItem(videos[0], locale, tl.video, now.getTime()) : null);
+const firstVideo = videoEntry ?? (videos[0] ? feedVideoItem(videos[0], locale, tl.video, now.getTime(), videosWebUrl) : null);
 const shape = facades.length > 1 ? 'ar-16x9' : frameShape(firstVideo?.width, firstVideo?.height);
 const channelName = videoEntry?.channelName ?? null;
 // One video in the post: hover preview (muted, with play/sound/progress) and, for a Short, the Shorts viewer

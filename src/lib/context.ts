@@ -29,6 +29,7 @@ export function requestContext(ctx: Ctx, locale: Locale) {
   const cms = cmsClient(createCmsDeps(env, cfg, waitUntil, cache));
   const videos: VideosDeps = {
     apiUrl: cfg.videosApiUrl,
+    webUrl: cfg.videosWebUrl,
     cache,
     cacheKeyBase: `${cfg.siteUrl}/__videos/v1`,
     waitUntil,

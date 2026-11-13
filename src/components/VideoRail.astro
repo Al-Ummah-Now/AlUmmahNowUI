@@ -1,6 +1,7 @@
 ---
 import { channelUrl, watchUrl } from '../lib/embeds';
 import type { Config } from '../lib/env';
+import { itemThumb } from '../lib/images';
 import type { Locale } from '../lib/locale';
 import { strings } from '../i18n';
 import type { ResolvedCurated } from '../lib/videos';
@@ -18,7 +19,7 @@ const meta = ({ item }: ResolvedCurated) => (item.kind === 'channel' ? t.videos.
   {items.map((r) => (
     <li>
       <a href={href(r)}>
-        {r.item.thumbnailUrl ? <img class="thumb" src={r.item.thumbnailUrl} alt="" loading="lazy" decoding="async" width="320" height="180" /> : <span class="thumb" aria-hidden="true" />}
+        {itemThumb(cfg.videosWebUrl, r.item) ? <img class="thumb" src={itemThumb(cfg.videosWebUrl, r.item)} alt="" loading="lazy" decoding="async" width="320" height="180" /> : <span class="thumb" aria-hidden="true" />}
         <span class="rail-title">{r.item.title}</span>
         {meta(r) && <span class="rail-meta">{meta(r)}</span>}
       </a>

@@ -16,6 +16,7 @@ import { highlightParts } from '../lib/search/highlight';
 import { addRecent, clearRecent, localStore, readRecent, removeRecent, type StorageLike } from '../lib/search/recent';
 import { fetchScholarSuggestions, fetchSuggestions, isSafeHref, scholarSuggestUrl, suggestUrl, type SearchHit } from '../lib/search/suggest';
 import type { Locale } from '../lib/locale';
+import { stableImageUrl } from '../lib/images';
 
 export interface ComboboxLabels {
   articles: string;
@@ -84,6 +85,7 @@ export function initCombobox(form: HTMLFormElement, opts: ComboboxOptions = {}):
   }
   const locale = (form.dataset.locale === 'ar' ? 'ar' : 'en') as Locale;
   const cmsUrl = form.dataset.cmsUrl ?? '';
+  const videosWebUrl = form.dataset.videosWebUrl ?? '';
   const store = opts.store === undefined ? localStore() : opts.store;
   const fetchHits = opts.fetchHits ?? ((url: string, signal: AbortSignal) => fetchSuggestions(url, signal));
   const fetchScholars = opts.fetchScholars ?? ((url: string, signal: AbortSignal) => fetchScholarSuggestions(url, locale, signal));
@@ -194,9 +196,11 @@ export function initCombobox(form: HTMLFormElement, opts: ComboboxOptions = {}):
       } else if (it.kind === 'hit') {
         const groupLabel = it.hit.type === 'scholar' ? (labels.scholars ?? labels.articles) : it.hit.type === 'cards' ? labels.cards : labels.articles;
         const li = option(target(it.hit.type, groupLabel), i);
-        if (it.hit.thumbnailUrl) {
+        // a signed (expiring) thumbnail is shown as the videos web app's stable one
+        const thumb = videosWebUrl ? stableImageUrl(videosWebUrl, it.hit.thumbnailUrl) : it.hit.thumbnailUrl;
+        if (thumb) {
           const img = document.createElement('img');
-          img.src = it.hit.thumbnailUrl;
+          img.src = thumb;
           img.alt = '';
           img.width = 48;
           img.height = 48;

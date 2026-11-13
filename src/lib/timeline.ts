@@ -52,12 +52,12 @@ export async function loadTimeline(opts: {
 
 /**
  * A feed video as the facade's VideoItem. The snapshot may be stale (the feed is rebuilt when the
- * CMS refreshes it); an expired signed thumbnail is dropped by snapshotItem. No snapshot (a body
+ * CMS refreshes it); a signed thumbnail becomes the stable /thumb one with `webUrl`, else is dropped once expired. No snapshot (a body
  * video not looked up yet) → a plain player card titled "Video".
  */
-export function feedVideoItem(v: FeedVideo & { title_override?: string | null }, locale: Locale, fallbackTitle: string, now = Date.now()): VideoItem {
+export function feedVideoItem(v: FeedVideo & { title_override?: string | null }, locale: Locale, fallbackTitle: string, now = Date.now(), webUrl?: string): VideoItem {
   const curated = { id: 0, kind: v.kind, ref_id: v.ref_id, title_override: v.title_override ?? null, snapshot: v.snapshot, sort: 0 } as CuratedVideo;
-  const item = v.snapshot ? snapshotItem(curated, now, true) : null;
+  const item = v.snapshot ? snapshotItem(curated, now, true, webUrl) : null;
   const shown = item ? localizeItem(item, locale) : null;
   const base: VideoItem = shown ?? {
     kind: v.kind,
@@ -102,7 +102,7 @@ export function channelCard(
   now = Date.now(),
 ): ChannelCard | null {
   if (v.kind !== 'channel' || !VIDEO_ID.test(v.ref_id)) return null;
-  const item = feedVideoItem(v, locale, fallbackTitle, now);
+  const item = feedVideoItem(v, locale, fallbackTitle, now, videosWebUrl);
   const handle = item.handle?.replace(/^@/, '') || null;
   const stored: unknown = v.snapshot?.latest;
   const latest = (Array.isArray(stored) ? (stored as Partial<ChannelLatest>[]) : [])
@@ -111,7 +111,7 @@ export function channelCard(
     .map((x) => ({
       id: x.id,
       title: x.title.trim().replace(/\.(mp4|mov|mkv|webm)$/i, ''),
-      thumbnailUrl: liveThumb(x.thumbnail_url, now),
+      thumbnailUrl: liveThumb(x.thumbnail_url, now, videosWebUrl, x.id),
       duration: clockDuration(typeof x.duration_seconds === 'number' && x.duration_seconds > 0 ? x.duration_seconds : null),
       href: watchUrl(videosWebUrl, { kind: 'video', id: x.id, lang: locale }),
     }));
