@@ -86,12 +86,14 @@ test.describe('site theme', () => {
           await page.goto(`/${l}/?theme=${theme}`);
           await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
           await expectThemeColours(page, theme, scheme);
-          // Menus opened from the dark header are surfaces of their own, not the header's light text
+          // Menus opened from the dark header never take its colours (AlUmmahNow docs/design/NAV.md):
+          // the page background and text in light mode, the theme's menu colours in dark mode
           await page.getByRole('button', { name: l === 'ar' ? /^المظهر/ : /^Theme/ }).click();
           const menu = page.locator('#theme-menu');
           await expect(menu).toBeVisible();
-          expect(await css(page, '#theme-menu', 'background-color')).toBe(token(theme, scheme, '--fanous-c-menu-bg'));
-          expect(await css(page, '#theme-menu button', 'color')).toBe(token(theme, scheme, '--fanous-c-menu-text'));
+          const [bg, fg] = scheme === 'dark' ? ['--fanous-c-menu-bg', '--fanous-c-menu-text'] : ['--fanous-color-background', '--fanous-color-text-primary'];
+          expect(await css(page, '#theme-menu', 'background-color')).toBe(token(theme, scheme, bg));
+          expect(await css(page, '#theme-menu button', 'color')).toBe(token(theme, scheme, fg));
           await page.keyboard.press('Escape');
         }
       }
