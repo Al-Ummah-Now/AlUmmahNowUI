@@ -51,7 +51,7 @@ export const en = {
     accounts: 'Your accounts',
     current: 'Current account',
     switchTo: 'Switch to {name}',
-    addAccount: 'Add another account',
+    addAccount: 'Sign in to another account',
     signOutOf: 'Sign out of {name}',
     signOutAll: 'Sign out of all accounts',
     cancel: 'Cancel',

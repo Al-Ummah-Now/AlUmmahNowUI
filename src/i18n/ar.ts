@@ -53,7 +53,7 @@ export const ar: Messages = {
     accounts: 'حساباتك',
     current: 'الحساب الحالي',
     switchTo: 'التبديل إلى {name}',
-    addAccount: 'إضافة حساب آخر',
+    addAccount: 'تسجيل الدخول بحساب آخر',
     signOutOf: 'تسجيل الخروج من {name}',
     signOutAll: 'تسجيل الخروج من جميع الحسابات',
     cancel: 'إلغاء',

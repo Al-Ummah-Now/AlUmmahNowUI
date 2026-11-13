@@ -43,7 +43,7 @@ test.describe('signed in to auth (real QA auth)', () => {
 
     // Add a second account
     await openMenu(page);
-    await page.getByRole('link', { name: 'Add another account' }).click();
+    await page.getByRole('link', { name: 'Sign in to another account' }).click();
     await authForm(page, second);
     await openMenu(page);
     const menu = page.locator('#account-menu');

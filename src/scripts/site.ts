@@ -175,6 +175,18 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string,
   return node;
 }
 
+/**
+ * An email that keeps its domain when it does not fit (AlUmmahNow docs/design/NAV.md): the local
+ * part shrinks with an ellipsis, "@domain" stays whole, and the full address is the tooltip.
+ */
+function emailText(email: string, cls: string): HTMLSpanElement {
+  const at = email.lastIndexOf('@');
+  if (at <= 0) return el('span', { class: cls, dir: 'ltr', title: email }, email);
+  const box = el('span', { class: `${cls} aun-email`, dir: 'ltr', title: email });
+  box.append(el('span', { class: 'aun-email-local' }, email.slice(0, at)), el('span', { class: 'aun-email-domain' }, email.slice(at)));
+  return box;
+}
+
 let menuAbort: AbortController | null = null;
 
 function buildMenu(root: HTMLElement, me: Me, result: AccountsResult, focusButton = false) {
@@ -214,7 +226,7 @@ function buildMenu(root: HTMLElement, me: Me, result: AccountsResult, focusButto
   const whoText = el('span', { class: 'aun-menu-who-text' });
   whoText.append(el('span', { class: 'aun-menu-who-name', dir: 'auto' }, name), el('span', { class: 'visually-hidden' }, fill(d.labelSignedInAs, name)));
   const email = me.email ?? current.email;
-  if (email && email !== name) whoText.append(el('span', { class: 'aun-menu-who-sub', dir: 'auto' }, email));
+  if (email && email !== name) whoText.append(emailText(email, 'aun-menu-who-sub'));
   whoLi.append(avatarEl(avatar, name, 'aun-avatar--lg'), whoText);
   menu.append(whoLi);
   const sep = () => menu.append(el('li', { class: 'aun-menu-sep', role: 'separator' }));
@@ -280,7 +292,7 @@ function buildMenu(root: HTMLElement, me: Me, result: AccountsResult, focusButto
       const who = el('button', { type: 'button', class: 'account-entry aun-menu-item', 'aria-label': fill(d.labelSwitchTo, text) });
       const lines = el('span', { class: 'aun-acct-text' });
       lines.append(el('span', { class: 'account-name aun-acct-label', dir: 'auto' }, text));
-      if (a.email && a.email !== text) lines.append(el('span', { class: 'account-email aun-acct-email', dir: 'auto' }, a.email));
+      if (a.email && a.email !== text) lines.append(emailText(a.email, 'account-email aun-acct-email'));
       who.append(avatarEl(null, text), lines);
       who.addEventListener('click', () => void switchTo(a));
       row.append(who);
