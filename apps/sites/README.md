@@ -14,9 +14,18 @@ through Cloudflare for SaaS, scholars' own domains. Astro on Cloudflare Workers;
    `CONTENT_SNAPSHOT` KV (`site-config:<host>`) so an api-videos outage still renders each site **in its
    own theme**. Unknown host → bare 404 (never cached). Old subdomain / secondary host → 301 to the
    primary. Revoked → 301 to the channel. Suspended → neutral 503.
-4. `/` → the site's first language; a language the site doesn't serve → its default (single-language sites).
-5. Astro renders with the site (theme pinned `<id>@<version>`, name, logo, favicon, menu, About,
-   platform mark). HTML edge cache key = URL (with host) + build + config version + theme.
+4. The site's own **path redirects** (Studio → Site → Redirects) 301 first. Only own paths or
+   https:// are followed. Then `/` → the site's first language, and a language the site doesn't
+   serve → its default (single-language sites).
+5. Astro renders with the site: theme pinned `<id>@<version>`, name, logo, favicon, menu (built-ins,
+   site pages, links), About, platform mark, the title template and the search console verification
+   metas.
+   - **Site pages** (SS16) are `/<lang>/<slug>/`: their blocks (`components/SiteBlocks.astro`) come
+     from `GET …/by-host/:host/pages/:slug`.
+   - The **home** page's blocks come from `…/home` and show above the sections.
+   - Drafts show only in a Studio preview, which is never cached.
+   - HTML edge cache key = URL (with host) + build + config version + theme. Every page save bumps the
+     config version.
 6. Security headers: CSP (no inline script except the hashed mode script; frames only the videos
    embed; framed only by the videos site, for Studio previews), HSTS (`includeSubDomains` on
    alummahnow.org only), `noindex` outside production and for previews and sites in setup.
