@@ -1869,8 +1869,13 @@ html:not([data-js]) .theme {
   object-fit: cover;
   background: var(--color-night);
 }
-.tl-mwrap[data-previewing] .facade-play svg {
+.tl-mwrap[data-previewing] .facade-play svg,
+.tl-mwrap[data-inplace] .facade-play svg {
   opacity: 0;
+}
+/* playing for real (after the click): the controls stay, like any player */
+.tl-mwrap[data-inplace] .tl-vctl {
+  opacity: 1;
 }
 .tl-vctl {
   position: absolute;

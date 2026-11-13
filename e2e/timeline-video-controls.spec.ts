@@ -182,3 +182,49 @@ test.describe('timeline: the Shorts viewer', () => {
     await expect(viewer(page)).toHaveCount(0);
   });
 });
+
+/** Owner: "videos only need 1 click to play" — exactly one click or tap, then playing with sound. */
+test.describe('timeline: one click plays, with sound', () => {
+  async function playingWithSound(v: ReturnType<Page['locator']>) {
+    await expect.poll(() => v.evaluate((el: HTMLVideoElement) => !el.paused && !el.muted)).toBe(true);
+    const t0 = await v.evaluate((el: HTMLVideoElement) => el.currentTime);
+    await expect.poll(() => v.evaluate((el: HTMLVideoElement) => el.currentTime)).toBeGreaterThan(t0);
+    expect(await v.evaluate((el: HTMLVideoElement) => el.muted)).toBe(false);
+  }
+
+  for (const l of ['en', 'ar'] as const) {
+    test(`a video: one ${l} click or tap plays it in place, not muted`, async ({ page, isMobile }) => {
+      await routeApi(page);
+      await page.goto(`/${l}/`);
+      const post = videoPost(page);
+      const wrap = post.locator('.tl-mwrap');
+      await wrap.scrollIntoViewIfNeeded();
+      await expect(wrap).toHaveAttribute('data-play-ready', '');
+      const surface = wrap.locator('.facade-play');
+      if (isMobile) await surface.tap();
+      else await surface.click();
+      await playingWithSound(wrap.locator('video'));
+      await expect(wrap).toHaveAttribute('data-inplace', '');
+      await expect(post.locator('[data-vmute]')).toHaveAttribute('aria-pressed', 'true');
+      // nothing opened: no player iframe, no viewer, same page
+      await expect(post.locator('.facade-iframe')).toHaveCount(0);
+      await expect(viewer(page)).toHaveCount(0);
+      expect(new URL(page.url()).pathname).toBe(`/${l}/`);
+    });
+
+    test(`a Short: one ${l} click or tap opens the viewer already playing, not muted`, async ({ page, isMobile }) => {
+      await routeApi(page);
+      await page.goto(`/${l}/`);
+      const wrap = shortPost(page).locator('.tl-mwrap');
+      await wrap.scrollIntoViewIfNeeded();
+      await expect(wrap).toHaveAttribute('data-play-ready', '');
+      const surface = wrap.locator('.facade-play');
+      if (isMobile) await surface.tap();
+      else await surface.click();
+      const dlg = viewer(page);
+      await expect(dlg).toBeVisible();
+      await playingWithSound(dlg.locator('.sv-item').first().locator('video'));
+      await expect(dlg.locator('.sv-item').first().locator('button[aria-pressed]')).toHaveAttribute('aria-pressed', 'true');
+    });
+  }
+});
