@@ -3,7 +3,9 @@
  *   node --experimental-strip-types scripts/release/smoke.ts --env qa|stage|production
  * GET https://<smokeHost>/healthz must answer {ok, app: 'sites'} with no Set-Cookie. While the owner's
  * DNS step for the alummahnow.org zone is pending (docs/DOMAINS.md) the host doesn't resolve: the smoke
- * then SKIPS with a notice instead of failing (the deploy itself succeeded).
+ * then SKIPS with a notice instead of failing (the deploy itself succeeded). QA and stage hosts are two
+ * levels deep and need the Advanced Certificate (DOMAINS.md §2): until it exists Cloudflare refuses
+ * the TLS handshake, which also SKIPS there (never in production).
  */
 import { resolve4 } from 'node:dns/promises';
 import { ENVIRONMENTS, parseEnvArg } from '../environments.ts';
@@ -28,6 +30,11 @@ for (let attempt = 0; attempt < 10; attempt++) {
     }
     last = `${res.status} ${JSON.stringify(body)}`;
   } catch (error) {
+    const code = String((error as { cause?: { code?: unknown } }).cause?.code ?? '');
+    if (env !== 'production' && code.startsWith('ERR_SSL') && code.includes('HANDSHAKE_FAILURE')) {
+      process.stdout.write(`::notice::SKIP sites smoke: ${host} has no certificate yet (Advanced Certificate pending, apps/sites/docs/DOMAINS.md §2)\n`);
+      process.exit(0);
+    }
     last = String(error);
   }
   await new Promise((r) => setTimeout(r, 3_000));
