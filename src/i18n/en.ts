@@ -2,7 +2,7 @@
 export const en = {
   meta: {
     siteName: 'Al Ummah Now',
-    defaultDescription: 'Al Ummah Now is an Islamic video and community platform: videos, Shorts, live streams and posts from channels and creators, in Arabic and English.',
+    defaultDescription: 'Upload videos, go live and post to your channel, and see what the community is sharing, in Arabic and English.',
   },
   a11y: {
     skipToContent: 'Skip to main content',
@@ -62,8 +62,8 @@ export const en = {
   },
   home: {
     wordmarkLatin: 'Al Ummah Now',
-    heroTitle: 'Watch, share and explore the community',
-    heroBody: 'Videos, Shorts and posts from channels and creators across the community, in Arabic and English. Watch, subscribe and share with one account.',
+    heroTitle: 'Share what matters to the Ummah',
+    heroBody: 'Upload videos, go live and post to your channel, and see what the community is sharing, in Arabic and English.',
     watchCta: 'Watch videos',
     profileCta: 'Create your account',
     libraryCta: 'Continue watching',
