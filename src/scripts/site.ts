@@ -9,12 +9,15 @@
  *    (prompt=none, once per tab); anything failing → keep the "Sign in" link
  *  - video facades: swap in the iframe on click
  *  - search boxes: live suggestions and recent searches (./search-combobox.ts)
+ *  - the lantern street when the site theme switches it on (Fawanees; the shared module,
+ *    vendored by scripts/sync-fanous.ts into ../lib/fanous-street.generated.js)
  * HTML is identical for every visitor (edge-cached); signed-in state is client-side only.
  */
 import { confirmDialog, type ConfirmOptions } from './confirm';
 import { initFacades } from './facade';
 import { initSearchBoxes } from './search-combobox';
 import { initTheme } from './theme';
+import { startStreet } from '../lib/fanous-street.generated.js';
 import {
   PROBE_KEY,
   SYNC_KEY,
@@ -494,4 +497,5 @@ rememberLocale();
 initTheme();
 initFacades();
 initSearchBoxes();
+startStreet();
 void initAccount();

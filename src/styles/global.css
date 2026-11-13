@@ -2,6 +2,7 @@
 @import './fanous-themes.generated.css';
 /* The header account button and menus: the shared nav contract (AlUmmahNow docs/design/NAV.md) */
 @import './aun-nav.generated.css';
+@import './fanous-street.generated.css';
 
 /*
  * Al Ummah Now / الأمة الآن
@@ -3236,4 +3237,11 @@ html:not([data-js]) .ci-nav {
 }
 .articles-item .articles-by a {
   color: var(--accent-text);
+}
+
+/* The lantern street (Fawanees; the shared module adds html.fanous-street): on phones the timeline
+   cards stack edge to edge, so their gaps grow enough for a garland of whole lanterns. */
+@media (max-width: 767px) {
+  html.fanous-street .tl-list { gap: 76px; }
+  html.fanous-street .tl-day + .tl-day { margin-block-start: 56px; }
 }
