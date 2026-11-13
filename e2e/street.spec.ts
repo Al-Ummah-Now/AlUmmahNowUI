@@ -15,11 +15,12 @@ test.skip(IS_PRODUCTION, 'production ignores ?theme= previews');
 test.use({ bypassCSP: true });
 
 const DEPTHS = [0, 900, 1800];
+let checkedOnScreen = 0;
 
 async function open(page: Page, path: string) {
   await page.goto(path);
   await page.waitForLoadState('networkidle').catch(() => {});
-  await page.addStyleTag({ content: '*:not(html),*::before,*::after{transition:none!important;animation-duration:0s!important;animation-delay:0s!important}' });
+  await page.addStyleTag({ content: '*,*::before,*::after{transition:none!important;animation-duration:0s!important;animation-delay:0s!important}' });
   await expect(page.locator('html')).toHaveClass(/fanous-street/);
 }
 
@@ -56,12 +57,14 @@ function seeThrough(page: Page) {
 async function cutLanterns(page: Page) {
   await stable(page);
   const boxes = await page.evaluate(() => {
-    const chrome = Array.from(document.querySelectorAll('body *')).filter((e) => !e.closest('#fanous-street') && ['fixed', 'sticky'].includes(getComputedStyle(e).position))
+    const paints = (e: Element) => { const st = getComputedStyle(e); return !((st.backgroundColor === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(st.backgroundColor)) && st.backgroundImage === 'none'); };
+    const chrome = Array.from(document.querySelectorAll('body *')).filter((e) => !e.closest('#fanous-street, #fanous-street-lights') && ['fixed', 'sticky'].includes(getComputedStyle(e).position) && paints(e))
       .map((e) => e.getBoundingClientRect()).filter((r) => r.width && r.height && r.bottom > 0 && r.top < innerHeight);
     const hit = (b: { x: number; y: number; w: number; h: number }) => chrome.some((r) => b.x < r.right && b.x + b.w > r.left && b.y < r.bottom && b.y + b.h > r.top);
     return Array.from(document.querySelectorAll('#fanous-street .fs-l use')).map((u) => { const r = u.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; })
       .filter((b) => b.y >= 0 && b.y + b.h <= innerHeight && b.x >= 0 && b.x + b.w <= innerWidth && !hit(b));
   });
+  checkedOnScreen += boxes.length;
   if (!boxes.length) return [];
   const on = (await page.screenshot()).toString('base64');
   await page.evaluate(() => { document.getElementById('fanous-street')!.style.visibility = 'hidden'; });
@@ -95,6 +98,7 @@ for (const scheme of SCHEMES) {
         await stable(page);
         expect(await page.locator('#fanous-street .fs-l').count(), 'lanterns on the page').toBeGreaterThan(0);
         const problems: string[] = [];
+        checkedOnScreen = 0;
         const maxY = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
         for (const depth of DEPTHS.filter((d) => d <= maxY)) {
           await page.evaluate((y) => window.scrollTo(0, y), depth);
@@ -103,6 +107,8 @@ for (const scheme of SCHEMES) {
           for (const c of await cutLanterns(page)) problems.push(`@${depth}px ${c}`);
         }
         expect(problems, problems.join('\n')).toEqual([]);
+        // The whole-lantern check must have looked at real lanterns
+        expect(checkedOnScreen, 'lanterns checked on screen').toBeGreaterThan(0);
       });
     }
   });
@@ -118,17 +124,21 @@ test('other themes draw no street', async ({ page }) => {
 });
 
 for (const motion of ['reduce', 'no-preference'] as const) {
-  test(`distant lights ${motion === 'reduce' ? 'stand still with reduced motion' : 'move at 0.2x the scroll'}`, async ({ browser }, info) => {
+  test(`distant lights ${motion === 'reduce' ? 'stand still with reduced motion' : 'drift at 0.2x the scroll'}; no animations`, async ({ browser }, info) => {
     test.skip(info.project.name !== 'desktop', 'one viewport is enough');
     const context = await browser.newContext({ reducedMotion: motion, viewport: { width: 1366, height: 900 }, baseURL: info.project.use.baseURL });
     const page = await context.newPage();
     await page.goto('/en/?theme=fawanees');
-    await expect(page.locator('html')).toHaveClass(/fanous-street/);
-    const pos = () => page.evaluate(() => getComputedStyle(document.documentElement).backgroundPositionY.split(',')[0]!.trim());
+    await expect(page.locator('#fanous-street-lights')).toHaveCount(1);
+    const pos = () => page.evaluate(() => getComputedStyle(document.getElementById('fanous-street-lights')!).backgroundPositionY);
     expect(await pos()).toBe('0px');
     await page.evaluate(() => window.scrollTo(0, 700));
-    await page.waitForTimeout(300);
-    expect(await pos()).toBe(motion === 'reduce' ? '0px' : '-140px');
+    await expect.poll(pos).toBe(motion === 'reduce' ? '0px' : '-140px');
+    const ours = await page.evaluate(() => document.getAnimations().filter((a) => {
+      const t = (a.effect as KeyframeEffect | null)?.target as Element | null;
+      return !!t && (t === document.documentElement || !!t.closest('#fanous-street, #fanous-street-lights'));
+    }).length);
+    expect(ours, 'the street runs no animations').toBe(0);
     await context.close();
   });
 }
