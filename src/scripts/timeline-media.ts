@@ -1,19 +1,19 @@
 /**
- * The home timeline's videos (src/components/FeedCard.astro, Timeline.astro):
+ * The home timeline's videos (src/components/FeedCard.astro, Timeline.astro). Owner: "videos only
+ * need 1 click to play".
  *
- *  - Hover preview: resting the mouse on a video post plays it in place, muted, from the videos
- *    platform's public play API (GET {api}/videos/{id}/play, an MP4 with sound; AlUmmahNow
- *    docs/embeds/README.md §8). Play/pause, sound
- *    and progress controls appear with it; they act on the preview only and never open the post.
- *    No preview under reduced motion, on touch (no hover) or with Save-Data.
- *  - Shorts viewer: a click on a Short (its player surface) opens a full-screen dialog with one
- *    Short per screen; scroll or swipe up (or ↑ ↓, Page Up/Down) for the next one, from
- *    GET {api}/shorts?after={id}. Esc or Close returns focus to the Short. It starts with sound (the
- *    click allows it), falling back to muted; under reduced motion nothing plays until Play.
+ *  - One click (or tap) on a video plays it in place, with sound, from the videos platform's public
+ *    play API (GET {api}/videos/{id}/play, an MP4 with sound; AlUmmahNow docs/embeds/README.md §8).
+ *    Play data is fetched before the click (posts near the screen), because sound is only allowed
+ *    inside the click itself. Without it, the facade opens the videos site's player in place.
+ *  - Hover preview: resting the mouse on a video plays it muted; play/pause, sound and progress
+ *    controls appear with it. The controls never open the post or the viewer. No preview under
+ *    reduced motion, on touch (no hover) or with Save-Data.
+ *  - Shorts viewer: one click or tap on a Short opens a full-screen dialog already playing it with
+ *    sound; one Short per screen, scroll or swipe up (or ↑ ↓, Page Up/Down) for the next one, from
+ *    GET {api}/shorts?after={id}. Esc or Close returns focus to the Short.
  *
- * When the API is not configured or does not answer, nothing changes: the facade's own click plays
- * the video in place (src/scripts/facade.ts). Everything is delegated from the timeline root, so
- * posts appended by "Load more" work without setup.
+ * Everything is delegated from the timeline root, so posts appended by "Load more" work too.
  */
 
 export interface PlayInfo {
@@ -63,6 +63,12 @@ export function shortsPage(body: unknown): { items: (PlayInfo & { mp4: { url: st
 }
 
 const cache = new Map<string, Promise<PlayInfo | null>>();
+/**
+ * Answers already in hand. A click must start playback (with sound) inside its own handler, before
+ * any await: browsers (Safari above all) only allow sound during the click itself. So play data is
+ * fetched ahead (prefetch below) and the click reads it from here, synchronously.
+ */
+const resolved = new Map<string, PlayInfo>();
 function playInfo(api: string, id: string): Promise<PlayInfo | null> {
   let p = cache.get(id);
   if (!p) {
@@ -71,10 +77,28 @@ function playInfo(api: string, id: string): Promise<PlayInfo | null> {
       .then((j: unknown) => (playable(j) ? j : null))
       .catch(() => null);
     cache.set(id, p);
-    // a failure may be passing: try again on the next hover
-    void p.then((v) => v || cache.delete(id));
+    void p.then((v) => {
+      if (v) resolved.set(id, v);
+      else cache.delete(id); // a failure may be passing: try again later
+    });
   }
   return p;
+}
+
+/** Fetch play data for the videos about to be seen (and on first touch or focus), so one click plays. */
+function initPrefetch(root: HTMLElement, api: string) {
+  const fetchFor = (wrap: Element | null) => {
+    const w = wrap as HTMLElement | null;
+    const id = w?.dataset.videoId;
+    // data-play-ready: one click will play here (and tests wait for it)
+    if (id) void playInfo(api, id).then((v) => v && (w!.dataset.playReady = ''));
+  };
+  const io = new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting && (fetchFor(e.target), io.unobserve(e.target))), { rootMargin: '800px 0px' });
+  const watch = (scope: ParentNode) => scope.querySelectorAll('.tl-mwrap[data-video-id]').forEach((w) => io.observe(w));
+  watch(root);
+  // posts appended by "Load more"
+  new MutationObserver((ms) => ms.forEach((m) => m.addedNodes.forEach((n) => n instanceof Element && watch(n)))).observe(root, { childList: true, subtree: true });
+  for (const type of ['pointerdown', 'focusin'] as const) root.addEventListener(type, (e) => fetchFor((e.target as Element).closest('.tl-mwrap[data-video-id]')), { passive: true });
 }
 
 function setMute(btn: HTMLButtonElement, muted: boolean, t: DOMStringMap, withLabel: boolean) {
@@ -98,16 +122,22 @@ function initPreview(root: HTMLElement, api: string) {
   }
 
   async function start(wrap: HTMLElement) {
-    if (wrap.querySelector('.facade-iframe')) return; // the real player is open
+    if (wrap.querySelector('.facade-iframe') || 'inplace' in wrap.dataset) return; // already playing for real
     const existing = video(wrap);
     if (existing) {
       void existing.play().catch(() => {});
       return;
     }
     const info = await playInfo(api, wrap.dataset.videoId!);
-    if (!info?.mp4 || !wrap.matches(':hover')) return;
+    if (!info?.mp4 || !wrap.matches(':hover') || 'inplace' in wrap.dataset) return;
+    const v = make(wrap, info);
+    if (v) void v.play().catch(() => {});
+  }
+
+  /** The <video> under the play surface: muted and looping for a preview, until a click makes it the player. */
+  function make(wrap: HTMLElement, info: PlayInfo): HTMLVideoElement | null {
     const frame = wrap.querySelector<HTMLElement>('.facade-frame');
-    if (!frame || frame.querySelector('.facade-iframe')) return;
+    if (!frame || frame.querySelector('.facade-iframe') || !info.mp4) return null;
     const v = document.createElement('video');
     v.className = 'tl-preview';
     v.muted = true;
@@ -118,10 +148,13 @@ function initPreview(root: HTMLElement, api: string) {
     v.disablePictureInPicture = true;
     if (info.poster) v.poster = info.poster;
     v.src = info.mp4.url;
-    // A file the CDN does not have (an old import without that rendition): keep the poster, no controls
+    // A file the CDN does not have (an old import without that rendition): keep the poster, no
+    // controls; a click then opens the videos site's player in place (the facade)
     v.addEventListener('error', () => {
       v.remove();
       delete wrap.dataset.previewing;
+      delete wrap.dataset.inplace;
+      wrap.dataset.native = 'off';
       const c = wrap.querySelector<HTMLElement>('[data-vctl]');
       if (c) c.hidden = true;
     });
@@ -133,12 +166,40 @@ function initPreview(root: HTMLElement, api: string) {
       wrap.dataset.previewing = '';
       if (ctl) ctl.hidden = false;
     });
-    v.addEventListener('play', () => playBtn && setPlay(playBtn, true, t.tPreviewPlay ?? '', t.tPreviewPause ?? ''));
-    v.addEventListener('pause', () => playBtn && setPlay(playBtn, false, t.tPreviewPlay ?? '', t.tPreviewPause ?? ''));
+    v.addEventListener('play', () => playBtn && label(wrap, playBtn, true));
+    v.addEventListener('pause', () => playBtn && label(wrap, playBtn, false));
     v.addEventListener('timeupdate', () => {
       if (prog && v.duration) prog.style.inlineSize = `${(v.currentTime / v.duration) * 100}%`;
     });
-    void v.play().catch(() => {});
+    return v;
+  }
+
+  /** "Play/Pause the preview" while previewing, "Play/Pause" once it is the player. */
+  function label(wrap: HTMLElement, btn: HTMLButtonElement, playing: boolean) {
+    const real = 'inplace' in wrap.dataset;
+    setPlay(btn, playing, (real ? t.tPlayShort : t.tPreviewPlay) ?? '', (real ? t.tPauseShort : t.tPreviewPause) ?? '');
+  }
+
+  /** One click: the video plays here, from where the preview is, with sound (the click allows it). */
+  function playInPlace(wrap: HTMLElement, info: PlayInfo): boolean {
+    const v = video(wrap) ?? make(wrap, info);
+    if (!v) return false;
+    wrap.dataset.inplace = '';
+    v.loop = false;
+    v.muted = false;
+    const ctl = wrap.querySelector<HTMLElement>('[data-vctl]');
+    if (ctl) ctl.hidden = false;
+    const mute = wrap.querySelector<HTMLButtonElement>('[data-vmute]');
+    if (mute) setMute(mute, false, t, true);
+    const playBtn = wrap.querySelector<HTMLButtonElement>('[data-vplay]');
+    if (playBtn) label(wrap, playBtn, true);
+    v.play().catch(() => {
+      // sound refused after all: play muted, the sound button says so
+      v.muted = true;
+      if (mute) setMute(mute, true, t, true);
+      void v.play().catch(() => {});
+    });
+    return true;
   }
 
   root.addEventListener('pointerover', (e) => {
@@ -152,7 +213,7 @@ function initPreview(root: HTMLElement, api: string) {
     const wrap = (e.target as Element).closest<HTMLElement>('.tl-mwrap[data-video-id]');
     if (!wrap || wrap.contains(e.relatedTarget as Node | null)) return;
     clearTimeout(timer);
-    video(wrap)?.pause();
+    if (!('inplace' in wrap.dataset)) video(wrap)?.pause(); // a playing video keeps playing
   });
 
   // The controls act on the preview only: never the facade, the post link or the Shorts viewer.
@@ -174,14 +235,34 @@ function initPreview(root: HTMLElement, api: string) {
     }
   });
 
-  // The real player (a click on the surface of a regular video) replaces the preview.
+  // One click on a video's surface plays it, with sound, right here (owner: "videos only need 1
+  // click to play"). With no play data in hand (API down, no file) the facade's own click opens the
+  // videos site's player in place instead, also with sound (gesture=1). A click while it plays
+  // pauses or resumes it.
   root.addEventListener(
     'click',
     (e) => {
-      const play = (e.target as Element).closest('.facade-play');
-      const wrap = play?.closest<HTMLElement>('.tl-mwrap');
+      const target = e.target as Element;
+      if (target.closest('[data-vctl]')) return;
+      const wrap = target.closest('.facade-play')?.closest<HTMLElement>('.tl-mwrap[data-video-id]');
       if (!wrap || wrap.hasAttribute('data-short')) return;
-      video(wrap)?.pause();
+      clearTimeout(timer);
+      if ('inplace' in wrap.dataset) {
+        e.preventDefault();
+        e.stopPropagation();
+        const v = video(wrap);
+        if (v?.paused) void v.play().catch(() => {});
+        else v?.pause();
+        return;
+      }
+      const info = wrap.dataset.native === 'off' ? undefined : resolved.get(wrap.dataset.videoId!);
+      if (info && playInPlace(wrap, info)) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+      // the facade's player takes over: the preview goes
+      video(wrap)?.remove();
       const ctl = wrap.querySelector<HTMLElement>('[data-vctl]');
       if (ctl) ctl.hidden = true;
       delete wrap.dataset.previewing;
@@ -207,6 +288,13 @@ function initShorts(root: HTMLElement, api: string) {
       // ours, not the facade's in-place player
       e.preventDefault();
       e.stopPropagation();
+      // play data in hand: the viewer opens and plays inside this click, with sound
+      const info = resolved.get(wrap.dataset.videoId!);
+      if (info?.mp4) {
+        wrap.querySelector<HTMLVideoElement>('video.tl-preview')?.pause();
+        new Viewer(t, api, info, play).show();
+        return;
+      }
       void open(wrap, play);
     },
     true,
@@ -333,8 +421,9 @@ function initShorts(root: HTMLElement, api: string) {
         v.pause();
         v.currentTime = 0;
       });
-      this.paused = reduced();
-      if (!this.paused) this.play();
+      // the reader asked for this Short (a tap, a swipe, a key): it plays, also under reduced motion
+      this.paused = false;
+      this.play();
       this.live.textContent = fill(this.s.tShortPosition ?? '{n}: {title}', { n: i + 1, title: this.infos[i]!.title });
       if (i >= this.items.length - 2 && !this.loadedAll) void this.more();
       this.sync();
@@ -426,6 +515,7 @@ function initShorts(root: HTMLElement, api: string) {
 export function initTimelineMedia(doc: ParentNode = document) {
   doc.querySelectorAll<HTMLElement>('[data-timeline][data-play-api]:not([data-media-ready])').forEach((root) => {
     const api = root.dataset.playApi!;
+    initPrefetch(root, api);
     initPreview(root, api);
     initShorts(root, api);
     root.dataset.mediaReady = '';
