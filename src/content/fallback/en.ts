@@ -5,9 +5,9 @@ const settings: SiteSettings = {
   locale: 'en',
   site_title: 'Al Ummah Now',
   tagline: 'Islamic videos and community',
-  hero_title: 'Beneficial knowledge, close at hand',
+  hero_title: 'Watch, share and explore the community',
   hero_body:
-    'Lessons, lectures and reminders from scholars and creators you can trust, in Arabic and English. Watch, follow channels, and keep learning with one account.',
+    'Videos, Shorts and posts from channels and creators across the community, in Arabic and English. Watch, subscribe and share with one account.',
   social: [],
 };
 
@@ -28,12 +28,12 @@ export const en: Builtin = {
   footerNav,
   pillars: [
     {
-      title: 'Lessons and lectures',
-      body: 'Tafsir, hadith, fiqh, seerah and everyday reminders, organised into series you can follow from the first lesson to the last.',
+      title: 'Videos and Shorts',
+      body: 'Watch full videos, Shorts and live streams on every topic, and follow playlists from start to finish.',
     },
     {
-      title: 'Channels you trust',
-      body: 'Scholars, mosques and creators publish on their own channels. Follow the ones you learn from and see what is new.',
+      title: 'Channels and creators',
+      body: "Mosques, scholars and creators publish on their own channels. Subscribe to the ones you like and see what's new.",
     },
     {
       title: 'One account, every app',
@@ -47,17 +47,17 @@ export const en: Builtin = {
       title: 'About Al Ummah Now',
       summary: 'An Islamic video and community platform, in Arabic and English.',
       body: [
-        'Al Ummah Now is a home for beneficial Islamic content: lessons, lectures, series and reminders from scholars, mosques and creators.',
+        'Al Ummah Now is an Islamic video and community platform where channels and creators share videos, Shorts, live streams and posts.',
         '',
         '## What we are building',
         '',
-        '- **Videos** where you can watch, follow channels and keep playlists.',
+        '- **Videos and Shorts** you can watch, share and save to playlists.',
         '- **One account** that works across every Al Ummah Now app.',
-        '- **Arabic and English** from the start, so the same knowledge reaches more people.',
+        '- **Arabic and English** from the start, so more people can watch and share.',
         '',
         '## Get started',
         '',
-        'Browse the video library, or create an account to follow channels and save what you want to come back to.',
+        'Explore videos, or create an account to subscribe to channels and save what you want to come back to.',
       ].join('\n'),
       seo_title: null,
       seo_description: null,
