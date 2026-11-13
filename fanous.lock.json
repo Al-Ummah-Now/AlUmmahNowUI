@@ -1,17 +1,25 @@
 {
   "repo": "Al-Ummah-Now/AlUmmahNow",
-  "ref": "c9cef527f14b88b57227a23b65b52705d4fa00da",
+  "ref": "7f1bf3e9f01780c2e2c9359e73c03ec4e4435f83",
   "source": "apps/web/src/theme/site-themes.css",
-  "sourceSha256": "63c52b84ae61da0bc3b6e320c5c2769e3bb3515bdd814661ffb728838e6dd425",
+  "sourceSha256": "30ac8ed9967af9c3acccbe02021369e9f378686a3ad972eab3126925e3d6d654",
+  "street": {
+    "packages/fanous-tokens/street/fanous-street.js": "587f93b558d49cedc5f1cf228cd0c1c6babf4bd82372402a049b1bff529b7704",
+    "packages/fanous-tokens/street/fanous-street.d.ts": "ecf39ee928049a5bac79658ca70d99f8e16c83d64d83314085d6297623bd12a0",
+    "packages/fanous-tokens/street/fanous-street.css": "4c357de2e2763f8dcd56baa4cf26f8f1e5df227ba02536b86a6105e38c3b6347"
+  },
   "outputs": {
-    "src/styles/fanous-themes.generated.css": "d9c17072c4d9b2a9783af437d44351c4d682fbe0508ee7a70a53d4024524e35b",
-    "src/lib/site-themes.generated.ts": "aa4f503032ada15e3955205dd5796c25612343be6bea2a6ac0ed2ccd1a3dc31d",
-    "src/styles/aun-nav.generated.css": "28cbffa0cd11ebd3978d8106dccaa15a24c89b04c82ed4969c435d4861da22ea",
+    "src/styles/fanous-themes.generated.css": "6149ec67703319dd1f224c48ad03d199fd5514e1fffbb221d33e63e095599a04",
+    "src/lib/site-themes.generated.ts": "454c80560cdf59f7ae45b95de555bdbeff4cbcb1adf2b2c801a00c812a277879",
+    "src/styles/aun-nav.generated.css": "60e57cb3ccbd1317eb8d5970cf7a958750c4694e58db7ca9d05861c0bb599f87",
     "public/aun-nav/icons/www.webp": "b0feb2c79ff71890862210489b49db96fb0d90f58d7818279f6bec53ae032b56",
     "public/aun-nav/icons/videos.webp": "856d631b870c5805002379271469e1dd475a23f3b07d61f5141b7f8149fd3366",
     "public/aun-nav/icons/profile.webp": "736e4650c588af4d08e9a5e065265026bd0332e8d5700f630eaf033b9147a2db",
     "public/aun-nav/icons/cms.webp": "54cc87ed54cfdc8c1b9d9cccde57fa753b8974cca8f7a1e61b8fcb5f6b488565",
     "public/aun-nav/icons/admin.webp": "33d3ae62ec9a9cf98b65c3d04007c1cdbfd12a8633b506c0b610c35a43074c81",
-    "public/aun-nav/icons/auth-admin.webp": "61f4fd5b7dc27ccc009d7dd0b8f8488d6a989800644d1f69fc5896ad1430764f"
+    "public/aun-nav/icons/auth-admin.webp": "61f4fd5b7dc27ccc009d7dd0b8f8488d6a989800644d1f69fc5896ad1430764f",
+    "src/lib/fanous-street.generated.js": "89d10b4fd2b09237891365c231916997a3ac7a180dc6e2a53cdebeb5ba12a552",
+    "src/lib/fanous-street.generated.d.ts": "c66b19686e04dd83086f5c700389b82d222f922c9ff568a10866893d246484c1",
+    "src/styles/fanous-street.generated.css": "93660094fd664d05455a940747d27fdf91314417ed4b9cc81103c74e5221d1ea"
   }
 }

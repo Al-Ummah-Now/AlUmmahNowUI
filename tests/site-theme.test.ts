@@ -68,6 +68,27 @@ describe('scripts/sync-fanous.ts', () => {
     expect(() => buildOutputs(SOURCE, 'a'.repeat(40), new Set(['--fanous-color-missing']))).toThrow(/does not define/);
   });
 
+  it('keeps the lantern street tokens for the street module, and only a data: SVG for its lights', () => {
+    const lights = 'url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%2F%3E")';
+    const src = `html[data-theme='fawanees'] { --fanous-color-background: #f3eee5; --fanous-c-nav-bg: #0e2b3d; }
+html[data-theme='fawanees']:not(.dark) { --fanous-color-background: #f3eee5; --fanous-c-nav-bg: #0e2b3d; --fanous-street-on: 1; --fanous-street-lights: ${lights}; }
+html[data-theme='fawanees'].dark { --fanous-color-background: #09151e; --fanous-c-nav-bg: #0b1d2a; --fanous-street-on: 1; --fanous-street-lights: ${lights}; }`;
+    const out = buildOutputs(src, 'a'.repeat(40), new Set(['--fanous-color-background', '--fanous-c-nav-bg']));
+    expect(out.css).toContain('--fanous-street-on:1');
+    expect(out.css).toContain(`--fanous-street-lights:${lights}`);
+    expect(() => parseThemes(`html[data-theme='x'] { --fanous-street-lights: url("https://evil.test/x.svg"); }`)).toThrow(/unexpected value/);
+    expect(() => parseThemes(`html[data-theme='x'] { --fanous-street-line: url("data:image/svg+xml,x"); }`)).toThrow(/unexpected value/);
+  });
+
+  it('the vendored street module is the one the lock names', () => {
+    const lock = JSON.parse(readFileSync('fanous.lock.json', 'utf8')) as { ref: string; street: Record<string, string>; outputs: Record<string, string> };
+    expect(Object.keys(lock.street)).toEqual(['packages/fanous-tokens/street/fanous-street.js', 'packages/fanous-tokens/street/fanous-street.d.ts', 'packages/fanous-tokens/street/fanous-street.css']);
+    for (const file of ['src/lib/fanous-street.generated.js', 'src/lib/fanous-street.generated.d.ts', 'src/styles/fanous-street.generated.css']) {
+      expect(lock.outputs[file], file).toBeTruthy();
+      expect(readFileSync(file, 'utf8')).toContain(`Al-Ummah-Now/AlUmmahNow@${lock.ref}`);
+    }
+  });
+
   it('the vendored file defines every token global.css reads, for all four themes in both modes', () => {
     const used = usedTokens(GLOBAL);
     expect(used.size).toBeGreaterThan(10);
