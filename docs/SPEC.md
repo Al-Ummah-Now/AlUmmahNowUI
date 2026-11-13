@@ -198,7 +198,7 @@ never printed).
 - Unit (Vitest): i18n parity, locale negotiation, the embeds adapter, the CMS client fallback chain,
   markdown rendering and sanitizing (no raw HTML, `::video` directive), the return-path guard,
   session crypto, the apex redirect.
-- E2E (Playwright, against QA in CI and against stage in the release): en and ar render (lang, dir,
+- E2E (Playwright, against local wrangler dev on PRs and against stage in the release; against QA only by hand): en and ar render (lang, dir,
   key headings); apex → www (prod smoke only); a CMS-published item appears on www (seeded by
   the CMS E2E, polled ≤ 90 s); sign-in redirects to auth with the exact registered `redirect_uri`;
   axe on desktop and mobile; screenshots stored as artifacts.
