@@ -75,7 +75,7 @@ test.describe('header: a user with a profile is shown by name, never by email', 
   test.skip(!!process.env.WWW_URL || !secret(), 'local wrangler dev only (seals a session with .dev.vars SESSION_SECRET)');
   test.skip(({ browserName }) => browserName !== 'chromium', 'Secure cookie on http://localhost: Chromium');
 
-  test('first + last name in the button, "Signed in as", and every switcher row (en and ar)', async ({ page, context }) => {
+  test('first + last name in the button, "Signed in as", and the other accounts by name (en and ar)', async ({ page, context }) => {
     // The second account signed in to www earlier in this browser: www remembers its name
     await signInAs(context, SECOND);
     await stubAccounts(page, SECOND.sub);
@@ -96,18 +96,21 @@ test.describe('header: a user with a profile is shown by name, never by email', 
       await button(page).click();
       const menu = page.locator('#account-menu');
       await expect(menu).toBeVisible();
-      await expect(menu.locator('.account-who')).toHaveText(signedInAs);
+      // The current account is the menu's top block (AlUmmahNow docs/design/NAV.md): the name, then
+      // its email as the small second line; screen readers hear "Signed in as {name}"
+      const who = menu.locator('.account-who');
+      await expect(who.locator('.aun-menu-who-name')).toHaveText('Mahmoud Darwish');
+      await expect(who.locator('.visually-hidden')).toHaveText(signedInAs);
+      await expect(who.locator('.aun-menu-who-sub')).toHaveAttribute('title', OWNER.email);
+      // "More accounts" lists only the other accounts: the second one, by its name, email under it
       const rows = menu.locator('.account-list .account-entry');
-      await expect(rows).toHaveCount(2);
-      // name first, the email as the small second line
-      await expect(rows.nth(0).locator('.account-name')).toHaveText('Mahmoud Darwish');
-      await expect(rows.nth(0).locator('.account-email')).toHaveText(OWNER.email);
-      await expect(rows.nth(1).locator('.account-name')).toHaveText(second);
-      await expect(rows.nth(1).locator('.account-email')).toHaveText(SECOND.email);
+      await expect(rows).toHaveCount(1);
+      await expect(rows.nth(0).locator('.account-name')).toHaveText(second);
+      await expect(rows.nth(0).locator('.account-email')).toHaveAttribute('title', SECOND.email);
       // no row, button or greeting is named by an email
       for (const email of [OWNER.email, SECOND.email]) {
         await expect(menu.locator('.account-name', { hasText: email })).toHaveCount(0);
-        await expect(menu.locator('.account-who')).not.toContainText(email);
+        await expect(who.locator('.aun-menu-who-name')).not.toContainText(email);
       }
       await page.keyboard.press('Escape');
     }
