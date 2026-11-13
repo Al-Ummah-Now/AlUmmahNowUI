@@ -22,7 +22,7 @@ import { dir, type Locale } from '../lib/locale';
 import { pictureHtml } from '../lib/picture';
 import { absoluteTime, channelCard, feedVideoItem, isShort } from '../lib/timeline';
 import Icon from './Icon.astro';
-import PostKindSummary from './posts/PostKindSummary.astro';
+import PostKindSummary from '../../../../packages/render/src/posts/PostKindSummary.astro';
 
 /** `titleLevel`: the card title's heading level (4 under the home's h2/h3 days; 3 on a list page). */
 interface Props { item: FeedItem; locale: Locale; cmsOrigin: string; videosWebUrl: string; priority: boolean; now: Date; titleLevel?: 3 | 4 }
