@@ -63,8 +63,20 @@ async function expectInViewport(page: Page, popup: Locator, what: string) {
   expect.soft(y, `${what}: top edge`).toBeGreaterThanOrEqual(-1);
   expect.soft(x + width, `${what}: right edge`).toBeLessThanOrEqual(vp.width + 1);
   expect.soft(y + height, `${what}: bottom edge`).toBeLessThanOrEqual(vp.height + 1);
-  // and the page itself never scrolls sideways because of it
-  expect.soft(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), `${what}: page scrolls sideways`).toBeLessThanOrEqual(0);
+  // and the page itself never scrolls sideways (the message names what sticks out)
+  const sideways = await page.evaluate(() => {
+    const vw = document.documentElement.clientWidth;
+    const out: string[] = [];
+    for (const el of Array.from(document.querySelectorAll<HTMLElement>('body *'))) {
+      const r = el.getBoundingClientRect();
+      const p = el.parentElement?.getBoundingClientRect();
+      if (r.width && (r.right > vw + 0.5 || r.left < -0.5) && p && p.right <= vw + 0.5 && p.left >= -0.5) {
+        out.push(`${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ''}.${String(el.className).trim().replace(/\s+/g, '.')} [${Math.round(r.left)}, ${Math.round(r.right)}]`);
+      }
+    }
+    return { by: document.documentElement.scrollWidth - vw, out: out.slice(0, 6).join('; ') };
+  });
+  expect.soft(sideways.by, `${what}: page scrolls sideways: ${sideways.out}`).toBeLessThanOrEqual(0);
 }
 
 test.describe('menus stay inside the viewport', () => {
