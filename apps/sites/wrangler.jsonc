@@ -28,7 +28,10 @@
     // More specific routes (the qa/stage wildcards) win over these on the same zone
     { "pattern": "*.alummahnow.org/*", "zone_id": "c3cbc1b54070d957cdcef91444b746a9" },
     // The apex: 301 to www.alummahnow.net (src/worker.ts)
-    { "pattern": "alummahnow.org/*", "zone_id": "c3cbc1b54070d957cdcef91444b746a9" }
+    { "pattern": "alummahnow.org/*", "zone_id": "c3cbc1b54070d957cdcef91444b746a9" },
+    // Own domains (Cloudflare for SaaS custom hostnames); the more specific routes above and the
+    // QA/stage test-domain routes win over it (docs/DOMAINS.md §3)
+    { "pattern": "*/*", "zone_id": "c3cbc1b54070d957cdcef91444b746a9" }
   ],
   "vars": {
     "APP_ENV": "production",
@@ -48,7 +51,11 @@
       "name": "al-ummah-now-sites-qa",
       "workers_dev": false,
       "preview_urls": false,
-      "routes": [{ "pattern": "*.qa.alummahnow.org/*", "zone_id": "c3cbc1b54070d957cdcef91444b746a9" }],
+      "routes": [
+        { "pattern": "*.qa.alummahnow.org/*", "zone_id": "c3cbc1b54070d957cdcef91444b746a9" },
+        // QA test own domains (custom hostnames under qa-sites.alummahnow.com)
+        { "pattern": "*.qa-sites.alummahnow.com/*", "zone_id": "c3cbc1b54070d957cdcef91444b746a9" }
+      ],
       "vars": {
         "APP_ENV": "qa",
         "AUTH_URL": "https://auth.qa.alummahnow.net",
@@ -65,7 +72,11 @@
       "name": "al-ummah-now-sites-stage",
       "workers_dev": false,
       "preview_urls": false,
-      "routes": [{ "pattern": "*.stage.alummahnow.org/*", "zone_id": "c3cbc1b54070d957cdcef91444b746a9" }],
+      "routes": [
+        { "pattern": "*.stage.alummahnow.org/*", "zone_id": "c3cbc1b54070d957cdcef91444b746a9" },
+        // stage test own domains (custom hostnames under stage-sites.alummahnow.com)
+        { "pattern": "*.stage-sites.alummahnow.com/*", "zone_id": "c3cbc1b54070d957cdcef91444b746a9" }
+      ],
       "vars": {
         "APP_ENV": "stage",
         "AUTH_URL": "https://auth.stage.alummahnow.net",

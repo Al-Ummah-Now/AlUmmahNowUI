@@ -9,10 +9,10 @@ AUN-SCHOLAR-SITES SS9). The Worker's routes are in `wrangler.jsonc` and are atta
 | stage | `*.stage.alummahnow.org/*` | `al-ummah-now-sites-stage` |
 | QA | `*.qa.alummahnow.org/*` | `al-ummah-now-sites-qa` |
 
-Routes only receive traffic for hostnames that have a **proxied DNS record** and a certificate. Our
-Cloudflare API token can edit Worker routes on the zone but **cannot read or edit DNS, SSL or Custom
-Hostnames** there (checked 2026-11-13), so these steps are the owner's. Until they are done, the
-release smoke prints `SKIP … owner DNS step pending` instead of failing.
+Routes only receive traffic for hostnames that have a **proxied DNS record** and a certificate. The
+release token (`CLOUDFLARE_API_TOKEN`) has DNS, SSL and Custom Hostnames edit on the zone since
+2026-11-13, so steps 1 and 3 are automated. QA and stage subdomains (two levels deep) still need the
+Advanced Certificate (step 2); until then the release smoke prints `SKIP` for them.
 
 ## 0. Automated: the Sites zone workflow
 
@@ -53,15 +53,40 @@ ever contacted, the Worker answers.
 
 ## 3. Cloudflare for SaaS (scholars' own domains)
 
-1. SSL/TLS → **Custom Hostnames** → enable Cloudflare for SaaS (the Free plan includes 100 custom
-   hostnames; then $0.10 per hostname per month).
-2. **Fallback origin**: `sites.alummahnow.org` (the proxied record from step 1).
-3. Tell us when it is on: a Worker route `*/*` → `al-ummah-now-sites` is then added to
-   `wrangler.jsonc` (custom-hostname traffic reaches the Worker through it; the more specific
-   `*.qa.`/`*.stage.` routes keep winning for test hosts).
-4. For automating own domains from Studio/admin later: an API token limited to the
-   `alummahnow.org` zone with **SSL and Certificates: Edit** (custom hostnames), stored in the
-   Secrets Store as `cf-saas-hostnames`. It must have no access to `alummahnow.net`.
+Done 2026-11-13: Cloudflare for SaaS is enabled on the zone and the fallback origin is
+`sites.alummahnow.org` (Sites zone *apply*, run 43526824692).
+
+**Routing.** Own-domain traffic reaches a Worker through Worker routes on `alummahnow.org` that match
+the custom hostname itself:
+
+| Env | Route | Own domains it serves |
+|---|---|---|
+| production | `*/*` | every scholar's own domain |
+| stage | `*.stage-sites.alummahnow.com/*` | test domains only |
+| QA | `*.qa-sites.alummahnow.com/*` | test domains only |
+
+All three environments share the zone, so custom hostnames share one namespace: a hostname added
+from QA could not be added from production any more. That is why QA and stage admin-api accept only
+hosts under their test suffix, and production refuses those suffixes (videos `SITE_TEST_DOMAIN_SUFFIX`).
+
+**What a scholar adds at their DNS provider** (Studio → Site → Domains shows the exact values):
+
+| Type | Name | Value | Why |
+|---|---|---|---|
+| CNAME | their host (for example `www.example.com`) | `sites.alummahnow.org` | traffic |
+| TXT | `_cf-custom-hostname.<host>` | shown in Studio | proves they own the host |
+| TXT | `_acme-challenge.<host>` (usually two) | shown in Studio | the certificate |
+
+All records can be added at once; the certificate is usually live within a few minutes. A bare
+domain (`example.com`) needs a provider that allows CNAME flattening/ALIAS at the apex; otherwise use
+`www.` and redirect the apex at the provider. The API token admin-api uses is the Secrets Store
+`sites-saas-token` (SSL and Certificates: Edit on alummahnow.org only).
+
+**End-to-end check:** Actions → **Sites zone** → *own-domain-smoke-qa* (or *-stage*) creates a
+throwaway hostname `saas-smoke-<id>.<env>-sites.alummahnow.com`, adds the scholar's records in the
+`alummahnow.com` zone (DNS only), routes it to the env's Worker, waits for validation, fetches
+`/healthz` over HTTPS and removes everything. First run (QA, 2026-11-13): active after 77 s, `/healthz`
+answered `"env":"qa"`.
 
 ## 4. Check
 

@@ -9,7 +9,11 @@ export interface SitesEnvironment {
   envArgs: string[];
   /** Zone host suffix of the platform subdomains */
   suffix: string;
-  /** Routes the Worker must have (and only these) */
+  /**
+   * Routes the Worker must have (and only these). Own domains (Cloudflare for SaaS custom hostnames)
+   * reach production through the catch-all route (star slash star); QA and stage test domains live
+   * under <env>-sites.alummahnow.com and win over it by being more specific (docs/DOMAINS.md §3).
+   */
   routes: string[];
   /** Answers /healthz on any host: the SaaS fallback origin (production) or its test twin */
   smokeHost: string;
@@ -36,7 +40,7 @@ export const ENVIRONMENTS: Record<EnvName, SitesEnvironment> = {
     worker: 'al-ummah-now-sites',
     envArgs: [],
     suffix: 'alummahnow.org',
-    routes: ['*.alummahnow.org/*', 'alummahnow.org/*'],
+    routes: ['*.alummahnow.org/*', 'alummahnow.org/*', '*/*'],
     smokeHost: 'sites.alummahnow.org',
     vars: vars('', PROD_STAGE_CLIENT, 'production'),
     kvId: 'bb7463036880446abdc652a56f0b6509',
@@ -46,7 +50,7 @@ export const ENVIRONMENTS: Record<EnvName, SitesEnvironment> = {
     worker: 'al-ummah-now-sites-stage',
     envArgs: ['--env', 'stage'],
     suffix: 'stage.alummahnow.org',
-    routes: ['*.stage.alummahnow.org/*'],
+    routes: ['*.stage.alummahnow.org/*', '*.stage-sites.alummahnow.com/*'],
     smokeHost: 'sites.stage.alummahnow.org',
     vars: vars('stage.', PROD_STAGE_CLIENT, 'stage'),
     kvId: '9a4d7ee84d43427dad2e73e5904a21c7',
@@ -56,7 +60,7 @@ export const ENVIRONMENTS: Record<EnvName, SitesEnvironment> = {
     worker: 'al-ummah-now-sites-qa',
     envArgs: ['--env', 'qa'],
     suffix: 'qa.alummahnow.org',
-    routes: ['*.qa.alummahnow.org/*'],
+    routes: ['*.qa.alummahnow.org/*', '*.qa-sites.alummahnow.com/*'],
     smokeHost: 'sites.qa.alummahnow.org',
     vars: vars('qa.', QA_CLIENT, 'qa'),
     kvId: '2784164e06164e99bb5e837733dd38a2',
