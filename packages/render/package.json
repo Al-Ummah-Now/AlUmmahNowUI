@@ -1,0 +1,6 @@
+{
+  "name": "@al-ummah-now/render",
+  "description": "Rendering code shared by www (apps/www) and the scholar sites Worker (apps/sites): themes, sealed cookies, videos embed URLs, HTML escaping, the HTML edge cache. Imported by relative path as TypeScript source; nothing is built.",
+  "private": true,
+  "type": "module"
+}

@@ -12,7 +12,7 @@
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ENVIRONMENTS, parseEnvArg, type EnvName } from '../environments.ts';
-import { THEME_IDS } from '../../src/lib/site-themes.generated.ts';
+import { THEME_IDS } from '../../../../packages/render/src/themes/site-themes.generated.ts';
 
 export interface CheckResult {
   name: string;

@@ -15,7 +15,7 @@ import {
   withThemeHeader,
 } from '../src/lib/site-theme';
 
-const GENERATED = readFileSync('src/styles/fanous-themes.generated.css', 'utf8');
+const GENERATED = readFileSync('../../packages/render/src/styles/fanous-themes.generated.css', 'utf8');
 const GLOBAL = readFileSync('src/styles/global.css', 'utf8');
 
 /** A small stand-in for the videos app's site-themes.css, in its shape. */
@@ -83,7 +83,7 @@ html[data-theme='fawanees'].dark { --fanous-color-background: #09151e; --fanous-
   it('the vendored street module is the one the lock names', () => {
     const lock = JSON.parse(readFileSync('fanous.lock.json', 'utf8')) as { ref: string; street: Record<string, string>; outputs: Record<string, string> };
     expect(Object.keys(lock.street)).toEqual(['packages/fanous-tokens/street/fanous-street.js', 'packages/fanous-tokens/street/fanous-street.d.ts', 'packages/fanous-tokens/street/fanous-street.css']);
-    for (const file of ['src/lib/fanous-street.generated.js', 'src/lib/fanous-street.generated.d.ts', 'src/styles/fanous-street.generated.css']) {
+    for (const file of ['../../packages/render/src/themes/fanous-street.generated.js', '../../packages/render/src/themes/fanous-street.generated.d.ts', '../../packages/render/src/styles/fanous-street.generated.css']) {
       expect(lock.outputs[file], file).toBeTruthy();
       expect(readFileSync(file, 'utf8')).toContain(`Al-Ummah-Now/AlUmmahNow@${lock.ref}`);
     }

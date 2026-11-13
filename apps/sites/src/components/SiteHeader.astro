@@ -1,0 +1,53 @@
+---
+import { fmt } from '../lib/i18n';
+import { siteName } from '../lib/seo';
+import type { PageContext } from '../lib/context';
+import type { SiteNavItem } from '../lib/site-types';
+
+interface Props { ctx: PageContext; alternates: Partial<Record<'en' | 'ar', string>>; active?: string }
+const { ctx, alternates, active } = Astro.props;
+const { site, locale, t } = ctx;
+const name = siteName(site, locale);
+const logo = site.site.logoUrl || site.channel.avatarUrl;
+const PATHS: Record<Exclude<SiteNavItem['kind'], 'url'>, string> = { home: '', videos: 'videos/', shorts: 'videos/?kind=shorts', posts: 'posts/', about: 'about/' };
+interface Item { id: string; kind: SiteNavItem['kind']; label: string; href: string; external: boolean }
+const items: Item[] = site.site.navigation.flatMap((item): Item[] => {
+  const label = item.label?.[locale] || t.nav[item.kind];
+  if (item.kind === 'url') return item.url && /^https:\/\//.test(item.url) ? [{ id: item.id, kind: item.kind, label, href: item.url, external: true }] : [];
+  // Shorts get their own page in phase 3; until then the menu item opens the videos list
+  const href = `/${locale}/${item.kind === 'shorts' ? PATHS.videos : PATHS[item.kind]}`;
+  return [{ id: item.id, kind: item.kind, label, href, external: false }];
+});
+const other = locale === 'ar' ? 'en' : 'ar';
+const switchHref = site.site.locales.includes(other) ? alternates[other] ?? `/${other}/` : null;
+const returnTo = Astro.url.pathname + Astro.url.search;
+---
+<header class="site-header">
+  <div class="wrap header-row">
+    <a class="brand" href={`/${locale}/`} data-testid="site-brand">
+      {logo && <img src={logo} alt="" width="40" height="40" class="brand-logo" data-testid="site-logo" />}
+      <span class="brand-name">{name}</span>
+    </a>
+    <nav aria-label={t.mainNav} class="site-nav">
+      <ul>
+        {items.map((i) => (
+          <li>
+            <a href={i.href} aria-current={active === i.kind ? 'page' : undefined} rel={i.external ? 'noopener' : undefined} data-testid={`site-nav-${i.id}`}>{i.label}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+    <div class="header-tools">
+      {switchHref && <a href={switchHref} hreflang={other} lang={other} data-testid="site-lang-switch">{t.language}</a>}
+      <button type="button" class="mode-toggle" data-mode-toggle data-label-light={t.modeToLight} data-label-dark={t.modeToDark} aria-label={t.modeToDark}>
+        <span aria-hidden="true" class="mode-icon"></span>
+      </button>
+      <a class="sign-in" href={`/auth/login?return=${encodeURIComponent(returnTo)}&lang=${locale}`} data-testid="site-sign-in" data-signed-out-only>{t.signIn}</a>
+      <form method="post" action="/auth/logout" class="account" data-signed-in-only data-testid="site-account">
+        <span class="account-name" data-account-name data-template={t.signedInAs}>{fmt(t.signedInAs, { name: '' })}</span>
+        <input type="hidden" name="return" value={`/${locale}/`} />
+        <button type="submit" data-testid="site-sign-out">{t.signOut}</button>
+      </form>
+    </div>
+  </div>
+</header>

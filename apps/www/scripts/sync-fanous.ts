@@ -33,8 +33,8 @@ import { pathToFileURL } from 'node:url';
 const REPO = 'Al-Ummah-Now/AlUmmahNow';
 const SOURCE = 'apps/web/src/theme/site-themes.css';
 const LOCK = 'fanous.lock.json';
-export const CSS_OUT = 'src/styles/fanous-themes.generated.css';
-export const TS_OUT = 'src/lib/site-themes.generated.ts';
+export const CSS_OUT = '../../packages/render/src/styles/fanous-themes.generated.css';
+export const TS_OUT = '../../packages/render/src/themes/site-themes.generated.ts';
 export const USED_IN = 'src/styles/global.css';
 const NAV_SOURCE = 'packages/fanous-tokens/nav/aun-nav.css';
 export const NAV_OUT = 'src/styles/aun-nav.generated.css';
@@ -77,9 +77,9 @@ const STREET = /^--fanous-street-[a-z0-9-]+$/;
 const LIGHTS = /^url\("data:image\/svg\+xml,[A-Za-z0-9%._~!*'()-]+"\)$/;
 /** The shared street module, vendored at the same commit (packages/fanous-tokens/street). */
 export const STREET_SOURCES = { js: 'packages/fanous-tokens/street/fanous-street.js', dts: 'packages/fanous-tokens/street/fanous-street.d.ts', css: 'packages/fanous-tokens/street/fanous-street.css' } as const;
-export const STREET_JS_OUT = 'src/lib/fanous-street.generated.js';
-export const STREET_CSS_OUT = 'src/styles/fanous-street.generated.css';
-export const STREET_DTS_OUT = 'src/lib/fanous-street.generated.d.ts';
+export const STREET_JS_OUT = '../../packages/render/src/themes/fanous-street.generated.js';
+export const STREET_CSS_OUT = '../../packages/render/src/styles/fanous-street.generated.css';
+export const STREET_DTS_OUT = '../../packages/render/src/themes/fanous-street.generated.d.ts';
 const THEMED = /^html\[data-theme='([a-z][a-z0-9-]*)'\](\.dark|:not\(\.dark\))?$/;
 /** Selectors for an unthemed page (the videos app's fallback); www always sets data-theme. */
 const UNTHEMED = new Set([':root', '.dark', 'html:not(.dark)']);

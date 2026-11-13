@@ -1,0 +1,30 @@
+---
+import SiteLayout from '../../../layouts/SiteLayout.astro';
+import { pageContext } from '../../../lib/context';
+import { localizedTitle, siteVideo } from '../../../lib/data';
+import { alternates, watchCanonical } from '../../../lib/seo';
+import { embedUrl, watchUrl } from '../../../../../../packages/render/src/embeds';
+
+const ctx = pageContext(Astro);
+if (!ctx) return new Response('Not found', { status: 404 });
+const { site, locale, t, cfg } = ctx;
+// Only this site's channel's videos play here
+const video = await siteVideo(ctx.data, site.channel.id, Astro.params.id ?? '');
+if (!video) return new Response('Not found', { status: 404 });
+const title = localizedTitle(video, locale);
+const description = video.descriptions[locale] ?? video.description;
+// SS7: the videos site is canonical for <slug>.alummahnow.org; the site itself on the scholar's own domain
+const paragraphs = (description ?? '').split(/\n{2,}/).slice(0, 6);
+const canonical = watchCanonical(site, locale, video.id, cfg.videosWebUrl, ctx.scheme);
+const ld = [{ '@context': 'https://schema.org', '@type': 'VideoObject', name: title, description: description ?? title, thumbnailUrl: video.thumbnailUrl ?? undefined, uploadDate: video.publishedAt ?? undefined, embedUrl: embedUrl(cfg.videosWebUrl, { kind: 'video', id: video.id, lang: locale }), url: canonical }];
+---
+<SiteLayout ctx={ctx} title={title} description={description} alternates={alternates(site, `watch/${video.id}/`)} canonical={canonical} ogType="video.other" ogImage={video.thumbnailUrl} jsonLd={ld} active="videos">
+  <section class="wrap section">
+    <div class="player">
+      <iframe src={embedUrl(cfg.videosWebUrl, { kind: 'video', id: video.id, lang: locale })} title={title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" data-testid="site-player"></iframe>
+    </div>
+    <h1 class="watch-title">{title}</h1>
+    {paragraphs.map((p) => <p class="watch-description">{p}</p>)}
+    <p><a href={watchUrl(cfg.videosWebUrl, { kind: 'video', id: video.id, lang: locale })} data-testid="site-watch-on-platform">{t.joinDiscussion}</a></p>
+  </section>
+</SiteLayout>

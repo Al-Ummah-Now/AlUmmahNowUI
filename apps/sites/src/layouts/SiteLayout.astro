@@ -1,0 +1,77 @@
+---
+import '../styles/sites.css';
+import Header from '../components/SiteHeader.astro';
+import Footer from '../components/SiteFooter.astro';
+import { dir } from '../../../../packages/render/src/locale';
+import { MODE_SCRIPT } from '../lib/theme-mode';
+import { renderTheme, THEME_CHROME } from '../lib/theme';
+import { hreflangLinks, jsonLdText, siteJsonLd, siteName } from '../lib/seo';
+import type { PageContext } from '../lib/context';
+
+interface Props {
+  ctx: PageContext;
+  title: string;
+  description?: string | null;
+  /** Path of this page in each of the site's languages (hreflang + the language switch). */
+  alternates: Partial<Record<'en' | 'ar', string>>;
+  canonical: string;
+  ogType?: 'website' | 'article' | 'video.other';
+  ogImage?: string | null;
+  jsonLd?: unknown[];
+  noindex?: boolean;
+  active?: string;
+}
+
+const { ctx, title, description, alternates, canonical, ogType = 'website', ogImage, jsonLd = [], noindex, active } = Astro.props;
+const { site, locale, t, cfg, scheme } = ctx;
+const name = siteName(site, locale);
+const fullTitle = title === name ? name : `${title} | ${name}`;
+const desc = (description || site.channel.descriptionLocalized?.[locale] || site.channel.description || name).replace(/\s+/g, ' ').slice(0, 300);
+const theme = renderTheme(site.site.themeRef).id;
+const chrome = THEME_CHROME[theme];
+// Never indexed: test environments, previews, sites still in setup
+const robots = noindex || !cfg.isProduction || site.preview || site.site.status !== 'live' ? 'noindex, nofollow' : 'index, follow';
+const image = ogImage || site.site.logoUrl || site.channel.avatarUrl;
+const favicon = site.site.faviconUrl || site.site.logoUrl || site.channel.avatarUrl;
+const ld = [...siteJsonLd(site, locale, ctx.channelHref, scheme), ...jsonLd];
+---
+<!doctype html>
+<html lang={locale} dir={dir(locale)} data-theme={theme} data-site={site.site.slug}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={desc} />
+    <meta name="robots" content={robots} />
+    <link rel="canonical" href={canonical} />
+    {hreflangLinks(site, alternates, scheme).map((l) => <link rel="alternate" hreflang={l.hreflang} href={l.href} />)}
+    <meta property="og:site_name" content={name} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={desc} />
+    <meta property="og:url" content={canonical} />
+    {image && <meta property="og:image" content={image} />}
+    <meta property="og:locale" content={locale === 'ar' ? 'ar_AR' : 'en_GB'} />
+    <meta name="twitter:card" content={image ? 'summary' : 'summary'} />
+    <meta name="color-scheme" content="light dark" />
+    <script is:inline set:html={MODE_SCRIPT} />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content={chrome.light} />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content={chrome.dark} />
+    {favicon && <link rel="icon" href={favicon} />}
+    {favicon && <link rel="apple-touch-icon" href={favicon} />}
+    {locale === 'ar' && <link rel="preload" href="/fonts/noto-naskh-arabic-arabic-400-normal.woff2" as="font" type="font/woff2" crossorigin />}
+    {ld.map((data) => <script is:inline type="application/ld+json" set:html={jsonLdText(data)} />)}
+  </head>
+  <body>
+    <a class="skip-link" href="#main">{t.skip}</a>
+    {site.preview && <p class="preview-bar" role="note" data-testid="site-preview-bar">{t.preview}</p>}
+    <Header ctx={ctx} alternates={alternates} active={active} />
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <Footer ctx={ctx} />
+    <script>
+      import '../scripts/site';
+    </script>
+  </body>
+</html>

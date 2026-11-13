@@ -1,0 +1,81 @@
+// The scholar sites Worker (wiki AUN-SCHOLAR-SITES, SS3/SS9). Top level = production; env.qa and env.stage below.
+// Every white-label site is served here, on the alummahnow.org zone (zone id c3cbc1b54070d957cdcef91444b746a9):
+//   production  <slug>.alummahnow.org        route *.alummahnow.org/*  (+ */* for own domains via Cloudflare for SaaS,
+//                                                                       fallback origin sites.alummahnow.org)
+//   stage       <slug>.stage.alummahnow.org  route *.stage.alummahnow.org/*
+//   qa          <slug>.qa.alummahnow.org     route *.qa.alummahnow.org/*
+// Routes are static: adding a site never changes Cloudflare config, only api-videos' host index.
+// The DNS records, Cloudflare for SaaS and certificates are owner steps (docs/DOMAINS.md).
+// Secrets (wrangler secret put, never committed): SESSION_SECRET (64 hex). See scripts/secrets-manifest.ts.
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "al-ummah-now-sites",
+  "main": "./dist/_worker.js/index.js",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Every request goes through src/worker.ts (host lookup, security headers)
+    "run_worker_first": true
+  },
+  "observability": { "enabled": true },
+  "upload_source_maps": true,
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
+  "routes": [
+    // More specific routes (the qa/stage wildcards) win over these on the same zone
+    { "pattern": "*.alummahnow.org/*", "zone_id": "c3cbc1b54070d957cdcef91444b746a9" },
+    // The apex: 301 to www.alummahnow.net (src/worker.ts)
+    { "pattern": "alummahnow.org/*", "zone_id": "c3cbc1b54070d957cdcef91444b746a9" }
+  ],
+  "vars": {
+    "APP_ENV": "production",
+    "AUTH_URL": "https://auth.alummahnow.net",
+    "SITES_CLIENT_ID": "81f2bb95-15c6-4896-b414-be2c24155a74",
+    "VIDEOS_WEB_URL": "https://videos.alummahnow.net",
+    "VIDEOS_API_URL": "https://videos.api.alummahnow.net",
+    "WWW_URL": "https://www.alummahnow.net"
+  },
+  // CONTENT_SNAPSHOT: www's existing KV, shared (key prefix site-config:): the last good config of each host, so an
+  // api-videos outage still renders every site in its own theme (never the platform's).
+  "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "bb7463036880446abdc652a56f0b6509" }],
+  "env": {
+    "qa": {
+      // Workers Logs bill per line: every invocation kept, no automatic per-request log line
+      "observability": { "enabled": true, "logs": { "enabled": true, "head_sampling_rate": 1, "invocation_logs": false } },
+      "name": "al-ummah-now-sites-qa",
+      "workers_dev": false,
+      "preview_urls": false,
+      "routes": [{ "pattern": "*.qa.alummahnow.org/*", "zone_id": "c3cbc1b54070d957cdcef91444b746a9" }],
+      "vars": {
+        "APP_ENV": "qa",
+        "AUTH_URL": "https://auth.qa.alummahnow.net",
+        "SITES_CLIENT_ID": "0abd9eac-e47e-4a1a-90bd-18cffec0303c",
+        "VIDEOS_WEB_URL": "https://videos.qa.alummahnow.net",
+        "VIDEOS_API_URL": "https://videos.api.qa.alummahnow.net",
+        "WWW_URL": "https://www.qa.alummahnow.net"
+      },
+      "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "2784164e06164e99bb5e837733dd38a2" }],
+      "version_metadata": { "binding": "CF_VERSION_METADATA" }
+    },
+    "stage": {
+      "observability": { "enabled": true, "logs": { "enabled": true, "head_sampling_rate": 1, "invocation_logs": false } },
+      "name": "al-ummah-now-sites-stage",
+      "workers_dev": false,
+      "preview_urls": false,
+      "routes": [{ "pattern": "*.stage.alummahnow.org/*", "zone_id": "c3cbc1b54070d957cdcef91444b746a9" }],
+      "vars": {
+        "APP_ENV": "stage",
+        "AUTH_URL": "https://auth.stage.alummahnow.net",
+        "SITES_CLIENT_ID": "81f2bb95-15c6-4896-b414-be2c24155a74",
+        "VIDEOS_WEB_URL": "https://videos.stage.alummahnow.net",
+        "VIDEOS_API_URL": "https://videos.api.stage.alummahnow.net",
+        "WWW_URL": "https://www.stage.alummahnow.net"
+      },
+      "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "9a4d7ee84d43427dad2e73e5904a21c7" }],
+      "version_metadata": { "binding": "CF_VERSION_METADATA" }
+    }
+  }
+}

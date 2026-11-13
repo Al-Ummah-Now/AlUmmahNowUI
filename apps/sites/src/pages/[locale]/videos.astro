@@ -1,0 +1,20 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import VideoGrid from '../../components/VideoGrid.astro';
+import { pageContext } from '../../lib/context';
+import { channelVideos } from '../../lib/data';
+import { alternates, canonicalUrl } from '../../lib/seo';
+
+const ctx = pageContext(Astro);
+if (!ctx) return new Response('Not found', { status: 404 });
+const { site, locale, t } = ctx;
+const cursor = Astro.url.searchParams.get('cursor');
+const page = await channelVideos(ctx.data, site.channel.id, { cursor, limit: 24 });
+---
+<SiteLayout ctx={ctx} title={t.nav.videos} alternates={alternates(site, 'videos/')} canonical={canonicalUrl(site, locale, 'videos/', ctx.scheme)} active="videos" noindex={!!cursor}>
+  <section class="wrap section">
+    <h1>{t.nav.videos}</h1>
+    {page.items.length ? <VideoGrid videos={page.items} locale={locale} testId="site-videos" /> : <p class="empty">{t.noVideos}</p>}
+    {page.cursor && <p class="pager"><a href={`/${locale}/videos/?cursor=${encodeURIComponent(page.cursor)}`} rel="next">{t.more}</a></p>}
+  </section>
+</SiteLayout>

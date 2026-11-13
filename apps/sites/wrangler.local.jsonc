@@ -1,0 +1,15 @@
+// Local runs and local E2E only (never deployed; wrangler.jsonc is the real config). No routes at all, so
+// `wrangler dev` keeps each request's own host (*.sites.localhost) instead of rewriting it to the zone.
+// Vars come from .dev.vars (scripts/dev-vars.ts).
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "al-ummah-now-sites-local",
+  "main": "./dist/_worker.js/index.js",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "assets": { "directory": "./dist", "binding": "ASSETS", "run_worker_first": true },
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
+  "vars": { "APP_ENV": "local" },
+  "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "local-sites-snapshot" }]
+}

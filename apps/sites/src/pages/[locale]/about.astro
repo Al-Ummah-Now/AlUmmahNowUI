@@ -1,0 +1,29 @@
+---
+import SiteLayout from '../../layouts/SiteLayout.astro';
+import { pageContext } from '../../lib/context';
+import { renderMarkdown } from '../../../../../packages/render/src/markdown';
+import { alternates, canonicalUrl, siteName } from '../../lib/seo';
+
+const ctx = pageContext(Astro);
+if (!ctx) return new Response('Not found', { status: 404 });
+const { site, locale, t } = ctx;
+const text = site.site.about[locale] || site.channel.descriptionLocalized?.[locale] || site.channel.description || '';
+// Markdown with raw HTML escaped and unsafe links dropped (packages/render/src/markdown.ts)
+const html = renderMarkdown(text, { renderVideo: () => '' });
+const links = (site.channel.links ?? []).filter((l) => /^https:\/\//.test(l.url)).slice(0, 12);
+const logo = site.site.logoUrl || site.channel.avatarUrl;
+---
+<SiteLayout ctx={ctx} title={t.nav.about} alternates={alternates(site, 'about/')} canonical={canonicalUrl(site, locale, 'about/', ctx.scheme)} active="about">
+  <section class="wrap section narrow" data-testid="site-about">
+    <h1>{siteName(site, locale)}</h1>
+    {logo && <img src={logo} alt="" width="120" height="120" class="about-logo" />}
+    <div class="prose" set:html={html} />
+    {links.length > 0 && (
+      <>
+        <h2>{t.links}</h2>
+        <ul class="links">{links.map((l) => <li><a href={l.url} rel="noopener me">{l.title || l.url}</a></li>)}</ul>
+      </>
+    )}
+    <p><a href={ctx.channelHref}>{t.channel}</a></p>
+  </section>
+</SiteLayout>

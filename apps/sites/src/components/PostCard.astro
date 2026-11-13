@@ -1,0 +1,45 @@
+---
+import type { SitePost } from '../lib/data';
+import type { PageContext } from '../lib/context';
+import { fmt } from '../lib/i18n';
+
+interface Props { ctx: PageContext; post: SitePost; full?: boolean }
+const { ctx, post, full = false } = Astro.props;
+const { locale, t } = ctx;
+const date = post.createdAt ? new Date(post.createdAt) : null;
+const href = `/${locale}/posts/${post.id}/`;
+const paragraphs = (post.text ?? '').split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+const shown = full ? paragraphs : paragraphs.slice(0, 2);
+const discussion = `${ctx.channelHref}/community`;
+---
+<article class="post-card" data-testid="site-post" data-kind={post.kind}>
+  {date && <p class="post-date"><a href={href}><time datetime={post.createdAt}>{date.toLocaleDateString(locale === 'ar' ? 'ar' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' })}</time></a></p>}
+  {post.article && (
+    <div class="post-article">
+      {post.article.coverUrl && <img src={post.article.coverUrl} alt="" loading="lazy" width="640" height="360" />}
+      <h2 class="post-title">{post.article.title}</h2>
+      {post.article.excerpt && <p>{post.article.excerpt}</p>}
+      {post.article.url && /^https:\/\//.test(post.article.url) && <p><a href={post.article.url}>{t.readArticle}</a></p>}
+    </div>
+  )}
+  {shown.map((p) => <p class="post-text">{p}</p>)}
+  {post.images.length > 0 && (
+    <div class="post-images">
+      {post.images.slice(0, full ? 10 : 4).map((img) => <img src={img.url} alt={img.alt} loading="lazy" width={img.width ?? undefined} height={img.height ?? undefined} />)}
+    </div>
+  )}
+  {post.videoId && (
+    <p><a href={`/${locale}/watch/${post.videoId}/`} class="post-video-link">{t.watchOn}</a></p>
+  )}
+  {post.options.length > 0 && (
+    <div class="post-options">
+      <ul>{post.options.map((o) => <li>{o}</li>)}</ul>
+      <p><a href={discussion}>{post.kind === 'quiz' ? t.quizOnPlatform : t.pollOnPlatform}</a></p>
+    </div>
+  )}
+  <p class="post-meta">
+    <span>{fmt(t.likes, { n: post.likes })}</span> · <span>{fmt(t.comments, { n: post.comments })}</span>
+    {full && <> · <a href={discussion}>{t.joinDiscussion}</a></>}
+    {!full && paragraphs.length > shown.length && <> · <a href={href}>{t.more}</a></>}
+  </p>
+</article>

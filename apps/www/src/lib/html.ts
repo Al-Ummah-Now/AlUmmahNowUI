@@ -1,2 +1,2 @@
-const ESC: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-export const escapeHtml = (s: string): string => s.replace(/[&<>"']/g, (c) => ESC[c] ?? c);
+/** Shared with the sites Worker: packages/render/src/html.ts (AUN-SCHOLAR-SITES SS3). */
+export * from '../../../../packages/render/src/html';
