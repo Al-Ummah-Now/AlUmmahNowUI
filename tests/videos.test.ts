@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { clockDuration, CURATED_MAX, isoDuration, LIVE_LOOKUPS_MAX, resolveCurated, snapshotItem, toVideoItem, type VideosDeps } from '../src/lib/videos';
+import { clockDuration, CURATED_MAX, isoDuration, LIVE_LOOKUPS_MAX, localizeItem, resolveCurated, snapshotItem, toVideoItem, type VideosDeps } from '../src/lib/videos';
+import { channelNameFor } from '../src/scripts/timeline-media';
 import type { CuratedVideo } from '../src/lib/cms-types';
 
 describe('videos API mapping', () => {
@@ -171,5 +172,27 @@ describe('timeline video frame and channel name (2026-11-12)', () => {
     const snap = { title: 'T', thumbnail_url: null, channel_name: 'Al Ummah Now', channel_names: { en: 'Al Ummah Now', ar: 'الأمة الآن' }, width: 720, height: 1256 };
     const v = snapshotItem({ id: 1, kind: 'video', ref_id: 'v1', title_override: null, snapshot: snap, sort: 0 } as CuratedVideo, Date.now(), true)!;
     expect(v).toMatchObject({ width: 720, height: 1256, channelNames: { en: 'Al Ummah Now', ar: 'الأمة الآن' } });
+  });
+});
+
+describe('channel name in the page language (owner, 2026-11-13: English channel names on Arabic pages)', () => {
+  const body = { title: 'وقفة منسية', channelName: 'Al Ummah Now', channelNameLocalized: { en: 'Al Ummah Now', ar: 'الأمة الآن' } };
+
+  it('videos and playlists from the API carry the channel name per language', () => {
+    const video = toVideoItem('video', 'v1', body)!;
+    expect(video.channelNames).toEqual({ en: 'Al Ummah Now', ar: 'الأمة الآن' });
+    expect(localizeItem(video, 'ar').channelName).toBe('الأمة الآن');
+    expect(localizeItem(video, 'en').channelName).toBe('Al Ummah Now');
+    expect(toVideoItem('playlist', 'p1', body)!.channelNames?.ar).toBe('الأمة الآن');
+  });
+
+  it('a payload without localized names keeps the default name', () => {
+    expect(localizeItem(toVideoItem('video', 'v2', { title: 't', channelName: 'Noor' })!, 'ar').channelName).toBe('Noor');
+  });
+
+  it('the Shorts viewer names the channel in the page language', () => {
+    expect(channelNameFor(body, 'ar')).toBe('الأمة الآن');
+    expect(channelNameFor(body, 'en-US')).toBe('Al Ummah Now');
+    expect(channelNameFor({ channelName: 'Noor' }, 'ar')).toBe('Noor');
   });
 });

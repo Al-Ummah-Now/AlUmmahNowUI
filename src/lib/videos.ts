@@ -29,7 +29,7 @@ export interface VideoItem {
   /** Per-locale title/name and description from the API (titleLocalized / nameLocalized). */
   titles?: Partial<Record<Locale, string>>;
   descriptions?: Partial<Record<Locale, string>>;
-  /** Videos: their channel's name per language (CMS snapshot `channel_names`). */
+  /** Videos and playlists: their channel's name per language (API `channelNameLocalized`, CMS snapshot `channel_names`). */
   channelNames?: Partial<Record<Locale, string>>;
   /** Videos: the encoded size, so the player frame takes the video's shape (facade.ts). */
   width?: number | null;
@@ -83,6 +83,8 @@ export function toVideoItem(kind: VideoKind, id: string, body: unknown): VideoIt
     uploadDate: str(b.dateCreated),
     videoCount: kind === 'playlist' ? num(b.videosCount) ?? (Array.isArray(b.videos) ? b.videos.length : null) : null,
     titles: localized(kind === 'channel' ? b.nameLocalized : b.titleLocalized),
+    // The channel's name per language (videos API channelNameLocalized): pages show their own language's
+    channelNames: kind === 'channel' ? {} : localized(b.channelNameLocalized),
     descriptions: localized(b.descriptionLocalized),
     width: kind === 'video' ? num(b.width) : null,
     height: kind === 'video' ? num(b.height) : null,
