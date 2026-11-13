@@ -84,6 +84,8 @@ export function plainText(markdown: string, max = 200): string {
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/[#>*_`~|-]+/g, ' ')
     .replace(/<[^>]*>/g, '')
+    // and any stray angle bracket left by a broken tag: the result is plain text, never markup
+    .replace(/[<>]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
   return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
