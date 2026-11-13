@@ -118,12 +118,13 @@ test.describe('routing', () => {
 test.describe('language switch', () => {
   test('en → ar keeps the page and remembers the choice', async ({ page, context }) => {
     await page.goto('/en/articles/');
-    await page.getByRole('link', { name: 'العربية' }).click();
+    // exact: a page can also link "Articles in العربية" (stage's articles page does)
+    await page.getByRole('link', { name: 'العربية', exact: true }).click();
     await expect(page).toHaveURL(/\/ar\/articles\/$/);
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     const cookies = await context.cookies();
     expect(cookies.find((c) => c.name === 'aun_locale')?.value).toBe('ar');
-    await page.getByRole('link', { name: 'English' }).click();
+    await page.getByRole('link', { name: 'English', exact: true }).click();
     await expect(page).toHaveURL(/\/en\/articles\/$/);
   });
 });
