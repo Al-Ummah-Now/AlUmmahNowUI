@@ -6,7 +6,7 @@
  * /videos and /articles never 404 on page 1: when the CMS has no such page, or the CMS, the cache
  * and the snapshot all fail, they are www's own built-in filter pages, from what www can read
  * without the list endpoint (/posts for articles; nothing for videos, whose page then shows the
- * "Browse the full library" empty state).
+ * "Explore all videos" empty state).
  */
 import type { ListFilterKind, ListKind } from './cms-types';
 import type { CmsClient, Result } from './cms';

@@ -52,9 +52,9 @@ test.describe('list page routes', () => {
     });
   }
 
-  test('/videos keeps "Browse the full library"', async ({ page }) => {
+  test('/videos keeps "Explore all videos"', async ({ page }) => {
     await page.goto('/en/videos/');
-    await expect(page.locator('.page-head').getByRole('link', { name: 'Browse the full library' })).toHaveAttribute('href', /^https:\/\/videos\./);
+    await expect(page.locator('.page-head').getByRole('link', { name: 'Explore all videos' })).toHaveAttribute('href', /^https:\/\/videos\./);
   });
 });
 

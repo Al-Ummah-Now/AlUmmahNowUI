@@ -2,7 +2,7 @@
 export const en = {
   meta: {
     siteName: 'Al Ummah Now',
-    defaultDescription: 'Al Ummah Now is an Islamic video and community platform: lessons, talks and channels from scholars and creators, in Arabic and English.',
+    defaultDescription: 'Al Ummah Now is an Islamic video and community platform: videos, Shorts, live streams and posts from channels and creators, in Arabic and English.',
   },
   a11y: {
     skipToContent: 'Skip to main content',
@@ -62,15 +62,15 @@ export const en = {
   },
   home: {
     wordmarkLatin: 'Al Ummah Now',
-    heroTitle: 'Beneficial knowledge, close at hand',
-    heroBody: 'Lessons, lectures and reminders from scholars and creators you can trust, in Arabic and English. Watch, follow channels, and keep learning with one account.',
+    heroTitle: 'Watch, share and explore the community',
+    heroBody: 'Videos, Shorts and posts from channels and creators across the community, in Arabic and English. Watch, subscribe and share with one account.',
     watchCta: 'Watch videos',
     profileCta: 'Create your account',
-    libraryCta: 'Your library',
+    libraryCta: 'Continue watching',
   },
   apps: {
     videosTitle: 'Videos',
-    videosBody: 'Watch lessons and talks, follow channels and save playlists.',
+    videosBody: 'Watch videos and Shorts, subscribe to channels and save playlists.',
     profileTitle: 'Your profile',
     profileBody: 'Manage your account, sign-in and privacy in one place.',
     signInTitle: 'Sign in',
@@ -91,7 +91,7 @@ export const en = {
   },
   scholars: {
     title: 'Scholars',
-    intro: 'Scholars and teachers who write and teach on Al Ummah Now. Each has a page with their articles and videos.',
+    intro: 'Scholars who publish on Al Ummah Now. Each has a page with their articles and videos.',
     empty: 'No scholar pages yet.',
     articles: 'Articles',
     videos: 'Videos',
@@ -136,12 +136,12 @@ export const en = {
   },
   videos: {
     title: 'Videos',
-    intro: 'Lessons, series and channels chosen by our editors. The full library lives on Al Ummah Now Videos.',
-    browseAll: 'Browse the full library',
+    intro: 'Videos, playlists and channels picked by our editors. Watch more on Al Ummah Now Videos.',
+    browseAll: 'Explore all videos',
     empty: 'No featured videos yet.',
-    emptyHint: 'The whole library is open on Al Ummah Now Videos.',
+    emptyHint: 'Explore everything on Al Ummah Now Videos.',
     play: 'Play: {title}',
-    playlist: 'Series',
+    playlist: 'Playlist',
     channel: 'Channel',
     visitChannel: 'Visit channel',
     watchOnVideos: 'Open on Al Ummah Now Videos',

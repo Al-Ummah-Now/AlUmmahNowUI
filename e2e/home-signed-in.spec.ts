@@ -1,6 +1,6 @@
 /**
  * Signed in, the cached (anonymous) HTML must not look signed out:
- *  - the home hero offers "Your library" instead of "Create your account", from the first paint
+ *  - the home hero offers "Continue watching" instead of "Create your account", from the first paint
  *    (the `aun_www_si` hint → <html data-signed-in> in the head script), and corrects itself
  *    when /auth/me says the session is gone
  *  - the header shows the profile name (page language), then @handle, never the email when a
@@ -47,13 +47,13 @@ test.describe('signed-in home', () => {
     const release = await signedIn(page, { displayName: 'Mahmoud', displayNameLocalized: { en: 'Mahmoud', ar: 'محمود' }, handle: 'meywd' }, { hold: true });
     await page.goto('/en/');
     // /auth/me has not answered yet: the hint alone already picks the signed-in hero
-    await expect(hero(page).getByRole('link', { name: 'Your library' })).toBeVisible();
+    await expect(hero(page).getByRole('link', { name: 'Continue watching' })).toBeVisible();
     await expect(hero(page).getByRole('link', { name: 'Create your account' })).toBeHidden();
     await expect(page.locator('#account .signin-link')).toBeHidden();
     release();
     await expect(button(page)).toContainText('Mahmoud');
     await expect(button(page)).not.toContainText(email);
-    await expect(hero(page).getByRole('link', { name: 'Your library' })).toHaveAttribute('href', /\/en\/library$/);
+    await expect(hero(page).getByRole('link', { name: 'Continue watching' })).toHaveAttribute('href', /\/en\/library$/);
     // still in the cached HTML (for anonymous visitors) but not rendered, so not in the a11y tree
     await expect(page.getByRole('link', { name: 'Create your account' })).toHaveCount(0);
   });
@@ -62,7 +62,7 @@ test.describe('signed-in home', () => {
     const long = 'محمود صالح درويش عبد الرحمن الطويل جدًا للاختبار';
     await signedIn(page, { displayName: 'Mahmoud', displayNameLocalized: { en: 'Mahmoud', ar: long }, handle: 'meywd', avatarUrl: 'https://images.alummahnow.net/u1_avatar.jpeg' });
     await page.goto('/ar/');
-    await expect(hero(page).getByRole('link', { name: 'مكتبتك' })).toBeVisible();
+    await expect(hero(page).getByRole('link', { name: 'تابع المشاهدة' })).toBeVisible();
     await expect(hero(page).getByRole('link', { name: 'أنشئ حسابك' })).toBeHidden();
     await expect(button(page)).toContainText(long);
     await expect(button(page).locator('img.account-avatar')).toBeVisible();
@@ -91,7 +91,7 @@ test.describe('signed-in home', () => {
     await page.goto('/en/');
     await expect(page.locator('#account .signin-link')).toBeVisible();
     await expect(hero(page).getByRole('link', { name: 'Create your account' })).toBeVisible();
-    await expect(hero(page).getByRole('link', { name: 'Your library' })).toBeHidden();
+    await expect(hero(page).getByRole('link', { name: 'Continue watching' })).toBeHidden();
     await expect.poll(async () => (await context.cookies()).some((c) => c.name === 'aun_www_si' && c.value === '1')).toBe(false);
   });
 
