@@ -41,7 +41,12 @@ if (page?.list_kind) {
   }
 }
 markSource(Astro, rc);
-if (!page && first.status !== 'unavailable') return new Response(null, { status: 404 });
+if (!page && first.status !== 'unavailable') {
+  // A renamed page's old address: 301 to its current one (CMS slug history, D-SEO-7)
+  const renamed = await rc.cms.redirect('page', locale, slug);
+  if (renamed) return Astro.redirect(`/${locale}/${encodeURIComponent(renamed)}/${Astro.url.search}`, 301);
+  return new Response(null, { status: 404 });
+}
 if (!page) Astro.response.status = 503;
 const listAlternates = list
   ? Object.fromEntries(Object.entries(list.view.slugs).map(([l, s]) => [l, `/${l}/${encodeURIComponent(s!)}/${pageQuery(list!.view.page)}`]))

@@ -29,6 +29,11 @@ if (result.status === 'not_found') {
     result = other;
   }
 }
+// A renamed article's old address: 301 to its current one (CMS slug history, D-SEO-7)
+if (result.status === 'not_found') {
+  const renamed = await rc.cms.redirect('post', locale, slug);
+  if (renamed) return Astro.redirect(`/${locale}/articles/${encodeURIComponent(renamed)}/${Astro.url.search}`, 301);
+}
 markSource(Astro, rc);
 if (result.status === 'not_found') return new Response(null, { status: 404 });
 if (result.status === 'unavailable') Astro.response.status = 503;
