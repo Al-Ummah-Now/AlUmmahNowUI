@@ -14,6 +14,14 @@ Cloudflare API token can edit Worker routes on the zone but **cannot read or edi
 Hostnames** there (checked 2026-11-13), so these steps are the owner's. Until they are done, the
 release smoke prints `SKIP … owner DNS step pending` instead of failing.
 
+## 0. Automated: the Sites zone workflow
+
+Actions → **Sites zone** → *check* lists what the release token (`CLOUDFLARE_API_TOKEN`) may do on
+the zone (one TXT record is created and deleted to prove DNS Edit) and names each missing permission.
+*apply* makes steps 1 and 3.2 below and turns Always Use HTTPS on (`apps/sites/scripts/sites-zone.ts`,
+idempotent). The Advanced Certificate (step 2) and enabling Cloudflare for SaaS (step 3.1) stay in
+the dashboard.
+
 ## 1. DNS records (zone alummahnow.org → DNS → Records)
 
 All **Proxied** (orange cloud). `100::` is the conventional "Worker-only" origin: nothing behind it is
