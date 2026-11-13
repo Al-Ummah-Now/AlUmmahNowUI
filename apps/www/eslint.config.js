@@ -3,7 +3,8 @@ import tseslint from 'typescript-eslint';
 import astro from 'eslint-plugin-astro';
 
 export default [
-  { ignores: ['dist/', '.astro/', '.wrangler/', 'node_modules/', 'e2e-artifacts/', 'test-results/', 'playwright-report/'] },
+  // Vendored byte for byte from AlUmmahNow (scripts/sync-posts.ts): linted there.
+  { ignores: ['src/lib/post-schema.generated.ts', 'dist/', '.astro/', '.wrangler/', 'node_modules/', 'e2e-artifacts/', 'test-results/', 'playwright-report/'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   ...astro.configs.recommended,

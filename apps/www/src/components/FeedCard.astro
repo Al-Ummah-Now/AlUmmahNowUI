@@ -22,6 +22,7 @@ import { dir, type Locale } from '../lib/locale';
 import { pictureHtml } from '../lib/picture';
 import { absoluteTime, channelCard, feedVideoItem, isShort } from '../lib/timeline';
 import Icon from './Icon.astro';
+import PostKindSummary from './posts/PostKindSummary.astro';
 
 /** `titleLevel`: the card title's heading level (4 under the home's h2/h3 days; 3 on a list page). */
 interface Props { item: FeedItem; locale: Locale; cmsOrigin: string; videosWebUrl: string; priority: boolean; now: Date; titleLevel?: 3 | 4 }
@@ -170,6 +171,7 @@ const siteName = t.meta.siteName;
             {href ? <a href={href}>{title}</a> : title}
           </H>
           {post?.excerpt && <p class="tl-excerpt" lang={contentLocale} dir={dir(contentLocale)}>{post.excerpt}</p>}
+          {post && <PostKindSummary post={post} locale={locale} cmsOrigin={cmsOrigin} images={false} />}
         </div>
       </>
     )}

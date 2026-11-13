@@ -17,7 +17,7 @@
  * the head with the minimum (30 s), the same order as the HTML edge cache.
  */
 import type { KVNamespace } from './cf';
-import type { CuratedSnapshot, MediaRef, PostAuthor } from './cms-types';
+import type { CuratedSnapshot, MediaRef, PostAuthor, PostKind, PostRef, PostV2Summary } from './cms-types';
 import type { Locale } from './locale';
 
 export const PAGE_SIZE = 20;
@@ -46,7 +46,12 @@ export interface FeedPost {
   tags: string[];
   published_at: string;
   updated_at: string;
-  kind?: 'article' | 'cards';
+  /** Scholar post references carry any PostV2 kind (CMS FEED_FORMAT 4). */
+  kind?: PostKind;
+  /** A scholar post reference (CMS FEED_FORMAT 4): its community post. */
+  ref?: PostRef | null;
+  /** A reference's kind-specific summary (CMS FEED_FORMAT 4). */
+  v2?: PostV2Summary | null;
   slide_count?: number;
   first_slide?: FeedSlide | null;
   /** Card posts: the first ≤ 10 slides (absent from feeds built before the CMS sent them). */

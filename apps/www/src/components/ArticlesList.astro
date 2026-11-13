@@ -8,6 +8,7 @@ import { fmt, formatDate, strings } from '../i18n';
 import { inlineCards, inlineUid } from '../lib/cards';
 import type { PostSummary } from '../lib/cms-types';
 import type { Locale } from '../lib/locale';
+import PostKindSummary from './posts/PostKindSummary.astro';
 
 /** `byline: false` on a scholar's own page (every post there is theirs). */
 interface Props { locale: Locale; posts: PostSummary[]; headingLevel?: 2 | 3; cmsOrigin: string; byline?: boolean }
@@ -40,6 +41,7 @@ const href = (p: PostSummary) => `/${locale}/articles/${encodeURIComponent(p.slu
         ) : (
           p.excerpt && <p>{p.excerpt}</p>
         )}
+        <PostKindSummary post={p} locale={locale} cmsOrigin={cmsOrigin} />
       </li>
     );
   })}

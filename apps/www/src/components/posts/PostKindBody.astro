@@ -1,0 +1,92 @@
+---
+/**
+ * The body of a scholar post of a community kind (text, image, poll, quiz, video, gif, link) on its www
+ * page (AlUmmahNowCMS docs/SCHOLARS.md §7). Articles and cards keep PostArticle. Reads the community
+ * post (CMS `community`), or the summary (`v2`) when the CMS could not read it. Never renders HTML from
+ * the post: text is text. Votes and answers happen on the channel (the quiz's answer is never here).
+ *
+ * Shared post renderers: the scholar sites Worker will take these from packages/render
+ * (wiki AUN-SCHOLAR-SITES §5.2).
+ */
+import { strings } from '../../i18n';
+import type { Post } from '../../lib/cms-types';
+import { normalizeImageUrl } from '../../lib/images';
+import { watchUrl } from '../../lib/embeds';
+import { dir, type Locale } from '../../lib/locale';
+import { linkHost, plainLines, safeOutsideUrl } from '../../lib/post-kinds';
+
+interface Props { post: Post; locale: Locale; cmsOrigin: string; videosWebUrl: string }
+const { post, locale, cmsOrigin, videosWebUrl } = Astro.props;
+const t = strings(locale).posts;
+const c = post.community ?? null;
+const v2 = post.v2 ?? null;
+const kind = post.kind ?? 'text';
+const lang = post.locale;
+const extra = [cmsOrigin];
+const text = c?.content ? plainLines(c.content) : v2?.text ? [v2.text] : [];
+const images = (c?.images ?? v2?.images ?? [])
+  .map((i) => ({ url: normalizeImageUrl(i.url, extra), alt: ('caption' in i ? i.caption : 'alt' in i ? i.alt : null) ?? '', width: i.width ?? null, height: i.height ?? null }))
+  .filter((i): i is { url: string; alt: string; width: number | null; height: number | null } => !!i.url);
+const poll = c?.poll ?? v2?.poll ?? null;
+const quiz = c?.quiz ?? v2?.quiz ?? null;
+const link = c?.link ?? v2?.link ?? null;
+const linkUrl = link ? safeOutsideUrl(link.url) : null;
+const linkImage = link?.image ? normalizeImageUrl(link.image.url, extra) : null;
+const gifUrl = normalizeImageUrl(c?.gif?.url ?? v2?.gif?.url ?? null, extra);
+const videoId = c?.videoId ?? v2?.video_id ?? null;
+let videoHref: string | null = null;
+try {
+  videoHref = videoId ? watchUrl(videosWebUrl, { kind: 'video', id: videoId, lang: locale }) : null;
+} catch {
+  videoHref = null;
+}
+const totalVotes = typeof c?.poll?.totalVotes === 'number' ? c.poll.totalVotes : null;
+---
+<div class="post-kind" lang={lang} dir={dir(lang)} data-post-kind={kind}>
+  {text.length > 0 && <div class="prose post-kind-text">{text.map((p) => <p>{p}</p>)}</div>}
+
+  {kind === 'image' && images.length > 0 && (
+    <ul class:list={['post-kind-images', images.length > 1 && 'post-kind-images-many']}>
+      {images.map((i, n) => (
+        <li><img src={i.url} alt={i.alt} width={i.width ?? undefined} height={i.height ?? undefined} loading={n === 0 ? 'eager' : 'lazy'} decoding="async" /></li>
+      ))}
+    </ul>
+  )}
+
+  {kind === 'gif' && gifUrl && <p class="post-kind-gif"><img src={gifUrl} alt="" loading="eager" decoding="async" /></p>}
+
+  {kind === 'poll' && poll && (
+    <section class="post-kind-choices" aria-label={t.pollOptions}>
+      <p class="post-kind-question">{poll.question}</p>
+      <ul>
+        {poll.options.map((o) => {
+          const pct = 'percentage' in o && typeof o.percentage === 'number' && totalVotes ? Math.round(o.percentage) : null;
+          return <li><span>{o.text}</span>{pct !== null && <span class="post-kind-pct" dir="ltr">{pct}%</span>}</li>;
+        })}
+      </ul>
+      <a class="button" href={post.ref?.videos_url}>{t.voteOnChannel}</a>
+    </section>
+  )}
+
+  {kind === 'quiz' && quiz && (
+    <section class="post-kind-choices" aria-label={t.quizOptions}>
+      <p class="post-kind-question">{quiz.question}</p>
+      <ul>{quiz.options.map((o) => <li><span>{o.text}</span></li>)}</ul>
+      <a class="button" href={post.ref?.videos_url}>{t.answerOnChannel}</a>
+    </section>
+  )}
+
+  {kind === 'video' && videoHref && <p><a class="button" href={videoHref}>{t.watchVideo}</a></p>}
+
+  {kind === 'link' && link && linkUrl && (
+    <a class="post-kind-link" href={linkUrl} rel="noopener noreferrer nofollow ugc" target="_blank">
+      {linkImage && <img src={linkImage} alt="" loading="lazy" decoding="async" />}
+      <span class="post-kind-link-text">
+        <span class="post-kind-link-host" dir="ltr">{linkHost(linkUrl)}</span>
+        <span class="post-kind-link-title" dir="auto">{link.title || linkUrl}</span>
+        {link.description && <span class="post-kind-link-desc" dir="auto">{link.description}</span>}
+        <span class="visually-hidden">({t.opensOutside})</span>
+      </span>
+    </a>
+  )}
+</div>
