@@ -1625,28 +1625,20 @@ html:not([data-js]) .theme {
 }
 .tl-list {
   display: grid;
-  gap: 1rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
+/* No boxes: each post is its content, separated from the next by space and a hairline. */
+.tl-item + .tl-item {
+  margin-block-start: 1.75rem;
+  padding-block-start: 1.75rem;
+  border-block-start: 1px solid var(--line);
+}
 .tl-card {
   position: relative;
   display: grid;
-  gap: 0.875rem;
-  padding: 1rem;
-  background: linear-gradient(180deg, var(--surface-raised), var(--surface));
-  border: 1px solid var(--line);
-  border-radius: 1rem;
-  box-shadow: var(--tl-card-edge), var(--tl-card-shadow);
-}
-@media (min-width: 36rem) {
-  .tl-card {
-    padding: 1.25rem;
-  }
-}
-.tl-card-pinned {
-  border-inline-start: 3px solid var(--color-lantern);
+  gap: 0.75rem;
 }
 .tl-pin {
   display: inline-flex;
@@ -1758,6 +1750,244 @@ html:not([data-js]) .theme {
 }
 .tl-section .facade-frame {
   box-shadow: 0 0 0 1px var(--line);
+}
+
+/* ---------- media-first posts (card posts, videos, Shorts): the media alone ----------
+ * Title, channel or author and time are drawn over the top of the media on a night scrim (the
+ * header's colour, dark in every theme, so the paper text keeps AA on any image). They show on
+ * hover, on keyboard focus anywhere in the post, and on touch after a tap (data-open); they are
+ * always in the accessibility tree (opacity only). The video's play button and the card pager
+ * follow the same rule; on touch the play button and a faint card position stay visible. */
+.tl-bare {
+  --tl-ov-shown: 0;
+  justify-items: center;
+}
+.tl-mwrap {
+  position: relative;
+  width: 100%;
+  border-radius: var(--radius-media);
+  overflow: hidden;
+}
+.tl-mwrap.tl-ar-9x16 { width: min(100%, calc(min(72vh, 36rem) * 9 / 16)); }
+.tl-mwrap.tl-ar-4x5 { width: min(100%, calc(min(72vh, 36rem) * 4 / 5)); }
+.tl-mwrap.tl-ar-1x1 { width: min(100%, min(72vh, 36rem)); }
+.tl-mwrap .facade-frame {
+  width: 100%;
+  border-radius: 0;
+}
+.tl-section .tl-mwrap .facade-frame {
+  box-shadow: none;
+}
+.tl-ov {
+  position: absolute;
+  z-index: 3;
+  inset-block-start: 0;
+  inset-inline: 0;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.875rem 1rem 2.75rem;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--color-night-deep) 92%, transparent), color-mix(in srgb, var(--color-night-deep) 70%, transparent) 55%, transparent);
+  color: var(--color-paper);
+  opacity: var(--tl-ov-shown);
+  pointer-events: none;
+  transition: opacity 160ms ease;
+}
+.tl-ov a {
+  pointer-events: auto;
+}
+.tl-ov .tl-title {
+  font-size: 1.0625rem;
+  line-height: 1.35;
+  color: var(--color-paper);
+  text-wrap: pretty;
+}
+.tl-ov .tl-title:lang(ar) {
+  font-size: 1.125rem;
+  line-height: 1.55;
+}
+.tl-ov .tl-meta {
+  margin: 0;
+  gap: 0 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--color-on-night-soft);
+}
+.tl-ov .tl-meta > * + *::before {
+  margin-inline-end: 0.5rem;
+  color: inherit;
+}
+.tl-ov .tl-meta time {
+  font-weight: 400;
+  color: inherit;
+}
+.tl-ov .tl-title a:focus-visible {
+  outline: 2px solid var(--color-lantern);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+/* An open player: nothing over it. */
+.tl-mwrap:has(.facade-iframe) .tl-ov {
+  display: none;
+}
+.tl-mwrap .facade-badge {
+  inset-block-end: 0.5rem;
+  inset-inline-end: 0.5rem;
+  font-size: 0.75rem;
+}
+.tl-mwrap .facade-play {
+  background: none;
+}
+.tl-mwrap .facade-play svg {
+  width: 3.5rem;
+  height: 3.5rem;
+  opacity: max(var(--tl-ov-shown), var(--tl-play-rest, 0));
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+.tl-mwrap .facade-play:focus-visible svg {
+  opacity: 1;
+}
+@media (hover: none) {
+  .tl-bare { --tl-play-rest: 0.9; }
+}
+@media (hover: hover) {
+  .tl-bare:hover { --tl-ov-shown: 1; }
+}
+.tl-bare:focus-within,
+.tl-bare:has([data-open]) {
+  --tl-ov-shown: 1;
+}
+
+/* the card strip on the home timeline (CardViewer `inline`, size timeline, .ci-bare) */
+.cards-inline.ci-timeline.ci-bare {
+  width: min(100%, 34rem);
+}
+.ci-bare .ci-stage {
+  position: relative;
+  border-radius: var(--radius-media);
+  overflow: hidden;
+}
+.ci-bare .ci-track {
+  border-radius: 0;
+  box-shadow: none;
+}
+.ci-bare .ci-track:focus-visible {
+  outline-offset: -3px;
+}
+.ci-bare .ci-nav {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  padding-inline: 0.5rem;
+  margin: 0;
+  pointer-events: none;
+  opacity: var(--tl-ov-shown);
+  transition: opacity 160ms ease;
+}
+.ci-bare .ci-nav .cv-step {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  background: color-mix(in srgb, var(--color-night-deep) 72%, transparent);
+  color: var(--color-paper);
+  pointer-events: auto;
+  backdrop-filter: blur(4px);
+}
+.ci-bare .ci-nav .cv-step:hover {
+  background: var(--color-night-deep);
+}
+.ci-bare .ci-nav .cv-step:focus-visible {
+  outline: 2px solid var(--color-lantern);
+  outline-offset: 2px;
+}
+.ci-bare .ci-nav .cv-step:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+.ci-bare .ci-nav .cv-step svg {
+  width: 1rem;
+  height: 1rem;
+}
+/* The position ("2 / 5") rides in the scrim's top corner. */
+.ci-bare .cv-pos {
+  position: absolute;
+  inset-block-start: 0.875rem;
+  inset-inline-end: 0.75rem;
+}
+.ci-bare .cv-pos span[data-ci-pos] {
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-night-deep) 72%, transparent);
+  color: var(--color-paper);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.ci-bare .tl-ov {
+  padding-inline-end: 4.5rem;
+}
+/* thin segments along the bottom edge: which card, how many (decorative; the live text says it) */
+.ci-segs {
+  position: absolute;
+  z-index: 3;
+  inset-block-end: 0.5rem;
+  inset-inline: 0.75rem;
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+  opacity: max(var(--tl-ov-shown), 0.85);
+}
+.ci-segs li {
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-paper) 40%, transparent);
+  box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--color-night-deep) 50%, transparent);
+  transition: background-color 160ms ease;
+}
+.ci-segs li.is-on {
+  background: var(--color-lantern);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tl-ov,
+  .ci-bare .ci-nav,
+  .ci-segs li,
+  .tl-mwrap .facade-play svg {
+    transition: none;
+  }
+}
+
+/* an article: byline (avatar, name, time), cover, title, excerpt, as text on the page */
+.tl-byline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-soft);
+}
+.tl-byline .tl-author {
+  font-weight: 700;
+  color: var(--text);
+}
+.tl-byline .tl-author a {
+  color: inherit;
+  text-decoration: none;
+}
+.tl-byline .tl-author a:hover {
+  text-decoration: underline;
+}
+.tl-byline time::before {
+  content: '·';
+  margin-inline-end: 0.5rem;
+}
+.tl-avatar {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--color-night);
 }
 
 /* a channel entry (docs/specs/WWW-PAGES.md D7): avatar, name, @handle, latest videos, visit */

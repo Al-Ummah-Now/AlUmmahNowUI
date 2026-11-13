@@ -23,6 +23,8 @@ type CardSlide = Pick<Slide, 'image' | 'heading' | 'body' | 'position'>;
  * flows in the page's direction, so in Arabic the next card is to the left. src/scripts/cards.ts
  * adds Next/Back buttons, arrow keys, Home/End and the "Card 3 of 8" live text. `more` > 0 (the
  * list carries at most 10 cards) ends the strip with a "See all N cards" frame linking to the post.
+ * On the home timeline (`size: 'timeline'`) the strip is the whole post: the `overlay` slot (title,
+ * author, time) and the pager (small side arrows, position, thin segments) are drawn over the cards.
  */
 interface Inline { href: string; uid: string; total: number; more: number; priority: boolean; size: 'list' | 'timeline' }
 interface Props { slides: CardSlide[]; title: string; contentLocale: Locale; locale: Locale; initial?: number; pathname?: string; cmsOrigin: string; inline?: Inline }
@@ -32,10 +34,13 @@ const total = slides.length;
 // One frame for the whole post (4:5, or square for square cards); an image of another shape shows whole.
 const frame = cardFrame(slides);
 const imgClass = (s: CardSlide) => (cardFit(s.image, frame) === 'contain' ? 'cv-img cv-contain' : 'cv-img');
-const INLINE_SIZES = { list: '(min-width: 44rem) 26rem, calc(100vw - 2rem)', timeline: '(min-width: 44rem) 22rem, calc(100vw - 4.5rem)' };
+const INLINE_SIZES = { list: '(min-width: 44rem) 26rem, calc(100vw - 2rem)', timeline: '(min-width: 44rem) 34rem, calc(100vw - 2rem)' };
 const inlinePic = (s: CardSlide, i: number) =>
   pictureHtml(s.image, cmsOrigin, { sizes: INLINE_SIZES[inline?.size ?? 'list'], priority: !!inline?.priority && i === 0, className: imgClass(s) });
 const shown = inline ? inline.total : total;
+// The home timeline shows the cards alone: title, pager and position sit over them (shown on hover,
+// focus or a tap), from the `overlay` slot and the controls below; a list page keeps its count line.
+const bare = inline?.size === 'timeline';
 const frames = inline ? slides.length + (inline.more > 0 ? 1 : 0) : 0;
 const near = new Set([initial, ...neighbours(initial, total)]);
 const SLIDE_SIZES = '(min-width: 44rem) 36rem, calc(100vw - 2rem)';
@@ -49,7 +54,7 @@ const showDots = total > 1 && total <= 16;
 ---
 {inline ? (
 <section
-  class:list={['cards-inline', `ci-${inline.size}`, `cv-${frame}`]}
+  class:list={['cards-inline', `ci-${inline.size}`, `cv-${frame}`, bare && 'ci-bare']}
   data-cards-inline
   data-count={frames}
   data-total={shown}
@@ -60,7 +65,8 @@ const showDots = total > 1 && total <= 16;
   data-t-position={t.position}
   data-t-position-long={t.positionLong}
 >
-  <p class="cv-count ci-count"><Icon name="cards" class="cv-count-icon" />{slideCountLabel(t, shown)}</p>
+  <p class:list={['cv-count ci-count', bare && 'visually-hidden']}>{!bare && <Icon name="cards" class="cv-count-icon" />}{slideCountLabel(t, shown)}</p>
+  <div class="ci-stage">
   <div class="ci-track" tabindex="0" aria-label={t.swipeHint} data-track>
     {slides.map((s, i) => (
       <div class="ci-slide" id={`${inline.uid}-${i + 1}`} role="group" aria-roledescription="slide" aria-label={fmt(t.positionLong, { n: i + 1, total: shown })} data-slide={i}>
@@ -86,6 +92,7 @@ const showDots = total > 1 && total <= 16;
       </div>
     )}
   </div>
+  {bare && <slot name="overlay" />}
   {frames > 1 && (
     <div class="ci-nav">
       <button type="button" class="cv-step ci-back" data-step="-1" aria-label={t.back} disabled><Icon name="chevron" class="flip" /></button>
@@ -93,6 +100,12 @@ const showDots = total > 1 && total <= 16;
       <button type="button" class="cv-step ci-next" data-step="1" aria-label={t.next}><Icon name="chevron" /></button>
     </div>
   )}
+  {bare && frames > 1 && (
+    <ol class="ci-segs" aria-hidden="true">
+      {Array.from({ length: frames }, (_, i) => <li data-ci-seg={i} class:list={[i === 0 && 'is-on']} />)}
+    </ol>
+  )}
+  </div>
 </section>
 ) : (
 <section

@@ -275,6 +275,7 @@ function initInline(root: HTMLElement) {
   const live = root.querySelector<HTMLElement>('[data-ci-live]');
   const back = root.querySelector<HTMLButtonElement>('.ci-back');
   const next = root.querySelector<HTMLButtonElement>('.ci-next');
+  const segs = [...root.querySelectorAll<HTMLElement>('[data-ci-seg]')];
   let current = -1;
   let announce = false;
 
@@ -290,6 +291,7 @@ function initInline(root: HTMLElement) {
     if (pos) pos.textContent = more ? t.tMore! : fill(t.tPosition ?? '{n} / {total}', vars);
     if (live && announce) live.textContent = more ? t.tMore! : fill(t.tPositionLong ?? '{n} / {total}', vars);
     const focused = document.activeElement;
+    segs.forEach((seg, n) => seg.classList.toggle('is-on', n === i));
     if (back) back.disabled = i === 0;
     if (next) next.disabled = i === count - 1;
     // A button that just became disabled drops focus: keep it in the viewer.
@@ -341,6 +343,22 @@ function initInline(root: HTMLElement) {
     e.preventDefault();
     go(s === 'first' ? 0 : s === 'last' ? count - 1 : current + s);
   });
+  // The home timeline's bare strip: on touch (no hover), a tap on a card shows or hides its title and
+  // pager; a swipe does not (it moved), and taps on the title link or the arrows act as themselves.
+  if (root.classList.contains('ci-bare')) {
+    let down: { x: number; y: number } | null = null;
+    track.addEventListener('pointerdown', (e) => {
+      down = e.pointerType === 'mouse' ? null : { x: e.clientX, y: e.clientY };
+    });
+    track.addEventListener('pointerup', (e) => {
+      if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 10) return;
+      down = null;
+      root.toggleAttribute('data-open');
+    });
+    root.addEventListener('focusout', (e) => {
+      if (!root.contains(e.relatedTarget as Node | null)) root.removeAttribute('data-open');
+    });
+  }
   // The width changes on rotation and resize: stay on the same card.
   new ResizeObserver(() => {
     if (current > 0) track.scrollTo({ left: stripOffset(current, track.clientWidth, dirOf()) });
