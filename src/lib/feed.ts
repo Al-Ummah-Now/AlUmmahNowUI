@@ -17,7 +17,7 @@
  * the head with the minimum (30 s), the same order as the HTML edge cache.
  */
 import type { KVNamespace } from './cf';
-import type { CuratedSnapshot, MediaRef } from './cms-types';
+import type { CuratedSnapshot, MediaRef, PostAuthor } from './cms-types';
 import type { Locale } from './locale';
 
 export const PAGE_SIZE = 20;
@@ -40,6 +40,8 @@ export interface FeedPost {
   title: string;
   excerpt: string | null;
   cover: MediaRef | null;
+  /** A scholar's post: their name and page (CMS PostSummary `author`); null or absent for staff posts. */
+  author?: PostAuthor | null;
   author_name: string | null;
   tags: string[];
   published_at: string;
