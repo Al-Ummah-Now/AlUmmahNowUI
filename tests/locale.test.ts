@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { articlesPath, localeFromPath, negotiateLocale, swapLocale } from '../src/lib/locale';
+import { articlesPath, localeFromPath, negotiateLocale, statusPageUrl, swapLocale } from '../src/lib/locale';
 import { navHref } from '../src/lib/context';
 import { rootRedirect } from '../src/lib/edge';
 
@@ -71,5 +71,14 @@ describe('News → Articles paths', () => {
     expect(navHref('/articles/', 'en')).toBe('/en/articles/');
     expect(navHref('/about/', 'en')).toBe('/en/about/');
     expect(navHref('https://example.org/news/', 'en')).toBe('https://example.org/news/');
+  });
+});
+
+describe('statusPageUrl', () => {
+  it('links the status page of the env serving the request', () => {
+    expect(statusPageUrl('www.alummahnow.net', 'en')).toBe('https://status.alummahnow.net/');
+    expect(statusPageUrl('www.qa.alummahnow.net', 'ar')).toBe('https://status.qa.alummahnow.net/ar');
+    expect(statusPageUrl('www.stage.alummahnow.net', 'en')).toBe('https://status.stage.alummahnow.net/');
+    expect(statusPageUrl('localhost', 'en')).toBe('https://status.alummahnow.net/');
   });
 });
