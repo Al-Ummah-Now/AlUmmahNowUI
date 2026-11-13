@@ -22,7 +22,9 @@
     "release:rollback": "node --experimental-strip-types --no-warnings scripts/release/rollback.ts",
     "cf-typegen": "wrangler types --env-file .dev.vars.example --strict-vars=false",
     "sync:fanous": "node --experimental-strip-types --no-warnings scripts/sync-fanous.ts",
-    "check:fanous": "node --experimental-strip-types --no-warnings scripts/sync-fanous.ts --check"
+    "check:fanous": "node --experimental-strip-types --no-warnings scripts/sync-fanous.ts --check",
+    "sync:posts": "node --experimental-strip-types --no-warnings scripts/sync-posts.ts",
+    "check:posts": "node --experimental-strip-types --no-warnings scripts/sync-posts.ts --check"
   },
   "dependencies": {
     "@astrojs/cloudflare": "12.6.13",

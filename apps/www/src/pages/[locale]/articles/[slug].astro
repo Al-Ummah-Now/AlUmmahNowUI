@@ -81,7 +81,7 @@ const jsonLd = post
   contentLocale={post?.locale}
 >
   {post && body ? (
-    <PostArticle post={post} html={body.html} locale={locale} slide={slide} pathname={Astro.url.pathname} cmsOrigin={new URL(cfg.cmsPublicUrl).origin} />
+    <PostArticle post={post} html={body.html} locale={locale} slide={slide} pathname={Astro.url.pathname} cmsOrigin={new URL(cfg.cmsPublicUrl).origin} videosWebUrl={cfg.videosWebUrl} />
   ) : (
     <ErrorView locale={locale} kind="unavailable" />
   )}

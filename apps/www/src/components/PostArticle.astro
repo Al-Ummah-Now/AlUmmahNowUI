@@ -6,15 +6,23 @@ import { fmt, formatDate, strings } from '../i18n';
 import type { Post } from '../lib/cms-types';
 import { dir, type Locale } from '../lib/locale';
 import { pictureHtml, SIZES } from '../lib/picture';
+import { isArticleKind } from '../lib/post-kinds';
+import PostEngagement from './posts/PostEngagement.astro';
+import PostKindBody from './posts/PostKindBody.astro';
 
-/** `slide`: the card shown first (0-based, from `?slide=`); `pathname`: the post's URL (card links). */
-interface Props { post: Post; html: string; locale: Locale; cmsOrigin: string; slide?: number; pathname?: string }
-const { post, html, locale, cmsOrigin, slide = 0, pathname = Astro.url.pathname } = Astro.props;
+/**
+ * `slide`: the card shown first (0-based, from `?slide=`); `pathname`: the post's URL (card links).
+ * A scholar post (`post.ref`, AlUmmahNowCMS docs/SCHOLARS.md §7) of a community kind renders with
+ * PostKindBody, and every scholar post ends with its likes, comments and "Join the discussion".
+ */
+interface Props { post: Post; html: string; locale: Locale; cmsOrigin: string; slide?: number; pathname?: string; videosWebUrl?: string }
+const { post, html, locale, cmsOrigin, slide = 0, pathname = Astro.url.pathname, videosWebUrl = '' } = Astro.props;
+const communityKind = !isArticleKind(post.kind);
 const slides = post.kind === 'cards' && Array.isArray(post.slides) ? post.slides : [];
 const isCards = slides.length > 0;
 // The cover is the article's LCP image: responsive, sized, eager and high priority (CMS-10).
 // A card post's first card is its image, so its cover isn't shown above it.
-const coverHtml = post.cover && !isCards ? pictureHtml(post.cover, cmsOrigin, { sizes: SIZES.cover, priority: true, className: 'cover' }) : null;
+const coverHtml = post.cover && !isCards && !communityKind ? pictureHtml(post.cover, cmsOrigin, { sizes: SIZES.cover, priority: true, className: 'cover' }) : null;
 const t = strings(locale);
 ---
 <article>
@@ -22,7 +30,7 @@ const t = strings(locale);
     <div class="wrap">
       <p><a class="more-link" href={`/${locale}/articles/`}><Icon name="chevron" class="flip" />{t.articles.backToArticles}</a></p>
       <h1>{post.title}</h1>
-      {post.excerpt && <p class="lede">{post.excerpt}</p>}
+      {post.excerpt && !communityKind && <p class="lede">{post.excerpt}</p>}
       <p class="byline">
         <time datetime={post.published_at}>{formatDate(post.published_at, post.locale)}</time>
         {post.author ? (
@@ -36,7 +44,9 @@ const t = strings(locale);
   </header>
   <div class="section">
     <div class="wrap">
-      {isCards ? (
+      {communityKind ? (
+        <PostKindBody post={post} locale={locale} cmsOrigin={cmsOrigin} videosWebUrl={videosWebUrl} />
+      ) : isCards ? (
         <CardViewer slides={slides} title={post.title} contentLocale={post.locale} locale={locale} initial={Math.min(slide, slides.length - 1)} pathname={pathname} cmsOrigin={cmsOrigin} />
       ) : (
         <div class="prose" lang={post.locale} dir={dir(post.locale)} set:html={html} />
@@ -46,6 +56,9 @@ const t = strings(locale);
           <h2 class="visually-hidden">{t.articles.tags}</h2>
           <ul class="tags">{post.tags.map((tag) => <li>{tag}</li>)}</ul>
         </div>
+      )}
+      {post.ref && (
+        <PostEngagement postRef={post.ref} locale={locale} likes={post.community?.likes ?? null} comments={post.community?.comments ?? null} commentsEnabled={post.community?.commentsEnabled !== false} />
       )}
     </div>
   </div>

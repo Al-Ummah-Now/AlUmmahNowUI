@@ -91,13 +91,56 @@ export interface ListWire {
 /** A scholar's post (AlUmmahNowCMS docs/SCHOLARS.md): their name and page. Null for staff posts. */
 export interface PostAuthor { slug: string; name: string; avatar: MediaRef | null }
 
+/** Every post kind (AlUmmahNow post-schema.ts, vendored as src/lib/post-schema.generated.ts). */
+export type PostKind = 'article' | 'cards' | 'text' | 'image' | 'poll' | 'quiz' | 'video' | 'gif' | 'link';
+
+/**
+ * A scholar post reference (AlUmmahNowCMS docs/SCHOLARS.md §7): the post is a community post on the
+ * scholar's channel, where its likes, votes and comments live (`videos_url`).
+ */
+export interface PostRef { post_id: string; channel_id: string; videos_url: string }
+
+/** A reference's kind-specific summary (CMS PostSummary `v2`). */
+export interface PostV2Summary {
+  images: MediaRef[];
+  image_count: number;
+  video_id: string | null;
+  link: { url: string; title: string | null; description: string | null; image: MediaRef | null } | null;
+  poll: { question: string; options: { id: string; text: string }[] } | null;
+  quiz: { question: string; options: { id: string; text: string }[] } | null;
+  gif: MediaRef | null;
+  text: string | null;
+}
+
+/** The community post's public fields (CMS Post `community`), read live by the CMS. */
+export interface CommunityPostData {
+  id: string;
+  type: PostKind;
+  content?: string;
+  images?: { url: string; width?: number; height?: number; caption?: string }[];
+  videoId?: string;
+  gif?: { url: string; width?: number; height?: number };
+  poll?: { question: string; options: { id: string; text?: string; votes?: number; percentage?: number }[]; totalVotes?: number; votingEndsAt?: string; multipleChoice?: boolean };
+  quiz?: { question: string; options: { id: string; text: string }[] };
+  link?: { url: string; title: string | null; description: string | null; image: { url: string; alt: string | null; width: number | null; height: number | null } | null };
+  likes?: number;
+  comments?: number;
+  commentsEnabled?: boolean;
+  channelName?: string;
+  channelNameLocalized?: Partial<Record<Locale, string>>;
+}
+
 export interface PostSummary {
   author?: PostAuthor | null;
   slug: string; locale: Locale; title: string; excerpt: string | null;
   cover: MediaRef | null; author_name: string | null; tags: string[];
   published_at: string; updated_at: string;
-  /** Additive (card posts): absent = article. */
-  kind?: 'article' | 'cards';
+  /** Additive (card posts; scholar post references: any PostV2 kind): absent = article. */
+  kind?: PostKind;
+  /** Additive: a scholar post reference (null for staff posts; absent on older CMS builds). */
+  ref?: PostRef | null;
+  /** Additive: a reference's kind-specific summary. */
+  v2?: PostV2Summary | null;
   slide_count?: number;
   /** A card post's face: its first slide. */
   first_slide?: Slide | null;
@@ -110,6 +153,8 @@ export interface PostSummary {
 export interface Post extends PostSummary {
   body: string; seo_title: string | null; seo_description: string | null; alternates: Alternate[];
   images?: MediaRef[];
+  /** Additive: a reference's community post (null when the CMS could not read it: render from v2). */
+  community?: CommunityPostData | null;
 }
 
 /** A card post slide: an image with a heading and short text drawn on it. */
