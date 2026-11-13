@@ -394,3 +394,48 @@ html[data-signed-in] .sign-in {
     animation: none !important;
   }
 }
+
+/* Site pages (SS16): blocks */
+.site-blocks {
+  display: grid;
+  gap: 1.5rem;
+}
+.block-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--fanous-radius-md);
+}
+.block-image figcaption {
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  margin-block-start: 0.5rem;
+}
+.block-quote {
+  margin: 0;
+  padding-inline-start: 1rem;
+  border-inline-start: 4px solid var(--line);
+}
+.block-quote footer {
+  color: var(--text-soft);
+}
+.block-divider {
+  border: 0;
+  border-block-start: 1px solid var(--line);
+  margin: 0;
+}
+.button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 1.25rem;
+  border-radius: var(--fanous-radius-md);
+  background: var(--button-bg);
+  color: var(--button-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+.button:hover,
+.button:focus-visible {
+  filter: brightness(1.08);
+}
