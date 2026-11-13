@@ -3,7 +3,9 @@
  * so an image either renders or is dropped; it never trips the CSP).
  * Video thumbnails come from the videos platform's CDNs.
  */
-export const VIDEO_IMAGE_HOSTS = ['images.alummahnow.net', '*.b-cdn.net'] as const;
+// media.* are the platform's own R2 media domains: the play API answers posters (thumb.jpg) there
+// once a video has R2 renditions (AlUmmahNow r2-delivery); without them the browser blocks the poster.
+export const VIDEO_IMAGE_HOSTS = ['images.alummahnow.net', '*.b-cdn.net', 'media.alummahnow.net', 'media.stage.alummahnow.net', 'media.qa.alummahnow.net'] as const;
 
 /**
  * Hosts the timeline's video files come from (CSP media-src): the videos platform's public play API
