@@ -25,7 +25,8 @@ domains only (`workers_dev: false`). `npm run check:config` checks the file agai
 Bindings per env: `CMS` (service binding to the env's CMS Worker), `CONTENT_SNAPSHOT` (KV,
 last-known-good CMS JSON, written only by the `*/5 * * * *` cron), `FEED` (KV, the home timeline,
 written only by the CMS feed job; www only reads it), `ASSETS`, `CF_VERSION_METADATA`. Vars: `APP_ENV`, `SITE_URL`,
-`AUTH_URL`, `WWW_CLIENT_ID`, `VIDEOS_WEB_URL`, `VIDEOS_API_URL`, `PROFILE_URL`, `CMS_PUBLIC_URL`.
+`AUTH_URL`, `WWW_CLIENT_ID`, `VIDEOS_WEB_URL`, `VIDEOS_API_URL`, `PROFILE_URL`, `CMS_PUBLIC_URL`,
+`ADMIN_API_URL` (the videos admin API, read for the site theme).
 
 ### Secrets
 
@@ -80,6 +81,16 @@ every QA deploy and every promote.
   article components and layout as the live page, plus a "Preview — not published" banner.
   Responses are `private, no-store, no-transform` (no edge cache, no analytics beacon injection),
   `noindex`, `Referrer-Policy: no-referrer`; broken, expired or deleted links get friendly pages.
+- **Site theme** (`src/lib/site-theme.ts`, UI#54): www follows the theme the admin picks for the
+  whole site (videos admin → Site theme), one of the four built-in Fanous themes (Fawanees,
+  Lantern, Zujaj, Nahas; `src/lib/site-themes.generated.ts`, synced from AlUmmahNow by
+  `scripts/sync-fanous.ts`). The Worker reads `GET <ADMIN_API_URL>/public/site-theme`, cached per
+  isolate for 30 s with a background refresh, and the server renders it as `<html data-theme>`, so
+  the first paint is right. The theme is part of the HTML cache key, so a change reaches every
+  page within about a minute with no deploy. Any failure, or a custom theme from the admin's theme
+  builder, renders the default (Fawanees) and that page is not cached. Light / Dark / System is
+  separate: each visitor's choice in localStorage (`src/lib/theme-mode.ts`). On QA, stage and local,
+  `?theme=<id>` previews a built-in theme for one request.
 - **Edge** (`src/worker.ts`): apex → www 301, `/` → `/en/` or `/ar/` (cookie, then
   `Accept-Language`), CSP without `unsafe-inline`, HSTS, `frame-ancestors 'none'`, and
   `X-Robots-Tag: noindex` off production.
@@ -88,10 +99,14 @@ every QA deploy and every promote.
 src/
   worker.ts            edge wrapper around Astro
   pages/               [locale]/ (home, articles, videos, CMS pages, rss), auth/, healthz, sitemap, robots, 404, 500
-  lib/                 cms (fallback chain), videos, embeds, markdown, auth, session, edge, seo
+  lib/                 server-side modules: cms + snapshot-writer (fallback chain), feed + timeline,
+                       blocks, cards, list-page, body + markdown, picture + images, videos + embeds
+                       + facade, search/, preview, auth + auth-routes + session + account-sync,
+                       site-theme + theme-mode, edge, seo, env, locale
   i18n/                en.ts, ar.ts (same keys, tested)
   content/fallback/    built-in content
-  scripts/             the only client JS: account menu, language cookie, video facade
+  scripts/             the only client JS: site (account menu, language cookie, mode menu), theme,
+                       facade, search-combobox, timeline, cards, confirm
 scripts/               dev-vars, config check, secrets manifest, release/ (promote, smoke, rollback)
 e2e/                   Playwright (render, routing, sign-in redirect, axe, screenshots)
 ```
