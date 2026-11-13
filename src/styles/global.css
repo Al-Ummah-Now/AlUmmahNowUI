@@ -2239,6 +2239,10 @@ html[data-js] .ci-deck .tl-ov {
 /* ---------- search boxes (src/components/SearchBox.astro) ---------- */
 .search {
   position: relative;
+  /* A flex item (the header row) defaults to min-width: auto, i.e. its content's minimum: the
+     input's intrinsic width (20 characters in the page font + padding). With Arabic font metrics on
+     Linux that is ~319px, wider than a 320px phone's row, and the page scrolled sideways. */
+  min-inline-size: 0;
 }
 .search-header {
   flex: 1 1 12rem;
@@ -2264,6 +2268,8 @@ html[data-js] .ci-deck .tl-ov {
 }
 .search-field input {
   flex: 1;
+  /* never sized by its intrinsic 20-character width (see .search) */
+  inline-size: 0;
   min-inline-size: 0;
   min-block-size: 2.75rem;
   padding-block: 0.375rem;
