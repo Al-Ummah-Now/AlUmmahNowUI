@@ -20,7 +20,8 @@ import type { FeedItem } from '../lib/feed';
 import { relativeTime } from '../lib/feed';
 import { dir, type Locale } from '../lib/locale';
 import { pictureHtml } from '../lib/picture';
-import { absoluteTime, channelCard, feedVideoItem } from '../lib/timeline';
+import { absoluteTime, channelCard, feedVideoItem, isShort } from '../lib/timeline';
+import Icon from './Icon.astro';
 
 /** `titleLevel`: the card title's heading level (4 under the home's h2/h3 days; 3 on a list page). */
 interface Props { item: FeedItem; locale: Locale; cmsOrigin: string; videosWebUrl: string; priority: boolean; now: Date; titleLevel?: 3 | 4 }
@@ -57,6 +58,9 @@ const mediaFirst = !!(cards && href) || !!entryHtml || facades.length > 0;
 const firstVideo = videoEntry ?? (videos[0] ? feedVideoItem(videos[0], locale, tl.video, now.getTime()) : null);
 const shape = facades.length > 1 ? 'ar-16x9' : frameShape(firstVideo?.width, firstVideo?.height);
 const channelName = videoEntry?.channelName ?? null;
+// One video in the post: hover preview (muted, with play/sound/progress) and, for a Short, the Shorts viewer
+const previewable = facades.length <= 1 && !!firstVideo && firstVideo.kind === 'video';
+const short = previewable && isShort(shape, firstVideo?.durationSeconds);
 const author = post?.author ?? null;
 const avatarHtml = author?.avatar ? pictureHtml(author.avatar, cmsOrigin, { sizes: '2rem', priority: false, className: 'tl-avatar' }) : null;
 const byHref = author ? `/${locale}/scholars/${encodeURIComponent(author.slug)}/` : null;
@@ -118,11 +122,12 @@ const siteName = t.meta.siteName;
           <p class="tl-meta">
             {post?.author_name && <span class="tl-author">{post.author_name}</span>}
             <time datetime={item.date} data-rel title={absoluteTime(item.date, locale)}>{relativeTime(item.date, now, locale)}</time>
+            <span class="visually-hidden" data-abs>{absoluteTime(item.date, locale)}</span>
           </p>
         </div>
       </CardViewer>
     ) : mediaFirst ? (
-      <div class:list={['tl-mwrap', `tl-${shape}`]}>
+      <div class:list={['tl-mwrap', `tl-${shape}`]} data-video-id={previewable ? firstVideo!.id : undefined} data-short={short ? '' : undefined}>
         {entryHtml && <Fragment set:html={entryHtml} />}
         {facades.length > 0 && (
           <div class:list={['tl-videos', facades.length > 1 && 'tl-videos-many']}>
@@ -137,9 +142,17 @@ const siteName = t.meta.siteName;
             {channelName && <span class="tl-author" dir="auto">{channelName}</span>}
             {!channelName && post?.author_name && <span class="tl-author">{post.author_name}</span>}
             <time datetime={item.date} data-rel title={absoluteTime(item.date, locale)}>{relativeTime(item.date, now, locale)}</time>
+            <span class="visually-hidden" data-abs>{absoluteTime(item.date, locale)}</span>
           </p>
           {post?.excerpt && <p class="visually-hidden" lang={contentLocale}>{post.excerpt}</p>}
         </div>
+        {previewable && (
+          <div class="tl-vctl" data-vctl hidden>
+            <button type="button" class="tl-vbtn" data-vplay aria-label={tl.previewPause}><Icon name="pause" /></button>
+            <button type="button" class="tl-vbtn tl-vmute" data-vmute aria-pressed="false" aria-label={tl.unmute}><Icon name="sound-off" /><span>{tl.soundOff}</span></button>
+            <span class="tl-vprog" aria-hidden="true"><i data-vprog></i></span>
+          </div>
+        )}
       </div>
     ) : (
       <>
@@ -147,6 +160,7 @@ const siteName = t.meta.siteName;
           {avatarHtml ? <Fragment set:html={avatarHtml} /> : <img class="tl-avatar" src="/brand/logo-192.webp" alt="" width="32" height="32" loading="lazy" decoding="async" />}
           <span class="tl-author">{byHref ? <a href={byHref}>{post?.author_name}</a> : (post?.author_name ?? siteName)}</span>
           <time datetime={item.date} data-rel title={absoluteTime(item.date, locale)}>{relativeTime(item.date, now, locale)}</time>
+          <span class="visually-hidden" data-abs>{absoluteTime(item.date, locale)}</span>
         </p>
         {coverHtml && href && (
           <a class="tl-media" href={href} tabindex="-1" aria-hidden="true"><Fragment set:html={coverHtml} /></a>

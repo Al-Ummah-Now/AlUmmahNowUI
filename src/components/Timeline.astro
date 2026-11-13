@@ -14,6 +14,7 @@
 import FeedCard from './FeedCard.astro';
 import { strings } from '../i18n';
 import { dayLabel, groupByDay, type FeedItem } from '../lib/feed';
+import { playApiBase } from '../lib/timeline';
 import type { Locale } from '../lib/locale';
 
 interface Props {
@@ -23,13 +24,15 @@ interface Props {
   nextHref: string | null;
   cmsOrigin: string;
   videosWebUrl: string;
+  /** The videos platform's API: hover previews and the Shorts viewer (src/scripts/timeline-media.ts). */
+  videosApiUrl?: string;
   /** First page: the first image is the LCP candidate (eager); later pages are all lazy. */
   first: boolean;
   now: Date;
   paged?: boolean;
   dayLevel?: 2 | 3;
 }
-const { locale, pinned, items, nextHref, cmsOrigin, videosWebUrl, first, now, paged = false, dayLevel = 3 } = Astro.props;
+const { locale, pinned, items, nextHref, cmsOrigin, videosWebUrl, videosApiUrl, first, now, paged = false, dayLevel = 3 } = Astro.props;
 const D = `h${dayLevel}` as 'h2' | 'h3';
 const titleLevel = (dayLevel + 1) as 3 | 4;
 const t = strings(locale).timeline;
@@ -50,6 +53,21 @@ const firstImage = first ? all.find((it) => (it.post && (it.post.cover || it.pos
   data-t-failed={t.failed}
   data-t-end={t.end}
   data-day-level={dayLevel}
+  data-play-api={videosApiUrl ? playApiBase(videosApiUrl) : undefined}
+  data-t-preview-play={t.previewPlay}
+  data-t-preview-pause={t.previewPause}
+  data-t-sound-off={t.soundOff}
+  data-t-sound-on={t.soundOn}
+  data-t-unmute={t.unmute}
+  data-t-mute={t.mute}
+  data-t-shorts={t.shorts}
+  data-t-close-shorts={t.closeShorts}
+  data-t-next-short={t.nextShort}
+  data-t-prev-short={t.prevShort}
+  data-t-short-position={t.shortPosition}
+  data-t-play-short={t.playShort}
+  data-t-pause-short={t.pauseShort}
+  data-t-watch-on={strings(locale).videos.watchOnVideos}
 >
   {pinned.length > 0 && (
     <section class="tl-day tl-pinned" aria-labelledby="tl-pinned-h">
@@ -80,5 +98,7 @@ const firstImage = first ? all.find((it) => (it.post && (it.post.cover || it.pos
 </div>
 <script>
   import { initTimeline } from '../scripts/timeline';
+  import { initTimelineMedia } from '../scripts/timeline-media';
   initTimeline();
+  initTimelineMedia();
 </script>

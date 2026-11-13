@@ -5,7 +5,7 @@ import { normalizeImageUrl } from '../src/lib/images';
 import { robotsTxt } from '../src/lib/seo';
 import { MemoryCache, waiter } from './helpers';
 
-const prod = config({ APP_ENV: 'production', SITE_URL: 'https://www.alummahnow.net', AUTH_URL: 'https://auth.alummahnow.net', VIDEOS_WEB_URL: 'https://videos.alummahnow.net', CMS_PUBLIC_URL: 'https://cms.alummahnow.net' });
+const prod = config({ APP_ENV: 'production', SITE_URL: 'https://www.alummahnow.net', AUTH_URL: 'https://auth.alummahnow.net', VIDEOS_WEB_URL: 'https://videos.alummahnow.net', VIDEOS_API_URL: 'https://videos.api.alummahnow.net', CMS_PUBLIC_URL: 'https://cms.alummahnow.net' });
 const qa = config({ APP_ENV: 'qa', SITE_URL: 'https://www.qa.alummahnow.net' });
 
 describe('News → Articles', () => {
@@ -56,7 +56,11 @@ describe('security headers', () => {
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("img-src 'self' data: https://cms.alummahnow.net https://images.alummahnow.net https://*.b-cdn.net");
     expect(csp).toContain("form-action 'self' https://auth.alummahnow.net https://*.alummahnow.net;");
-    expect(csp).toContain("connect-src 'self' https://auth.alummahnow.net https://cms.alummahnow.net https://cloudflareinsights.com");
+    expect(csp).toContain("connect-src 'self' https://auth.alummahnow.net https://cms.alummahnow.net https://videos.api.alummahnow.net https://cloudflareinsights.com");
+  });
+  it('CSP: video files (timeline previews, Shorts viewer) only from the platform media hosts', () => {
+    const csp = contentSecurityPolicy(prod);
+    expect(csp).toContain('media-src https://media.alummahnow.net https://media.stage.alummahnow.net https://media.qa.alummahnow.net https://*.b-cdn.net;');
   });
   it("form-action covers auth's front-channel logout chain (every app's logout, then back to www)", () => {
     expect(formActionSources('https://auth.alummahnow.net')).toEqual(["'self'", 'https://auth.alummahnow.net', 'https://*.alummahnow.net']);

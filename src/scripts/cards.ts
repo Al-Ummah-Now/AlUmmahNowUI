@@ -262,7 +262,137 @@ function buildLightbox(root: HTMLElement, slides: HTMLElement[], onMove: (i: num
  * while focus is in the viewer, the "3 / 8" counter with a polite "Card 3 of 8" announcement, and
  * eager loading of the cards next to the one shown (the rest stay lazy).
  */
+/**
+ * The home timeline's card deck (CardViewer inline, size timeline: .ci-deck). The server sends the
+ * scroll strip; this stacks it: the top card, the next two behind it (data-o 0/1/2), cards already
+ * read thrown off (gone), the rest out of the way (hide). Next/Back buttons, arrow keys in the reading
+ * direction, Home/End, and a swipe or drag (finger or mouse) move it; the position chip, the segments
+ * and the polite "Card 2 of 5" follow. Only the top card is in the accessibility tree and tab order.
+ * Reduced motion: the CSS cross-fades instead of throwing.
+ */
+function initDeck(root: HTMLElement) {
+  const track = root.querySelector<HTMLElement>('[data-track]');
+  const cards = [...root.querySelectorAll<HTMLElement>('.ci-slide')];
+  const count = cards.length;
+  if (!track || !count) return;
+  const t = root.dataset;
+  const total = Number(t.total) || count;
+  const pos = root.querySelector<HTMLElement>('[data-ci-pos]');
+  const live = root.querySelector<HTMLElement>('[data-ci-live]');
+  const back = root.querySelector<HTMLButtonElement>('.ci-back');
+  const next = root.querySelector<HTMLButtonElement>('.ci-next');
+  const segs = [...root.querySelectorAll<HTMLElement>('[data-ci-seg]')];
+  const dirOf = () => viewerDir(track);
+  let current = 0;
+
+  function place(announce: boolean) {
+    root.style.setProperty('--deck-dir', dirOf() === 'rtl' ? '-1' : '1');
+    cards.forEach((card, k) => {
+      const o = k - current;
+      card.dataset.o = o < 0 ? 'gone' : o > 2 ? 'hide' : String(o);
+      const top = o === 0;
+      card.toggleAttribute('inert', !top);
+      if (top) card.removeAttribute('aria-hidden');
+      else card.setAttribute('aria-hidden', 'true');
+    });
+    const more = current === count - 1 && t.tMore;
+    const vars = { n: current + 1, total };
+    if (pos) pos.textContent = more ? t.tMore! : fill(t.tPosition ?? '{n} / {total}', vars);
+    if (live && announce) live.textContent = more ? t.tMore! : fill(t.tPositionLong ?? '{n} / {total}', vars);
+    segs.forEach((seg, n) => seg.classList.toggle('is-on', n === current));
+    const focused = document.activeElement;
+    if (back) back.disabled = current === 0;
+    if (next) next.disabled = current === count - 1;
+    if ((focused === back && back?.disabled) || (focused === next && next?.disabled)) (back?.disabled ? next : back)?.focus();
+  }
+  function go(i: number) {
+    const target = clampSlide(i, count);
+    if (target === current) return;
+    current = target;
+    place(true);
+  }
+
+  root.addEventListener('click', (e) => {
+    const b = (e.target as Element).closest<HTMLButtonElement>('button[data-step]');
+    if (b && !b.disabled) go(current + Number(b.dataset.step));
+  });
+  root.addEventListener('keydown', (e) => {
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+    const target = e.target as Element;
+    if (target !== track && !target.closest('.ci-nav')) return;
+    const s = keyStep(e.key, dirOf());
+    if (s === null) return;
+    e.preventDefault();
+    go(s === 'first' ? 0 : s === 'last' ? count - 1 : current + s);
+  });
+
+  // Drag or swipe the top card: it follows the pointer; let go past a third of its width (or a quick
+  // flick) and it is thrown (Next when moved toward the start of the line, Back the other way).
+  // A tap (no movement) is left to the overlay toggle below; links on a card (See all) still work.
+  let drag: { x: number; y: number; id: number; at: number; card: HTMLElement; dx: number; on: boolean } | null = null;
+  track.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || (e.target as Element).closest('a, button')) return;
+    drag = { x: e.clientX, y: e.clientY, id: e.pointerId, at: e.timeStamp, card: cards[current]!, dx: 0, on: false };
+  });
+  track.addEventListener('pointermove', (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.x;
+    const dy = e.clientY - drag.y;
+    if (!drag.on) {
+      if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) {
+        if (Math.abs(dy) > 12) drag = null; // a vertical scroll
+        return;
+      }
+      drag.on = true;
+      track.setPointerCapture(e.pointerId);
+      track.classList.add('is-dragging');
+      drag.card.classList.add('is-held');
+    }
+    drag.dx = dx;
+    drag.card.style.transform = reduced() ? '' : `translateX(${dx}px) rotate(${dx / 24}deg)`;
+  });
+  const release = (e: PointerEvent) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const { card, dx, on, at } = drag;
+    drag = null;
+    if (!on) return;
+    track.classList.remove('is-dragging');
+    card.classList.remove('is-held');
+    card.style.transform = '';
+    const fast = Math.abs(dx) / Math.max(1, e.timeStamp - at) > 0.5;
+    if (Math.abs(dx) > track.clientWidth / 3 || (fast && Math.abs(dx) > 30)) {
+      const forward = dirOf() === 'rtl' ? dx > 0 : dx < 0;
+      go(current + (forward ? 1 : -1));
+    }
+    draggedAt = performance.now();
+  };
+  // the click that ends a drag must not follow a link (See all) or toggle the overlay
+  let draggedAt = -1e9;
+  const justDragged = () => performance.now() - draggedAt < 400;
+  track.addEventListener('click', (c) => { if (justDragged()) { c.preventDefault(); c.stopPropagation(); } }, true);
+  track.addEventListener('pointerup', release);
+  track.addEventListener('pointercancel', release);
+
+  // On touch, a tap shows or hides the title and pager (as on every bare timeline post).
+  let tap: { x: number; y: number } | null = null;
+  track.addEventListener('pointerdown', (e) => {
+    tap = e.pointerType === 'mouse' ? null : { x: e.clientX, y: e.clientY };
+  });
+  track.addEventListener('pointerup', (e) => {
+    if (!tap || justDragged() || Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 10) return;
+    tap = null;
+    root.toggleAttribute('data-open');
+  });
+  root.addEventListener('focusout', (e) => {
+    if (!root.contains(e.relatedTarget as Node | null)) root.removeAttribute('data-open');
+  });
+
+  place(false);
+  root.dataset.ready = '';
+}
+
 function initInline(root: HTMLElement) {
+  if (root.classList.contains('ci-deck')) return initDeck(root);
   const found = root.querySelector<HTMLElement>('[data-track]');
   const frames = [...root.querySelectorAll<HTMLElement>('.ci-slide')];
   const count = frames.length;
@@ -343,22 +473,6 @@ function initInline(root: HTMLElement) {
     e.preventDefault();
     go(s === 'first' ? 0 : s === 'last' ? count - 1 : current + s);
   });
-  // The home timeline's bare strip: on touch (no hover), a tap on a card shows or hides its title and
-  // pager; a swipe does not (it moved), and taps on the title link or the arrows act as themselves.
-  if (root.classList.contains('ci-bare')) {
-    let down: { x: number; y: number } | null = null;
-    track.addEventListener('pointerdown', (e) => {
-      down = e.pointerType === 'mouse' ? null : { x: e.clientX, y: e.clientY };
-    });
-    track.addEventListener('pointerup', (e) => {
-      if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 10) return;
-      down = null;
-      root.toggleAttribute('data-open');
-    });
-    root.addEventListener('focusout', (e) => {
-      if (!root.contains(e.relatedTarget as Node | null)) root.removeAttribute('data-open');
-    });
-  }
   // The width changes on rotation and resize: stay on the same card.
   new ResizeObserver(() => {
     if (current > 0) track.scrollTo({ left: stripOffset(current, track.clientWidth, dirOf()) });
