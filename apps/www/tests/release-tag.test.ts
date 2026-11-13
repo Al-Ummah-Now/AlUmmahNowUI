@@ -127,7 +127,7 @@ describe("release-tag check (CLI)", () => {
 
 describe("release.yml follows the tag model", () => {
   const wf = readFileSync(
-    resolve(ROOT, ".github/workflows/release.yml"),
+    resolve(ROOT, "../../.github/workflows/release.yml"),
     "utf8",
   );
   const job = (name: string) => {

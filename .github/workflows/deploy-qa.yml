@@ -26,6 +26,9 @@ jobs:
   deploy:
     name: Deploy, smoke (QA)
     runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: apps/www
     timeout-minutes: 30
     environment:
       name: qa
@@ -39,6 +42,7 @@ jobs:
           cache: 'npm'
 
       - run: npm ci
+        working-directory: .
 
       - run: npm run build
 
@@ -87,14 +91,14 @@ jobs:
         if: always() && inputs.e2e
         env:
           QA_SEED_PASSWORD: ${{ secrets.QA_SEED_PASSWORD }}
-        run: python3 scripts/scan-artifacts-for-secrets.py --env QA_SEED_PASSWORD --remove e2e-artifacts playwright-report
+        run: python3 ../../scripts/scan-artifacts-for-secrets.py --env QA_SEED_PASSWORD --remove e2e-artifacts playwright-report
 
       - uses: actions/upload-artifact@v4
         if: always() && inputs.e2e
         with:
           name: screenshots-qa
           path: |
-            e2e-artifacts/
-            playwright-report/
+            apps/www/e2e-artifacts/
+            apps/www/playwright-report/
           if-no-files-found: ignore
           retention-days: 14

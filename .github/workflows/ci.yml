@@ -20,6 +20,9 @@ jobs:
   test:
     name: Lint, typecheck, unit, build, E2E (local)
     runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: apps/www
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
@@ -30,6 +33,7 @@ jobs:
           cache: 'npm'
 
       - run: npm ci
+        working-directory: .
 
       - name: Lint
         run: npm run lint
@@ -57,7 +61,7 @@ jobs:
           npx wrangler deploy --dry-run -c wrangler.jsonc --env qa --outdir dist-dry/qa
 
       - name: Artifact secret scanner self-test
-        run: python3 scripts/scan-artifacts-for-secrets.py --self-test
+        run: python3 ../../scripts/scan-artifacts-for-secrets.py --self-test
 
       - name: Install Playwright browsers
         uses: ./.github/actions/playwright-install
@@ -72,14 +76,14 @@ jobs:
       # (Playwright puts typed values in traces and report step titles) or a storage state.
       - name: Keep secrets out of the uploaded E2E output
         if: always()
-        run: python3 scripts/scan-artifacts-for-secrets.py --remove e2e-artifacts playwright-report
+        run: python3 ../../scripts/scan-artifacts-for-secrets.py --remove e2e-artifacts playwright-report
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: screenshots-local
           path: |
-            e2e-artifacts/
-            playwright-report/
+            apps/www/e2e-artifacts/
+            apps/www/playwright-report/
           if-no-files-found: ignore
           retention-days: 14
