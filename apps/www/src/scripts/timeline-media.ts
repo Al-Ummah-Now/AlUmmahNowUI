@@ -9,9 +9,11 @@
  *  - Hover preview: resting the mouse on a video plays it muted; play/pause, sound and progress
  *    controls appear with it. The controls never open the post or the viewer. No preview under
  *    reduced motion, on touch (no hover) or with Save-Data.
- *  - Shorts viewer: one click or tap on a Short opens a full-screen dialog already playing it with
- *    sound; one Short per screen, scroll or swipe up (or ↑ ↓, Page Up/Down) for the next one, from
- *    GET {api}/shorts?after={id}. Esc or Close returns focus to the Short.
+ *  - Shorts play like videos: one click or tap plays the Short inline, vertical, with sound and the
+ *    same controls (owner 2026-11-13). The post's "Open in Shorts" button opens a full-screen
+ *    viewer, carrying on where the inline Short was: one Short per screen, scroll or swipe up (or
+ *    ↑ ↓, Page Up/Down) for the next one, from GET {api}/shorts?after={id}. Esc or Close returns
+ *    focus to the button.
  *
  * Everything is delegated from the timeline root, so posts appended by "Load more" work too.
  */
@@ -256,7 +258,7 @@ function initPreview(root: HTMLElement, api: string) {
       const target = e.target as Element;
       if (target.closest('[data-vctl]')) return;
       const wrap = target.closest('.facade-play')?.closest<HTMLElement>('.tl-mwrap[data-video-id]');
-      if (!wrap || wrap.hasAttribute('data-short')) return;
+      if (!wrap) return;
       clearTimeout(timer);
       if ('inplace' in wrap.dataset) {
         e.preventDefault();
@@ -288,39 +290,34 @@ function initShorts(root: HTMLElement, api: string) {
   const t = root.dataset;
   let dlg: HTMLDialogElement | null = null;
 
-  root.addEventListener(
-    'click',
-    (e) => {
-      const target = e.target as Element;
-      if (target.closest('[data-vctl]')) return; // the preview's controls never open the viewer
-      const play = target.closest<HTMLButtonElement>('.facade-play');
-      const wrap = play?.closest<HTMLElement>('.tl-mwrap[data-short][data-video-id]');
-      if (!play || !wrap || wrap.dataset.viewer === 'off') return;
-      // ours, not the facade's in-place player
-      e.preventDefault();
-      e.stopPropagation();
-      // play data in hand: the viewer opens and plays inside this click, with sound
-      const info = resolved.get(wrap.dataset.videoId!);
-      if (info?.mp4) {
-        wrap.querySelector<HTMLVideoElement>('video.tl-preview')?.pause();
-        new Viewer(t, api, info, play).show();
-        return;
-      }
-      void open(wrap, play);
-    },
-    true,
-  );
-
-  async function open(wrap: HTMLElement, opener: HTMLButtonElement) {
-    wrap.querySelector<HTMLVideoElement>('video.tl-preview')?.pause();
-    const first = await playInfo(api, wrap.dataset.videoId!);
-    if (!first?.mp4) {
-      // no playable file: the facade plays it in place, as before
-      wrap.dataset.viewer = 'off';
-      opener.click();
+  // The post's "Open in Shorts" button (owner 2026-11-13: a click on a Short plays it inline, like
+  // any video; this button opens the full-screen viewer to swipe on). The viewer starts where the
+  // inline Short was, playing with sound inside this click when the play data is in hand.
+  root.addEventListener('click', (e) => {
+    const btn = (e.target as Element).closest<HTMLButtonElement>('[data-shorts-open]');
+    const wrap = btn?.closest<HTMLElement>('.tl-mwrap[data-short][data-video-id]');
+    if (!btn || !wrap) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const inline = wrap.querySelector<HTMLVideoElement>('video.tl-preview');
+    const at = inline && 'inplace' in wrap.dataset && !inline.ended ? inline.currentTime : 0;
+    inline?.pause();
+    const info = resolved.get(wrap.dataset.videoId!);
+    if (info?.mp4) {
+      new Viewer(t, api, info, btn).show(at);
       return;
     }
-    new Viewer(t, api, first as PlayInfo & { mp4: { url: string } }, opener).show();
+    void open(wrap, btn, at);
+  });
+
+  async function open(wrap: HTMLElement, opener: HTMLButtonElement, at: number) {
+    const first = await playInfo(api, wrap.dataset.videoId!);
+    if (!first?.mp4) {
+      // no playable file: the Short plays in place instead (the facade's player)
+      wrap.querySelector<HTMLButtonElement>('.facade-play')?.click();
+      return;
+    }
+    new Viewer(t, api, first as PlayInfo & { mp4: { url: string } }, opener).show(at);
   }
 
   class Viewer {
@@ -512,11 +509,18 @@ function initShorts(root: HTMLElement, api: string) {
       });
     }
 
-    show() {
+    /** `at`: where the first Short starts (seconds), to carry on from the inline player. */
+    show(at = 0) {
       document.body.append(this.el);
       document.documentElement.classList.add('sv-open');
       this.el.showModal();
       this.el.querySelector<HTMLButtonElement>('[data-sv-close]')!.focus();
+      // a position set before the file's metadata arrives is dropped: set it once it has
+      const v0 = this.video(0)!;
+      if (at > 0) {
+        if (v0.readyState >= 1) v0.currentTime = at;
+        else v0.addEventListener('loadedmetadata', () => (v0.currentTime = at), { once: true });
+      }
       this.select(0);
       void this.more();
     }

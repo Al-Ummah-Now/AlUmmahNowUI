@@ -203,6 +203,7 @@ export const ar: Messages = {
     nextShort: 'المقطع القصير التالي',
     prevShort: 'المقطع القصير السابق',
     shortPosition: 'المقطع القصير {n}: {title}',
+    openShorts: 'افتح في المقاطع القصيرة بملء الشاشة',
     playShort: 'تشغيل',
     pauseShort: 'إيقاف مؤقت',
   },

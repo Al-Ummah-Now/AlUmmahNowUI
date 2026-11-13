@@ -147,6 +147,9 @@ const siteName = t.meta.siteName;
           </p>
           {post?.excerpt && <p class="visually-hidden" lang={contentLocale}>{post.excerpt}</p>}
         </div>
+        {short && (
+          <button type="button" class="tl-sexpand" data-shorts-open aria-label={tl.openShorts} title={tl.openShorts}><Icon name="expand" /></button>
+        )}
         {previewable && (
           <div class="tl-vctl" data-vctl hidden>
             <button type="button" class="tl-vbtn" data-vplay aria-label={tl.previewPause}><Icon name="pause" /></button>

@@ -202,6 +202,7 @@ export const en = {
     nextShort: 'Next Short',
     prevShort: 'Previous Short',
     shortPosition: 'Short {n}: {title}',
+    openShorts: 'Open in Shorts, full screen',
     playShort: 'Play',
     pauseShort: 'Pause',
   },
