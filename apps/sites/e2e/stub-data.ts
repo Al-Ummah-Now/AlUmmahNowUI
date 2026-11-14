@@ -70,7 +70,13 @@ export const VIDEOS = [
   { id: 'vid-e2e-2', title: 'Second video', channelId: CHANNEL_ID, isPublic: true, duration: 3600, dateCreated: '2026-11-02T10:00:00Z' },
 ];
 
+export const SHORTS = [
+  { id: 'short-e2e-1', title: 'A Short', channelId: CHANNEL_ID, isPublic: true, format: 'short', duration: 40, dateCreated: '2026-11-03T10:00:00Z' },
+];
+
 export const POSTS = [
   { id: 'post-e2e-1', channelId: CHANNEL_ID, type: 'text', content: 'A first post from the scholar.\n\nWith a second paragraph.', likes: 3, comments: 1, createdAt: '2026-11-10T10:00:00Z', status: 'published', visibility: 'public' },
   { id: 'post-e2e-2', channelId: CHANNEL_ID, type: 'poll', content: 'Which topic next?', poll: { options: [{ id: 'a', text: 'Fiqh' }, { id: 'b', text: 'Seerah' }] }, likes: 0, comments: 0, createdAt: '2026-11-09T10:00:00Z', status: 'published', visibility: 'public' },
+  // Older posts past the first page of 50, so the sitemap has to follow the pages (#1215)
+  ...Array.from({ length: 60 }, (_, i) => ({ id: `post-e2e-old-${i + 1}`, channelId: CHANNEL_ID, type: 'text', content: `Older post ${i + 1}.`, likes: 0, comments: 0, createdAt: new Date(Date.UTC(2026, 9, 30 - Math.floor(i / 2), 10)).toISOString(), status: 'published', visibility: 'public' })),
 ];

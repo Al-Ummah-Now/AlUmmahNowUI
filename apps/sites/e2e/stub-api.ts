@@ -7,7 +7,7 @@
  */
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { exportJWK, generateKeyPair, SignJWT } from 'jose';
-import { STUB_PORT, stubSites, VIDEOS, POSTS, CHANNEL_ID } from './stub-data.ts';
+import { STUB_PORT, stubSites, VIDEOS, SHORTS, POSTS, CHANNEL_ID } from './stub-data.ts';
 
 const ORIGIN = `http://localhost:${STUB_PORT}`;
 const { privateKey, publicKey } = await generateKeyPair('ES256');
@@ -53,6 +53,8 @@ createServer(async (req, res) => {
     }
     m = /^\/api\/channels\/([^/]+)\/videos$/.exec(p);
     if (m) return send(res, 200, { data: m[1] === CHANNEL_ID ? VIDEOS : [], cursor: '' });
+    m = /^\/api\/channels\/([^/]+)\/shorts$/.exec(p);
+    if (m) return send(res, 200, { data: m[1] === CHANNEL_ID ? SHORTS : [], cursor: '' });
     m = /^\/api\/videos\/([^/]+)$/.exec(p);
     if (m) {
       const v = VIDEOS.find((x) => x.id === m?.[1]);
@@ -65,7 +67,11 @@ createServer(async (req, res) => {
         const post = POSTS.find((x) => x.id === m?.[2]);
         return post ? send(res, 200, post) : send(res, 404, { error: 'Post not found' });
       }
-      return send(res, 200, { posts: POSTS, pagination: { page: 1, limit: 10, total: POSTS.length, hasNext: false } });
+      // Paged like api-videos (newest first, `total` and `hasNext`)
+      const page = Math.max(Number(url.searchParams.get('page')) || 1, 1);
+      const limit = Math.min(Math.max(Number(url.searchParams.get('limit')) || 20, 1), 50);
+      const rows = POSTS.slice((page - 1) * limit, page * limit);
+      return send(res, 200, { posts: rows, pagination: { page, limit, total: POSTS.length, hasNext: page * limit < POSTS.length } });
     }
     // ---- auth ----
     if (p === '/.well-known/jwks.json') return send(res, 200, { keys: [jwk] });

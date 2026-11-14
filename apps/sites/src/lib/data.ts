@@ -1,7 +1,8 @@
 /**
  * The site's content from the videos API, read anonymously (public items only), each read cached
  * 60 s in the Cache API. Failures are an empty list (and logged), never an error page.
- *   - videos: GET /api/channels/:id/videos?sort=latest&limit=&cursor=
+ *   - videos: GET /api/channels/:id/videos?sort=latest&limit=&cursor= (long-form only)
+ *   - Shorts: GET /api/channels/:id/shorts?sort=latest&limit=&cursor=
  *   - one video: GET /api/videos/:id (only when it belongs to this site's channel)
  *   - posts: GET /api/community/channels/:id/posts?page=&limit= (the channel's community posts, SS4/SS6)
  *   - one post: GET /api/community/channels/:id/posts/:postId
@@ -56,6 +57,8 @@ export interface SitePost {
   likes: number;
   comments: number;
   createdAt: string;
+  /** Last edit, when the API has one (the sitemap's lastmod). */
+  updatedAt: string | null;
   pinned: boolean;
 }
 
@@ -147,6 +150,7 @@ export function toSitePost(body: unknown): SitePost | null {
     likes: num(b.likes) ?? 0,
     comments: num(b.comments) ?? 0,
     createdAt: str(b.createdAt) ?? '',
+    updatedAt: str(b.updatedAt),
     pinned: b.pinned === true,
   };
 }
@@ -174,16 +178,29 @@ async function cachedJson(deps: DataDeps, url: string): Promise<unknown | null> 
   }
 }
 
-export async function channelVideos(deps: DataDeps, channelId: string, opts: { cursor?: string | null; limit?: number } = {}): Promise<{ items: SiteVideo[]; cursor: string }> {
+/** Most items per videos or Shorts page (api-videos' channel index reads at most 100 at a time). */
+export const MAX_VIDEOS_PAGE = 100;
+
+async function channelList(deps: DataDeps, list: 'videos' | 'shorts', channelId: string, opts: { cursor?: string | null; limit?: number }): Promise<{ items: SiteVideo[]; cursor: string }> {
   if (!VIDEO_ID.test(channelId)) return { items: [], cursor: '' };
   const cursor = opts.cursor && CURSOR.test(opts.cursor) ? opts.cursor : '';
-  const params = new URLSearchParams({ sort: 'latest', limit: String(Math.min(Math.max(opts.limit ?? 12, 1), 24)), ...(cursor ? { cursor } : {}) });
-  const body = (await cachedJson(deps, `${deps.apiUrl}/api/channels/${channelId}/videos?${params}`)) as { data?: unknown; cursor?: unknown } | null;
+  const params = new URLSearchParams({ sort: 'latest', limit: String(Math.min(Math.max(opts.limit ?? 12, 1), MAX_VIDEOS_PAGE)), ...(cursor ? { cursor } : {}) });
+  const body = (await cachedJson(deps, `${deps.apiUrl}/api/channels/${channelId}/${list}?${params}`)) as { data?: unknown; cursor?: unknown } | null;
   const rows = Array.isArray(body?.data) ? body.data : [];
   return {
     items: rows.map(toSiteVideo).filter((v): v is SiteVideo => v !== null),
     cursor: typeof body?.cursor === 'string' && CURSOR.test(body.cursor) ? body.cursor : '',
   };
+}
+
+/** The channel's long-form videos, newest first, one page. */
+export function channelVideos(deps: DataDeps, channelId: string, opts: { cursor?: string | null; limit?: number } = {}): Promise<{ items: SiteVideo[]; cursor: string }> {
+  return channelList(deps, 'videos', channelId, opts);
+}
+
+/** The channel's Shorts, newest first, one page. */
+export function channelShorts(deps: DataDeps, channelId: string, opts: { cursor?: string | null; limit?: number } = {}): Promise<{ items: SiteVideo[]; cursor: string }> {
+  return channelList(deps, 'shorts', channelId, opts);
 }
 
 /** A video of THIS site's channel, else null (another channel's video never renders on the site). */
@@ -193,12 +210,24 @@ export async function siteVideo(deps: DataDeps, channelId: string, videoId: stri
   return video && video.channelId === channelId ? video : null;
 }
 
-export async function channelPosts(deps: DataDeps, channelId: string, page = 1, limit = 10): Promise<{ items: SitePost[]; hasNext: boolean }> {
-  if (!VIDEO_ID.test(channelId)) return { items: [], hasNext: false };
-  const p = Math.min(Math.max(Math.trunc(page) || 1, 1), 100);
-  const body = (await cachedJson(deps, `${deps.apiUrl}/api/community/channels/${channelId}/posts?page=${p}&limit=${limit}`)) as { posts?: unknown; pagination?: { hasNext?: unknown } } | null;
+/** Most posts per page api-videos answers. */
+export const MAX_POSTS_PAGE = 50;
+/** Deepest page read (the sitemap walks further than the list pages, which stop at 100). */
+const MAX_POSTS_PAGE_NUMBER = 1_000;
+
+/** One page of the channel's public posts; `total` is the API's count (null when it doesn't say or the read failed). */
+export async function channelPosts(deps: DataDeps, channelId: string, page = 1, limit = 10): Promise<{ items: SitePost[]; hasNext: boolean; total: number | null }> {
+  if (!VIDEO_ID.test(channelId)) return { items: [], hasNext: false, total: null };
+  const p = Math.min(Math.max(Math.trunc(page) || 1, 1), MAX_POSTS_PAGE_NUMBER);
+  const n = Math.min(Math.max(Math.trunc(limit) || 10, 1), MAX_POSTS_PAGE);
+  const body = (await cachedJson(deps, `${deps.apiUrl}/api/community/channels/${channelId}/posts?page=${p}&limit=${n}`)) as { posts?: unknown; pagination?: { hasNext?: unknown; total?: unknown } } | null;
   const rows = Array.isArray(body?.posts) ? body.posts : [];
-  return { items: rows.map(toSitePost).filter((x): x is SitePost => x !== null), hasNext: body?.pagination?.hasNext === true };
+  const total = body?.pagination?.total;
+  return {
+    items: rows.map(toSitePost).filter((x): x is SitePost => x !== null),
+    hasNext: body?.pagination?.hasNext === true,
+    total: typeof total === 'number' && Number.isInteger(total) && total >= 0 ? total : null,
+  };
 }
 
 export async function sitePost(deps: DataDeps, channelId: string, postId: string): Promise<SitePost | null> {

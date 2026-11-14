@@ -34,7 +34,12 @@ through Cloudflare for SaaS, scholars' own domains. Astro on Cloudflare Workers;
 
 Posts, pages, About and lists are canonical on the site. Watch pages are canonical on the **videos
 site** for a `<slug>.alummahnow.org` site and on the **site** for a scholar's own domain; each host's
-`sitemap.xml` lists only what is canonical there.
+`sitemap.xml` lists only what is canonical there (`src/lib/sitemap.ts`): every post, plus every video and Short on an
+own domain, once per site language with `xhtml:link` alternates (site languages + x-default) and `<lastmod>`. A small
+site is one urlset. A bigger one is an index of `/sitemaps/pages.xml`, `posts-<n>.xml` (by page number) and
+`videos-<n>.xml` / `shorts-<n>.xml` (each starting at the cursor the index found). Each file holds at most 1000 items
+(≤ 2000 URLs), takes at most 20 upstream reads, and sits in the HTML edge cache. A subdomain site's watch pages print no
+hreflang: their canonical is the videos site.
 
 ## Sign-in (SS11)
 
