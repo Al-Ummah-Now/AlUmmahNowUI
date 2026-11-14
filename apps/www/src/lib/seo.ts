@@ -25,6 +25,23 @@ export function hreflangLinks(cfg: Config, alternates: Alternates): { hreflang: 
   return links;
 }
 
+/**
+ * The canonical and hreflang links of a page. An error page (404, 500) has neither (wiki AUN-SEO gap
+ * #19): it is not a version of any URL, and a canonical pointing at the home page would ask search
+ * engines to fold every broken link into it. Its alternates still drive the language switcher.
+ */
+export function headLinks(
+  cfg: Config,
+  alternates: Alternates,
+  opts: { locale: Locale; contentLocale?: Locale; pathname: string; errorPage?: boolean },
+): { canonical: string | null; hreflang: { hreflang: string; href: string }[] } {
+  if (opts.errorPage) return { canonical: null, hreflang: [] };
+  return {
+    canonical: absolute(cfg, alternates[opts.contentLocale ?? opts.locale] ?? alternates[opts.locale] ?? opts.pathname),
+    hreflang: hreflangLinks(cfg, alternates),
+  };
+}
+
 export function organizationLd(cfg: Config, name: string, sameAs: string[]) {
   return {
     '@context': 'https://schema.org',

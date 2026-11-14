@@ -6,7 +6,7 @@ import { strings } from '../i18n';
 import type { NavItem, SiteSettings } from '../lib/cms-types';
 import type { Config } from '../lib/env';
 import { dir, otherLocale, type Locale } from '../lib/locale';
-import { absolute, hreflangLinks, jsonLdText, ogImageUrl, type Alternates } from '../lib/seo';
+import { headLinks, jsonLdText, ogImageUrl, type Alternates } from '../lib/seo';
 import { MODE_SCRIPT } from '../lib/theme-mode';
 import { THEME_CHROME, themeFromRequest } from '../lib/site-theme';
 import { tabIconLinks } from '../lib/favicon';
@@ -24,6 +24,8 @@ interface Props {
   ogType?: 'website' | 'article';
   jsonLd?: unknown[];
   noindex?: boolean;
+  /** A 404 or 500 page: no canonical, hreflang or og:url (lib/seo headLinks) */
+  errorPage?: boolean;
   /** Notice shown above the content (e.g. "not yet available in Arabic"). */
   notice?: string | null;
   /** A link after the notice (e.g. "Read it in العربية" on an article that is only in Arabic). */
@@ -34,12 +36,12 @@ interface Props {
   feed?: { title: string; href: string } | null;
 }
 
-const { cfg, locale, title, description, alternates, nav, settings, ogImage, ogType = 'website', jsonLd = [], noindex, notice, noticeLink, contentLocale, feed } = Astro.props;
+const { cfg, locale, title, description, alternates, nav, settings, ogImage, ogType = 'website', jsonLd = [], noindex, errorPage, notice, noticeLink, contentLocale, feed } = Astro.props;
 const t = strings(locale);
 const siteName = settings?.site_title || t.meta.siteName;
 const fullTitle = title === siteName ? siteName : `${title} | ${siteName}`;
 const desc = (description || settings?.tagline || t.meta.defaultDescription).slice(0, 300);
-const canonical = absolute(cfg, alternates[contentLocale ?? locale] ?? alternates[locale] ?? Astro.url.pathname);
+const { canonical, hreflang } = headLinks(cfg, alternates, { locale, contentLocale, pathname: Astro.url.pathname, errorPage });
 const other = otherLocale(locale);
 const switchHref = alternates[other] ?? `/${other}/`;
 const image = ogImageUrl(cfg, ogImage);
@@ -56,15 +58,15 @@ const robots = noindex || !cfg.isProduction ? 'noindex, nofollow' : 'index, foll
     <title>{fullTitle}</title>
     <meta name="description" content={desc} />
     <meta name="robots" content={robots} />
-    <link rel="canonical" href={canonical} />
-    {hreflangLinks(cfg, alternates).map((l) => <link rel="alternate" hreflang={l.hreflang} href={l.href} />)}
+    {canonical && <link rel="canonical" href={canonical} />}
+    {hreflang.map((l) => <link rel="alternate" hreflang={l.hreflang} href={l.href} />)}
     <link rel="alternate" type="application/rss+xml" title={`${siteName}: ${t.articles.title}`} href={`/${locale}/rss.xml`} />
     {feed && <link rel="alternate" type="application/rss+xml" title={feed.title} href={feed.href} />}
     <meta property="og:site_name" content={siteName} />
     <meta property="og:type" content={ogType} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={desc} />
-    <meta property="og:url" content={canonical} />
+    {canonical && <meta property="og:url" content={canonical} />}
     <meta property="og:image" content={image} />
     <meta property="og:locale" content={locale === 'ar' ? 'ar_AR' : 'en_GB'} />
     {alternates[other] && <meta property="og:locale:alternate" content={other === 'ar' ? 'ar_AR' : 'en_GB'} />}
