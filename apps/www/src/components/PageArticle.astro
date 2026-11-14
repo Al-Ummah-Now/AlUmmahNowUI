@@ -1,33 +1,43 @@
 ---
 /** A CMS page as published (src/pages/[locale]/[slug].astro) and as previewed (src/pages/preview/). */
 import Blocks from './Blocks.astro';
-import type { PreparedBlock } from '../lib/blocks';
+import type { PreparedPage } from '../lib/blocks';
 import type { Page } from '../lib/cms-types';
 import type { Config } from '../lib/env';
 import { dir, type Locale } from '../lib/locale';
 import { pictureHtml, SIZES } from '../lib/picture';
 
-/** `blocks`: the page built from blocks (src/lib/blocks.ts); without them, the markdown body (`html`). */
-interface Props { page: Page; html: string; cmsOrigin: string; blocks?: PreparedBlock[] | null; locale: Locale; cfg: Config }
-const { page, html, cmsOrigin, blocks, locale, cfg } = Astro.props;
+/**
+ * `built`: the page built from blocks (src/lib/blocks.ts); without it, the markdown body (`html`).
+ * A page that opens with a hero block shows no header of its own: the hero is its heading.
+ */
+interface Props { page: Page; html: string; cmsOrigin: string; built?: PreparedPage | null; locale: Locale; cfg: Config }
+const { page, html, cmsOrigin, built, locale, cfg } = Astro.props;
+const showHead = !built?.hero;
 // The cover is the page's LCP image: responsive, sized, eager and high priority (CMS-10).
-const coverHtml = page.cover ? pictureHtml(page.cover, cmsOrigin, { sizes: SIZES.cover, priority: true, className: 'cover' }) : null;
+const coverHtml = showHead && page.cover ? pictureHtml(page.cover, cmsOrigin, { sizes: SIZES.cover, priority: true, className: 'cover' }) : null;
 ---
 <article>
-  <header class="page-head">
-    <div class="wrap">
-      <h1>{page.title}</h1>
-      {page.summary && <p class="lede">{page.summary}</p>}
-      {coverHtml && <Fragment set:html={coverHtml} />}
+  {showHead && (
+    <header class="page-head">
+      <div class="wrap">
+        <h1>{page.title}</h1>
+        {page.summary && <p class="lede">{page.summary}</p>}
+        {coverHtml && <Fragment set:html={coverHtml} />}
+      </div>
+    </header>
+  )}
+  {built ? (
+    <div class:list={['section', 'reading', 'reading-blocks', { 'reading-hero': built.hero }]}>
+      <div class="wrap" data-testid="page-blocks">
+        <Blocks built={built} locale={locale} contentLocale={page.locale} cfg={cfg} />
+      </div>
     </div>
-  </header>
-  <div class="section reading">
-    <div class="wrap">
-      {blocks ? (
-        <Blocks blocks={blocks} locale={locale} contentLocale={page.locale} cfg={cfg} />
-      ) : (
+  ) : (
+    <div class="section reading">
+      <div class="wrap">
         <div class="prose" lang={page.locale} dir={dir(page.locale)} set:html={html} />
-      )}
+      </div>
     </div>
-  </div>
+  )}
 </article>

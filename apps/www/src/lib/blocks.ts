@@ -1,32 +1,30 @@
 /**
- * CMS page blocks → what src/components/Blocks.astro renders (docs/CMS_PUBLIC_API.md "Blocks").
- * Everything async or HTML-producing happens here, once, server-side: markdown with video facades,
- * responsive pictures, curated video shelves, the card-post grid page. The component only lays out.
+ * CMS page blocks → HTML, with the shared page-builder renderer (wiki AUN-CMS-PAGE-BUILDER;
+ * packages/render/src/page-blocks, vendored from the monorepo by scripts/sync-page-blocks.ts). The CMS
+ * editor's live preview, www, the scholar sites and the videos site all render blocks with it, so a
+ * page looks the same wherever it is shown.
  *
- * A block type this build doesn't know is skipped (the CMS may add types). A block whose data is
- * gone (no public videos, an empty card grid with no filter) renders nothing, never an empty frame.
+ * www plugs its own parts into the renderer: responsive <picture>s, its markdown body renderer with
+ * video facades, the videos-site facade for video blocks and its link rules. Three blocks need live
+ * data or the reader's URL and keep www's components (src/components/Blocks.astro fills them in):
+ * the paged card-post grid, video shelves (fresh from the videos API, removed videos left out) and
+ * post lists. The renderer leaves a marker for each; everything else is one HTML string.
+ *
+ * Everything async happens here, once, server-side. A block type this build doesn't know is skipped
+ * (the CMS may add types). A block whose data is gone (no public videos, an empty card grid with no
+ * filter, empty text) renders nothing, never an empty frame.
  */
 import { renderBody } from './body';
-import type { Block, BlockVideoItem, CardsResponse, CuratedVideo, MediaRef, Page, PostSummary } from './cms-types';
+import type { BlockVideoItem, CardsResponse, CuratedSnapshot, CuratedVideo, MediaRef, Page, PostSummary } from './cms-types';
 import type { RequestContext } from './context';
 import { navHref } from './context';
 import { facadeHtml } from './facade';
+import { channelUrl, watchUrl } from './embeds';
 import type { Locale } from './locale';
-import { pictureHtml, SIZES } from './picture';
+import { pictureHtml } from './picture';
 import { resolveCurated, type ResolvedCurated, type VideoItem } from './videos';
-
-export type PreparedBlock =
-  | { id: string; type: 'markdown'; html: string }
-  | { id: string; type: 'image'; picture: string; caption: string | null; size: 'content' | 'wide' }
-  | { id: string; type: 'gallery'; columns: 2 | 3 | 4; items: { picture: string; caption: string | null }[] }
-  | { id: string; type: 'posts'; heading: string | null; items: PostSummary[] }
-  | { id: string; type: 'cards'; heading: string | null; grid: CardGrid }
-  | { id: string; type: 'videos'; heading: string | null; items: ResolvedCurated[] }
-  | { id: string; type: 'video'; facade: string; caption: string | null }
-  | { id: string; type: 'cta'; heading: string | null; text: string | null; label: string; href: string; external: boolean; tone: 'primary' | 'quiet' }
-  | { id: string; type: 'columns'; html: string; picture: string | null; caption: string | null; imageSide: 'start' | 'end' }
-  | { id: string; type: 'quote'; variant: 'quote' | 'callout'; text: string; cite: string | null }
-  | { id: string; type: 'divider'; style: 'line' | 'space'; size: 's' | 'm' | 'l' };
+import { leadsWithHero, MAX_BLOCKS, PAGE_BLOCK_TYPES, renderPageBlocks, type ServedBlock } from '../../../../packages/render/src/page-blocks/page-blocks.generated';
+import { slotHtml } from '../../../../packages/render/src/page-blocks/slots';
 
 export interface CardGrid {
   /** Cards on this grid page, each with its first slide's picture. */
@@ -40,12 +38,16 @@ export interface CardGrid {
   href: (q: { tag?: string | null; page?: number }) => string;
 }
 
-/** Layout widths (src/styles/global.css "blocks"): content column, wide, gallery, columns, cards. */
+/** A block www renders with its own component, where the renderer left `<!--pb-slot:{id}-->`. */
+export type SlotBlock =
+  | { id: string; type: 'cards'; heading: string | null; grid: CardGrid }
+  | { id: string; type: 'videos'; heading: string | null; items: ResolvedCurated[] }
+  | { id: string; type: 'posts'; heading: string | null; items: PostSummary[] };
+
+export { SLOT_RE, splitSlots } from '../../../../packages/render/src/page-blocks/slots';
+
+/** Layout widths of www's own parts inside a block (page-blocks.css: content 46rem, wide 76rem). */
 export const BLOCK_SIZES = {
-  content: SIZES.prose,
-  wide: '(min-width: 78rem) 74rem, calc(100vw - 2rem)',
-  gallery: (cols: number) => `(min-width: 78rem) ${Math.round(74 / cols)}rem, (min-width: 40rem) ${Math.round(100 / Math.min(cols, 2))}vw, calc(100vw - 2rem)`,
-  columns: '(min-width: 60rem) 28rem, calc(100vw - 2rem)',
   card: '(min-width: 74rem) 17rem, (min-width: 40rem) 45vw, calc(100vw - 2rem)',
 } as const;
 
@@ -71,57 +73,69 @@ export function asCurated(items: BlockVideoItem[]): CuratedVideo[] {
   return items.map((x, i) => ({ id: i, kind: x.kind, ref_id: x.ref_id, title_override: x.title_override, snapshot: x.snapshot, sort: i }));
 }
 
-function picture(rc: RequestContext, ref: MediaRef | null | undefined, sizes: string, priority = false): string | null {
-  if (!ref || typeof ref.url !== 'string') return null;
-  return pictureHtml(ref, new URL(rc.cfg.cmsPublicUrl).origin, { sizes, priority });
-}
-
 export interface PreparedPage {
-  blocks: PreparedBlock[];
+  /** The blocks as HTML (trusted: the renderer escapes all text), with slot markers. */
+  html: string;
+  /** The slot blocks by id. */
+  slots: Record<string, SlotBlock>;
+  /** The first block is a hero: it is the page's heading, and the page shows no header of its own. */
+  hero: boolean;
   /** Videos shown inline (markdown ::video and video blocks), for JSON-LD. */
   videos: VideoItem[];
 }
 
-/**
- * Resolves a page's blocks. `search` and `pathname` are the reader's URL (the card grid reads its
- * filter and page from them). `priority`: the first image block is the LCP image when the page has
- * no cover.
- */
-export async function prepareBlocks(rc: RequestContext, page: Pick<Page, 'blocks' | 'locale' | 'cover'> & { images?: MediaRef[] }, url: { pathname: string; search: URLSearchParams }): Promise<PreparedPage> {
-  const locale: Locale = page.locale;
-  const blocks = (Array.isArray(page.blocks) ? page.blocks : []).slice(0, 80);
-  const videos: VideoItem[] = [];
-  let lcpTaken = !!page.cover;
-  const lcp = () => {
-    if (lcpTaken) return false;
-    lcpTaken = true;
-    return true;
-  };
-  const q = cardsQuery(url.search);
+const isServed = (b: unknown): b is ServedBlock =>
+  !!b && typeof b === 'object' && typeof (b as { id?: unknown }).id === 'string' && PAGE_BLOCK_TYPES.includes((b as { type: ServedBlock['type'] }).type);
 
-  const out = await Promise.all(
-    blocks.map(async (b: Block): Promise<PreparedBlock | null> => {
-      if (!b || typeof b !== 'object' || typeof b.id !== 'string') return null;
+/**
+ * Resolves and renders a page's blocks. `search` and `pathname` are the reader's URL (the card grid
+ * reads its filter and page from them).
+ */
+export async function prepareBlocks(
+  rc: RequestContext,
+  page: Pick<Page, 'blocks' | 'locale' | 'cover' | 'title'> & { images?: MediaRef[] },
+  url: { pathname: string; search: URLSearchParams },
+): Promise<PreparedPage> {
+  const locale: Locale = page.locale;
+  const cmsOrigin = new URL(rc.cfg.cmsPublicUrl).origin;
+  const list = (Array.isArray(page.blocks) ? (page.blocks as unknown[]) : []).filter(isServed).slice(0, MAX_BLOCKS);
+  const hero = leadsWithHero(list);
+  const q = cardsQuery(url.search);
+  const videos: VideoItem[] = [];
+  const markdown = new Map<string, string>();
+  const facades = new Map<string, string>();
+  const slots: Record<string, SlotBlock> = {};
+
+  // Async parts first, in parallel; each answers whether its block stays on the page.
+  const keep = await Promise.all(
+    list.map(async (b): Promise<boolean> => {
       switch (b.type) {
-        case 'markdown': {
+        case 'markdown':
+        case 'columns': {
           const body = await renderBody(rc, b.text, locale, page.images);
           videos.push(...body.videos);
-          return body.html.trim() ? { id: b.id, type: 'markdown', html: body.html } : null;
+          markdown.set(b.id, body.html);
+          return b.type === 'columns' ? !!body.html.trim() || !!b.image : !!body.html.trim();
         }
-        case 'image': {
-          const pic = picture(rc, b.image, b.size === 'wide' ? BLOCK_SIZES.wide : BLOCK_SIZES.content, lcp());
-          return pic ? { id: b.id, type: 'image', picture: pic, caption: b.caption, size: b.size === 'wide' ? 'wide' : 'content' } : null;
+        case 'video': {
+          const [r] = await resolveCurated(rc.videos, asCurated([{ kind: b.kind, ref_id: b.ref_id, title_override: null, snapshot: b.snapshot as CuratedSnapshot | null }]), locale);
+          if (!r) return false;
+          videos.push(r.item);
+          facades.set(b.id, facadeHtml(r.item, { videosWebUrl: rc.cfg.videosWebUrl, lang: locale, headingLevel: 3 }));
+          return true;
         }
-        case 'gallery': {
-          const cols = b.columns === 2 || b.columns === 4 ? b.columns : 3;
-          const items = (b.items ?? []).flatMap((x) => {
-            const pic = picture(rc, x.image, BLOCK_SIZES.gallery(cols));
-            return pic ? [{ picture: pic, caption: x.caption }] : [];
-          });
-          return items.length ? { id: b.id, type: 'gallery', columns: cols, items } : null;
+        case 'videos': {
+          const items = await resolveCurated(rc.videos, asCurated(b.items as BlockVideoItem[]), locale);
+          if (!items.length) return false;
+          slots[b.id] = { id: b.id, type: 'videos', heading: b.heading, items };
+          return true;
         }
-        case 'posts':
-          return b.items?.length ? { id: b.id, type: 'posts', heading: b.heading, items: b.items } : null;
+        case 'posts': {
+          if (!b.items?.length) return false;
+          // The CMS serves full post summaries (docs/CMS_PUBLIC_API.md); the shared type names only the fields its renderer reads.
+          slots[b.id] = { id: b.id, type: 'posts', heading: b.heading, items: b.items as unknown as PostSummary[] };
+          return true;
+        }
         case 'cards': {
           const tag = b.tag ?? (b.filter ? q.tag : null);
           const limit = Math.min(24, Math.max(3, b.page_size || 12));
@@ -133,14 +147,17 @@ export async function prepareBlocks(rc: RequestContext, page: Pick<Page, 'blocks
             const again = await rc.cms.cards(locale, last, limit, tag);
             if (again.status === 'ok') data = again.data;
           }
-          if (!data || (!data.items.length && !tag)) return null;
+          if (!data || (!data.items.length && !tag)) return false;
           const pages = Math.max(1, Math.ceil(data.total / limit));
-          return {
+          slots[b.id] = {
             id: b.id,
             type: 'cards',
             heading: b.heading,
             grid: {
-              cards: data.items.map((post) => ({ post, picture: picture(rc, post.first_slide?.image ?? post.cover, BLOCK_SIZES.card) })),
+              cards: data.items.map((post) => {
+                const ref = post.first_slide?.image ?? post.cover;
+                return { post, picture: ref && typeof ref.url === 'string' ? pictureHtml(ref, cmsOrigin, { sizes: BLOCK_SIZES.card }) : null };
+              }),
               page: Math.min(data.page, pages),
               pages,
               total: data.total,
@@ -148,37 +165,40 @@ export async function prepareBlocks(rc: RequestContext, page: Pick<Page, 'blocks
               href: (h) => cardsHref(url.pathname, { tag: !b.filter || b.tag ? null : 'tag' in h ? h.tag : tag, page: h.page ?? 1 }),
             },
           };
+          return true;
         }
-        case 'videos': {
-          const items = await resolveCurated(rc.videos, asCurated(b.items ?? []), locale);
-          return items.length ? { id: b.id, type: 'videos', heading: b.heading, items } : null;
-        }
-        case 'video': {
-          if (b.kind !== 'video' && b.kind !== 'playlist') return null;
-          const [r] = await resolveCurated(rc.videos, asCurated([{ kind: b.kind, ref_id: b.ref_id, title_override: null, snapshot: b.snapshot }]), locale);
-          if (!r) return null;
-          videos.push(r.item);
-          return { id: b.id, type: 'video', facade: facadeHtml(r.item, { videosWebUrl: rc.cfg.videosWebUrl, lang: locale, headingLevel: 3 }), caption: b.caption };
-        }
-        case 'cta': {
-          const href = navHref(b.url, locale);
-          return href ? { id: b.id, type: 'cta', heading: b.heading, text: b.text, label: b.label, href, external: /^https:/i.test(href), tone: b.tone === 'quiet' ? 'quiet' : 'primary' } : null;
-        }
-        case 'columns': {
-          const body = await renderBody(rc, b.text, locale, page.images);
-          videos.push(...body.videos);
-          const pic = picture(rc, b.image, BLOCK_SIZES.columns);
-          if (!body.html.trim() && !pic) return null;
-          return { id: b.id, type: 'columns', html: body.html, picture: pic, caption: pic ? b.caption : null, imageSide: b.image_side === 'end' ? 'end' : 'start' };
-        }
-        case 'quote':
-          return b.text?.trim() ? { id: b.id, type: 'quote', variant: b.variant === 'callout' ? 'callout' : 'quote', text: b.text, cite: b.cite } : null;
-        case 'divider':
-          return { id: b.id, type: 'divider', style: b.style === 'space' ? 'space' : 'line', size: b.size === 's' || b.size === 'l' ? b.size : 'm' };
         default:
-          return null;
+          return true;
       }
     }),
   );
-  return { blocks: out.filter((b): b is PreparedBlock => b !== null), videos };
+  const shown = list.filter((_, i) => keep[i]);
+
+  const html = renderPageBlocks(shown, {
+    locale,
+    pageTitle: page.title,
+    // The hero is the page's h1 only when it is still first once empty blocks are left out.
+    heroIsPageHeading: hero && shown[0]?.type === 'hero',
+    // With a hero first the page shows no header, so no cover above the blocks.
+    hasCover: !!page.cover && !hero,
+    href: (u) => navHref(u, locale),
+    image: (ref, o) => pictureHtml(ref as MediaRef, cmsOrigin, { sizes: o.sizes, priority: o.priority, className: o.className }),
+    markdown: (_text, id) => markdown.get(id) ?? null,
+    video: (b) => facades.get(b.id) ?? null,
+    // A ::video inside a layout column or an FAQ answer (the renderer's own facade) links to its watch page.
+    watchHref: (kind, id) => {
+      try {
+        return kind === 'channel' ? channelUrl(rc.cfg.videosWebUrl, { id, lang: locale }) : watchUrl(rc.cfg.videosWebUrl, { kind, id, lang: locale });
+      } catch {
+        return null;
+      }
+    },
+    slot: (b) => {
+      const s = slots[b.id];
+      if (!s) return null;
+      // The card grid is a labelled section of its own; the shelves and lists take the frame's.
+      return s.type === 'cards' ? slotHtml(b, { tag: 'div' }) : slotHtml(b, { labelled: !!s.heading });
+    },
+  });
+  return { html, slots, hero, videos };
 }

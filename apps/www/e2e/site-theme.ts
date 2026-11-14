@@ -16,7 +16,7 @@ export const IS_PRODUCTION = /^https:\/\/www\.alummahnow\.net$/.test(WWW_URL);
 
 /** The videos admin API of the site under test: www.<env>.alummahnow.net → admin.api.<env>.alummahnow.net. */
 export const ADMIN_API_URL = (
-  process.env.E2E_ADMIN_API_URL || (LOCAL ? 'http://localhost:8585' : WWW_URL.replace('://www.', '://admin.api.'))
+  process.env.E2E_ADMIN_API_URL || (LOCAL ? `http://localhost:${process.env.STUB_CMS_PORT || '8585'}` : WWW_URL.replace('://www.', '://admin.api.'))
 ).replace(/\/+$/, '');
 
 /** The theme the admin chose for this environment (local: e2e/stub-cms.ts). */

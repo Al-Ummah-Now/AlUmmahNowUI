@@ -10,9 +10,11 @@ import AxeBuilder from '@axe-core/playwright';
 // Set before withTags(): AxeBuilder.options() replaces the whole options object, tags included.
 const LABEL_IN_NAME = { rules: { 'label-content-name-mismatch': { enabled: true } } };
 import { expect, test } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
 import { HOSTS, LONG_NAME, SITES_PORT } from './stub-data.ts';
 import { langButtonHtml, menuButtonHtml, signInHtml } from '../../../packages/render/src/nav/header.js';
 import { siteBrandHtml } from '../../../packages/render/src/site-brand.ts';
+import { stubImage } from '../../www/e2e/stub-blocks.ts';
 
 const at = (host: string, path = '/') => `http://${host}:${SITES_PORT}${path}`;
 
@@ -383,4 +385,41 @@ test('a11y (WCAG 2.2 AA), header only: signed in with the account menu open', as
       expect(out.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`), `${scheme} ${path}`).toEqual([]);
     }
   }
+});
+
+test('a site page renders its blocks with the shared page-builder renderer, en and ar', async ({ page }, info) => {
+  // The banner image is on the image host: answer it here (nothing leaves the machine).
+  await page.route('https://images.alummahnow.net/e2e/banner.png', (route) => route.fulfill({ status: 200, contentType: 'image/png', body: stubImage(1) }));
+  await page.emulateMedia({ colorScheme: 'dark' });
+
+  await page.goto(at(HOSTS.both, '/en/welcome/'));
+  const blocks = page.getByTestId('site-page-blocks');
+  await expect(blocks.locator('.pb')).toHaveAttribute('dir', 'ltr');
+  const types = await blocks.locator('[data-block-type]').evaluateAll((els) => els.map((e) => e.getAttribute('data-block-type')));
+  // The bad link and the unknown block are left out; every Studio block id became a safe one.
+  expect(types).toEqual(['markdown', 'image', 'video', 'cta', 'quote', 'divider', 'posts', 'videos']);
+  await expect(blocks.locator('[data-block-type=markdown] li')).toHaveCount(2);
+  // Raw HTML in Studio text is escaped: shown as text, never run.
+  await expect(blocks.locator('[data-block-type=markdown]')).toContainText('<script>alert(1)</script>');
+  expect(await blocks.locator('script').count()).toBe(0);
+  await expect(blocks.locator('[data-block-type=image] img')).toHaveAttribute('alt', 'A lantern-lit street');
+  await expect(blocks.locator('[data-block-type=image] figcaption')).toHaveText('The street at dusk.');
+  await expect(blocks.locator('[data-block-type=video] iframe')).toHaveAttribute('title', 'First video');
+  await expect(blocks.getByRole('link', { name: 'All videos' })).toHaveAttribute('href', '/en/videos/');
+  await expect(blocks.getByRole('link', { name: 'Bad link' })).toHaveCount(0);
+  await expect(blocks.locator('[data-block-type=quote] blockquote')).toContainText('righteousness');
+  await expect(blocks.getByTestId('site-post')).toHaveCount(2);
+  await expect(blocks.getByTestId('site-video-card')).toHaveCount(2);
+  let results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+  mkdirSync(`e2e-artifacts/${info.project.name}`, { recursive: true });
+  await page.screenshot({ path: `e2e-artifacts/${info.project.name}/site-page-blocks-en-dark.png`, fullPage: true });
+
+  await page.goto(at(HOSTS.both, '/ar/welcome/'));
+  await expect(blocks.locator('.pb')).toHaveAttribute('dir', 'rtl');
+  await expect(blocks.locator('.pb')).toHaveAttribute('lang', 'ar');
+  await expect(blocks.getByRole('link', { name: 'كل المرئيات' })).toHaveAttribute('href', '/ar/videos/');
+  results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+  await page.screenshot({ path: `e2e-artifacts/${info.project.name}/site-page-blocks-ar-dark.png`, fullPage: true });
 });

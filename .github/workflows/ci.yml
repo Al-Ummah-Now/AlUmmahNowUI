@@ -47,8 +47,8 @@ jobs:
       - name: wrangler config check
         run: npm run check:config
 
-      - name: Vendored Fanous themes match the lock (scripts/sync-fanous.ts)
-        run: npm run check:fanous && npm run check:posts
+      - name: Vendored Fanous themes, post schema and page blocks match their locks
+        run: npm run check:fanous && npm run check:posts && npm run check:page-blocks
 
       - name: Build
         run: npm run build

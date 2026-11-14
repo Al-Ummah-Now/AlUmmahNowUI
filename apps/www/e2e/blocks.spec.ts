@@ -1,5 +1,5 @@
 /**
- * Pages built from blocks and card posts (src/components/Blocks.astro, CardViewer.astro,
+ * Pages built from blocks and card posts (src/components/Blocks.astro with the shared renderer, CardViewer.astro,
  * src/scripts/cards.ts). Local only: the stub CMS (e2e/stub-blocks.ts) serves /pages/stories,
  * /pages/qisas, the card posts and /cards. The CMS repo's e2e/blocks.spec.ts covers editor → API.
  */
@@ -61,18 +61,18 @@ test.describe('pages built from blocks', () => {
       expect(res?.status()).toBe(200);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Stories');
       await expect(page.getByRole('heading', { name: 'Stories from the Ummah' })).toBeVisible();
-      await expect(page.locator('.blk-text strong')).toHaveText('one card at a time');
+      await expect(page.locator('[data-block-type=markdown] strong')).toHaveText('one card at a time');
       // Images carry their size (no layout shift) and the first one is the LCP image.
-      const hero = page.locator('.blk-image img');
+      const hero = page.locator('[data-block-type=image] img');
       await expect(hero).toHaveAttribute('width', '1600');
       await expect(hero).toHaveAttribute('fetchpriority', 'high');
-      await expect(page.locator('.blk-image figcaption')).toHaveText('Sunrise, seen from the hills.');
-      await expect(page.locator('.blk-gallery li')).toHaveCount(3);
-      await expect(page.locator('.blk-gallery')).toHaveClass(/blk-cols-3/);
-      await expect(page.locator('.blk-quote blockquote')).toContainText('Travel through the earth');
+      await expect(page.locator('[data-block-type=image] figcaption')).toHaveText('Sunrise, seen from the hills.');
+      await expect(page.locator('.pb-gallery li')).toHaveCount(3);
+      await expect(page.locator('.pb-gallery')).toHaveClass(/pb-cols-3/);
+      await expect(page.locator('[data-block-type=quote] blockquote')).toContainText('Travel through the earth');
       await expect(page.getByRole('note')).toHaveText('Every story is checked by our editors before it is published.');
       await expect(page.getByRole('heading', { name: 'Share your story' })).toBeVisible();
-      await expect(page.locator('hr.blk-rule')).toHaveCount(1);
+      await expect(page.locator('hr.pb-rule')).toHaveCount(1);
       const news = page.getByRole('region', { name: 'Latest news' });
       await expect(news.getByRole('link', { name: 'Community iftar this Friday' })).toBeVisible();
       await expect(news.locator('.articles-item').nth(1).locator('.cards-inline .ci-count')).toHaveText('2 cards');
@@ -108,8 +108,8 @@ test.describe('pages built from blocks', () => {
   test('ar page renders right-to-left', async ({ page }, info) => {
     await page.goto('/ar/qisas/');
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-    await expect(page.locator('.blocks')).toHaveAttribute('dir', 'rtl');
-    await expect(page.locator('.blocks')).toHaveAttribute('lang', 'ar');
+    await expect(page.locator('.pb')).toHaveAttribute('dir', 'rtl');
+    await expect(page.locator('.pb')).toHaveAttribute('lang', 'ar');
     await expect(page.getByRole('heading', { name: 'قصص بالبطاقات' })).toBeVisible();
     await expect(page.locator('.card-tile')).toHaveCount(1);
     await expect(page.locator('.card-tile')).toContainText('4 بطاقات');
@@ -122,7 +122,7 @@ test.describe('pages built from blocks', () => {
     await page.goto(`/preview?token=${token('pages', 3)}`);
     await expect(page).toHaveURL(/\/preview\/pages\/3$/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Stories (draft)');
-    await expect(page.locator('.blk-gallery li')).toHaveCount(3);
+    await expect(page.locator('.pb-gallery li')).toHaveCount(3);
     await expect(page.getByRole('note')).toBeVisible();
   });
 });

@@ -7,7 +7,7 @@
  */
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { exportJWK, generateKeyPair, SignJWT } from 'jose';
-import { STUB_PORT, stubSites, VIDEOS, SHORTS, POSTS, CHANNEL_ID } from './stub-data.ts';
+import { STUB_PORT, stubSites, VIDEOS, SHORTS, POSTS, CHANNEL_ID, HOSTS, SITE_PAGE } from './stub-data.ts';
 
 const ORIGIN = `http://localhost:${STUB_PORT}`;
 const { privateKey, publicKey } = await generateKeyPair('ES256');
@@ -44,7 +44,12 @@ createServer(async (req, res) => {
   const p = url.pathname;
   try {
     // ---- api-videos ----
-    let m = /^\/api\/sites\/by-host\/([^/]+)$/.exec(p);
+    let m = /^\/api\/sites\/by-host\/([^/]+)\/pages\/([^/]+)$/.exec(p);
+    if (m) {
+      const ok = decodeURIComponent(m[1] as string).startsWith(HOSTS.both.split(':')[0] as string) && m[2] === SITE_PAGE.slug;
+      return ok ? send(res, 200, { page: SITE_PAGE }, { 'Cache-Control': 'no-store' }) : send(res, 404, { error: 'page_not_found' });
+    }
+    m = /^\/api\/sites\/by-host\/([^/]+)$/.exec(p);
     if (m) {
       const host = decodeURIComponent(m[1] as string);
       const entry = stubSites()[host];

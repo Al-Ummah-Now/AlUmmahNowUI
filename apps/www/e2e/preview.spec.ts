@@ -39,7 +39,7 @@ test.describe('draft preview', () => {
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.getByRole('region', { name: 'Preview — not published' })).toBeVisible();
     await expect(page.getByText(/stops working in \d+ min/)).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Back to the editor' })).toHaveAttribute('href', 'http://localhost:8585/pages/1');
+    await expect(page.getByRole('link', { name: 'Back to the editor' })).toHaveAttribute('href', `http://localhost:${process.env.STUB_CMS_PORT || '8585'}/pages/1`);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Draft page for preview');
     await expect(page.getByRole('heading', { name: 'Draft heading' })).toBeVisible();
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
@@ -80,7 +80,7 @@ test.describe('draft preview', () => {
     let res = await page.goto(`/preview?token=${token('pages', 1, 'expired')}`);
     expect(res?.status()).toBe(410);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('This preview link has expired');
-    await expect(page.getByRole('link', { name: 'Open the CMS' })).toHaveAttribute('href', 'http://localhost:8585/pages/1');
+    await expect(page.getByRole('link', { name: 'Open the CMS' })).toHaveAttribute('href', `http://localhost:${process.env.STUB_CMS_PORT || '8585'}/pages/1`);
     res = await page.goto(`/preview?token=${token('pages', 404)}`);
     expect(res?.status()).toBe(404);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('This draft no longer exists');
