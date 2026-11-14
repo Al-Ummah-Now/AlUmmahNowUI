@@ -6,12 +6,26 @@
  */
 import AxeBuilder from '@axe-core/playwright';
 import { token, type ThemeId } from './site-theme';
+import { dayKey, dayLabel } from '../src/lib/feed.ts';
 import { expect, test, type Page } from '@playwright/test';
 
 const local = !process.env.WWW_URL;
 const SEEDED_DATED = 55; // 1 video entry + 1 Short + 1 channel + 2 posts + 50 dated posts (the pinned post is separate)
 
 const items = (page: Page) => page.locator('[data-days] li.tl-item');
+
+/**
+ * The heading the newest seeded item should sit under, in the browser's zone. The seed dates its newest
+ * item an hour back, so a run within an hour after midnight sees it under Yesterday, not Today.
+ */
+async function newestDayHeading(page: Page, locale: 'en' | 'ar') {
+  const iso = await items(page).first().locator('time[datetime]').getAttribute('datetime');
+  const zone = await page.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+  const words = locale === 'en' ? { today: 'Today', yesterday: 'Yesterday' } : { today: 'اليوم', yesterday: 'أمس' };
+  const label = dayLabel(dayKey(iso!, zone), new Date(), locale, words, zone);
+  expect([words.today, words.yesterday], 'the newest seeded item is from today or, just after midnight, yesterday').toContain(label);
+  return label;
+}
 
 async function axe(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
@@ -40,7 +54,7 @@ test.describe('home timeline', () => {
       await expect(pinned.getByRole('heading', { level: 3 })).toHaveText('Pinned');
       await expect(pinned.locator('.tl-card-pinned')).toHaveCount(1);
       await expect(items(page)).toHaveCount(20);
-      await expect(page.locator('[data-days] .tl-date').first()).toHaveText('Today');
+      await expect(page.locator('[data-days] .tl-date').first()).toHaveText(await newestDayHeading(page, 'en'));
       // Every item has a machine-readable time and a visible relative + absolute time.
       const first = items(page).first();
       await expect(first.locator('time[datetime]')).toHaveText(/ago|now/);
@@ -115,7 +129,7 @@ test.describe('home timeline', () => {
     test('Arabic: right to left, Arabic day headings and card count', async ({ page }) => {
       await page.goto('/ar/');
       await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
-      await expect(page.locator('[data-days] .tl-date').first()).toHaveText('اليوم');
+      await expect(page.locator('[data-days] .tl-date').first()).toHaveText(await newestDayHeading(page, 'ar'));
       await expect(page.locator('.tl-card .ci-count')).toHaveText('5 بطاقات');
       // pinned posts sit under their own "Pinned" heading (posts have no boxes or edges)
       await expect(page.locator('.tl-pinned .tl-date')).toHaveText('مثبّت');
