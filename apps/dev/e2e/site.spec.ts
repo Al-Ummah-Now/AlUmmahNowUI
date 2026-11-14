@@ -73,7 +73,7 @@ test('Light / Dark: www’s icon button, saved per device, applied before paint 
 
 test('language switch keeps the page', async ({ page }) => {
   await page.goto('/en/infrastructure/');
-  await page.locator('.lang-switch').click();
+  await page.locator('.site-header .aun-lang').click();
   await expect(page).toHaveURL(/\/ar\/infrastructure\/$/);
 });
 
@@ -87,8 +87,8 @@ test('phone: www’s collapse, the links on their own row that scrolls, tools be
   test.skip(!isMobile, 'phone only');
   for (const locale of LOCALES) {
     await page.goto(pagePath(locale, ''));
-    const brand = await page.locator('.brand').boundingBox();
-    const tools = await page.locator('.header-tools').boundingBox();
+    const brand = await page.locator('.aun-brand').boundingBox();
+    const tools = await page.locator('.aun-header-tools').boundingBox();
     const nav = await page.locator('.primary-nav').boundingBox();
     expect(Math.abs(brand!.y + brand!.height / 2 - (tools!.y + tools!.height / 2))).toBeLessThan(4);
     expect(nav!.y).toBeGreaterThanOrEqual(brand!.y + brand!.height);
@@ -101,8 +101,9 @@ test('phone: www’s collapse, the links on their own row that scrolls, tools be
 test('brand is the real logo and www’s wordmark, never a drawn mark', async ({ page }) => {
   for (const locale of LOCALES) {
     await page.goto(pagePath(locale, ''));
-    await expect(page.locator('.brand img')).toHaveAttribute('src', '/brand/logo-192.webp');
-    await expect(page.locator('.brand')).toHaveText(locale === 'ar' ? 'الأمة الآن' : 'Al Ummah Now');
+    await expect(page.locator('.aun-brand img')).toHaveAttribute('src', '/brand/logo-192.webp');
+    await expect(page.locator('.aun-brand .aun-brand-name')).toHaveText(locale === 'ar' ? 'الأمة الآن' : 'Al Ummah Now');
+    await expect(page.locator('.aun-brand .aun-brand-app')).toHaveText(locale === 'ar' ? 'المطوّرون' : 'Developers');
     await expect(page.locator('.hero-logo source')).toHaveAttribute('srcset', '/brand/logo-512.webp');
     await expect(page.locator('.hero-logo img')).toHaveAttribute('src', '/brand/alummah-now-logo.png');
     await expect(page.locator('.hero-wordmark')).toHaveText('الأمة الآن');

@@ -1,15 +1,12 @@
 /**
- * The dev site's header is www's (owner: "UNIFY"; AlUmmahNow docs/design/NAV.md). It imports www's
- * header.css, aun-nav.generated.css and toggle script, and the shared Light / Dark control
- * (packages/render/src/mode-toggle.ts, pinned by apps/www/tests/mode-toggle.test.ts), so the only
- * things that could drift are what apps/dev itself holds: the markup, the page tokens header.css
- * reads, and the language label. Those are checked against www here, on every CI run.
+ * The dev site's header is www's (owner: "UNIFY"; AlUmmahNow docs/design/NAV.md "Header"). Both
+ * render the vendored builders (packages/render/src/nav/header.js, check:fanous) and import www's
+ * header.css, aun-nav.generated.css and toggle script, so the only things that could drift are what
+ * apps/dev itself holds: the markup around the builders, its order and the page tokens header.css
+ * reads. Those are checked against www here, on every CI run.
  */
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { en as wwwEn } from '../../www/src/i18n/en';
-import { ar as wwwAr } from '../../www/src/i18n/ar';
-import { strings } from '../src/i18n';
 
 const read = (p: string) => readFileSync(new URL(p, import.meta.url), 'utf8');
 const WWW_HEADER = read('../../www/src/components/Header.astro');
@@ -30,15 +27,18 @@ function tokens(css: string, selector: string): Record<string, string> {
   return out;
 }
 
-/** Attribute values blanked (`{…}`, template literals too) and links' targets dropped, for comparing markup. */
-const shape = (t: string) => t.replace(/ href=\{(`[^`]*`|[^}]*)\}/g, '').replace(/\{[^}]*\}/g, '{}');
-
-/** The opening tag of the first element with `cls` among its classes, attributes in source order. */
+/** The opening tag of the first element with exactly `cls` as its class, attributes in source order, values blanked. */
 function tag(src: string, cls: string): string {
   const m = src.match(new RegExp(`<[a-z]+ [^>]*class="${cls}"[^>]*>`));
   expect(m, `.${cls} in markup`).not.toBeNull();
-  return m![0];
+  return m![0].replace(/\{[^}]*\}/g, '{}');
 }
+
+const at = (src: string, s: string) => {
+  const i = src.indexOf(s);
+  expect(i, s).toBeGreaterThanOrEqual(0);
+  return i;
+};
 
 describe('dev header = www header', () => {
   it('imports www’s header stylesheet, the shared controls and www’s toggle script', () => {
@@ -46,27 +46,32 @@ describe('dev header = www header', () => {
     expect(DEV_BASE).toContain("import '../../../www/src/styles/header.css';");
     expect(WWW_CSS).toContain("@import './header.css';");
     expect(DEV_HEADER).toContain("import { initTheme } from '../../../www/src/scripts/theme';");
-    expect(DEV_HEADER).toContain("from '../../../../packages/render/src/mode-toggle'");
-    // no header rules of its own: every header selector lives in www's header.css
-    expect(DEV_CSS).not.toMatch(/^\.(brand|primary-nav|header-tools|theme-button|lang-switch)\b/m);
-    expect(DEV_CSS).not.toMatch(/^\.site-header \{/m);
+    expect(DEV_HEADER).toContain("from '../../../../packages/render/src/nav/header.js'");
+    // no header rules of its own: every header selector lives in www's header.css / aun-nav.css
+    expect(DEV_CSS).not.toMatch(/^\.(aun-[\w-]+|primary-nav|site-header)\b/m);
   });
 
-  it('uses www’s markup for the brand, the links, the Light / Dark button and the language button', () => {
-    for (const cls of ['site-header', 'brand', 'primary-nav', 'header-tools', 'theme', 'theme-button aun-icon-btn', 'lang-switch aun-lang']) {
-      expect(shape(tag(DEV_HEADER, cls))).toBe(shape(tag(WWW_HEADER, cls)).replace(' data-set-locale={}', ''));
+  it('uses www’s frame, builders and Light / Dark button', () => {
+    // the dev site's six links: the full-width bar of www's header.css (.site-header--wide)
+    expect(DEV_HEADER).toContain('<header class="site-header site-header--wide aun-header" data-env-badges={badges}>');
+    for (const cls of ['aun-header-row', 'aun-header-primary', 'primary-nav', 'aun-header-tools', 'aun-icon-btn aun-mode']) {
+      expect(tag(DEV_HEADER, cls), cls).toBe(tag(WWW_HEADER, cls));
     }
-    const brand = (src: string) => src.slice(src.indexOf('<a class="brand"'), src.indexOf('</a>', src.indexOf('<a class="brand"')));
-    expect(shape(brand(DEV_HEADER))).toBe(shape(brand(WWW_HEADER)));
+    for (const call of ['brandHtml(', 'appLinksHtml(', 'langButtonHtml(', 'envBadgeHtml(']) expect(DEV_HEADER, call).toContain(call);
     const icons = (src: string) => [...src.matchAll(/modeIconSvg\('(sun|moon)', '([^']+)'\)/g)].map((m) => m.slice(1).join(' '));
     expect(icons(DEV_HEADER)).toEqual(icons(WWW_HEADER));
-    // the same order: brand, links, then the tools (Light / Dark, then the language)
-    const order = (src: string) => ['class="brand"', 'class="primary-nav"', 'class="theme"', 'class="lang-switch'].map((s) => src.indexOf(s));
-    for (const src of [DEV_HEADER, WWW_HEADER]) expect(order(src)).toEqual([...order(src)].sort((a, b) => a - b));
+  });
+
+  it('keeps the contract order: brand, env, links, app links, language, then light/dark', () => {
+    // www renders the badge in place; this static site inserts the same markup from the host, right after the brand
+    for (const src of [DEV_HEADER.slice(DEV_HEADER.indexOf('<header')).replace('data-env-badges={badges}>', '>').replace('<div class="aun-header-primary"', 'envBadgeHtml(<div class="aun-header-primary"'), WWW_HEADER.slice(WWW_HEADER.indexOf('<header'))]) {
+      const order = ['brandHtml(', 'envBadgeHtml(', 'class="aun-header-primary"', 'appLinksHtml(', 'langButtonHtml(', 'class="aun-icon-btn aun-mode"'].map((s) => at(src, s));
+      expect(order).toEqual([...order].sort((a, b) => a - b));
+    }
   });
 
   it('defines the page tokens header.css reads with www’s values, in both modes', () => {
-    const names = ['--header-bg', '--header-line', '--header-shadow', '--color-lantern', '--gutter', '--font-arabic'];
+    const names = ['--header-bg', '--header-shadow', '--color-lantern', '--wide', '--gutter', '--font-arabic'];
     // www spreads them over @theme (fonts), :root (layout) and html[data-theme] (colour roles)
     const wwwRoot = { ...tokens(WWW_CSS, '@theme'), ...tokens(WWW_CSS, ':root'), ...tokens(WWW_CSS, 'html[data-theme]') };
     const devRoot = tokens(DEV_CSS, ':root');
@@ -74,10 +79,5 @@ describe('dev header = www header', () => {
     const wwwDark = tokens(WWW_CSS, "html[data-theme][data-mode='dark']")['--header-shadow'];
     expect(tokens(DEV_CSS, "html[data-mode='dark']")['--header-shadow']).toBe(wwwDark);
     expect(tokens(DEV_CSS.replace(/\n {2}/g, '\n'), "html:not([data-mode='light'])")['--header-shadow']).toBe(wwwDark);
-  });
-
-  it('names the language button as www does', () => {
-    expect(strings('en').nav.language).toBe(wwwEn.lang.switchTo);
-    expect(strings('ar').nav.language).toBe(wwwAr.lang.switchTo);
   });
 });

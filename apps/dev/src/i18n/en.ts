@@ -27,10 +27,6 @@ export const en = {
     description:
       'Al Ummah Now is an Islamic video-sharing community in Arabic and English. How it works, how it is built, and the waqf direction we are exploring.',
   },
-  a11y: {
-    // Same as www (apps/www/src/i18n/en.ts a11y.home)
-    home: 'Al Ummah Now home',
-  },
   nav: {
     skip: 'Skip to content',
     primary: 'Main',
@@ -41,8 +37,8 @@ export const en = {
     'open-source': 'Open source',
     waqf: 'Waqf',
     contact: 'Contact',
-    language: 'العربية',
-    toLight: 'Light mode',
+    /** The header lockup's second line (NAV.md: every app but www names itself) */
+    appName: 'Developers',
   },
   status: {
     live: 'Live',
