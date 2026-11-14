@@ -39,7 +39,8 @@
     "SITES_CLIENT_ID": "81f2bb95-15c6-4896-b414-be2c24155a74",
     "VIDEOS_WEB_URL": "https://videos.alummahnow.net",
     "VIDEOS_API_URL": "https://videos.api.alummahnow.net",
-    "WWW_URL": "https://www.alummahnow.net"
+    "WWW_URL": "https://www.alummahnow.net",
+    "PROFILE_URL": "https://profile.auth.alummahnow.net"
   },
   // CONTENT_SNAPSHOT: www's existing KV, shared (key prefix site-config:): the last good config of each host, so an
   // api-videos outage still renders every site in its own theme (never the platform's).
@@ -62,7 +63,8 @@
         "SITES_CLIENT_ID": "0abd9eac-e47e-4a1a-90bd-18cffec0303c",
         "VIDEOS_WEB_URL": "https://videos.qa.alummahnow.net",
         "VIDEOS_API_URL": "https://videos.api.qa.alummahnow.net",
-        "WWW_URL": "https://www.qa.alummahnow.net"
+        "WWW_URL": "https://www.qa.alummahnow.net",
+        "PROFILE_URL": "https://profile.auth.qa.alummahnow.net"
       },
       "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "2784164e06164e99bb5e837733dd38a2" }],
       "version_metadata": { "binding": "CF_VERSION_METADATA" }
@@ -83,7 +85,8 @@
         "SITES_CLIENT_ID": "81f2bb95-15c6-4896-b414-be2c24155a74",
         "VIDEOS_WEB_URL": "https://videos.stage.alummahnow.net",
         "VIDEOS_API_URL": "https://videos.api.stage.alummahnow.net",
-        "WWW_URL": "https://www.stage.alummahnow.net"
+        "WWW_URL": "https://www.stage.alummahnow.net",
+        "PROFILE_URL": "https://profile.auth.stage.alummahnow.net"
       },
       "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "9a4d7ee84d43427dad2e73e5904a21c7" }],
       "version_metadata": { "binding": "CF_VERSION_METADATA" }

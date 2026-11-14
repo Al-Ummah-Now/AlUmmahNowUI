@@ -2,6 +2,8 @@
 @import '../../../../packages/render/src/styles/fanous-themes.generated.css';
 /* The header account button and menus: the shared nav contract (AlUmmahNow docs/design/NAV.md) */
 @import './aun-nav.generated.css';
+/* The header bar's www parts (links, search, account, Light / Dark): shared with apps/dev */
+@import './header.css';
 @import '../../../../packages/render/src/styles/fanous-street.generated.css';
 @import '../../../../packages/render/src/posts/posts.css';
 
@@ -178,30 +180,6 @@ html[data-theme][data-mode='dark'] {
   --media-filter: brightness(0.92) contrast(1.04);
 }
 
-/*
- * The header is dark in every theme and mode: its controls use the header (nav) tokens.
- * Anything that opens from it (menus, search suggestions, the confirmation dialog) is a surface
- * of its own and must not inherit the header's light text.
- */
-.site-header {
-  --text: var(--fanous-c-nav-text);
-  --heading: var(--fanous-c-nav-text);
-  --text-soft: var(--fanous-c-nav-search-placeholder);
-  --link: var(--fanous-c-nav-active-text);
-  --accent-text: var(--fanous-c-nav-active-text);
-  --hover: var(--fanous-c-nav-hover);
-  --line: var(--fanous-c-nav-border);
-  --control-line: var(--fanous-c-nav-search-border);
-  --surface: var(--fanous-c-nav-search-bg);
-  --focus-color: var(--fanous-c-nav-active-text);
-  /* Sign in: the header's lit accent with the header colour as its text (in some light themes the
-     primary button is the header colour itself, so it would not read as a button here) */
-  --solid-bg: var(--fanous-c-nav-active-text);
-  --solid-bg-hover: color-mix(in srgb, var(--fanous-c-nav-active-text) 80%, var(--fanous-c-nav-text));
-  --on-solid: var(--fanous-c-nav-bg);
-  --solid-edge: none;
-  color: var(--text);
-}
 .site-header :is(.account-menu, .search-popup) {
   --surface: var(--fanous-c-menu-bg);
   --surface-raised: var(--fanous-c-menu-bg);
@@ -320,98 +298,7 @@ a:hover {
   inset-block-start: 1rem;
 }
 
-/* ---------- header ---------- */
-.site-header {
-  position: relative;
-  z-index: 30;
-  background: var(--header-bg);
-  border-block-end: 1px solid var(--header-line);
-  box-shadow: var(--header-shadow);
-}
-.site-header .wrap {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 1.5rem;
-  padding-block: 0.75rem;
-}
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.625rem;
-  color: var(--text);
-  text-decoration: none;
-  font-weight: 700;
-  font-size: 1.0625rem;
-  margin-inline-end: auto;
-}
-.brand img {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 50%;
-}
-.brand-ar {
-  font-family: var(--font-arabic);
-  font-size: 1.25rem;
-  line-height: 1;
-}
-.primary-nav ul {
-  display: flex;
-  gap: 0.25rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.primary-nav a,
-.signin-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.75rem;
-  padding-inline: 0.75rem;
-  border-radius: 0.375rem;
-  color: var(--text);
-  text-decoration: none;
-  font-weight: 500;
-}
-.primary-nav a:hover {
-  background: var(--hover);
-}
-.primary-nav a[aria-current='page'] {
-  box-shadow: inset 0 -3px 0 var(--color-lantern);
-}
-.header-tools {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-.signin-link {
-  background: var(--solid-bg);
-  color: var(--on-solid);
-  font-weight: 600;
-}
-.signin-link:hover {
-  background: var(--solid-bg-hover);
-}
-
-@media (max-width: 47.99rem) {
-  .primary-nav {
-    order: 3;
-    width: 100%;
-    overflow-x: auto;
-    margin-inline: calc(var(--gutter) * -1);
-    padding-inline: calc(var(--gutter) - 0.75rem);
-    width: calc(100% + 2 * var(--gutter));
-  }
-}
-
 /* ---------- account menu (disclosure) ---------- */
-.account {
-  position: relative;
-}
-/* signed-in hint (theme-mode.ts head script): no "Sign in" flash while /auth/me answers */
-[data-signed-in] .account > .signin-link {
-  visibility: hidden;
-}
 /* in-app confirmation for destructive actions (./scripts/confirm.ts) */
 .confirm-dialog {
   max-inline-size: min(26rem, calc(100vw - 2rem));
@@ -1241,27 +1128,6 @@ main {
 }
 .video-grid + .video-grid {
   margin-block-start: 3rem;
-}
-
-/* ---------- Light / Dark toggle (needs JS: shown once the head script ran) ---------- */
-.theme {
-  position: relative;
-}
-html:not([data-js]) .theme {
-  display: none;
-}
-.theme-button {
-  display: inline-grid;
-}
-.theme-button .theme-icon {
-  grid-area: 1 / 1;
-  width: 1.125rem;
-  height: 1.125rem;
-}
-/* the videos site's toggle: the Moon while light (switches to dark), the Sun while dark */
-.theme-button[data-current='light'] .mode-sun,
-.theme-button[data-current='dark'] .mode-moon {
-  display: none;
 }
 
 /* ---------- draft preview (src/components/PreviewBanner.astro) ---------- */
@@ -2283,10 +2149,6 @@ html[data-js] .ci-deck .tl-ov {
      Linux that is ~319px, wider than a 320px phone's row, and the page scrolled sideways. */
   min-inline-size: 0;
 }
-.search-header {
-  flex: 1 1 12rem;
-  max-inline-size: 22rem;
-}
 .search-page {
   margin-block-start: 1.25rem;
   max-inline-size: 40rem;
@@ -2474,11 +2336,6 @@ html[data-js] .ci-deck .tl-ov {
   color: var(--text-soft);
 }
 @media (max-width: 40rem) {
-  .search-header {
-    order: 10;
-    flex-basis: 100%;
-    max-inline-size: none;
-  }
   .search-result-thumb {
     inline-size: 4rem;
     block-size: 4rem;

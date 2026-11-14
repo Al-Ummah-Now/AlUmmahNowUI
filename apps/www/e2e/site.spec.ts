@@ -15,7 +15,9 @@ test.describe('rendering', () => {
       await expect(page.locator('html')).toHaveAttribute('dir', l === 'ar' ? 'rtl' : 'ltr');
       await expect(page.locator('h1')).toHaveCount(1);
       await expect(page.getByText('الأمة الآن').first()).toBeVisible();
-      await expect(page.locator('header nav[aria-label]')).toHaveCount(1);
+      // www's own links, then the Al Ummah Now app links (Website / Videos: here Videos)
+      await expect(page.locator('header nav[aria-label]')).toHaveCount(2);
+      await expect(page.locator('header nav.primary-nav[aria-label]')).toHaveCount(1);
       await expect(page.locator('main#main')).toHaveCount(1);
       await expect(page.locator('footer')).toHaveCount(1);
       expect(['cms', 'cache', 'snapshot', 'builtin']).toContain(res?.headers()['x-content-source']);
@@ -125,13 +127,13 @@ test.describe('routing', () => {
 test.describe('language switch', () => {
   test('en → ar keeps the page and remembers the choice', async ({ page, context }) => {
     await page.goto('/en/articles/');
-    // exact: a page can also link "Articles in العربية" (stage's articles page does)
-    await page.getByRole('link', { name: 'العربية', exact: true }).click();
+    // the header's language button (nav/header.js): its name is the action, then the visible label
+    await page.getByRole('link', { name: 'Switch to Arabic: العربية', exact: true }).click();
     await expect(page).toHaveURL(/\/ar\/articles\/$/);
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     const cookies = await context.cookies();
     expect(cookies.find((c) => c.name === 'aun_locale')?.value).toBe('ar');
-    await page.getByRole('link', { name: 'English', exact: true }).click();
+    await page.getByRole('link', { name: 'التبديل إلى الإنجليزية: English', exact: true }).click();
     await expect(page).toHaveURL(/\/en\/articles\/$/);
   });
 });

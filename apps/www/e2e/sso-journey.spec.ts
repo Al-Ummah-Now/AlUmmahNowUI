@@ -65,7 +65,7 @@ test.describe('SSO journey from www (real QA auth)', () => {
     test(`sign in once on www, signed in on videos, a sign-out link signs out everywhere (${locale})`, async ({ page }) => {
       test.setTimeout(150_000);
       await page.goto(`${WWW_ORIGIN}/${locale}/`);
-      await page.locator('a.signin-link').first().click();
+      await page.locator('a.aun-signin').first().click();
       await page.waitForURL((u) => u.origin === AUTH_ORIGIN);
       // auth's sign-in page follows the www page's language
       await expect(page.locator('html')).toHaveAttribute('lang', locale);

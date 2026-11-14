@@ -1,6 +1,6 @@
 /**
  * Site behaviour (the only JS besides the video facade):
- *  - Light / Dark / System menu (./theme.ts; the head script applies the saved choice)
+ *  - Light / Dark toggle (./theme.ts; the head script applies the saved choice)
  *  - language switch remembers the choice (aun_locale cookie, read by `/`)
  *  - account: fetch /auth/me and auth's account list ({AUTH}/session/accounts);
  *    signed in → name + disclosure menu listing every account in this browser (switch,
@@ -17,7 +17,7 @@
 import { confirmDialog, type ConfirmOptions } from './confirm';
 import { initFacades } from './facade';
 import { initSearchBoxes } from './search-combobox';
-import { fitToViewport } from './menu-fit';
+import { fitToViewport } from '../../../../packages/render/src/menu-fit';
 import { initTheme } from './theme';
 import { startStreet } from '../../../../packages/render/src/themes/fanous-street.generated.js';
 import {
@@ -164,10 +164,11 @@ async function authCall(authUrl: string, path: string, init: RequestInit): Promi
   }
 }
 
+/** The header's language button (nav/header.js langButtonHtml: `hreflang` names the language it opens). */
 function rememberLocale() {
-  document.querySelectorAll<HTMLAnchorElement>('[data-set-locale]').forEach((a) => {
+  document.querySelectorAll<HTMLAnchorElement>('.site-header a.aun-lang[hreflang]').forEach((a) => {
     a.addEventListener('click', () => {
-      const l = a.dataset.setLocale;
+      const l = a.hreflang;
       if (l === 'en' || l === 'ar') document.cookie = `aun_locale=${l}; Path=/; Max-Age=31536000; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
     });
   });
@@ -234,7 +235,8 @@ function buildMenu(root: HTMLElement, me: Me, result: AccountsResult, focusButto
   if (email && email !== name) whoText.append(emailText(email, 'aun-menu-who-sub'));
   whoLi.append(avatarEl(avatar, name, 'aun-avatar--lg'), whoText);
   menu.append(whoLi);
-  const sep = () => menu.append(el('li', { class: 'aun-menu-sep', role: 'separator' }));
+  // A drawn divider only: a <li role="separator"> is not a list item, which breaks the list (axe "list")
+  const sep = () => menu.append(el('li', { class: 'aun-menu-sep', 'aria-hidden': 'true' }));
   sep();
 
   const busy = (on: boolean) => menu.querySelectorAll<HTMLButtonElement>('button').forEach((b) => (b.disabled = on));

@@ -1,6 +1,7 @@
 /**
  * Keeps an open popup inside the viewport (AlUmmahNow docs/design/NAV.md "Menus never leave the
- * screen"; same function as AlUmmahNow packages/fanous-tokens/nav/menu-fit.js). After it is shown:
+ * screen"; same function as AlUmmahNow packages/fanous-tokens/nav/menu-fit.js;
+ * used by the header menus of www and the scholar sites). After it is shown:
  * shift it sideways (CSS `translate`) to an 8px gutter, narrow it if wider than the screen; keep it
  * below its anchor when it fits, else open it upwards when the anchor has more room above, capping
  * its height to the room on that side (it scrolls inside). Never a minimum height: a 96px floor

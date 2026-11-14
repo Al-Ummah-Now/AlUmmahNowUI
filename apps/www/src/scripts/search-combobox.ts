@@ -17,7 +17,7 @@ import { addRecent, clearRecent, localStore, readRecent, removeRecent, type Stor
 import { fetchScholarSuggestions, fetchSuggestions, isSafeHref, scholarSuggestUrl, suggestUrl, type SearchHit } from '../lib/search/suggest';
 import type { Locale } from '../lib/locale';
 import { stableImageUrl } from '../lib/images';
-import { fitToViewport } from './menu-fit';
+import { fitToViewport } from '../../../../packages/render/src/menu-fit';
 
 export interface ComboboxLabels {
   articles: string;

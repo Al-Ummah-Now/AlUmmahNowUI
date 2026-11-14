@@ -251,10 +251,10 @@ describe('sign-in (SS11): top-level redirect, host-only session, 5-minute re-che
     expect(revoked.headers.getSetCookie().some((c) => c.startsWith('__Host-aun_site=;'))).toBe(true);
 
     const outage = await me(withCookie(), (async () => new Response('', { status: 503 })) as typeof fetch);
-    expect(await outage.json()).toEqual({ signedIn: true, name: 'Viewer' });
+    expect(await outage.json()).toEqual({ signedIn: true, name: 'Viewer', email: null });
 
     const ok = await me(withCookie(), (async () => Response.json({ access_token: 'a', refresh_token: 'rt-2' })) as typeof fetch);
-    expect(await ok.json()).toEqual({ signedIn: true, name: 'Viewer' });
+    expect(await ok.json()).toEqual({ signedIn: true, name: 'Viewer', email: null });
     expect(ok.headers.getSetCookie()[0]).toMatch(/^__Host-aun_site=/);
 
     const fresh = await seal(SECRET, { sub: 'usr_1', name: 'Viewer', email: null, rt: 'rt-1', checked: now, exp: now + 3600 });

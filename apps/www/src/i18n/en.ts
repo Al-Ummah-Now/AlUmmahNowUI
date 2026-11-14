@@ -12,7 +12,6 @@ export const en = {
     languageSwitch: 'Language',
     accountMenu: 'Account',
     pagination: 'Pages',
-    home: 'Al Ummah Now home',
   },
   nav: {
     home: 'Home',
@@ -22,8 +21,6 @@ export const en = {
     about: 'About',
   },
   lang: {
-    switchTo: 'العربية',
-    switchToLabel: 'Read this page in Arabic',
     notAvailable: 'This page is not yet available in English. It is shown in Arabic.',
     /** Language names as this UI says them inside the sentences below. */
     names: { en: 'English', ar: 'العربية' },

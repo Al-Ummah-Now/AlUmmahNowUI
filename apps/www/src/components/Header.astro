@@ -1,4 +1,12 @@
 ---
+/**
+ * The Al Ummah Now header (AlUmmahNow docs/design/NAV.md "Header"; wiki E10): the shared frame and
+ * controls of every app. Markup from the vendored builders (packages/render/src/nav/header.js, kept
+ * byte-identical by `npm run check:fanous`), styled by aun-nav.generated.css; www adds only its own
+ * links and search in the primary slot (src/styles/header.css). Order, mirrored in Arabic:
+ * brand · env badge · links + search · app links · language · light/dark · account (or Sign in).
+ * apps/dev renders the same header (its tests compare its markup with this file).
+ */
 import Icon from './Icon.astro';
 import SearchBox from './SearchBox.astro';
 import { strings } from '../i18n';
@@ -6,13 +14,13 @@ import { navHref } from '../lib/context';
 import type { NavItem } from '../lib/cms-types';
 import { libraryUrl } from '../lib/embeds';
 import type { Config } from '../lib/env';
-import { otherLocale, type Locale } from '../lib/locale';
-import { modeIconSvg, modeToggleLabel } from '../../../../packages/render/src/mode-toggle';
+import type { Locale } from '../lib/locale';
+import { appLinksHtml, brandHtml, envBadgeHtml, langButtonHtml, signInHtml } from '../../../../packages/render/src/nav/header.js';
+import { modeIconSvg, modeToggleLabel } from '../../../../packages/render/src/nav/mode-toggle.js';
 
 interface Props { cfg: Config; locale: Locale; nav: NavItem[]; switchHref: string }
 const { cfg, locale, nav, switchHref } = Astro.props;
 const t = strings(locale);
-const other = otherLocale(locale);
 const path = Astro.url.pathname;
 const current = (href: string) => (href === path || (href !== `/${locale}/` && path.startsWith(href)) ? 'page' : undefined);
 const items = nav.flatMap((n) => {
@@ -22,31 +30,31 @@ const items = nav.flatMap((n) => {
 const toDark = modeToggleLabel(locale, false);
 const toLight = modeToggleLabel(locale, true);
 const loginHref = `/auth/login?return=${encodeURIComponent(path + Astro.url.search)}`;
+const videosUrl = libraryUrl(cfg.videosWebUrl, locale);
 ---
-<header class="site-header">
-  <div class="wrap">
-    <a class="brand" href={`/${locale}/`} aria-label={t.a11y.home}>
-      <img src="/brand/logo-192.webp" alt="" width="40" height="40" />
-      {locale === 'ar' ? <span class="brand-ar">الأمة الآن</span> : <span>Al Ummah Now</span>}
-    </a>
-    <nav class="primary-nav" aria-label={t.a11y.primaryNav}>
-      <ul>
-        {items.map((i) => (
-          <li><a href={i.href} aria-current={current(i.href)}>{i.label}</a></li>
-        ))}
-      </ul>
-    </nav>
-    <SearchBox cfg={cfg} locale={locale} id="site-search" />
-    <div class="header-tools">
-      <div class="theme" id="theme">
-        <!-- Light / Dark (src/scripts/theme.ts): the videos site's toggle (packages/render/src/mode-toggle.ts),
-             the Moon in light and the Sun in dark, named for the mode it switches to; no "System" option -->
-        <button type="button" class="theme-button aun-icon-btn" data-testid="theme-toggle" aria-label={toDark} title={toDark} data-label-dark={toDark} data-label-light={toLight} data-current="light">
-          <Fragment set:html={modeIconSvg('moon', 'theme-icon mode-moon')} />
-          <Fragment set:html={modeIconSvg('sun', 'theme-icon mode-sun')} />
-        </button>
-      </div>
-      <a class="lang-switch aun-lang" href={switchHref} hreflang={other} lang={other} data-set-locale={other}>{t.lang.switchTo}</a>
+<header class="site-header aun-header">
+  <div class="aun-header-row">
+    <Fragment set:html={brandHtml({ lang: locale, href: `/${locale}/`, logoSrc: '/brand/logo-192.webp' })} />
+    <Fragment set:html={envBadgeHtml(cfg.appEnv, locale)} />
+    <div class="aun-header-primary">
+      <nav class="primary-nav" aria-label={t.a11y.primaryNav}>
+        <ul>
+          {items.map((i) => (
+            <li><a href={i.href} aria-current={current(i.href)}>{i.label}</a></li>
+          ))}
+        </ul>
+      </nav>
+      <SearchBox cfg={cfg} locale={locale} id="site-search" />
+    </div>
+    <div class="aun-header-tools">
+      <Fragment set:html={appLinksHtml({ lang: locale, links: [{ id: 'videos', href: videosUrl }] })} />
+      <Fragment set:html={langButtonHtml({ lang: locale, href: switchHref })} />
+      <!-- Light / Dark (src/scripts/theme.ts): nav/header.js modeButtonHtml's button with both icons, so the
+           cached page can show the device's mode before any choice (CSS picks the icon from data-current) -->
+      <button type="button" class="aun-icon-btn aun-mode" id="mode-toggle" data-testid="theme-toggle" aria-label={toDark} title={toDark} data-label-dark={toDark} data-label-light={toLight} data-current="light">
+        <Fragment set:html={modeIconSvg('moon', 'mode-moon')} />
+        <Fragment set:html={modeIconSvg('sun', 'mode-sun')} />
+      </button>
       <div
         class="account"
         id="account"
@@ -71,11 +79,11 @@ const loginHref = `/auth/login?return=${encodeURIComponent(path + Astro.url.sear
         data-label-confirm-sign-out-all-title={t.auth.confirmSignOutAllTitle}
         data-label-confirm-sign-out-all-body={t.auth.confirmSignOutAllBody}
         data-profile-url={cfg.profileUrl}
-        data-videos-url={libraryUrl(cfg.videosWebUrl, locale)}
+        data-videos-url={videosUrl}
         data-cms-url={`${cfg.cmsPublicUrl}/`}
         data-locale={locale}
       >
-        <a class="signin-link" href={loginHref} rel="nofollow">{t.auth.signIn}</a>
+        <Fragment set:html={signInHtml({ lang: locale, href: loginHref })} />
       </div>
     </div>
   </div>

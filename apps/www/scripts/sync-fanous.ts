@@ -25,6 +25,12 @@
  * is vendored as is, at the same commit, into NAV_OUT: the header account button and menus look
  * the same in every Al Ummah Now app. tests/site-theme.test.ts fails when global.css uses a token
  * the generated file lacks (run the sync again).
+ *
+ * The header's markup builders (`nav/header.js`, which imports `nav/mode-toggle.js`, and their .d.ts)
+ * are vendored byte for byte into NAV_JS_OUT (packages/render/src/nav), so www, the scholar sites and
+ * the developer site render the exact markup of AlUmmahNow docs/design/NAV.md "Header". The scholar
+ * sites also serve the app icons their header links show (SITES_ICON_OUT). `--check` fails when any
+ * vendored file differs from the lock, and when a byte-for-byte copy differs from its upstream hash.
  */
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -36,12 +42,21 @@ const LOCK = 'fanous.lock.json';
 export const CSS_OUT = '../../packages/render/src/styles/fanous-themes.generated.css';
 export const TS_OUT = '../../packages/render/src/themes/site-themes.generated.ts';
 export const USED_IN = 'src/styles/global.css';
+/** The header's www parts (shared with apps/dev): its tokens are kept too. */
+export const HEADER_CSS = 'src/styles/header.css';
 const NAV_SOURCE = 'packages/fanous-tokens/nav/aun-nav.css';
 export const NAV_OUT = 'src/styles/aun-nav.generated.css';
 /** The account menu's app icons (each app's own favicon, 96 px lossless WebP): separate files, served as is. */
 export const NAV_ICON_IDS = ['www', 'videos', 'profile', 'cms', 'admin', 'auth-admin'] as const;
 const NAV_ICON_SOURCE = 'packages/fanous-tokens/nav/icons';
 export const NAV_ICON_OUT = 'public/aun-nav/icons';
+/** The scholar sites' header links (Website, Videos: nav/header.js appLinksHtml) and account menu apps (+ Your profile): their icons, same-origin. */
+export const SITES_ICON_IDS = ['www', 'videos', 'profile'] as const;
+export const SITES_ICON_OUT = '../sites/public/aun-nav/icons';
+/** The header builders, vendored byte for byte (header.js imports ./mode-toggle.js, so they sit together). */
+export const NAV_JS_SOURCES = ['header.js', 'header.d.ts', 'mode-toggle.js', 'mode-toggle.d.ts'].map((f) => `packages/fanous-tokens/nav/${f}`);
+export const NAV_JS_OUT = '../../packages/render/src/nav';
+export const navJsOut = (source: string) => `${NAV_JS_OUT}/${source.slice(source.lastIndexOf('/') + 1)}`;
 /** The videos app's default (shared-types DEFAULT_SITE_THEME): rendered when the admin's answer cannot be used. */
 const DEFAULT_THEME = 'fawanees';
 
@@ -52,6 +67,8 @@ interface Lock {
   sourceSha256: string;
   /** The street module's source files at the same ref, by path. */
   street?: Record<string, string>;
+  /** The header builders' source files at the same ref, by path; each output (navJsOut) is byte-identical. */
+  nav?: Record<string, string>;
   outputs: Record<string, string>;
 }
 
@@ -220,6 +237,15 @@ async function main() {
         process.exit(1);
       }
     }
+    // The header builders are copies, not transforms: each must equal its upstream file at the locked ref
+    for (const source of NAV_JS_SOURCES) {
+      const want = lock.nav?.[source];
+      const file = navJsOut(source);
+      if (!want || lock.outputs[file] !== want) {
+        console.error(`${LOCK} does not pin ${source} as a byte-for-byte copy in ${file}. Run: npm run sync:fanous`);
+        process.exit(1);
+      }
+    }
     console.log(`fanous: generated files match the lock (${REPO}@${lock.ref.slice(0, 8)})`);
     return;
   }
@@ -233,7 +259,7 @@ async function main() {
   const navRes = await fetch(navUrl);
   if (!navRes.ok) throw new Error(`${navUrl}: ${navRes.status}`);
   const nav = navOutput(await navRes.text(), ref);
-  const used = new Set([...usedTokens(readFileSync(USED_IN, 'utf8')), ...usedTokens(nav)]);
+  const used = new Set([...usedTokens(readFileSync(USED_IN, 'utf8')), ...usedTokens(readFileSync(HEADER_CSS, 'utf8')), ...usedTokens(nav)]);
   const out = buildOutputs(source, ref, used);
   writeFileSync(CSS_OUT, out.css);
   writeFileSync(TS_OUT, out.ts);
@@ -249,6 +275,24 @@ async function main() {
     const file = `${NAV_ICON_OUT}/${id}.webp`;
     writeFileSync(file, body);
     icons[file] = sha256(body);
+  }
+  mkdirSync(SITES_ICON_OUT, { recursive: true });
+  for (const id of SITES_ICON_IDS) {
+    const file = `${SITES_ICON_OUT}/${id}.webp`;
+    const body = readFileSync(`${NAV_ICON_OUT}/${id}.webp`);
+    writeFileSync(file, body);
+    icons[file] = sha256(body);
+  }
+  const navJs: Record<string, string> = {};
+  const navJsOutputs: Record<string, string> = {};
+  mkdirSync(NAV_JS_OUT, { recursive: true });
+  for (const source of NAV_JS_SOURCES) {
+    const r = await fetch(`https://raw.githubusercontent.com/${REPO}/${ref}/${source}`);
+    if (!r.ok) throw new Error(`${source}@${ref}: ${r.status}`);
+    const body = Buffer.from(await r.arrayBuffer());
+    writeFileSync(navJsOut(source), body);
+    navJs[source] = sha256(body);
+    navJsOutputs[navJsOut(source)] = sha256(body);
   }
   const street: Record<string, string> = {};
   const streetOut: Record<string, string> = {};
@@ -268,10 +312,11 @@ async function main() {
     source: SOURCE,
     sourceSha256: sha256(source),
     street,
-    outputs: { [CSS_OUT]: sha256(out.css), [TS_OUT]: sha256(out.ts), [NAV_OUT]: sha256(nav), ...icons, ...streetOut },
+    nav: navJs,
+    outputs: { [CSS_OUT]: sha256(out.css), [TS_OUT]: sha256(out.ts), [NAV_OUT]: sha256(nav), ...icons, ...streetOut, ...navJsOutputs },
   };
   writeFileSync(LOCK, JSON.stringify(next, null, 2) + '\n');
-  console.log(`wrote ${CSS_OUT} (${out.css.length} bytes), ${TS_OUT}, ${NAV_OUT}, the street module and ${LOCK}`);
+  console.log(`wrote ${CSS_OUT} (${out.css.length} bytes), ${TS_OUT}, ${NAV_OUT}, the street module, the header builders (${NAV_JS_OUT}) and ${LOCK}`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
