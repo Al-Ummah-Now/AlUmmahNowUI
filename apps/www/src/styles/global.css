@@ -3318,5 +3318,42 @@ html.fanous-street .tl-wrap::before {
   mask-composite: intersect;
 }
 
+/* A CMS page or article body on the street (PageArticle, PostArticle: `.section.reading`): the same
+   light frost as the timeline column, so lanterns and strings pass softened behind the text, never
+   sharp through it; and the same glyph halo on text that sits on the street (body, block headings,
+   captions, quotes, card titles and dates, lists; not text on cards or buttons). The hero above (.page-head) stays solid.
+   The frost covers the section from the hero's edge down (a straight top edge, against the hero's
+   border) and fades out at the sides and the bottom: no box edge. Cards, images and media blocks
+   stay opaque on top. */
+html.fanous-street .reading > .wrap {
+  position: relative;
+  z-index: 0;
+  --rd-frost-out: 0px;
+  --rd-frost-fade: 1rem;
+  --rd-section-pad: clamp(2.5rem, 6vw, 4.5rem);
+}
+@media (min-width: 48rem) {
+  html.fanous-street .reading > .wrap { --rd-frost-out: 4rem; --rd-frost-fade: 6rem; }
+}
+html.fanous-street .reading > .wrap::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: calc(-1 * var(--rd-section-pad)) calc(-1 * var(--rd-frost-out));
+  pointer-events: none;
+  background: color-mix(in srgb, var(--bg) 22%, transparent);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  --rd-frost-x: linear-gradient(90deg, transparent, #000 var(--rd-frost-fade), #000 calc(100% - var(--rd-frost-fade)), transparent);
+  --rd-frost-y: linear-gradient(#000, #000 calc(100% - var(--rd-section-pad)), transparent);
+  -webkit-mask-image: var(--rd-frost-x), var(--rd-frost-y);
+  -webkit-mask-composite: source-in;
+  mask-image: var(--rd-frost-x), var(--rd-frost-y);
+  mask-composite: intersect;
+}
+html.fanous-street .reading :is(.prose, .section-tags, .blk-heading, .blk-caption, .blk-quote, .card-title, .card-date, .pagination > p, .articles-list, .rail-title, .rail-meta, .empty-note) {
+  text-shadow: 0 0 2px var(--bg), 0 0 6px var(--bg), 0 0 10px var(--bg);
+}
+
 
 
