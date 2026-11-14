@@ -1,0 +1,57 @@
+---
+import '../../../../packages/render/src/styles/fanous-themes.generated.css';
+import '../styles/site.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { strings } from '../i18n';
+import { dir, type Locale, type PageSlug } from '../lib/pages';
+import { headLinks, jsonLd, jsonLdText, OG_IMAGE } from '../lib/seo';
+
+interface Props {
+  locale: Locale;
+  slug: PageSlug;
+  title: string;
+  description: string;
+}
+const { locale, slug, title, description } = Astro.props;
+const t = strings(locale);
+const fullTitle = slug === '' ? `${t.meta.siteName} · ${t.meta.siteNameAlt}` : `${title} | ${t.meta.siteName}`;
+const { canonical, alternates } = headLinks(locale, slug);
+const ld = slug === '' ? jsonLd(locale, t.meta.siteName, t.meta.siteNameAlt, t.meta.description) : [];
+---
+<!doctype html>
+<html lang={locale} dir={dir(locale)} data-theme="fawanees">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline src="/mode.js"></script>
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {alternates.map((a) => <link rel="alternate" hreflang={a.hreflang} href={a.href} />)}
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#0e2b3d" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    {locale === 'ar' && <link rel="preload" as="font" type="font/woff2" href="/fonts/noto-naskh-arabic-arabic-400-normal.woff2" crossorigin />}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={t.meta.siteName} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={OG_IMAGE} />
+    <meta property="og:locale" content={locale === 'ar' ? 'ar_AR' : 'en_US'} />
+    <meta name="twitter:card" content="summary_large_image" />
+    {ld.map((d) => <script type="application/ld+json" set:html={jsonLdText(d)} />)}
+    <script is:inline src="/site.js" defer></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">{t.nav.skip}</a>
+    <Header locale={locale} slug={slug} t={t} />
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <Footer locale={locale} t={t} />
+  </body>
+</html>

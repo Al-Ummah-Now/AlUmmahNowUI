@@ -1,0 +1,34 @@
+---
+import type { Strings } from '../i18n';
+import { PAGES, pagePath, type Locale, type PageSlug } from '../lib/pages';
+import { GH, STATUS_PAGE, VIDEOS, WWW } from '../lib/links';
+interface Props {
+  locale: Locale;
+  t: Strings;
+}
+const { locale, t } = Astro.props;
+const label = (p: PageSlug) => (p === '' ? t.nav.home : t.nav[p]);
+---
+<footer class="site-footer night">
+  <div class="wrap footer-grid">
+    <div class="footer-brand">
+      <p class="footer-name"><img src="/brand/logo-192.webp" alt="" width="32" height="32" loading="lazy" />{t.meta.siteName} <span lang={locale === 'ar' ? 'en' : 'ar'}>{t.meta.siteNameAlt}</span></p>
+      <p>{t.footer.line}</p>
+      <p class="footer-note">{t.footer.note}</p>
+    </div>
+    <nav aria-label={t.footer.project}>
+      <h2 class="footer-h">{t.footer.project}</h2>
+      <ul role="list">{PAGES.map((p) => <li><a href={pagePath(locale, p)}>{label(p)}</a></li>)}</ul>
+    </nav>
+    <nav aria-label={t.footer.sites}>
+      <h2 class="footer-h">{t.footer.sites}</h2>
+      <ul role="list">
+        <li><a href={WWW} rel="external">{t.footer.www}</a></li>
+        <li><a href={VIDEOS} rel="external">{t.footer.videos}</a></li>
+        <li><a href={STATUS_PAGE} rel="external">{t.footer.status}</a></li>
+        <li><a href={GH} rel="external">{t.footer.github}</a></li>
+        <li><a href={`${GH}/AlUmmahNowWiki`} rel="external">{t.footer.wiki}</a></li>
+      </ul>
+    </nav>
+  </div>
+</footer>

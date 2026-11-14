@@ -156,3 +156,86 @@ jobs:
             apps/sites/playwright-report/
           if-no-files-found: ignore
           retention-days: 14
+
+  # alummahnow.dev (apps/dev, wiki AUN-DEV-SITE): static Astro on Workers static assets. Same gates,
+  # E2E with axe against `wrangler dev` serving the real static-assets config (_headers, _redirects, 404).
+  dev:
+    name: Dev site (lint, typecheck, unit, build, E2E + axe local)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: apps/dev
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+        working-directory: .
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck (astro check + scripts)
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: wrangler config check
+        run: npm run check:config
+
+      - name: Build
+        run: npm run build
+
+      - name: Dry-run (production, stage, qa)
+        run: |
+          npx wrangler deploy --dry-run -c wrangler.jsonc
+          npx wrangler deploy --dry-run -c wrangler.jsonc --env stage
+          npx wrangler deploy --dry-run -c wrangler.jsonc --env qa
+
+      - name: Install Playwright browsers
+        uses: ./.github/actions/playwright-install
+        with:
+          runner: npx
+          browsers: chromium
+      - name: E2E (with axe) against local wrangler dev
+        run: npx playwright test
+
+      - name: Keep secrets out of the uploaded E2E output
+        if: always()
+        run: python3 ../../scripts/scan-artifacts-for-secrets.py --remove test-results playwright-report
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dev-local
+          path: |
+            apps/dev/test-results/
+            apps/dev/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # Is alummahnow.dev a zone on the account yet? Read-only (two GETs, scripts/release/zone-check.ts), shown in the
+  # run summary so a PR says whether the owner's DNS steps (apps/dev/docs/DOMAIN.md) are still pending. No
+  # `npm ci` here: the token is only ever next to our own script. Never on PRs from forks (no secrets there).
+  dev-zone:
+    name: Dev site zone check (read-only)
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: alummahnow.dev zone
+        working-directory: apps/dev
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node --experimental-strip-types --no-warnings scripts/release/zone-check.ts

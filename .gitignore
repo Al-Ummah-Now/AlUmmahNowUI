@@ -26,3 +26,6 @@ secrets-check.txt
 
 # theme sweep report (e2e/theme-sweep.spec.ts)
 test-results-themes/
+
+# apps/dev review screenshots (npm run screenshots)
+screenshots/

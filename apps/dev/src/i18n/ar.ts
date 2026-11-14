@@ -1,0 +1,385 @@
+/**
+ * Arabic copy for alummahnow.dev: the same keys as en.ts (tests/i18n.test.ts) and the wiki glossary's
+ * terms («مرئي / مرئيات» for video, «المقاطع القصيرة» for Shorts, «اشترك» for subscribe).
+ */
+import { WIKI, GH, VIDEOS, WWW, STATUS_PAGE } from '../lib/links.ts';
+import type { Item, Strings } from './en.ts';
+
+export const ar: Strings = {
+  meta: {
+    siteName: 'الأمة الآن',
+    siteNameAlt: 'Al Ummah Now',
+    description:
+      'الأمة الآن مجتمع إسلامي لمشاركة المرئيات بالعربية والإنجليزية: كيف يعمل، وكيف بُني، والتوجّه الذي ندرسه ليكون وقفًا.',
+  },
+  nav: {
+    skip: 'تخطَّ إلى المحتوى',
+    primary: 'الرئيسية',
+    menu: 'القائمة',
+    home: 'الرئيسية',
+    community: 'المجتمع',
+    technology: 'التقنية',
+    infrastructure: 'البنية التحتية',
+    'open-source': 'المصدر المفتوح',
+    waqf: 'الوقف',
+    contact: 'تواصل معنا',
+    language: 'English',
+    toDark: 'الوضع الداكن',
+    toLight: 'الوضع الفاتح',
+  },
+  status: {
+    live: 'يعمل الآن',
+    rolling: 'مكتمل، قيد الإطلاق',
+    building: 'قيد التطوير',
+    planned: 'مخطط له',
+  },
+  common: {
+    source: 'المصدر',
+    sources: 'المصادر',
+    external: '(يفتح موقعًا آخر)',
+  },
+  footer: {
+    line: 'مجتمع إسلامي لمشاركة المرئيات بالعربية والإنجليزية.',
+    sites: 'مواقعنا',
+    project: 'المشروع',
+    wiki: 'الويكي',
+    github: 'GitHub',
+    status: 'حالة الخدمات',
+    www: 'www.alummahnow.net',
+    videos: 'videos.alummahnow.net',
+    note: 'المعلومات في هذا الموقع مأخوذة من الشيفرة ومن الويكي العام. إن اختلفا فالشيفرة هي الصحيحة.',
+  },
+
+  home: {
+    title: 'الأمة الآن',
+    description:
+      'مجتمع إسلامي لمشاركة المرئيات: شارك المرئيات والأخبار بلا رقابة، وتفاعل، وتعلّم، بالعربية والإنجليزية. مبني بشيفرة مفتوحة على Cloudflare.',
+    heroTitle: 'مجتمع إسلامي لمشاركة المرئيات، مبنيّ في العلن',
+    heroLead:
+      'الأمة الآن مكان تشارك فيه الأمة المرئيات والأخبار بلا رقابة، وتتفاعل، وتتعلّم، بالعربية والإنجليزية. يشرح هذا الموقع الغاية من المنصة، وكيف بُنيت، والتوجّه الذي ندرسه لتكون وقفًا.',
+    ctaDevelopers: 'كيف بُنيت المنصة',
+    ctaPartners: 'تواصل معنا',
+    lanternLabel: 'فانوس مضيء، شعار الأمة الآن',
+    pillarsTitle: 'لماذا هذا المجتمع',
+    pillars: [
+      { title: 'شارك المرئيات', body: 'ترفع القنوات المرئيات والمقاطع القصيرة، وتبث مباشرة، وتنشر المنشورات، وتنشئ قوائم التشغيل.' },
+      { title: 'شارك الأخبار بلا رقابة', body: 'مكان لمشاركة ما يحدث، بقواعد منشورة وإبلاغ مفتوح للجميع، والقرار الأخير فيه للبشر لا للخوارزميات.' },
+      { title: 'تفاعل', body: 'علّق واشترك وتلقَّ الإشعارات، وشارك في أي مكان عبر التضمين والروابط القصيرة.' },
+      { title: 'تعلّم', body: 'تشارك القنوات تلاوات القرآن والتفسير والفقه والكلمات، ويمكن أن يكون للعلماء مواقعهم الخاصة.' },
+    ],
+    pillarsMore: 'المزيد عن المجتمع',
+    liveTitle: 'يعمل اليوم',
+    live: [
+      { title: 'www.alummahnow.net', body: 'الموقع العام: الخط الزمني للرئيسية، والمقالات، وصفحات العلماء، وصفوف المرئيات.', href: WWW },
+      { title: 'videos.alummahnow.net', body: 'شاهد وارفع وابثّ مباشرة وعلّق واشترك.', href: VIDEOS },
+      { title: 'مواقع العلماء', body: 'مواقع بهوية مستقلة للعلماء على alummahnow.org، تعمل من المنصة نفسها.', href: 'https://www.alummahnow.net/ar/scholars/' },
+    ],
+    systemTitle: 'المنظومة في لمحة',
+    systemLead: 'كل ما يعمل على الخادم يعمل على Cloudflare Workers، وخدمة دخول واحدة تخدم كل التطبيقات.',
+    systemLayers: [
+      { title: 'الناس والتطبيقات', body: 'المتصفحات، والتطبيقات الأصلية للهواتف والتلفاز وأجهزة الحاسوب' },
+      { title: 'تسجيل الدخول', body: 'خدمة دخول موحّد واحدة لكل التطبيقات، مع مفاتيح المرور' },
+      { title: 'المواقع', body: 'www، وموقع المرئيات، ومواقع العلماء، ونظام إدارة المحتوى، ولوحة الإدارة' },
+      { title: 'الواجهات البرمجية والعمّال', body: 'واجهة المرئيات، وواجهة الإدارة، والمعالجة في الخلفية، والتحديثات الفورية، والمجدول' },
+      { title: 'البيانات والوسائط', body: 'D1 وR2 وKV وQueues؛ وFFmpeg على Cloudflare Containers؛ وBunny.net' },
+    ],
+    systemMore: 'اطّلع على البنية التحتية',
+    audiencesTitle: 'من أين تبدأ',
+    developers: {
+      title: 'المطوّرون والمساهمون',
+      body: 'كل المستودعات عامة على GitHub، ومعها ويكي يشرح كيف تترابط الأجزاء.',
+      links: [
+        { label: 'التقنية', href: 'technology' },
+        { label: 'البنية التحتية ومسار المرئيات', href: 'infrastructure' },
+        { label: 'المستودعات والمساهمة', href: 'open-source' },
+      ],
+    },
+    partners: {
+      title: 'المستثمرون والداعمون والشركاء',
+      body: 'الغاية من المنصة، وما هو موجود اليوم، وكيف نريد أن تكون محبوسة لخدمة المجتمع.',
+      links: [
+        { label: 'المجتمع', href: 'community' },
+        { label: 'توجّه الوقف', href: 'waqf' },
+        { label: 'تواصل معنا', href: 'contact' },
+      ],
+    },
+    waqfTitle: 'لخدمة الأمة',
+    waqfBody:
+      'ندرس أن تُدار الأمة الآن وقفًا أو من خلال جهة خيرية، لتخدم المنصة المجتمع بدل أن تكون ملكًا يُبتغى منه الربح. لا يوجد كيان قانوني حتى الآن. هذا توجّه، ونقول بوضوح أين وصل.',
+    waqfMore: 'اقرأ عن توجّه الوقف',
+  },
+
+  community: {
+    title: 'المجتمع',
+    description:
+      'شارك المرئيات والأخبار بلا رقابة، وتفاعل، وتعلّم، بالعربية والإنجليزية. الغاية من مجتمع الأمة الآن وكيف يعمل الإشراف.',
+    heroTitle: 'مجتمع للمشاركة والحوار والتعلّم',
+    heroLead:
+      'الأمة الآن موقع لمشاركة المحتوى: تنشر القنوات المرئيات والمقاطع القصيرة والبث المباشر والمنشورات وقوائم التشغيل، ويشاهد الجمهور ويعلّق ويشترك ويشارك. وكل ذلك بالعربية والإنجليزية.',
+    sections: [
+      {
+        id: 'share',
+        title: 'شارك المرئيات',
+        lead: 'تنشر القنوات بكل الأشكال التي تدعمها المنصة.',
+        items: [
+          { title: 'المرئيات والمقاطع القصيرة', body: 'المقطع القصير مدته ثلاث دقائق أو أقل، وهو عمودي أو مربع، ويمكن لصاحبه أن يغيّر ذلك.', status: 'live', sources: [{ label: 'قاعدة المقاطع القصيرة', href: `${WIKI}/epics/CHAT-SHORTS-shorts-rule.md` }] },
+          { title: 'البث المباشر', body: 'ابدأ البث من الاستوديو وشاهده في صفحة البث. يعمل مزوّدان للبث جنبًا إلى جنب.', status: 'live', sources: [{ label: 'D3 مزوّد البث', href: `${WIKI}/epics/D3-live-provider.md` }] },
+          { title: 'المنشورات وقوائم التشغيل وأقسام القناة', body: 'منشورات المجتمع، وقوائم تشغيل شخصية وغير مدرجة، وصفحات قنوات مرتّبة في أقسام.', status: 'live', sources: [{ label: 'أقسام القناة', href: `${WIKI}/epics/AUN-CHANNEL-SECTIONS-channel-sections.md` }] },
+          { title: 'الرفع بدعوة حاليًا', body: 'رفع المرئيات وإنشاء القنوات بدعوة فقط. يمنح المشرفون صنّاع المحتوى مستوى، وقد تفتح الاشتراكات هذا لاحقًا.', status: 'live', sources: [{ label: 'O25', href: `${WIKI}/epics/decisions.md#o25-invite-only-uploads-with-admin-assigned-creator-tiers` }] },
+        ] as Item[],
+      },
+      {
+        id: 'news',
+        title: 'شارك الأخبار بلا رقابة',
+        lead:
+          'من حق الناس أن يشاركوا ما يحدث للأمة دون أن يختفي بصمت. هذه هي الغاية. وهي تعني عمليًا قواعد واضحة، وإبلاغًا مفتوحًا، وقرارات يتخذها البشر لا الأنظمة الآلية.',
+        items: [
+          { title: 'قواعد منشورة', body: 'إرشادات المجتمع منشورة بالعربية والإنجليزية. هي القواعد، ولا توجد قائمة خفية.', status: 'live', sources: [{ label: 'E06', href: `${WIKI}/epics/E06-community-moderation.md` }] },
+          { title: 'الإبلاغ متاح للجميع', body: 'يمكن الإبلاغ عن المرئيات والتعليقات والقنوات والبث المباشر، مع حماية من البرامج الآلية في نموذج الإبلاغ.', status: 'live', sources: [{ label: 'الحماية من البرامج الآلية', href: `${WIKI}/guides/bot-protection.md` }] },
+          { title: 'الذكاء الاصطناعي يوقف، والبشر يقررون', body: 'الإشراف الآلي لا يحذف شيئًا أبدًا، بل يوقف المحتوى فقط ليراجعه إنسان. وهو يعمل اليوم في وضع التنبيه فقط على بيئة الاختبار.', status: 'building', sources: [{ label: 'E28 الإشراف بالذكاء الاصطناعي', href: `${WIKI}/epics/E28-ai-moderation.md` }] },
+          { title: 'لا تسامح مع مواد إساءة معاملة الأطفال', body: 'تُزال، وتُحفظ الأدلة تحت حجز قانوني، ويُبلَّغ عنها للجهات المختصة.', status: 'rolling', sources: [{ label: 'مواصفة الاستجابة', href: `${GH}/AlUmmahNow/blob/main/docs/specs/CSAM-RESPONSE.md` }] },
+          { title: 'تقارير الإشراف', body: 'ندرس نشر إحصاءات دورية عن الإشراف بالعربية والإنجليزية، ولم يُتخذ قرار بعد.', status: 'planned', sources: [{ label: 'M6', href: `${WIKI}/epics/decisions.md#m6-transparency-reporting` }] },
+        ] as Item[],
+      },
+      {
+        id: 'interact',
+        title: 'تفاعل',
+        lead: 'أن يتحدث الناس بعضهم مع بعض هو جوهر المجتمع.',
+        items: [
+          { title: 'التعليقات والاشتراكات', body: 'علّق واشترك باسمك، دون أن تحتاج إلى قناة خاصة بك.', status: 'live', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md` }] },
+          { title: 'الإشعارات', body: 'جرس للمرئيات الجديدة من القنوات التي اشتركت فيها، وشارة تختفي على كل أجهزتك حين تفتحه.', status: 'live', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md#notification-badge-and-read-state` }] },
+          { title: 'التضمين', body: 'يمكن تضمين المرئيات والمقاطع القصيرة وقوائم التشغيل في مواقع أخرى، مع oEmbed ونافذة مشاركة.', status: 'live', sources: [{ label: 'E25', href: `${WIKI}/epics/E25-sharing-embeds.md` }] },
+          { title: 'روابط المشاركة القصيرة', body: 'روابط قصيرة على alummahnow.link للمرئيات والقنوات والمنشورات وقوائم التشغيل.', status: 'rolling', sources: [{ label: 'AUN-SHORT-LINKS', href: `${WIKI}/epics/AUN-SHORT-LINKS-short-share-links.md` }] },
+        ] as Item[],
+      },
+      {
+        id: 'learn',
+        title: 'تعلّم',
+        lead: 'كثير مما تشاركه القنوات يُتعلَّم منه. وتحفظ المنصة كلمات صنّاع المحتوى وتصنيفاتهم كما هي.',
+        items: [
+          { title: 'تصنيفات المحتوى', body: 'تحتفظ تصنيفات مثل التفسير والفقه وتلاوة القرآن والمحاضرات الإسلامية بأسمائها.', status: 'live', sources: [{ label: 'دليل أسلوب النصوص', href: `${WIKI}/guides/copy-tone.md` }] },
+          { title: 'صفحات العلماء ومواقعهم', body: 'صفحات للعلماء على www، ومواقع بهوية مستقلة للعلماء على alummahnow.org.', status: 'live', sources: [{ label: 'AUN-SEO', href: `${WIKI}/epics/AUN-SEO-search-visibility.md` }] },
+          { title: 'الترجمة النصية', body: 'ترجمة نصية بالعربية والإنجليزية، تؤخذ فيها آيات القرآن من النص الرسمي ويؤكدها صاحب المرئي.', status: 'planned', sources: [{ label: 'AUN-CAPTIONS', href: `${WIKI}/epics/AUN-CAPTIONS-transcription-translation.md` }] },
+        ] as Item[],
+      },
+      {
+        id: 'languages',
+        title: 'العربية والإنجليزية في كل مكان',
+        lead: 'كل شاشة موجودة باللغتين، والعربية من اليمين إلى اليسار في كل مكان، لا ترجمة لاحقة.',
+        items: [
+          { title: 'اللغتان في كل التطبيقات', body: 'الموقع العام، وموقع المرئيات، وتسجيل الدخول، ونظام إدارة المحتوى، والتطبيقات الأصلية.', status: 'live', sources: [{ label: 'E03', href: `${WIKI}/epics/E03-i18n-enhancement.md` }] },
+          { title: 'مصطلحات واحدة', body: 'الكلمات نفسها في كل التطبيقات، فلا يصادف المشاهد اسمين لشيء واحد.', status: 'live', sources: [{ label: 'المسرد', href: `${WIKI}/guides/glossary.md` }] },
+        ] as Item[],
+      },
+    ],
+  },
+
+  technology: {
+    title: 'التقنية',
+    description:
+      'كيف بُنيت الأمة الآن: Cloudflare Workers، وNext.js وAstro، ودخول موحّد مبني على OpenAuth مع مفاتيح المرور، ونظام إدارة محتوى bknd، وتطبيقات أصلية على نواة Rust مشتركة، ونظام التصميم فانوس.',
+    heroTitle: 'منصة واحدة، وتطبيقات كثيرة، وكلها على Cloudflare',
+    heroLead:
+      'كل ما يعمل على الخادم في الأمة الآن يعمل على Cloudflare Workers. وتتشارك التطبيقات خدمة دخول واحدة، ونظام تصميم واحدًا، وقواعد واحدة لتنفيذ الأعمال في الخلفية.',
+    groups: [
+      {
+        title: 'تطبيقات الويب',
+        items: [
+          { title: 'موقع المرئيات', body: 'Next.js على Cloudflare Workers: صفحات المشاهدة، والاستوديو، والبث المباشر، والقنوات، وأدوات صنّاع المحتوى.', status: 'live', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md` }] },
+          { title: 'الموقع العام ومواقع العلماء', body: 'Astro على Workers، بحزمة عرض واحدة مشتركة والسمات نفسها.', status: 'live', sources: [{ label: 'AlUmmahNowUI', href: `${WIKI}/repos/AlUmmahNowUI.md` }] },
+          { title: 'لوحة الإدارة', body: 'أدوات الفريق مع تحديثات فورية عبر عامل للاتصال اللحظي، وصندوق رسائل التواصل، ولوحة لتوصيل المرئيات، وصفحة للأخطاء فيها زر إعادة المحاولة.', status: 'live', sources: [{ label: 'خريطة المنظومة', href: `${WIKI}/README.md#system-map` }] },
+          { title: 'نظام إدارة المحتوى', body: 'bknd على عامل Worker، بشاشات إدارة من صنعنا بدل شاشات bknd. يدير صفحات www والمقالات والخط الزمني للرئيسية.', status: 'live', sources: [{ label: 'AlUmmahNowCMS', href: `${WIKI}/repos/AlUmmahNowCMS.md` }] },
+        ] as Item[],
+      },
+      {
+        title: 'الهوية',
+        items: [
+          { title: 'الدخول الموحّد', body: 'نسختنا من OpenAuth: OAuth 2.0 وOpenID Connect مع PKCE. سجّل الدخول مرة تكن مسجّلًا في كل التطبيقات، وتسجيل الخروج ينهيه في كل مكان.', status: 'live', sources: [{ label: 'المصادقة', href: `${WIKI}/guides/authentication.md` }] },
+          { title: 'رموز قصيرة العمر', body: 'رمز الوصول صالح 15 دقيقة. ورموز التحديث تتجدد، وإعادة استخدام رمز قديم تُلغي العائلة كلها.', status: 'live', sources: [{ label: 'الرموز', href: `${WIKI}/guides/authentication.md#tokens` }] },
+          { title: 'مفاتيح المرور', body: 'الدخول بمفاتيح المرور مُطلق في خدمة الدخول. واشتراطها على الفريق مكتمل، ويُفعَّل بعد أن يسجّل المالك مفتاحه.', status: 'rolling', sources: [{ label: 'AUTH-PASSKEYS', href: `${WIKI}/epics/AUTH-PASSKEYS-passkeys-everywhere.md` }] },
+        ] as Item[],
+      },
+      {
+        title: 'التطبيقات الأصلية',
+        items: [
+          { title: 'نواة Rust مشتركة', body: 'عميل الواجهة البرمجية، وتسجيل الدخول، والمزامنة، والرفع، ومحرّك وسائط بلغة Rust، مع ربط بلغات Swift وKotlin وC#.', status: 'building', sources: [{ label: 'AlUmmahNowCore', href: `${WIKI}/repos/AlUmmahNowCore.md` }] },
+          { title: 'Apple وAndroid وWindows وLinux والتلفاز', body: 'تطبيقات الاستوديو تعمل على أجهزة Apple وAndroid وWindows وLinux، ولتطبيقات Android وسطح المكتب إصدارات تجريبية على GitHub. تطبيقات المشاهدة والتلفاز قيد التطوير، ولا يوجد أي تطبيق في متجر عام بعد.', status: 'building', sources: [{ label: 'E23 هندسة الإصدارات', href: `${WIKI}/epics/E23-release-engineering.md` }] },
+        ] as Item[],
+      },
+      {
+        title: 'التصميم والذكاء الاصطناعي',
+        items: [
+          { title: 'نظام التصميم فانوس', body: 'أربع سمات مبنية على هوية الفانوس، ومجموعة رموز واحدة للويب والتطبيقات الأصلية، وتباين مفحوص في كل سمة.', status: 'live', sources: [{ label: 'السمات', href: `${WIKI}/guides/theming.md` }] },
+          { title: 'الإشراف بالذكاء الاصطناعي على Cloudflare', body: 'يفحص Workers AI المحتوى ولا يملك إلا إيقافه للمراجعة. ويعمل في وضع التنبيه فقط على بيئة الاختبار.', status: 'building', sources: [{ label: 'E28', href: `${WIKI}/epics/E28-ai-moderation.md` }] },
+          { title: 'الترجمة النصية', body: 'تحويل الكلام إلى نص على Workers AI هو المحرّك المقترح، ومكان تشغيله ما زال قرارًا مفتوحًا.', status: 'planned', sources: [{ label: 'AUN-CAPTIONS', href: `${WIKI}/epics/AUN-CAPTIONS-transcription-translation.md` }] },
+        ] as Item[],
+      },
+    ],
+    principlesTitle: 'كيف نبني',
+    principles: [
+      { title: 'غير متزامن دائمًا', body: 'الأعمال الثقيلة تمر عبر طوابير مع إعادة المحاولة وطوابير للرسائل المتعذّرة. وإذا فشل شيء ظهر في صفحة الأخطاء في لوحة الإدارة مع زر إعادة المحاولة.', sources: [{ label: 'O26', href: `${WIKI}/epics/decisions.md#o26-always-async-with-admin-visible-errors` }] },
+      { title: 'مواصفة، ثم خطة، ثم شيفرة', body: 'تبدأ الميزات مواصفةً في الويكي، ثم خطة، ثم طلبات دمج مع اختباراتها.', sources: [{ label: 'المساهمة', href: `${WIKI}/guides/contributing.md` }] },
+      { title: 'الخصوصية افتراضيًا', body: 'يمكن التراجع عن الحذف خلال 30 يومًا ثم يُمحى نهائيًا. ويمكن محو الحسابات. وتُحصى الزيارات دون ملفات تعريف الارتباط أو معرّفات.', sources: [{ label: 'دورة حياة البيانات', href: `${WIKI}/guides/data-lifecycle.md` }] },
+      { title: 'سهولة الوصول في الاتجاهين', body: 'استخدام بلوحة المفاتيح وقارئات الشاشة، وتباين بمستوى AA في كل سمة، وقوائم لا تخرج من الشاشة، من اليسار إلى اليمين ومن اليمين إلى اليسار.', sources: [{ label: 'السمات', href: `${WIKI}/guides/theming.md#menus-never-leave-the-screen` }] },
+    ] as Item[],
+  },
+
+  infrastructure: {
+    title: 'البنية التحتية ومسار المرئيات',
+    description:
+      'كيف ينتقل المرئي من الرفع إلى التشغيل في الأمة الآن: Bunny Stream وتحويلنا الخاص بـ FFmpeg على Cloudflare Containers إلى R2، ورابط تشغيل واحد تختاره الواجهة البرمجية، وإصدارات تمر عبر QA وstage.',
+    heroTitle: 'من الرفع إلى التشغيل',
+    heroLead:
+      'كل مرئي يُرمَّز مرتين: مرة في Bunny Stream، ومرة بمحوّلنا الخاص إلى Cloudflare R2. وتختار الواجهة البرمجية أيهما يُستخدم في كل تشغيل، لنقارن السرعة والتكلفة على حركة حقيقية قبل أي تحويل.',
+    pipelineTitle: 'مسار المرئيات',
+    pipelineLabel: 'الخطوات التي يمر بها المرئي من الرفع إلى التشغيل',
+    pipeline: [
+      { title: 'الرفع', body: 'يرفع صاحب المحتوى عبر واجهة المرئيات برفع قابل للاستئناف (TUS).' },
+      { title: 'نسختان', body: 'يذهب المرئي إلى Bunny Stream، ونحتفظ بنسختنا الأصلية في تخزين R2 خاص.' },
+      { title: 'التحويل', body: 'يبدأ طابور تشغيل FFmpeg على Cloudflare Containers، فيكتب نسخ HLS إلى R2.' },
+      { title: 'الاختيار', body: 'تُعيد الواجهة البرمجية رابط تشغيل واحدًا: Bunny أو R2 أو نسبة بينهما، تُضبط في صفحة التوصيل في لوحة الإدارة.' },
+      { title: 'التشغيل', body: 'يشغّل المشغّل ذلك الرابط. وبعد خطأ قاتل أو توقف 15 ثانية على R2 يعود إلى Bunny مرة واحدة.' },
+    ],
+    pipelineSources: [
+      { label: 'توصيل المرئيات', href: `${WIKI}/guides/video-delivery.md` },
+      { label: 'D2', href: `${WIKI}/epics/D2-video-delivery.md` },
+      { label: 'O31', href: `${WIKI}/epics/decisions.md#o31-transcode-on-cloudflare-containers` },
+      { label: 'O32', href: `${WIKI}/epics/decisions.md#o32-run-bunny-and-r2-side-by-side-before-switching` },
+    ],
+    details: [
+      { title: 'مزوّدان جنبًا إلى جنب', body: 'يخدم Bunny وR2 بيئة الإنتاج معًا. ويُبلغ المشغّل عن زمن البدء والتقطّع والأخطاء لكل منهما، وتقارن الإدارة بينهما قبل تقرير التحويل.', status: 'live', sources: [{ label: 'O32', href: `${WIKI}/epics/decisions.md#o32-run-bunny-and-r2-side-by-side-before-switching` }] },
+      { title: 'روابط موقّعة لا تُحفظ', body: 'روابط التشغيل تُوقَّع مع كل استجابة ولا تُحفظ أبدًا. وصور المشاركة تبقى على نطاقنا فلا تنكسر معاينات الشبكات الاجتماعية.', status: 'live', sources: [{ label: 'الروابط الموقّعة', href: `${WIKI}/guides/video-delivery.md#signed-urls` }] },
+      { title: 'البث المباشر على مزوّدين', body: 'يعمل Bunny Stream Live ومسار مستضاف ذاتيًا معًا، وتُوزَّع البثوث الجديدة بينهما، ليكون الاختيار مبنيًا على البيانات.', status: 'live', sources: [{ label: 'D3', href: `${WIKI}/epics/D3-live-provider.md` }] },
+      { title: 'الأعطال ظاهرة', body: 'يُسجَّل كل تحويل فاشل مع مكانه وسببه. وبعد ثلاث محاولات فاشلة يظهر في صفحة الأخطاء مع زر إعادة المحاولة، ويواصل المشاهدون التشغيل من Bunny.', status: 'live', sources: [{ label: 'توصيل المرئيات', href: `${WIKI}/guides/video-delivery.md` }] },
+    ] as Item[],
+    environmentsTitle: 'ثلاث بيئات',
+    environmentsLead: 'QA للاختبار، وstage مرشّحة للإصدار بشكل الإنتاج وبيانات خاصة بها، ثم الإنتاج.',
+    environments: [
+      { name: 'QA', body: 'تُحدَّث مع كل دمج في الفرع الرئيسي.', host: 'videos.qa.alummahnow.net' },
+      { name: 'Stage', body: 'إعدادات الإنتاج ببيانات ومفاتيح منفصلة. كل إصدار يمر بها أولًا.', host: 'videos.stage.alummahnow.net' },
+      { name: 'الإنتاج', body: 'لا يُصدَر إليها إلا من وسم مؤرّخ على الفرع الرئيسي، ولا يُنشر يدويًا أبدًا.', host: 'videos.alummahnow.net' },
+    ],
+    environmentsSources: [{ label: 'البيئات', href: `${WIKI}/guides/environments.md` }],
+    releaseTitle: 'كيف يصل الإصدار إلى الإنتاج',
+    releaseLabel: 'خطوات الإصدار بالترتيب',
+    release: [
+      { title: 'الوسم', body: 'وسم مؤرّخ على التزام في الفرع الرئيسي يبدأ الإصدار.' },
+      { title: 'بناء واحد', body: 'البناء نفسه يذهب إلى stage وإلى الإنتاج.' },
+      { title: 'Stage', body: 'النشر على stage وتشغيل الاختبارات الشاملة هناك.' },
+      { title: 'الإنتاج بنسبة 0%', body: 'تُرفع النسخة الجديدة دون حركة ويُجرى عليها فحص سريع.' },
+      { title: '100% أو التراجع', body: 'تنتقل الحركة إليها، ويُعاد الفحص، وأي فشل يُرجعها تلقائيًا.' },
+    ],
+    releaseSources: [{ label: 'عملية الإصدار', href: `${WIKI}/guides/release-process.md` }],
+    costTitle: 'مبنية ضمن سقف للتكلفة',
+    costBody:
+      'صُممت المنصة كلها لتبقى تحت سقف شهري ثابت للتكلفة حدده المالك. وحاويات التحويل لا تُحتسب إلا أثناء تشغيل المهمة، وبنود التكلفة مثل زمن الحاويات والتخزين والطلبات تُقاس في صفحتي التوصيل والتشغيل في لوحة الإدارة.',
+    costSources: [
+      { label: 'O1', href: `${WIKI}/epics/decisions.md#o1-whole-platform-cost-cap` },
+      { label: 'AUN-COST', href: `${WIKI}/epics/AUN-COST-cost-monitoring.md` },
+    ],
+    statusTitle: 'صفحة حالة عامة',
+    statusBody: 'تفحص status.alummahnow.net الخدمات العامة كل دقيقتين، وتعرض الأعطال والصيانة، بالعربية والإنجليزية.',
+    statusLink: { label: 'افتح صفحة الحالة', href: STATUS_PAGE },
+  },
+
+  'open-source': {
+    title: 'المصدر المفتوح',
+    description:
+      'كل مستودعات الأمة الآن عامة على GitHub: منصة المرئيات، وتسجيل الدخول، والمواقع العامة، ونظام إدارة المحتوى، والتطبيقات الأصلية، والويكي. كيف تساهم وكيف تبلّغ عن مشكلة أمنية.',
+    heroTitle: 'الشيفرة كلها عامة',
+    heroLead:
+      'كل المستودعات عامة على GitHub. مستودع AlUmmahNowAuth ونسختنا من OpenAuth مرخّصان بترخيص MIT. أما بقية المستودعات فلم يُختر لها ترخيص بعد، فشيفرتها متاحة للقراءة لكنها غير مرخّصة لإعادة الاستخدام بعد.',
+    licenceSource: { label: 'قرار الترخيص (مفتوح)', href: `${WIKI}/epics/decisions.md#lic-repo-licence-for-core-and-the-app-repos` },
+    reposTitle: 'المستودعات',
+    repoLanguage: 'اللغة',
+    repoLicence: 'الترخيص',
+    noLicence: 'لم يُختر بعد',
+    repos: [
+      { name: 'AlUmmahNow', body: 'منصة المرئيات: الويب، والواجهات البرمجية، والمعالجة في الخلفية، والاتصال اللحظي، والوسائط، والإدارة.', lang: 'TypeScript', licence: '' },
+      { name: 'AlUmmahNowAuth', body: 'الدخول الموحّد، والملف الشخصي، وإدارة الحسابات.', lang: 'TypeScript', licence: 'MIT' },
+      { name: 'openauth', body: 'نسختنا من OpenAuth، المكتبة التي يقوم عليها تسجيل الدخول.', lang: 'TypeScript', licence: 'MIT' },
+      { name: 'AlUmmahNowUI', body: 'الموقع العام، ومواقع العلماء، وهذا الموقع.', lang: 'TypeScript', licence: '' },
+      { name: 'AlUmmahNowCMS', body: 'إدارة المحتوى للموقع العام.', lang: 'TypeScript', licence: '' },
+      { name: 'AlUmmahNowCore', body: 'نواة Rust المشتركة للتطبيقات الأصلية.', lang: 'Rust', licence: '' },
+      { name: 'AlUmmahNowApple', body: 'تطبيقات iPhone وiPad وApple TV وMac.', lang: 'Swift', licence: '' },
+      { name: 'AlUmmahNowAndroid', body: 'تطبيقات هواتف Android وأجهزته اللوحية والتلفاز وFire TV وAuto.', lang: 'Kotlin', licence: '' },
+      { name: 'AlUmmahNowDesktop', body: 'تطبيقات Windows وLinux وتلفاز Samsung.', lang: 'C#', licence: '' },
+      { name: 'AlUmmahNowTools', body: 'أدوات استيراد المرئيات بالجملة.', lang: 'C#', licence: '' },
+      { name: 'AlUmmahNowWiki', body: 'كيف يترابط كل شيء، مع صفحة لكل مستودع، والملاحم والقرارات.', lang: 'Markdown', licence: '' },
+    ],
+    contributeTitle: 'كيف تساهم',
+    contributeLabel: 'خطوات أول مساهمة بالترتيب',
+    contribute: [
+      { title: 'اقرأ الويكي', body: 'ابدأ بخريطة المنظومة وبصفحة المستودع الذي تريد تعديله.' },
+      { title: 'افتح مسألة أو اختر واحدة', body: 'صِف الخلل أو التعديل في المستودع الذي يخصه.' },
+      { title: 'مواصفة، خطة، شيفرة', body: 'التعديلات الكبيرة تبدأ مواصفةً، ثم افتح طلب دمج مع اختباراته.' },
+      { title: 'دع التكامل المستمر يفحصه', body: 'التدقيق والأنواع واختبارات الوحدات والاختبارات الشاملة تعمل على كل طلب دمج.' },
+    ],
+    contributeLink: { label: 'اقرأ دليل المساهمة', href: `${WIKI}/guides/contributing.md` },
+    wikiLink: { label: 'افتح الويكي', href: `${GH}/AlUmmahNowWiki` },
+    securityTitle: 'وجدت مشكلة أمنية؟',
+    securityBody:
+      'من فضلك لا تفتح مسألة عامة. استخدم Security ← Report a vulnerability في المستودع المعني. نسعى إلى الرد على البلاغات خلال 3 أيام عمل.',
+    securityLink: { label: 'أبلغ عن ثغرة', href: `${GH}/AlUmmahNow/security/advisories/new` },
+  },
+
+  waqf: {
+    title: 'الوقف والعمل الخيري',
+    description:
+      'ندرس أن تُدار الأمة الآن وقفًا أو من خلال جهة خيرية، محبوسةً لنفع الأمة. أين وصل هذا اليوم، وما الذي لم يُقرَّر بعد.',
+    heroTitle: 'لنفع الأمة، لا للربح',
+    heroLead:
+      'ندرس أن تُدار الأمة الآن وقفًا، أو من خلال جهة خيرية، لتكون المنصة محبوسة لنفع المجتمع. هذه الصفحة عن توجّه، لا عن أمر قائم بالفعل.',
+    whatTitle: 'ما الوقف',
+    whatBody:
+      'الوقف في التراث الإسلامي مال يُحبس أصله على وجه من وجوه البر على الدوام. فلا يُباع ولا يُوهب ولا يُورث، وتذهب منفعته إلى الغاية التي وُقف لها. وبهذه الطريقة حُبست المساجد والمدارس والآبار والمستشفيات قرونًا.',
+    whyTitle: 'لماذا نريد ذلك',
+    why: [
+      { title: 'المجتمع أولًا', body: 'المنصة المحبوسة لنفع الأمة تخضع لهذه الغاية، لا لمشترٍ ولا لمساهمين.' },
+      { title: 'لا يمكن بيعها', body: 'الوقف لا يُباع. فالمجتمع الذي يُبنى هنا يبقى للمجتمع.' },
+      { title: 'مفتوحة افتراضيًا', body: 'الشيفرة عامة بالفعل. والبنية الخيرية تتيح أن تكون طريقة إدارة المنصة عامة كذلك.' },
+    ],
+    todayTitle: 'أين نحن اليوم',
+    today: [
+      { title: 'لا كيان قانونيًا بعد', body: 'لا توجد اليوم شركة ولا جمعية خيرية ولا وقف وراء الأمة الآن.', sources: [{ label: 'SM-4', href: `${WIKI}/epics/decisions.md#sm-4-legal-entity` }] },
+      { title: 'لا مدفوعات عند الإطلاق', body: 'لا اشتراكات ولا مدفوعات مفعّلة. وإن جاءت الخطط لاحقًا فستكون عبر مزوّدي دفع قابلين للاستبدال.', sources: [{ label: 'D4', href: `${WIKI}/epics/decisions.md#d4-monetisation` }, { label: 'O4', href: `${WIKI}/epics/decisions.md#o4-pluggable-payment-providers-never-stripe-admin-managed-plans` }] },
+      { title: 'لا نقبل التبرعات بعد', body: 'لا يوجد زر للتبرع. والتبرعات تنتظر وجود بنية تحفظها وتنشر كيف تُصرف.' },
+      { title: 'مبنية ضمن سقف للتكلفة', body: 'صُممت المنصة كلها لتبقى تحت سقف شهري ثابت للتكلفة حدده المالك.', sources: [{ label: 'O1', href: `${WIKI}/epics/decisions.md#o1-whole-platform-cost-cap` }] },
+    ] as Item[],
+    openTitle: 'ما لم يُقرَّر بعد',
+    open: [
+      'أي بنية: وقف، أم جمعية خيرية، أم مؤسسة، أم مزيج منها.',
+      'أين تُسجَّل، ووفق أي قانون.',
+      'من يتولى إدارتها، وكيف تُدوَّن القرارات وتُنشر.',
+      'كيف تُقبل التبرعات وتُصرف ويُفصح عنها.',
+    ],
+    helpTitle: 'ساعدنا على أن نُحسن هذا',
+    helpBody:
+      'إن كانت لديك خبرة في أحكام الوقف أو قوانين العمل الخيري، أو في الحوكمة، أو في تمويل المشاريع المجتمعية، أو كنت تودّ دعم المنصة حين تقوم البنية، فيسعدنا أن نسمع منك.',
+    helpLink: 'تواصل معنا بشأن الوقف',
+  },
+
+  contact: {
+    title: 'تواصل معنا',
+    description: 'كيف تتواصل مع فريق الأمة الآن بشأن الشراكات، أو توجّه الوقف، أو الشيفرة، أو مشكلة أمنية.',
+    heroTitle: 'تحدّث إلينا',
+    heroLead: 'تصل الرسائل عبر نموذج التواصل في موقع المرئيات إلى صندوق رسائل الفريق. لا حاجة إلى حساب.',
+    cards: [
+      { title: 'الشراكات والداعمون والوقف', body: 'للعمل معًا، أو دعم المنصة، أو تقديم المشورة في بنية الوقف أو الجهة الخيرية.', action: 'راسلنا', topic: 'partnership' },
+      { title: 'أسئلة عامة', body: 'أي شيء آخر عن الأمة الآن.', action: 'راسلنا', topic: 'general' },
+    ],
+    codeTitle: 'الشيفرة والأخطاء',
+    codeBody: 'افتح مسألة في المستودع المعني على GitHub.',
+    codeLink: { label: 'اذهب إلى GitHub', href: GH },
+    securityTitle: 'المشكلات الأمنية',
+    securityBody: 'أبلغ بشكل خاص عبر Security ← Report a vulnerability. من فضلك لا تفتح مسألة عامة.',
+    securityLink: { label: 'أبلغ عن ثغرة', href: `${GH}/AlUmmahNow/security/advisories/new` },
+  },
+
+  notFound: {
+    title: 'الصفحة غير موجودة',
+    body: 'لا توجد صفحة على هذا العنوان. ربما نُقلت، أو أن الرابط غير صحيح.',
+    home: 'اذهب إلى الصفحة الرئيسية',
+    other: 'Home page in English',
+  },
+};
