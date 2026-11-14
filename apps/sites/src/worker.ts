@@ -21,6 +21,7 @@ import { isPreviewToken, lookupSite, normalizeHost, withSiteHeader } from './lib
 import { renderTheme } from './lib/theme';
 import { strings } from './lib/i18n';
 import { escapeHtml } from '../../../packages/render/src/html';
+import { withStreetVariant } from '../../../packages/render/src/street-variant';
 
 interface ExecutionContext {
   waitUntil(promise: Promise<unknown>): void;
@@ -97,7 +98,8 @@ export function createExports(manifest: SSRManifest) {
               cacheableRequest: isCacheableRequest,
               cacheableResponse: isCacheableResponse,
             });
-        return secure(response, isPreview, isPreview);
+        // The street's tile variant, per response after the cache read (never in the cached copy)
+        return secure(withStreetVariant(response, request), isPreview, isPreview);
       },
     },
   };

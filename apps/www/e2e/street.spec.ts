@@ -6,9 +6,9 @@ import { IS_PRODUCTION, SCHEMES } from './site-theme';
  * The Fawanees lantern street on www (the shared module, vendored by scripts/sync-fanous.ts;
  * design: AlUmmahNow docs/design/FAWANEES-STREET.md). The street is pre-made art painted by CSS:
  * a wide image tile of strings and lit lanterns that wraps both ways, repeated behind the whole
- * page over a small distant-lights tile. The theme gives 4 tile variants per mode; the inline head
- * script picks one per load before first paint (<html data-fanous-street-variant>), and only that
- * one downloads. Through the non-production ?theme= preview, in light and dark, English and Arabic:
+ * page over a small distant-lights tile. The theme gives 4 tile variants per mode; the Worker picks
+ * one per response after the edge cache read (<html data-fanous-street-variant> in the HTML, no
+ * inline script), and only that one downloads. Through the non-production ?theme= preview, in light and dark, English and Arabic:
  *   - the street is on, shows the picked variant of this mode's tile, repeated, centred, at its
  *     own size (never stretched), down the whole page, and no other variant is fetched;
  *   - the timeline column has its light frost (a soft-edged blur layer behind its content);
@@ -117,8 +117,16 @@ for (const scheme of SCHEMES) {
   });
 }
 
-test('a test can pin the street variant (visual snapshots stay stable)', async ({ page }) => {
-  await page.addInitScript(() => { (window as unknown as { __AUN_STREET_VARIANT__: number }).__AUN_STREET_VARIANT__ = 3; });
+test('the HTML arrives with a variant, random per visit even from the edge cache', async ({ page }) => {
+  const variantOf = async () => /<html[^>]*\sdata-fanous-street-variant="([1-4])"/.exec(await (await page.request.get('/en/?theme=fawanees')).text())?.[1];
+  const seen = new Set<string | undefined>();
+  for (let i = 0; i < 16 && seen.size < 2; i++) seen.add(await variantOf());
+  expect([...seen].every((v) => v && /^[1-4]$/.test(v)), [...seen].join(', ')).toBe(true);
+  expect(seen.size, 'visits get different variants').toBeGreaterThan(1);
+});
+
+test('a test can pin the street variant (visual snapshots stay stable)', async ({ page, context, baseURL }) => {
+  await context.addCookies([{ name: 'aun_street_variant', value: '3', url: baseURL! }]);
   const fetched = await open(page, '/en/?theme=fawanees');
   await expect(page.locator('html')).toHaveAttribute('data-fanous-street-variant', '3');
   expect([...fetched].every((f) => /-3\.webp$/.test(f)), [...fetched].join(', ')).toBe(true);
