@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { cmsPaths, ARTICLES_PAGE_SIZE, RSS_ITEMS, snapshotKey } from '../src/lib/cms';
-import { MAX_KEYS_PER_RUN, writeSnapshots, type WriterDeps } from '../src/lib/snapshot-writer';
+import { contentEntries, MAX_KEYS_PER_RUN, writeSnapshots, type WriterDeps } from '../src/lib/snapshot-writer';
 import { MemoryKV } from './helpers';
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -51,17 +51,29 @@ describe('KV snapshot writer (single writer, audit UI-3)', () => {
     let now = 1_000;
     const deps: WriterDeps = { fetchCms: cms.fetchCms, kv: kv as never, now: () => now };
     const first = await writeSnapshots(deps);
-    // core 9 (sitemap; per locale: site, /lists/videos, /lists/articles, posts page 1 = the RSS page)
+    // core 11 (sitemap; per locale: site, /lists/videos, /lists/articles, posts page 1 = the RSS page, /pages/about)
     // + 10 sitemap items + posts page 2 and /lists/articles pages 2..3 for each locale
     expect(RSS_ITEMS).toBe(ARTICLES_PAGE_SIZE);
-    expect(first).toMatchObject({ written: 9 + 10 + 2 + 4, failed: 0, keys: 25 });
+    expect(first).toMatchObject({ written: 11 + 10 + 2 + 4, failed: 0, keys: 27 });
     for (const path of [cmsPaths.site('ar'), cmsPaths.list('en', 'videos', 1), cmsPaths.list('ar', 'articles', 1), cmsPaths.list('en', 'articles', 3), cmsPaths.posts('ar', 1, RSS_ITEMS), cmsPaths.posts('en', 2, ARTICLES_PAGE_SIZE), cmsPaths.page('en', 'p0'), cmsPaths.post('ar', 'n1'), cmsPaths.sitemap()]) {
       expect(await read(kv, path), path).not.toBeNull();
     }
     now += 5 * 60_000;
     const second = await writeSnapshots(deps);
-    expect(second).toMatchObject({ written: 0, unchanged: 25 });
-    expect(kv.puts).toBe(25);
+    expect(second).toMatchObject({ written: 0, unchanged: 27 });
+    expect(kv.puts).toBe(27);
+  });
+
+  it('snapshots the About page in both locales on every run, once even when the sitemap lists it', async () => {
+    const kv = new MemoryKV();
+    const cms = fakeCms({ pages: 0, posts: 0 });
+    const r = await writeSnapshots({ fetchCms: cms.fetchCms, kv: kv as never });
+    expect(r.failed).toBe(0);
+    for (const l of ['en', 'ar'] as const) expect(await read(kv, cmsPaths.page(l, 'about')), l).toMatchObject({ slug: 'about', locale: l });
+    // Listed in the sitemap too (show_in_sitemap): still one fetch per locale per run
+    const listed = contentEntries({ items: [{ type: 'page', locale: 'en', slug: 'about', updated_at: '2026-01-01T00:00:00Z' }, { type: 'page', locale: 'en', slug: 'p0', updated_at: '2026-01-01T00:00:00Z' }] } as never, {});
+    expect(listed.map((e) => e.path)).toEqual([cmsPaths.page('en', 'p0')]);
+    expect(cms.state.calls.filter((p) => p.startsWith('/pages/about'))).toHaveLength(2);
   });
 
   it('a slower, older fetch never overwrites a newer snapshot (overlapping runs)', async () => {
@@ -122,9 +134,9 @@ describe('KV snapshot writer (single writer, audit UI-3)', () => {
     for (let run = 0; run < 3; run++) {
       cms.state.calls.length = 0;
       const r = await writeSnapshots(deps, run);
-      expect(r.keys).toBe(9 + MAX_KEYS_PER_RUN);
-      expect(cms.state.calls.length).toBe(9 + MAX_KEYS_PER_RUN);
+      expect(r.keys).toBe(11 + MAX_KEYS_PER_RUN);
+      expect(cms.state.calls.length).toBe(11 + MAX_KEYS_PER_RUN);
     }
-    expect(kv.store.size).toBe(9 + 600);
+    expect(kv.store.size).toBe(11 + 600);
   });
 });

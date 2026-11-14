@@ -87,9 +87,10 @@ Unknown slug: localized 404 page with links home, to articles and to videos (sta
   1. stale entry from the Cache API (SWR);
   2. last-known-good JSON in KV `CONTENT_SNAPSHOT`, written only by the Worker's cron every 5 min
      (`src/lib/snapshot-writer.ts`: one writer, unchanged content not rewritten, never older over
-     newer); the request path only reads it;
-  3. built-in content bundled in the Worker (`src/content/fallback/{en,ar}.ts`): home hero, about
-     blurb, app links.
+     newer); the request path only reads it. The About page (`/pages/about`, both locales) is a core
+     key, written on every run whatever the sitemap says;
+  3. built-in content bundled in the Worker (`src/content/fallback/{en,ar}.ts`): home hero, the About
+     page (the same copy the CMS was seeded with, CMS migration 0021), app links.
   The page still renders (200) with `X-Content-Source: cms|cache|snapshot|builtin`. `/healthz` reports
   `cms: degraded`.
 

@@ -23,6 +23,13 @@ export const SNAPSHOT_CRON = '*/5 * * * *';
 export const MAX_KEYS_PER_RUN = 250;
 export const WRITER_CONCURRENCY = 6;
 const FETCH_TIMEOUT_MS = 10_000;
+/**
+ * CMS pages snapshotted on every run, whatever the sitemap says (an editor may switch "show in
+ * sitemap" off, and a large site's sitemap keys rotate over several runs): with the CMS down, these
+ * still come from a fresh last-known-good copy rather than the built-in text. The site's About page
+ * (CMS migration 0021) is linked from every header and footer.
+ */
+export const CORE_PAGES = ['about'] as const;
 
 export interface SnapshotMeta {
   writtenAt: number;
@@ -115,6 +122,7 @@ export function contentEntries(
 ): Entry[] {
   const entries: Entry[] = [];
   for (const item of sitemap?.items ?? []) {
+    if (item.type === 'page' && (CORE_PAGES as readonly string[]).includes(item.slug)) continue; // a core key already
     entries.push(
       item.type === 'page'
         ? { path: cmsPaths.page(item.locale, item.slug), isValid: validate.page }
@@ -141,6 +149,7 @@ export async function writeSnapshots(deps: WriterDeps, run = Math.floor((deps.no
       { path: cmsPaths.site(l), isValid: validate.site },
       ...BUILTIN_LISTS.map((slug) => ({ path: cmsPaths.list(l, slug, 1), isValid: validate.list })),
       { path: cmsPaths.posts(l, 1, ARTICLES_PAGE_SIZE), isValid: validate.posts },
+      ...CORE_PAGES.map((slug) => ({ path: cmsPaths.page(l, slug), isValid: validate.page })),
     );
     // The RSS feed's first page, when its size differs from the articles list's
     if (RSS_ITEMS !== ARTICLES_PAGE_SIZE) core.push({ path: cmsPaths.posts(l, 1, RSS_ITEMS), isValid: validate.posts });
