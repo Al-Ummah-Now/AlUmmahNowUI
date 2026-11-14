@@ -104,10 +104,25 @@ export async function runSmoke(opts: SmokeOptions): Promise<CheckResult[]> {
     return `data-theme ${theme}`;
   });
 
-  await check('root redirect', async () => {
-    const res = await get(`${e.www}/`, { 'Accept-Language': 'ar' });
-    assert(res.status === 302 && res.headers.get('location') === '/ar/', `status ${res.status} → ${res.headers.get('location')}`);
-    return '/ → /ar/';
+  // `/` is the visitor's language page itself (no redirect hop): Accept-Language picks it, the
+  // canonical names the language URL, and no shared cache may keep it (it varies per visitor)
+  await check('root serves the visitor language', async () => {
+    const seen: string[] = [];
+    for (const [lang, dir] of [['ar', 'rtl'], ['en', 'ltr']] as const) {
+      const res = await get(`${e.www}/`, { 'Accept-Language': lang });
+      assert(res.status === 200, `${lang}: status ${res.status}${res.headers.get('location') ? ` → ${res.headers.get('location')}` : ''}`);
+      assert(res.headers.get('content-language') === lang, `${lang}: Content-Language ${res.headers.get('content-language')}`);
+      const cacheControl = res.headers.get('cache-control') ?? '';
+      assert(/\bprivate\b/.test(cacheControl) && /\bno-cache\b/.test(cacheControl), `${lang}: Cache-Control "${cacheControl}" (want private, no-cache)`);
+      assert(/accept-language/i.test(res.headers.get('vary') ?? ''), `${lang}: Vary "${res.headers.get('vary')}" (want Accept-Language)`);
+      const html = await res.text();
+      const tag = /<html\b[^>]*>/i.exec(html)?.[0] ?? '';
+      assert(new RegExp(`\\blang="${lang}"`).test(tag) && new RegExp(`\\bdir="${dir}"`).test(tag), `${lang}: ${tag || 'no <html> tag'}`);
+      const canonical = /<link\b[^>]*rel="canonical"[^>]*href="([^"]+)"/i.exec(html)?.[1] ?? /<link\b[^>]*href="([^"]+)"[^>]*rel="canonical"/i.exec(html)?.[1];
+      assert(canonical === `${e.www}/${lang}/`, `${lang}: canonical ${canonical ?? 'missing'} (want ${e.www}/${lang}/)`);
+      seen.push(`${lang}: 200 ${lang}/${dir}, canonical /${lang}/`);
+    }
+    return seen.join('; ');
   });
 
   await check('sign-in redirect', async () => {

@@ -171,7 +171,14 @@ describe('smoke', () => {
           'x-content-source': 'cms',
         });
       }
-      if (url === `${e.www}/`) return new Response(null, { status: 302, headers: { location: '/ar/' } });
+      if (url === `${e.www}/`) {
+        const lang = headers.get('Accept-Language') === 'ar' ? 'ar' : 'en';
+        return ok(`<html lang="${lang}" dir="${lang === 'ar' ? 'rtl' : 'ltr'}"><link rel="canonical" href="${e.www}/${lang}/">`, {
+          'content-language': lang,
+          'cache-control': 'private, no-cache',
+          vary: 'Cookie, Accept-Language',
+        });
+      }
       if (url.includes('/auth/login')) {
         const loc = new URL(`${e.vars.AUTH_URL}/authorize`);
         loc.searchParams.set('client_id', e.vars.WWW_CLIENT_ID);
@@ -194,6 +201,23 @@ describe('smoke', () => {
     expect(results.filter((r) => !r.ok)).toEqual([]);
     expect(results.map((r) => r.name)).toContain('apex → www');
     expect(results.map((r) => r.name)).toContain('passkey domain files');
+  });
+  it('fails when / redirects instead of serving the visitor language, or a shared cache could keep it', async () => {
+    const e = ENVIRONMENTS.production;
+    const base = site();
+    const redirecting = (async (input: RequestInfo | URL, init?: RequestInit) =>
+      String(input) === `${e.www}/` ? new Response(null, { status: 302, headers: { location: '/ar/' } }) : base(input, init)) as typeof fetch;
+    const failed = (await runSmoke({ env: 'production', fetchImpl: redirecting })).find((r) => r.name === 'root serves the visitor language');
+    expect(failed).toMatchObject({ ok: false, detail: expect.stringContaining('status 302') });
+    const cached = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const res = await base(input, init);
+      if (String(input) !== `${e.www}/`) return res;
+      const out = new Response(await res.text(), res);
+      out.headers.set('cache-control', 'public, max-age=300');
+      return out;
+    }) as typeof fetch;
+    const shared = (await runSmoke({ env: 'production', fetchImpl: cached })).find((r) => r.name === 'root serves the visitor language');
+    expect(shared).toMatchObject({ ok: false, detail: expect.stringContaining('private, no-cache') });
   });
   it('asserts the candidate version through the override header', async () => {
     const ok = await runSmoke({ env: 'production', overrides: { 'al-ummah-now-www': V2 }, fetchImpl: site() });
