@@ -17,10 +17,10 @@ const src = (links: { label: string; href: string }[]) => ({ links, label: t.com
 ---
 <Base locale={locale} slug="infrastructure" title={p.title} description={p.description}>
   <PageHero title={p.heroTitle} lead={p.heroLead} />
-  <section class="band band-street night-soft" aria-labelledby="pipeline-h">
+  <section class="band band-street" aria-labelledby="pipeline-h">
     <div class="wrap">
       <h2 id="pipeline-h" class="h2">{p.pipelineTitle}</h2>
-      <Street steps={p.pipeline} label={p.pipelineLabel} uid="pipe" />
+      <Street steps={p.pipeline} label={p.pipelineLabel} />
       <Sources {...src(p.pipelineSources)} />
     </div>
   </section>

@@ -2,6 +2,7 @@
 import Base from '../../../layouts/Base.astro';
 import PageHero from '../../../components/PageHero.astro';
 import ItemGrid from '../../../components/ItemGrid.astro';
+import Icon from '../../../../../www/src/components/Icon.astro';
 import { strings } from '../../../i18n';
 import type { Locale } from '../../../lib/pages';
 import { contactUrl } from '../../../lib/links';
@@ -30,7 +31,7 @@ const p = t.waqf;
       <h2 id="why-h" class="h2">{p.whyTitle}</h2>
       <ul class="pillars pillars-3" role="list">
         {p.why.map((w) => (
-          <li class="pillar"><h3 class="pillar-title">{w.title}</h3><p>{w.body}</p></li>
+          <li class="pillar"><Icon name="star" class="pillar-icon" /><h3 class="pillar-title">{w.title}</h3><p>{w.body}</p></li>
         ))}
       </ul>
     </div>

@@ -5,7 +5,6 @@
  */
 import '../../../../packages/render/src/styles/fanous-themes.generated.css';
 import '../styles/site.css';
-import Lantern from '../components/Lantern.astro';
 import { en } from '../i18n/en';
 import { ar } from '../i18n/ar';
 ---
@@ -21,7 +20,10 @@ import { ar } from '../i18n/ar';
   </head>
   <body>
     <main class="notfound night">
-      <Lantern label="" uid="nf" class="notfound-lantern" />
+      <picture class="notfound-logo">
+        <source srcset="/brand/logo-512.webp" type="image/webp" />
+        <img src="/brand/alummah-now-logo.png" alt="" width="512" height="512" />
+      </picture>
       <div class="notfound-cols">
         <section lang="en" dir="ltr">
           <h1 class="display">{en.notFound.title}</h1>

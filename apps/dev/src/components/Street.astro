@@ -1,30 +1,21 @@
 ---
 /**
- * A sequence drawn as a lantern street: lanterns hang from one cable, one per step, the step text
- * under each. A real ordered list, so the order is announced; the cable and lanterns are decoration.
- * Desktop: the cable runs across (right to left in Arabic, by the grid's direction). Phones: it runs
- * down the start edge.
+ * A sequence (the video pipeline) as numbered steps joined by a line. A real ordered list, so the order is
+ * announced; the line is decoration. Desktop: across (right to left in Arabic, by the grid's direction).
+ * Phones: down the start edge.
  */
-import LanternIcon from './LanternIcon.astro';
 interface Props {
   steps: { title: string; body: string }[];
   label: string;
-  uid: string;
 }
-const { steps, label, uid } = Astro.props;
+const { steps, label } = Astro.props;
 ---
-<div class="street">
-  <svg class="street-cable" viewBox="0 0 1000 60" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-    <path d="M0 6 Q 100 46 200 22 T 400 22 T 600 22 T 800 22 T 1000 6" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" />
-  </svg>
-  <ol class="street-steps" aria-label={label}>
-    {steps.map((s, i) => (
-      <li class="street-step">
-        <span class="street-hang" aria-hidden="true"><LanternIcon uid={`${uid}-${i}`} /></span>
-        <span class="street-n" aria-hidden="true">{i + 1}</span>
-        <h3 class="street-title">{s.title}</h3>
-        <p class="street-body">{s.body}</p>
-      </li>
-    ))}
-  </ol>
-</div>
+<ol class="flow" aria-label={label}>
+  {steps.map((s, i) => (
+    <li class="flow-step">
+      <span class="flow-n" aria-hidden="true">{i + 1}</span>
+      <h3 class="flow-title">{s.title}</h3>
+      <p class="flow-body">{s.body}</p>
+    </li>
+  ))}
+</ol>

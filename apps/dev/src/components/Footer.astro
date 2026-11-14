@@ -8,12 +8,14 @@ interface Props {
 }
 const { locale, t } = Astro.props;
 const label = (p: PageSlug) => (p === '' ? t.nav.home : t.nav[p]);
+const year = new Date().getUTCFullYear();
 ---
 <footer class="site-footer night">
   <div class="wrap footer-grid">
+    {/* The mark and tagline exactly as www's Footer.astro shows them */}
     <div class="footer-brand">
-      <p class="footer-name"><img src="/brand/logo-192.webp" alt="" width="32" height="32" loading="lazy" />{t.meta.siteName} <span lang={locale === 'ar' ? 'en' : 'ar'}>{t.meta.siteNameAlt}</span></p>
-      <p>{t.footer.line}</p>
+      <p class="footer-mark" lang="ar">الأمة الآن</p>
+      <p class="footer-tagline">{t.footer.tagline}</p>
       <p class="footer-note">{t.footer.note}</p>
     </div>
     <nav aria-label={t.footer.project}>
@@ -30,5 +32,9 @@ const label = (p: PageSlug) => (p === '' ? t.nav.home : t.nav[p]);
         <li><a href={`${GH}/AlUmmahNowWiki`} rel="external">{t.footer.wiki}</a></li>
       </ul>
     </nav>
+    <div class="footer-base">
+      <p>{t.footer.rights.replace('{year}', String(year))}</p>
+      <p lang={locale === 'ar' ? 'en' : 'ar'}>{locale === 'ar' ? 'Al Ummah Now' : 'الأمة الآن'}</p>
+    </div>
   </div>
 </footer>
