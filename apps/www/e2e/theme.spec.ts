@@ -48,8 +48,14 @@ test.describe('light / dark toggle', () => {
       await page.goto('/en/');
       await expect(page.locator('html')).not.toHaveAttribute('data-mode', /./);
       expect(await pageBg(page)).toBe(await (scheme === 'dark' ? DARK_BG : LIGHT_BG)(page));
-      const toggle = page.getByRole('button', { name: 'Dark mode', exact: true });
-      await expect(toggle).toHaveAttribute('aria-pressed', String(scheme === 'dark'));
+      // The videos site's toggle: one icon button named for the mode it switches to, no aria-pressed
+      const toggle = page.getByTestId('theme-toggle');
+      const name = scheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+      await expect(toggle).toHaveAccessibleName(name);
+      await expect(toggle).toHaveAttribute('title', name);
+      await expect(toggle).not.toHaveAttribute('aria-pressed', /./);
+      await expect(toggle.locator(scheme === 'dark' ? 'svg.lucide-sun' : 'svg.lucide-moon')).toBeVisible();
+      await expect(toggle.locator(scheme === 'dark' ? 'svg.lucide-moon' : 'svg.lucide-sun')).toBeHidden();
       await expect(page.getByText(/^System$/)).toHaveCount(0);
       await expect(page.getByRole('button', { name: /system/i })).toHaveCount(0);
       await expect(page.locator('#theme-menu')).toHaveCount(0);
@@ -60,11 +66,12 @@ test.describe('light / dark toggle', () => {
     const cspErrors = collectCspErrors(page);
     await page.emulateMedia({ colorScheme: 'light' });
     await page.goto('/en/');
-    const toggle = page.getByRole('button', { name: 'Dark mode', exact: true });
-    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    const toggle = page.getByTestId('theme-toggle');
+    await expect(toggle).toHaveAccessibleName('Switch to dark mode');
     await toggle.click();
     await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
-    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await expect(toggle).toHaveAccessibleName('Switch to light mode');
+    await expect(toggle.locator('svg.lucide-sun')).toBeVisible();
     await expect(toggle).toBeFocused();
     expect(await pageBg(page)).toBe(await DARK_BG(page));
     expect(await page.evaluate(() => localStorage.getItem('aun_mode'))).toBe('dark');
@@ -76,7 +83,7 @@ test.describe('light / dark toggle', () => {
     expect(await pageBg(page)).toBe(await DARK_BG(page));
 
     // back to light: saved as an explicit choice, even though the device is light too
-    await page.getByRole('button', { name: 'Dark mode', exact: true }).click();
+    await page.getByRole('button', { name: 'Switch to light mode', exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
     expect(await page.evaluate(() => localStorage.getItem('aun_mode'))).toBe('light');
     // the device turning dark no longer changes a saved choice
@@ -110,13 +117,14 @@ test.describe('light / dark toggle', () => {
   test('keyboard and Arabic: Enter and Space toggle, the name is Arabic', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'light' });
     await page.goto('/ar/');
-    const toggle = page.getByRole('button', { name: 'الوضع الداكن', exact: true });
+    const toggle = page.getByTestId('theme-toggle');
+    await expect(toggle).toHaveAccessibleName('التبديل إلى الوضع الداكن');
     await toggle.focus();
     await page.keyboard.press('Enter');
-    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await expect(toggle).toHaveAccessibleName('التبديل إلى الوضع الفاتح');
     await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
     await page.keyboard.press('Space');
-    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await expect(toggle).toHaveAccessibleName('التبديل إلى الوضع الداكن');
     await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
     await expect(toggle).toBeFocused();
   });
@@ -131,7 +139,7 @@ test.describe('light / dark toggle', () => {
     });
     await page.emulateMedia({ colorScheme: 'light' });
     await page.goto('/en/');
-    await page.getByRole('button', { name: 'Dark mode', exact: true }).click();
+    await page.getByRole('button', { name: 'Switch to dark mode', exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
   });
 });

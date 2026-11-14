@@ -145,3 +145,22 @@ test('a11y: home and About in both languages have no axe violations', async ({ p
     expect(results.violations, path).toEqual([]);
   }
 });
+
+test('Light / Dark is the videos site\'s icon toggle: Moon in light, Sun in dark, named for the other mode, en and ar', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.goto(at(HOSTS.both, '/en/'));
+  const toggle = page.getByTestId('theme-toggle');
+  await expect(toggle).toHaveAccessibleName('Switch to dark mode');
+  await expect(toggle).toHaveAttribute('title', 'Switch to dark mode');
+  await expect(toggle).not.toHaveAttribute('aria-pressed', /./);
+  await expect(toggle.locator('svg.lucide-moon')).toBeVisible();
+  await expect(toggle.locator('svg.lucide-sun')).toBeHidden();
+  await toggle.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
+  await expect(toggle).toHaveAccessibleName('Switch to light mode');
+  await expect(toggle.locator('svg.lucide-sun')).toBeVisible();
+  await expect(toggle).toBeFocused();
+  await page.goto(at(HOSTS.both, '/ar/'));
+  await expect(page.getByTestId('theme-toggle')).toHaveAccessibleName('التبديل إلى الوضع الفاتح');
+});

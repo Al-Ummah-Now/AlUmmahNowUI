@@ -3,6 +3,7 @@ import { fmt } from '../lib/i18n';
 import { siteName } from '../lib/seo';
 import type { PageContext } from '../lib/context';
 import type { SiteNavItem } from '../lib/site-types';
+import { modeIconSvg, modeToggleLabel } from '../../../../packages/render/src/mode-toggle';
 
 interface Props { ctx: PageContext; alternates: Partial<Record<'en' | 'ar', string>>; active?: string }
 const { ctx, alternates, active } = Astro.props;
@@ -46,8 +47,10 @@ const returnTo = Astro.url.pathname + Astro.url.search;
     </nav>
     <div class="header-tools">
       {switchHref && <a href={switchHref} hreflang={other} lang={other} data-testid="site-lang-switch">{t.language}</a>}
-      <button type="button" class="mode-toggle" data-mode-toggle data-label-light={t.modeToLight} data-label-dark={t.modeToDark} aria-label={t.modeToDark}>
-        <span aria-hidden="true" class="mode-icon"></span>
+      {/* Light / Dark: the videos site's toggle (packages/render/src/mode-toggle.ts), the Moon in light, the Sun in dark */}
+      <button type="button" class="mode-toggle" data-mode-toggle data-testid="theme-toggle" data-label-light={modeToggleLabel(locale, true)} data-label-dark={modeToggleLabel(locale, false)} aria-label={modeToggleLabel(locale, false)} title={modeToggleLabel(locale, false)}>
+        <Fragment set:html={modeIconSvg('moon', 'mode-icon mode-moon')} />
+        <Fragment set:html={modeIconSvg('sun', 'mode-icon mode-sun')} />
       </button>
       <a class="sign-in" href={`/auth/login?return=${encodeURIComponent(returnTo)}&lang=${locale}`} data-testid="site-sign-in" data-signed-out-only>{t.signIn}</a>
       <form method="post" action="/auth/logout" class="account" data-signed-in-only data-testid="site-account">

@@ -32,10 +32,6 @@ export const en = {
     otherHas: 'Articles are published in {language}.',
     listIn: 'Articles in {language}',
   },
-  theme: {
-    // Light / Dark toggle in the header (pressed = dark); no "System" option
-    dark: 'Dark mode',
-  },
   auth: {
     moreAccounts: 'More accounts',
     apps: 'Al Ummah Now apps',

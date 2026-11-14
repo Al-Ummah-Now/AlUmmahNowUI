@@ -1,13 +1,13 @@
 ---
 import Icon from './Icon.astro';
 import SearchBox from './SearchBox.astro';
-import ThemeIcon from './ThemeIcon.astro';
 import { strings } from '../i18n';
 import { navHref } from '../lib/context';
 import type { NavItem } from '../lib/cms-types';
 import { libraryUrl } from '../lib/embeds';
 import type { Config } from '../lib/env';
 import { otherLocale, type Locale } from '../lib/locale';
+import { modeIconSvg, modeToggleLabel } from '../../../../packages/render/src/mode-toggle';
 
 interface Props { cfg: Config; locale: Locale; nav: NavItem[]; switchHref: string }
 const { cfg, locale, nav, switchHref } = Astro.props;
@@ -19,6 +19,8 @@ const items = nav.flatMap((n) => {
   const href = navHref(n.url, locale);
   return href ? [{ label: n.label, href }] : [];
 }).slice(0, 6);
+const toDark = modeToggleLabel(locale, false);
+const toLight = modeToggleLabel(locale, true);
 const loginHref = `/auth/login?return=${encodeURIComponent(path + Astro.url.search)}`;
 ---
 <header class="site-header">
@@ -37,10 +39,11 @@ const loginHref = `/auth/login?return=${encodeURIComponent(path + Astro.url.sear
     <SearchBox cfg={cfg} locale={locale} id="site-search" />
     <div class="header-tools">
       <div class="theme" id="theme">
-        <!-- Light / Dark (src/scripts/theme.ts): one toggle, pressed = dark; no "System" option -->
-        <button type="button" class="theme-button aun-icon-btn" aria-pressed="false" aria-label={t.theme.dark} title={t.theme.dark} data-current="light">
-          <ThemeIcon mode="light" />
-          <ThemeIcon mode="dark" />
+        <!-- Light / Dark (src/scripts/theme.ts): the videos site's toggle (packages/render/src/mode-toggle.ts),
+             the Moon in light and the Sun in dark, named for the mode it switches to; no "System" option -->
+        <button type="button" class="theme-button aun-icon-btn" data-testid="theme-toggle" aria-label={toDark} title={toDark} data-label-dark={toDark} data-label-light={toLight} data-current="light">
+          <Fragment set:html={modeIconSvg('moon', 'theme-icon mode-moon')} />
+          <Fragment set:html={modeIconSvg('sun', 'theme-icon mode-sun')} />
         </button>
       </div>
       <a class="lang-switch aun-lang" href={switchHref} hreflang={other} lang={other} data-set-locale={other}>{t.lang.switchTo}</a>
