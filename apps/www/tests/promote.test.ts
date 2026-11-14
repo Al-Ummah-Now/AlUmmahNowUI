@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { promote, waitForWwwVersion, type PromoteDeps, type ReleaseApp } from '../scripts/release/promote.ts';
+import { promote, waitForWwwHosts, waitForWwwVersion, type PromoteDeps, type ReleaseApp } from '../scripts/release/promote.ts';
 
 const app: ReleaseApp = { worker: 'al-ummah-now-www-stage', cwd: '.', configArgs: ['-c', 'wrangler.jsonc', '--env', 'stage'] };
 const CANDIDATE = '0ea73b06-7c5a-4061-af56-ddaabcfe1e60';
@@ -24,8 +24,12 @@ function harness(deployFailures: (() => Error)[]) {
       }
       return '';
     },
-    smoke: async () => [],
+    smoke: async (_env, overrides) => {
+      calls.push(['<smoke>', overrides ? 'override' : 'plain']);
+      return [];
+    },
     waitForVersion: async () => {},
+    waitForHosts: async () => void calls.push(['<waitForHosts>']),
     log: (l) => logs.push(l),
     sleep: async (ms) => void sleeps.push(ms),
   };
@@ -57,6 +61,58 @@ describe('promote: versions deploy right after upload', () => {
     await expect(promote(app, 'stage', 'release x', h.deps)).rejects.toMatchObject({ rolledBack: true });
     expect(h.sleeps).toEqual([]);
     expect(h.calls.filter((a) => a[0] === 'versions' && a[1] === 'deploy')).toHaveLength(1);
+  });
+});
+
+describe('promote: routes and custom domains before the pre-traffic smoke', () => {
+  it('attaches triggers and waits for the hosts before the 0% deploy and its smoke (2026-11-14: new stage apex)', async () => {
+    const h = harness([]);
+    await promote(app, 'stage', 'release x', h.deps);
+    const at = (pred: (a: string[]) => boolean) => h.calls.findIndex(pred);
+    const triggers = at((a) => a[0] === 'triggers' && a[1] === 'deploy');
+    const hosts = at((a) => a[0] === '<waitForHosts>');
+    const zero = at((a) => a[0] === 'versions' && a[1] === 'deploy' && a[2] === `${CANDIDATE}@0%`);
+    const preSmoke = at((a) => a[0] === '<smoke>' && a[1] === 'override');
+    expect(triggers).toBeGreaterThan(-1);
+    expect(triggers).toBeLessThan(hosts);
+    expect(hosts).toBeLessThan(zero);
+    expect(zero).toBeLessThan(preSmoke);
+    expect(h.calls.filter((a) => a[0] === 'triggers')).toHaveLength(1);
+  });
+
+  it('rolls back (and never moves traffic) when a host never answers', async () => {
+    const h = harness([]);
+    h.deps.waitForHosts = async () => {
+      throw new Error('https://stage.alummahnow.net did not answer within 600s (last: fetch failed)');
+    };
+    await expect(promote(app, 'stage', 'release x', h.deps)).rejects.toMatchObject({ rolledBack: true });
+    expect(h.calls.some((a) => a[0] === 'versions' && a[1] === 'deploy')).toBe(false);
+  });
+});
+
+describe('waitForWwwHosts: a just-attached custom domain needs DNS and a certificate', () => {
+  it('retries a host until it answers (any status), then checks the next', async () => {
+    const seen: string[] = [];
+    let apexFailures = 2;
+    const doFetch = (async (url: string) => {
+      seen.push(url);
+      if (url.startsWith('https://stage.alummahnow.net') && apexFailures-- > 0) throw new TypeError('fetch failed');
+      return new Response(null, { status: 301 });
+    }) as unknown as typeof fetch;
+    await waitForWwwHosts('stage', () => {}, 5_000, doFetch, 1);
+    expect(seen).toEqual([
+      'https://www.stage.alummahnow.net/healthz',
+      'https://stage.alummahnow.net/healthz',
+      'https://stage.alummahnow.net/healthz',
+      'https://stage.alummahnow.net/healthz',
+    ]);
+  });
+
+  it('fails with the host and the last error after the timeout', async () => {
+    const doFetch = (async () => {
+      throw new TypeError('fetch failed');
+    }) as unknown as typeof fetch;
+    await expect(waitForWwwHosts('stage', () => {}, 20, doFetch, 5)).rejects.toThrow(/www\.stage\.alummahnow\.net did not answer .*fetch failed/);
   });
 });
 

@@ -90,15 +90,15 @@ describe('promote', () => {
   }
   const app = releaseApp('/repo', 'production');
 
-  it('uploads, 0% + override smoke, 100%, triggers, smoke', async () => {
+  it('uploads, triggers (so new hosts exist), 0% + override smoke, 100%, smoke', async () => {
     const { deps, calls } = fakeDeps({});
     expect(await promote(app, 'production', 'release abc', deps)).toEqual({ worker: 'al-ummah-now-www', previous: V1, candidate: V2 });
     expect(calls.map((c) => c.slice(0, 3).join(' '))).toEqual([
       'deployments status --json',
       'versions upload -c',
+      'triggers deploy -c',
       `versions deploy ${V2}@0%`,
       `versions deploy ${V2}@100%`,
-      'triggers deploy -c',
     ]);
     expect(app.configArgs).toEqual(['-c', 'wrangler.jsonc']);
     expect(releaseApp('/repo', 'stage').configArgs).toEqual(['-c', 'wrangler.jsonc', '--env', 'stage']);
