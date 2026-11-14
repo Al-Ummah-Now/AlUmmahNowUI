@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkWranglerConfig } from '../check-wrangler-config.ts';
+import { CI_ANDROID_CERT, checkWranglerConfig } from '../check-wrangler-config.ts';
 import { ENVIRONMENTS, parseEnvArg } from '../environments.ts';
 import { parseJsonc } from '../jsonc.ts';
 import { evaluateSecrets } from '../release/check-secrets.ts';
@@ -29,6 +29,13 @@ describe('wrangler config check', () => {
     expect(errors.join('\n')).toMatch(/qa: workers_dev must be false/);
     expect(errors.join('\n')).toMatch(/stage: vars.AUTH_URL/);
     expect(errors.join('\n')).toMatch(/SESSION_SECRET must be a secret/);
+  });
+  it('keeps the CI pre-release key off production but allows it on QA and stage', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mutating a parsed config fixture
+    const bad = structuredClone(real) as Record<string, any>;
+    expect(bad.env.stage.vars.ANDROID_APP_CERTS).toContain(CI_ANDROID_CERT);
+    bad.vars.ANDROID_APP_CERTS = JSON.stringify({ 'net.alummahnow.studio': [CI_ANDROID_CERT.toLowerCase()] });
+    expect(checkWranglerConfig(bad)).toEqual(['production: vars.ANDROID_APP_CERTS must not list the CI pre-release key (production trusts Play-signed builds only)']);
   });
   it('requires the FEED namespace per env, separate from CONTENT_SNAPSHOT', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mutating a parsed config fixture

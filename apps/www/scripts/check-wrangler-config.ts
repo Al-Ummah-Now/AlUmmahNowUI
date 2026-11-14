@@ -9,6 +9,9 @@ import { fileURLToPath } from 'node:url';
 import { ENVIRONMENTS, type EnvName } from './environments.ts';
 import { parseJsonc } from './jsonc.ts';
 
+/** The CI pre-release signing key: trusted on QA and stage, never on production (Play-signed builds only). */
+export const CI_ANDROID_CERT = '5A:1B:3D:2B:57:6E:9A:2D:F0:BF:1B:E3:F1:8C:40:20:13:F9:5C:09:EA:EE:7C:F7:31:10:C4:2F:B5:69:DD:C0';
+
 interface Block {
   name?: string;
   workers_dev?: boolean;
@@ -59,6 +62,9 @@ export function checkWranglerConfig(config: WranglerConfig): string[] {
     // The single writer of the KV snapshots (src/lib/snapshot-writer.ts SNAPSHOT_CRON); triggers are not inherited.
     if (!(block.triggers?.crons ?? []).includes('*/5 * * * *')) p('triggers.crons must include "*/5 * * * *" (KV snapshot writer)');
     if (block.vars && 'SESSION_SECRET' in block.vars) p('SESSION_SECRET must be a secret, never a var');
+    if (name === 'production' && (block.vars?.ANDROID_APP_CERTS ?? '').toUpperCase().includes(CI_ANDROID_CERT)) {
+      p('vars.ANDROID_APP_CERTS must not list the CI pre-release key (production trusts Play-signed builds only)');
+    }
   }
   return errors;
 }

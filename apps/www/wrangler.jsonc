@@ -34,9 +34,10 @@
     "ADMIN_API_URL": "https://admin.api.alummahnow.net",
     // Passkey domain files (src/lib/well-known.ts). APPLE_TEAM_ID: the owner's Apple Developer Team ID (empty: no Apple apps listed).
     // ANDROID_APP_CERTS: same value as AlUmmahNowAuth's; add each Play app-signing and upload key SHA-256 per package.
+    // Production trusts Play-signed builds only: never the CI pre-release key (that one is on QA and stage).
     "APPLE_TEAM_ID": "",
     "APPLE_WEBCREDENTIALS_BUNDLE_IDS": "net.alummahnow.studio,net.alummahnow.studio.mac,net.alummahnow.admin,net.alummahnow.admin.mac",
-    "ANDROID_APP_CERTS": "{\"net.alummahnow.studio\": [\"5A:1B:3D:2B:57:6E:9A:2D:F0:BF:1B:E3:F1:8C:40:20:13:F9:5C:09:EA:EE:7C:F7:31:10:C4:2F:B5:69:DD:C0\"]}"
+    "ANDROID_APP_CERTS": "{}"
   },
   "services": [{ "binding": "CMS", "service": "al-ummah-now-cms" }],
   "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "bb7463036880446abdc652a56f0b6509" }, { "binding": "FEED", "id": "5f27cddf86c84bbdbb59445ad867253c" }],
