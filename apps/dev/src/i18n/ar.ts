@@ -18,7 +18,6 @@ export const ar: Strings = {
   nav: {
     skip: 'تخطَّ إلى المحتوى',
     primary: 'الرئيسية',
-    menu: 'القائمة',
     home: 'الرئيسية',
     community: 'المجتمع',
     technology: 'التقنية',
@@ -27,7 +26,6 @@ export const ar: Strings = {
     waqf: 'الوقف',
     contact: 'تواصل معنا',
     language: 'English',
-    toDark: 'الوضع الداكن',
     toLight: 'الوضع الفاتح',
   },
   status: {

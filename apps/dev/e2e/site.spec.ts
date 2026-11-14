@@ -51,21 +51,29 @@ test('security headers, no cookies, noindex off production', async ({ request })
   for (const l of LOCALES) for (const s of PAGES) expect(sitemap).toContain(`<loc>https://alummahnow.dev${pagePath(l, s)}</loc>`);
 });
 
-test('Dark mode toggle: saved per device, applied before paint on the next page', async ({ page }) => {
+test('Light / Dark: www’s icon button, saved per device, applied before paint on the next page', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await page.goto('/en/');
-  const toggle = page.locator('[data-mode-toggle]');
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  const toggle = page.getByTestId('theme-toggle');
+  await expect(toggle).toHaveAccessibleName('Switch to dark mode');
+  await expect(toggle).toHaveAttribute('title', 'Switch to dark mode');
+  await expect(toggle).not.toHaveAttribute('aria-pressed', /./);
+  await expect(toggle.locator('svg.lucide-moon')).toBeVisible();
+  await expect(toggle.locator('svg.lucide-sun')).toBeHidden();
+  await expect(toggle).not.toContainText(/\S/);
   await toggle.click();
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
+  await expect(toggle).toHaveAccessibleName('Switch to light mode');
+  await expect(toggle.locator('svg.lucide-sun')).toBeVisible();
+  await expect(toggle).toBeFocused();
   await page.goto('/ar/waqf/');
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
-  await expect(page.locator('[data-mode-toggle]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('theme-toggle')).toHaveAccessibleName('التبديل إلى الوضع الفاتح');
 });
 
 test('language switch keeps the page', async ({ page }) => {
   await page.goto('/en/infrastructure/');
-  await page.locator('.lang-link').click();
+  await page.locator('.lang-switch').click();
   await expect(page).toHaveURL(/\/ar\/infrastructure\/$/);
 });
 
@@ -75,21 +83,18 @@ test('Contact links to the platform form with the right topic and language', asy
   expect(hrefs).toEqual(['https://videos.alummahnow.net/ar/contact?topic=partnership', 'https://videos.alummahnow.net/ar/contact?topic=general']);
 });
 
-test('phone menu opens, every link is inside the screen, Escape closes it', async ({ page, isMobile }) => {
+test('phone: www’s collapse, the links on their own row that scrolls, tools beside the brand', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'phone only');
   for (const locale of LOCALES) {
     await page.goto(pagePath(locale, ''));
-    const button = page.locator('[data-menu-toggle]');
-    await button.click();
-    const links = page.locator('#site-nav a');
-    await expect(links).toHaveCount(PAGES.length - 1);
-    const vw = page.viewportSize()!.width;
-    for (const box of await links.evaluateAll((as) => as.map((a) => a.getBoundingClientRect().toJSON()))) {
-      expect(box.left).toBeGreaterThanOrEqual(0);
-      expect(box.right).toBeLessThanOrEqual(vw);
-    }
-    await page.keyboard.press('Escape');
-    await expect(button).toHaveAttribute('aria-expanded', 'false');
+    const brand = await page.locator('.brand').boundingBox();
+    const tools = await page.locator('.header-tools').boundingBox();
+    const nav = await page.locator('.primary-nav').boundingBox();
+    expect(Math.abs(brand!.y + brand!.height / 2 - (tools!.y + tools!.height / 2))).toBeLessThan(4);
+    expect(nav!.y).toBeGreaterThanOrEqual(brand!.y + brand!.height);
+    await expect(page.locator('.primary-nav a')).toHaveCount(PAGES.length - 1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    expect(await page.locator('.primary-nav').evaluate((n) => getComputedStyle(n).overflowX)).toBe('auto');
   }
 });
 

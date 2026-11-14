@@ -33,7 +33,6 @@ export const en = {
   nav: {
     skip: 'Skip to content',
     primary: 'Main',
-    menu: 'Menu',
     home: 'Home',
     community: 'Community',
     technology: 'Technology',
@@ -42,7 +41,6 @@ export const en = {
     waqf: 'Waqf',
     contact: 'Contact',
     language: 'العربية',
-    toDark: 'Dark mode',
     toLight: 'Light mode',
   },
   status: {
