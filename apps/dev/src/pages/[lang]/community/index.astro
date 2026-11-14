@@ -1,0 +1,29 @@
+---
+import Base from '../../../layouts/Base.astro';
+import PageHero from '../../../components/PageHero.astro';
+import ItemGrid from '../../../components/ItemGrid.astro';
+import { strings } from '../../../i18n';
+import type { Locale } from '../../../lib/pages';
+import { localePaths } from '../../../lib/static-paths';
+
+export const getStaticPaths = localePaths;
+const locale = Astro.params.lang as Locale;
+const t = strings(locale);
+const c = t.community;
+---
+<Base locale={locale} slug="community" title={c.title} description={c.description}>
+  <PageHero title={c.heroTitle} lead={c.heroLead}>
+    <nav class="jump" aria-label={c.title}>
+      <ul role="list">{c.sections.map((s) => <li><a href={`#${s.id}`}>{s.title}</a></li>)}</ul>
+    </nav>
+  </PageHero>
+  {c.sections.map((s, i) => (
+    <section class:list={['band', { 'band-raised': i % 2 === 1, 'band-news': s.id === 'news' }]} id={s.id} aria-labelledby={`${s.id}-h`}>
+      <div class="wrap">
+        <h2 id={`${s.id}-h`} class="h2">{s.title}</h2>
+        <p class="section-lead">{s.lead}</p>
+        <ItemGrid items={s.items} t={t} cols={s.items.length > 4 ? 3 : 2} />
+      </div>
+    </section>
+  ))}
+</Base>

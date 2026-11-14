@@ -1,0 +1,24 @@
+---
+/** Facts with a status label and their sources (wiki AUN-DEV-SITE: status labels are real). */
+import type { Item, Strings } from '../i18n';
+import StatusChip from './StatusChip.astro';
+import Sources from './Sources.astro';
+interface Props {
+  items: Item[];
+  t: Strings;
+  cols?: 2 | 3;
+}
+const { items, t, cols = 2 } = Astro.props;
+---
+<ul class={`tiles tiles-${cols}`} role="list">
+  {items.map((item) => (
+    <li class="tile">
+      <div class="tile-head">
+        <h3 class="tile-title">{item.title}</h3>
+        {item.status && <StatusChip status={item.status} label={t.status[item.status]} />}
+      </div>
+      <p class="tile-body">{item.body}</p>
+      <Sources links={item.sources} label={t.common.source} plural={t.common.sources} />
+    </li>
+  ))}
+</ul>

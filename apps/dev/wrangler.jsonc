@@ -1,0 +1,35 @@
+// alummahnow.dev (wiki AUN-DEV-SITE). Static assets only: there is no `main`, so no Worker code runs
+// on a request and requests to static assets are not billed as Worker invocations. Top level =
+// production; env.qa and env.stage below. Custom domains need the alummahnow.dev zone on this account
+// (apps/dev/docs/DOMAIN.md); until it is there, deploys skip (scripts/release/zone-check.ts).
+//   production  alummahnow.dev          (www.alummahnow.dev: a Redirect Rule, DOMAIN.md)
+//   stage       stage.alummahnow.dev
+//   qa          qa.alummahnow.dev
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "al-ummah-now-dev",
+  "compatibility_date": "2025-09-01",
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./dist",
+    // dist/404.html for unknown paths, with a 404 status
+    "not_found_handling": "404-page",
+    "html_handling": "force-trailing-slash"
+  },
+  "routes": [{ "pattern": "alummahnow.dev", "custom_domain": true }],
+  "env": {
+    "qa": {
+      "name": "al-ummah-now-dev-qa",
+      "workers_dev": false,
+      "preview_urls": false,
+      "routes": [{ "pattern": "qa.alummahnow.dev", "custom_domain": true }]
+    },
+    "stage": {
+      "name": "al-ummah-now-dev-stage",
+      "workers_dev": false,
+      "preview_urls": false,
+      "routes": [{ "pattern": "stage.alummahnow.dev", "custom_domain": true }]
+    }
+  }
+}

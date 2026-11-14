@@ -1,0 +1,44 @@
+---
+import Base from '../../../layouts/Base.astro';
+import PageHero from '../../../components/PageHero.astro';
+import { strings } from '../../../i18n';
+import type { Locale } from '../../../lib/pages';
+import { contactUrl, type ContactTopic } from '../../../lib/links';
+import { localePaths } from '../../../lib/static-paths';
+
+export const getStaticPaths = localePaths;
+const locale = Astro.params.lang as Locale;
+const t = strings(locale);
+const p = t.contact;
+---
+<Base locale={locale} slug="contact" title={p.title} description={p.description}>
+  <PageHero title={p.heroTitle} lead={p.heroLead} />
+  <section class="band" aria-labelledby="write-h">
+    <div class="wrap">
+      <h2 id="write-h" class="visually-hidden">{p.title}</h2>
+      <ul class="contact-cards" role="list">
+        {p.cards.map((c, i) => (
+          <li class:list={['contact-card', { 'contact-card-main': i === 0 }]}>
+            <h3 class="contact-title">{c.title}</h3>
+            <p>{c.body}</p>
+            <a class:list={['button', i === 0 ? 'button-primary' : 'button-quiet']} href={contactUrl(locale, c.topic as ContactTopic)} rel="external">{c.action}<span class="visually-hidden">: {c.title}</span></a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+  <section class="band band-raised" aria-labelledby="other-h">
+    <div class="wrap split">
+      <div class="panel">
+        <h2 id="other-h" class="h2">{p.codeTitle}</h2>
+        <p>{p.codeBody}</p>
+        <p><a class="button button-quiet" href={p.codeLink.href} rel="external">{p.codeLink.label}</a></p>
+      </div>
+      <div class="panel panel-alert">
+        <h2 class="h2">{p.securityTitle}</h2>
+        <p>{p.securityBody}</p>
+        <p><a class="button button-quiet" href={p.securityLink.href} rel="external">{p.securityLink.label}</a></p>
+      </div>
+    </div>
+  </section>
+</Base>

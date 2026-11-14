@@ -6,6 +6,7 @@ The public sites of **Al Ummah Now**, as an npm workspace:
 |---|---|---|
 | [`apps/www`](apps/www/README.md) | www.alummahnow.net (Astro on Cloudflare Workers) | `al-ummah-now-www[-qa\|-stage]` |
 | [`apps/sites`](apps/sites/README.md) | White-label scholar sites on `<slug>.alummahnow.org` and own domains | `al-ummah-now-sites[-qa\|-stage]` |
+| [`apps/dev`](apps/dev/README.md) | alummahnow.dev: the project site for developers and partners (static assets only) | `al-ummah-now-dev[-qa\|-stage]` |
 | `packages/render` | Code both apps render with: themes, sealed cookies, embed URLs, markdown, HTML edge cache (imported by relative path, TypeScript source) | – |
 
 Install once at the root (`npm ci`), then run each app's scripts from its folder (`cd apps/www && npm run dev`).

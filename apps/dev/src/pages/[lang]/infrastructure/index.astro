@@ -1,0 +1,70 @@
+---
+import Base from '../../../layouts/Base.astro';
+import PageHero from '../../../components/PageHero.astro';
+import ItemGrid from '../../../components/ItemGrid.astro';
+import Sources from '../../../components/Sources.astro';
+import Street from '../../../components/Street.astro';
+import Steps from '../../../components/Steps.astro';
+import { strings } from '../../../i18n';
+import type { Locale } from '../../../lib/pages';
+import { localePaths } from '../../../lib/static-paths';
+
+export const getStaticPaths = localePaths;
+const locale = Astro.params.lang as Locale;
+const t = strings(locale);
+const p = t.infrastructure;
+const src = (links: { label: string; href: string }[]) => ({ links, label: t.common.source, plural: t.common.sources });
+---
+<Base locale={locale} slug="infrastructure" title={p.title} description={p.description}>
+  <PageHero title={p.heroTitle} lead={p.heroLead} />
+  <section class="band band-street night-soft" aria-labelledby="pipeline-h">
+    <div class="wrap">
+      <h2 id="pipeline-h" class="h2">{p.pipelineTitle}</h2>
+      <Street steps={p.pipeline} label={p.pipelineLabel} uid="pipe" />
+      <Sources {...src(p.pipelineSources)} />
+    </div>
+  </section>
+  <section class="band" aria-labelledby="details-h">
+    <div class="wrap">
+      <h2 id="details-h" class="visually-hidden">{p.pipelineTitle}</h2>
+      <ItemGrid items={p.details} t={t} />
+    </div>
+  </section>
+  <section class="band band-raised" aria-labelledby="env-h">
+    <div class="wrap">
+      <h2 id="env-h" class="h2">{p.environmentsTitle}</h2>
+      <p class="section-lead">{p.environmentsLead}</p>
+      <ul class="envs" role="list">
+        {p.environments.map((e, i) => (
+          <li class={`env env-${i}`}>
+            <h3 class="env-name">{e.name}</h3>
+            <p>{e.body}</p>
+            <code class="env-host" dir="ltr">{e.host}</code>
+          </li>
+        ))}
+      </ul>
+      <Sources {...src(p.environmentsSources)} />
+    </div>
+  </section>
+  <section class="band" aria-labelledby="release-h">
+    <div class="wrap">
+      <h2 id="release-h" class="h2">{p.releaseTitle}</h2>
+      <Steps steps={p.release} label={p.releaseLabel} />
+      <Sources {...src(p.releaseSources)} />
+    </div>
+  </section>
+  <section class="band band-raised" aria-labelledby="cost-h">
+    <div class="wrap split">
+      <div class="panel">
+        <h2 id="cost-h" class="h2">{p.costTitle}</h2>
+        <p>{p.costBody}</p>
+        <Sources {...src(p.costSources)} />
+      </div>
+      <div class="panel">
+        <h2 class="h2">{p.statusTitle}</h2>
+        <p>{p.statusBody}</p>
+        <p><a class="button button-quiet" href={p.statusLink.href} rel="external">{p.statusLink.label}</a></p>
+      </div>
+    </div>
+  </section>
+</Base>

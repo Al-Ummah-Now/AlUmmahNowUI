@@ -1,0 +1,39 @@
+{
+  "name": "al-ummah-now-dev",
+  "description": "alummahnow.dev: the project site for developers, contributors, investors, donors and partners (static Astro on Cloudflare Workers static assets). Shares packages/render's Fanous themes with www and the scholar sites.",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "astro dev --port ${DEV_SITE_PORT:-4323}",
+    "build": "astro build && node --experimental-strip-types --no-warnings scripts/env-files.ts --env ${DEV_SITE_ENV:-local}",
+    "env-files": "node --experimental-strip-types --no-warnings scripts/env-files.ts",
+    "preview": "wrangler dev -c wrangler.jsonc --port ${DEV_SITE_PORT:-4323}",
+    "lint": "eslint .",
+    "typecheck": "astro check && tsc --noEmit -p tsconfig.scripts.json",
+    "test": "vitest run",
+    "e2e": "playwright test",
+    "screenshots": "node --experimental-strip-types --no-warnings scripts/screenshots.ts",
+    "check:config": "node --experimental-strip-types --no-warnings scripts/check-wrangler-config.ts",
+    "zone:check": "node --experimental-strip-types --no-warnings scripts/release/zone-check.ts",
+    "release:smoke": "node --experimental-strip-types --no-warnings scripts/release/smoke.ts"
+  },
+  "dependencies": {
+    "astro": "5.18.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.12",
+    "@axe-core/playwright": "4.14.0",
+    "@eslint/js": "9.39.5",
+    "@playwright/test": "1.65.0",
+    "@types/node": "22.20.5",
+    "eslint": "9.39.5",
+    "eslint-plugin-astro": "1.7.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1",
+    "vitest": "3.2.7",
+    "wrangler": "4.158.0"
+  }
+}

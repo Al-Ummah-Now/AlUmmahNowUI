@@ -1,0 +1,39 @@
+---
+/**
+ * The 404 page (Workers static assets serve dist/404.html with a 404 status for unknown paths). The
+ * address doesn't tell us the language, so it says it in both, each marked with its own lang/dir.
+ */
+import '../../../../packages/render/src/styles/fanous-themes.generated.css';
+import '../styles/site.css';
+import Lantern from '../components/Lantern.astro';
+import { en } from '../i18n/en';
+import { ar } from '../i18n/ar';
+---
+<!doctype html>
+<html lang="en" dir="ltr" data-theme="fawanees">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline src="/mode.js"></script>
+    <title>{en.notFound.title} · {ar.notFound.title} | Al Ummah Now</title>
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+  </head>
+  <body>
+    <main class="notfound night">
+      <Lantern label="" uid="nf" class="notfound-lantern" />
+      <div class="notfound-cols">
+        <section lang="en" dir="ltr">
+          <h1 class="display">{en.notFound.title}</h1>
+          <p>{en.notFound.body}</p>
+          <p><a class="button button-primary" href="/en/">{en.notFound.home}</a></p>
+        </section>
+        <section lang="ar" dir="rtl">
+          <h2 class="display">{ar.notFound.title}</h2>
+          <p>{ar.notFound.body}</p>
+          <p><a class="button button-ghost" href="/ar/">{ar.notFound.home}</a></p>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

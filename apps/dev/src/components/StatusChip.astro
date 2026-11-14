@@ -1,0 +1,9 @@
+---
+import type { Status } from '../i18n';
+interface Props {
+  status: Status;
+  label: string;
+}
+const { status, label } = Astro.props;
+---
+<span class={`chip chip-${status}`}><span class="chip-dot" aria-hidden="true"></span>{label}</span>

@@ -1,0 +1,55 @@
+---
+import Base from '../../../layouts/Base.astro';
+import PageHero from '../../../components/PageHero.astro';
+import Steps from '../../../components/Steps.astro';
+import { strings } from '../../../i18n';
+import type { Locale } from '../../../lib/pages';
+import { GH } from '../../../lib/links';
+import { localePaths } from '../../../lib/static-paths';
+
+export const getStaticPaths = localePaths;
+const locale = Astro.params.lang as Locale;
+const t = strings(locale);
+const p = t['open-source'];
+---
+<Base locale={locale} slug="open-source" title={p.title} description={p.description}>
+  <PageHero title={p.heroTitle} lead={p.heroLead}>
+    <p class="hero-source"><a href={p.licenceSource.href} rel="external">{p.licenceSource.label}</a></p>
+  </PageHero>
+  <section class="band" aria-labelledby="repos-h">
+    <div class="wrap">
+      <h2 id="repos-h" class="h2">{p.reposTitle}</h2>
+      <ul class="repos" role="list">
+        {p.repos.map((r) => (
+          <li class="repo">
+            <a class="repo-name" href={`${GH}/${r.name}`} rel="external" dir="ltr">{r.name}</a>
+            <p class="repo-body">{r.body}</p>
+            <dl class="repo-meta">
+              <div><dt>{p.repoLanguage}</dt><dd dir="ltr">{r.lang}</dd></div>
+              <div><dt>{p.repoLicence}</dt><dd class:list={{ 'repo-none': !r.licence }}>{r.licence || p.noLicence}</dd></div>
+            </dl>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+  <section class="band band-raised" aria-labelledby="contribute-h">
+    <div class="wrap">
+      <h2 id="contribute-h" class="h2">{p.contributeTitle}</h2>
+      <Steps steps={p.contribute} label={p.contributeLabel} />
+      <div class="actions">
+        <a class="button button-primary" href={p.contributeLink.href} rel="external">{p.contributeLink.label}</a>
+        <a class="button button-quiet" href={p.wikiLink.href} rel="external">{p.wikiLink.label}</a>
+      </div>
+    </div>
+  </section>
+  <section class="band" aria-labelledby="security-h">
+    <div class="wrap">
+      <div class="panel panel-alert">
+        <h2 id="security-h" class="h2">{p.securityTitle}</h2>
+        <p>{p.securityBody}</p>
+        <p><a class="button button-quiet" href={p.securityLink.href} rel="external">{p.securityLink.label}</a></p>
+      </div>
+    </div>
+  </section>
+</Base>

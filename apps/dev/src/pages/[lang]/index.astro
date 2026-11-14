@@ -1,0 +1,106 @@
+---
+import Base from '../../layouts/Base.astro';
+import Lantern from '../../components/Lantern.astro';
+import { strings } from '../../i18n';
+import { pagePath, type Locale, type PageSlug } from '../../lib/pages';
+import { localePaths } from '../../lib/static-paths';
+
+export const getStaticPaths = localePaths;
+const locale = Astro.params.lang as Locale;
+const t = strings(locale);
+const h = t.home;
+const go = (slug: string) => pagePath(locale, slug as PageSlug);
+---
+<Base locale={locale} slug="" title={h.title} description={h.description}>
+  <section class="hero night" aria-labelledby="page-title">
+    <div class="hero-sky" aria-hidden="true"></div>
+    <div class="wrap hero-inner">
+      <div class="hero-text">
+        <p class="hero-name" lang={locale === 'ar' ? 'en' : 'ar'}>{t.meta.siteNameAlt}</p>
+        <h1 id="page-title" class="display hero-title">{h.heroTitle}</h1>
+        <p class="lead">{h.heroLead}</p>
+        <div class="actions">
+          <a class="button button-primary" href={go('technology')}>{h.ctaDevelopers}</a>
+          <a class="button button-ghost" href={go('contact')}>{h.ctaPartners}</a>
+        </div>
+      </div>
+      <div class="hero-art">
+        <Lantern label={h.lanternLabel} uid="hero" />
+      </div>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="pillars">
+    <div class="wrap">
+      <h2 id="pillars" class="h2">{h.pillarsTitle}</h2>
+      <ul class="pillars" role="list">
+        {h.pillars.map((p) => (
+          <li class="pillar">
+            <h3 class="pillar-title">{p.title}</h3>
+            <p>{p.body}</p>
+          </li>
+        ))}
+      </ul>
+      <p class="more"><a href={go('community')}>{h.pillarsMore}</a></p>
+    </div>
+  </section>
+
+  <section class="band band-raised" aria-labelledby="live">
+    <div class="wrap split">
+      <div>
+        <h2 id="live" class="h2">{h.liveTitle}</h2>
+        <ul class="live-list" role="list">
+          {h.live.map((s) => (
+            <li>
+              <a class="live-item" href={s.href} rel="external">
+                <span class="live-title" dir="auto">{s.title}</span>
+                <span class="live-body">{s.body}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div>
+        <h2 class="h2" id="system">{h.systemTitle}</h2>
+        <p class="section-lead">{h.systemLead}</p>
+        <ol class="layers" aria-labelledby="system">
+          {h.systemLayers.map((l) => (
+            <li class="layer">
+              <span class="layer-title">{l.title}</span>
+              <span class="layer-body">{l.body}</span>
+            </li>
+          ))}
+        </ol>
+        <p class="more"><a href={go('infrastructure')}>{h.systemMore}</a></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="start">
+    <div class="wrap">
+      <h2 id="start" class="h2">{h.audiencesTitle}</h2>
+      <div class="audiences">
+        {[h.developers, h.partners].map((a, i) => (
+          <article class={`audience ${i === 0 ? 'audience-dev' : 'audience-partner'}`}>
+            <h3 class="audience-title">{a.title}</h3>
+            <p>{a.body}</p>
+            <ul role="list">{a.links.map((l) => <li><a href={go(l.href)}>{l.label}</a></li>)}</ul>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="waqf-teaser">
+    <div class="wrap">
+      <div class="waqf-teaser night">
+        <span class="waqf-glyph" aria-hidden="true" lang="ar">وقف</span>
+        <div>
+          <h2 id="waqf-teaser" class="h2">{h.waqfTitle}</h2>
+          <p>{h.waqfBody}</p>
+          <p class="more"><a href={go('waqf')}>{h.waqfMore}</a></p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
