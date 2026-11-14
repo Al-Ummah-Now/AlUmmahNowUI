@@ -98,11 +98,8 @@ for (const scheme of SCHEMES) {
     test.use({ colorScheme: scheme });
     for (const locale of LOCALES) {
       test(`home ${locale}: garlands, nothing see-through, every lantern whole`, async ({ page }, info) => {
-        // In the first hour after midnight UTC the seeded timeline groups under different day headings
-        // and the JS-placed garland can hang a lantern over the next post (iphone, dark, ar: "lantern at
-        // 233,602: 79% drawn"). The placed garlands are being replaced by a static repeating image
-        // (AlUmmahNow #1266); until it lands, skip this hour instead of failing nightly.
-        test.fixme(new Date().getUTCHours() === 0, 'garland placement in the hour after midnight UTC; replaced by AlUmmahNow #1266');
+        // The seeded timeline is anchored to a fixed time of day (e2e/seed-feed.ts seedAnchor), so its day
+        // groups, and the JS-placed garlands, no longer move with the hour the suite runs at.
         test.setTimeout(120_000);
         await open(page, `/${locale}/?theme=fawanees`);
         await stable(page);
