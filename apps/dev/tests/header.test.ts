@@ -24,7 +24,7 @@ function tokens(css: string, selector: string): Record<string, string> {
   const head = `\n${selector} {\n`;
   for (let at = css.indexOf(head); at >= 0; at = css.indexOf(head, at + 1)) {
     const body = css.slice(at, css.indexOf('\n}', at + 1));
-    for (const m of body.matchAll(/^\s*(--[\w-]+):\s*([^;]+);/gm)) out[m[1]] = m[2].trim();
+    for (const m of body.matchAll(/^\s*(--[\w-]+):\s*([^;]+);/gm)) out[m[1]!] = m[2]!.trim();
   }
   expect(Object.keys(out).length, `${selector} block`).toBeGreaterThan(0);
   return out;
