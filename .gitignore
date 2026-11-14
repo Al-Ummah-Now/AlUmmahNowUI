@@ -27,5 +27,9 @@ secrets-check.txt
 # theme sweep report (e2e/theme-sweep.spec.ts)
 test-results-themes/
 
+# apps/dev: the wiki's feature registry, fetched before every build (apps/dev/scripts/registry.ts)
+apps/dev/src/data/registry.json
+apps/dev/public/feature-registry.json
+
 # apps/dev review screenshots (npm run screenshots)
 screenshots/

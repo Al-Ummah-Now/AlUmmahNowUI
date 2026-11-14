@@ -1,6 +1,7 @@
 ---
-/** Facts with a status label and their sources (wiki AUN-DEV-SITE: status labels are real). */
+/** Facts with a status label and their sources. The label comes only from the wiki's feature registry. */
 import type { Item, Strings } from '../i18n';
+import { feature } from '../lib/registry';
 import StatusChip from './StatusChip.astro';
 import Sources from './Sources.astro';
 interface Props {
@@ -15,7 +16,7 @@ const { items, t, cols = 2 } = Astro.props;
     <li class="tile">
       <div class="tile-head">
         <h3 class="tile-title">{item.title}</h3>
-        {item.status && <StatusChip status={item.status} label={t.status[item.status]} />}
+        {item.feature && <StatusChip status={feature(item.feature).status} label={t.status[feature(item.feature).status]} />}
       </div>
       <p class="tile-body">{item.body}</p>
       <Sources links={item.sources} label={t.common.source} plural={t.common.sources} />

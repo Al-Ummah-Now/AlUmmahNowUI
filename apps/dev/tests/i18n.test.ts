@@ -22,8 +22,8 @@ describe('copy', () => {
   it('no empty strings (repo licences excepted)', () => {
     for (const t of [en, ar]) for (const [p, s] of strings(t)) if (!p.endsWith('.licence')) expect(s.trim(), p).not.toBe('');
   });
-  it('links and statuses are the same in both languages', () => {
-    const pick = (t: unknown) => strings(t).filter(([p]) => p.endsWith('.href') || (p.endsWith('.status') && !p.startsWith('.footer')) || p.endsWith('.topic') || p.endsWith('.licence'));
+  it('links and feature ids are the same in both languages', () => {
+    const pick = (t: unknown) => strings(t).filter(([p]) => p.endsWith('.href') || p.endsWith('.feature') || p.endsWith('.topic') || p.endsWith('.licence'));
     // Links into our own sites point at the page's own language
     const norm = (t: unknown) => pick(t).map(([p, v]) => [p, v.replace('/ar/', '/en/')]);
     expect(norm(ar)).toEqual(norm(en));

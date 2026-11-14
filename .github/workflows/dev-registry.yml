@@ -1,0 +1,147 @@
+name: Dev site registry rebuild
+
+# alummahnow.dev shows feature statuses only from the wiki's feature registry (AlUmmahNowWiki
+# features/registry.json), read at build time (apps/dev/scripts/registry.ts). When the registry on
+# the wiki's main moves past what a site shows (its /feature-registry.json names the commit):
+#   - QA: rebuild from main and deploy, as deploy-qa.yml's dev job does;
+#   - stage and production: re-run the "Dev site build once" job of the latest tag's release run.
+#     GitHub re-runs the jobs after it too (stage deploy + smoke, then production deploy + smoke with
+#     auto-rollback), on the tag's ref and code, so production still moves only from a release tag
+#     and the tag is never moved; only the registry data is newer.
+# Started by the wiki (registry.yml, when it has a dispatch token) or by the schedule below.
+
+on:
+  schedule:
+    - cron: '23 */3 * * *'
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Why (the wiki commit that changed the registry)'
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dev-registry
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Registry newer than the sites?
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      wiki: ${{ steps.cmp.outputs.wiki }}
+      qa: ${{ steps.cmp.outputs.qa }}
+      production: ${{ steps.cmp.outputs.production }}
+    steps:
+      - id: cmp
+        run: |
+          wiki=$(git ls-remote https://github.com/Al-Ummah-Now/AlUmmahNowWiki.git refs/heads/main | cut -f1)
+          [ -n "$wiki" ] || { echo "::error::could not read the wiki's main"; exit 1; }
+          echo "wiki=$wiki" >> "$GITHUB_OUTPUT"
+          shown() { curl -fsS --max-time 20 "$1/feature-registry.json" 2>/dev/null | jq -r '.source.sha // empty' || true; }
+          for env in qa production; do
+            if [ "$env" = qa ]; then url=https://qa.alummahnow.dev; else url=https://alummahnow.dev; fi
+            have=$(shown "$url")
+            if [ -z "$have" ]; then
+              echo "::notice::$url shows no feature registry yet (zone not set up, or deployed before the registry): skipping $env."
+              echo "$env=skip" >> "$GITHUB_OUTPUT"
+            elif [ "$have" = "$wiki" ]; then
+              echo "$env shows the registry at ${wiki::7}: nothing to do."
+              echo "$env=current" >> "$GITHUB_OUTPUT"
+            else
+              echo "$env shows ${have::7}; the wiki is at ${wiki::7}: rebuilding."
+              echo "$env=stale" >> "$GITHUB_OUTPUT"
+            fi
+          done
+          {
+            echo "### Feature registry"
+            echo "Wiki main: \`${wiki::7}\`. Reason: ${REASON:-schedule}"
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          REASON: ${{ inputs.reason }}
+
+  qa:
+    name: Rebuild and deploy QA
+    needs: check
+    if: needs.check.outputs.qa == 'stale'
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: apps/dev
+    timeout-minutes: 15
+    concurrency:
+      group: dev-qa
+      cancel-in-progress: false
+    environment:
+      name: qa
+      url: https://qa.alummahnow.dev
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+        working-directory: .
+
+      - name: Build (qa env files, the wiki's registry at the checked commit)
+        env:
+          DEV_SITE_ENV: qa
+          REGISTRY_REF: ${{ needs.check.outputs.wiki }}
+        run: npm run build
+
+      - name: Zone ready?
+        id: zone
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm run --silent zone:check
+
+      - name: Deploy to QA
+        if: steps.zone.outputs.ready == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WIKI: ${{ needs.check.outputs.wiki }}
+        run: npx wrangler deploy -c wrangler.jsonc --env qa --message "qa ${GITHUB_SHA::7}, registry ${WIKI::7}"
+
+      - name: Smoke (qa)
+        if: steps.zone.outputs.ready == 'true'
+        run: npm run release:smoke -- --env qa
+
+  production:
+    name: Re-run the latest release's dev site jobs (stage, production)
+    needs: check
+    if: needs.check.outputs.production == 'stale'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          tag=$(git ls-remote --tags --refs "https://github.com/$REPO.git" 'v*' | sed 's#.*refs/tags/##' | sort -V | tail -1)
+          [ -n "$tag" ] || { echo "::warning::no release tag yet"; exit 0; }
+          run=$(gh run list -R "$REPO" --workflow release.yml --branch "$tag" --limit 1 --json databaseId,status --jq '.[0] | select(.status == "completed") | .databaseId')
+          if [ -z "$run" ]; then
+            echo "::notice::the $tag release run is missing or still running; the next scheduled check retries."
+            exit 0
+          fi
+          job=$(gh run view "$run" -R "$REPO" --json jobs --jq '.jobs[] | select(.name == "Dev site build once") | .databaseId')
+          [ -n "$job" ] || { echo "::warning::release run $run has no dev site build job"; exit 0; }
+          if ! gh run rerun "$run" -R "$REPO" --job "$job"; then
+            echo "::warning::could not re-run $tag's dev site jobs (runs older than 30 days can't be re-run): the next release tag picks the registry up."
+            exit 0
+          fi
+          echo "Re-running $tag's dev site jobs (run $run): build with the new registry, stage, production." >> "$GITHUB_STEP_SUMMARY"

@@ -3,6 +3,10 @@ import Base from '../../../layouts/Base.astro';
 import PageHero from '../../../components/PageHero.astro';
 import ItemGrid from '../../../components/ItemGrid.astro';
 import Sources from '../../../components/Sources.astro';
+import StatusChip from '../../../components/StatusChip.astro';
+import { WIKI } from '../../../lib/links';
+import { FEATURES, REGISTRY, releaseHref, releaseLabel, registrySourceHref } from '../../../lib/registry';
+import { STATUSES } from '../../../../scripts/registry';
 import { strings } from '../../../i18n';
 import type { Locale } from '../../../lib/pages';
 import { localePaths } from '../../../lib/static-paths';
@@ -11,6 +15,8 @@ export const getStaticPaths = localePaths;
 const locale = Astro.params.lang as Locale;
 const t = strings(locale);
 const p = t.technology;
+const f = p.features;
+const sha = REGISTRY.source.sha === 'local' ? 'local' : REGISTRY.source.sha.slice(0, 7);
 ---
 <Base locale={locale} slug="technology" title={p.title} description={p.description}>
   <PageHero title={p.heroTitle} lead={p.heroLead} />
@@ -27,7 +33,40 @@ const p = t.technology;
       </div>
     </div>
   </section>
-  <section class="band band-raised" aria-labelledby="principles-h">
+  {/* Every feature, straight from the wiki's feature registry (src/lib/registry.ts) */}
+  <section class="band band-raised" aria-labelledby="features-h" id="features">
+    <div class="wrap">
+      <h2 id="features-h" class="h2">{f.title}</h2>
+      <p class="lead registry-lead">{f.lead}</p>
+      <div class="registry">
+        {STATUSES.map((s) => {
+          const list = FEATURES.filter((x) => x.status === s);
+          return list.length > 0 && (
+            <section class="registry-group" aria-labelledby={`registry-${s}`}>
+              <h3 id={`registry-${s}`} class="registry-title"><StatusChip status={s} label={t.status[s]} /></h3>
+              <ul class="registry-list" role="list">
+                {list.map((x) => {
+                  const label = releaseLabel(x, f.before);
+                  const href = releaseHref(x);
+                  return (
+                    <li class="registry-row" id={`feature-${x.id}`}>
+                      <span class="registry-name">{x.name[locale]}</span>
+                      <span class="registry-meta">
+                        {label && (href ? <a class="registry-release" href={href} rel="external" lang="en" dir="ltr">{label}</a> : <span class="registry-release">{label}</span>)}
+                        <a href={`${WIKI}/${x.wiki}`} rel="external">{f.wiki}</a>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          );
+        })}
+      </div>
+      <p class="registry-source"><a href={registrySourceHref()} rel="external">{f.source.replace('{sha}', sha)}</a></p>
+    </div>
+  </section>
+  <section class="band" aria-labelledby="principles-h">
     <div class="wrap">
       <h2 id="principles-h" class="h2">{p.principlesTitle}</h2>
       <ul class="principles" role="list">

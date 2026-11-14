@@ -7,8 +7,9 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "astro dev --port ${DEV_SITE_PORT:-4323}",
-    "build": "astro build && node --experimental-strip-types --no-warnings scripts/env-files.ts --env ${DEV_SITE_ENV:-local}",
+    "registry": "node --experimental-strip-types --no-warnings scripts/registry.ts",
+    "dev": "npm run -s registry && astro dev --port ${DEV_SITE_PORT:-4323}",
+    "build": "npm run -s registry && astro build && node --experimental-strip-types --no-warnings scripts/env-files.ts --env ${DEV_SITE_ENV:-local}",
     "env-files": "node --experimental-strip-types --no-warnings scripts/env-files.ts",
     "preview": "wrangler dev -c wrangler.jsonc --port ${DEV_SITE_PORT:-4323}",
     "lint": "eslint .",
