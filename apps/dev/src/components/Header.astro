@@ -1,5 +1,11 @@
 ---
-import ThemeIcon from '../../../www/src/components/ThemeIcon.astro';
+/**
+ * The Al Ummah Now header, as www's (apps/www/src/components/Header.astro): the same markup, class
+ * names and order, styled by www's own header.css and aun-nav.generated.css (imported in Base.astro)
+ * and driven by www's own toggle script, so it cannot drift (owner: "UNIFY"; AlUmmahNow
+ * docs/design/NAV.md). This static site has no search and no account, so those two are left out.
+ */
+import { modeIconSvg, modeToggleLabel } from '../../../../packages/render/src/mode-toggle';
 import type { Strings } from '../i18n';
 import { PAGES, otherLocale, pagePath, type Locale, type PageSlug } from '../lib/pages';
 interface Props {
@@ -10,30 +16,35 @@ interface Props {
 const { locale, slug, t } = Astro.props;
 const other = otherLocale(locale);
 const label = (p: PageSlug) => (p === '' ? t.nav.home : t.nav[p]);
+const toDark = modeToggleLabel(locale, false);
+const toLight = modeToggleLabel(locale, true);
 ---
 <header class="site-header">
-  <div class="wrap header-row">
-    {/* The brand exactly as www's Header.astro shows it: the real logo and the name, no lockup */}
+  <div class="wrap">
     <a class="brand" href={pagePath(locale, '')} aria-label={t.a11y.home}>
       <img src="/brand/logo-192.webp" alt="" width="40" height="40" />
       {locale === 'ar' ? <span class="brand-ar">الأمة الآن</span> : <span>Al Ummah Now</span>}
     </a>
-    <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-nav" data-menu-toggle>
-      <span class="menu-bars" aria-hidden="true"></span>{t.nav.menu}
-    </button>
-    <nav id="site-nav" class="site-nav" aria-label={t.nav.primary}>
-      <ul role="list">
+    <nav class="primary-nav" aria-label={t.nav.primary}>
+      <ul>
         {PAGES.filter((p) => p !== '').map((p) => (
           <li><a href={pagePath(locale, p)} aria-current={p === slug ? 'page' : undefined}>{label(p)}</a></li>
         ))}
       </ul>
     </nav>
     <div class="header-tools">
-      <a class="lang-link" href={pagePath(other, slug)} hreflang={other} lang={other}>{t.nav.language}</a>
-      <button class="mode-toggle" type="button" aria-pressed="false" data-mode-toggle>
-        <ThemeIcon mode="dark" />
-        <span>{t.nav.toDark}</span>
-      </button>
+      <div class="theme" id="theme">
+        <button type="button" class="theme-button aun-icon-btn" data-testid="theme-toggle" aria-label={toDark} title={toDark} data-label-dark={toDark} data-label-light={toLight} data-current="light">
+          <Fragment set:html={modeIconSvg('moon', 'theme-icon mode-moon')} />
+          <Fragment set:html={modeIconSvg('sun', 'theme-icon mode-sun')} />
+        </button>
+      </div>
+      <a class="lang-switch aun-lang" href={pagePath(other, slug)} hreflang={other} lang={other}>{t.nav.language}</a>
     </div>
   </div>
 </header>
+<script>
+  // www's Light / Dark toggle, as it is (apps/www/src/scripts/theme.ts)
+  import { initTheme } from '../../../www/src/scripts/theme';
+  initTheme();
+</script>

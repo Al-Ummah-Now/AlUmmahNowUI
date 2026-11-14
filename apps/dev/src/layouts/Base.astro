@@ -1,6 +1,9 @@
 ---
 import '../../../../packages/render/src/styles/fanous-themes.generated.css';
 import '../styles/site.css';
+// www's header, as it is: the shared controls (NAV.md) and the bar, brand, links and Light / Dark button
+import '../../../www/src/styles/aun-nav.generated.css';
+import '../../../www/src/styles/header.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { strings } from '../i18n';
@@ -44,7 +47,6 @@ const ld = slug === '' ? jsonLd(locale, t.meta.siteName, t.meta.siteNameAlt, t.m
     <meta property="og:locale" content={locale === 'ar' ? 'ar_AR' : 'en_US'} />
     <meta name="twitter:card" content="summary_large_image" />
     {ld.map((d) => <script type="application/ld+json" set:html={jsonLdText(d)} />)}
-    <script is:inline src="/site.js" defer></script>
   </head>
   <body>
     <a class="skip" href="#main">{t.nav.skip}</a>
