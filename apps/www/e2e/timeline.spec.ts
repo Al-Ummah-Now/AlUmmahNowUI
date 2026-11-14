@@ -7,6 +7,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { token, type ThemeId } from './site-theme';
 import { dayKey, dayLabel } from '../src/lib/feed.ts';
+import { SEED_SCHOLAR_SLUG } from './seed-feed.ts';
 import { expect, test, type Page } from '@playwright/test';
 
 const local = !process.env.WWW_URL;
@@ -90,6 +91,22 @@ test.describe('home timeline', () => {
       await expect(viewer.locator('.ci-count')).toHaveText('5 cards');
       await expect(viewer.locator('.ci-slide')).toHaveCount(5);
       await expect(viewer.locator('.ci-slide').first()).toContainText('Lesson one');
+    });
+
+    test("a scholar's byline links to their page with rel=author, on text and card posts (UI#42)", async ({ page }) => {
+      for (const l of ['en', 'ar'] as const) {
+        await page.goto(`/${l}/`);
+        const name = l === 'ar' ? 'الشيخ يوسف رحمن' : 'Shaykh Yusuf Rahman';
+        const links = page.locator('[data-days] a[data-scholar-byline]');
+        await expect(links, l).toHaveCount(2);
+        for (const link of await links.all()) {
+          await expect(link).toHaveAttribute('href', `/${l}/scholars/${SEED_SCHOLAR_SLUG}/`);
+          await expect(link).toHaveAttribute('rel', 'author');
+          await expect(link).toHaveText(name);
+        }
+        // Staff posts keep a plain byline
+        await expect(page.locator('li.tl-item', { hasText: l === 'ar' ? 'خبر رقم 2' : 'News item 2' }).locator('.tl-author a')).toHaveCount(0);
+      }
     });
 
     test('load more (JS): appends in place, announces, moves focus, and reaches the end', async ({ page }) => {

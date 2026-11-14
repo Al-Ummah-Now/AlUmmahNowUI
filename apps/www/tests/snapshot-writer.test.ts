@@ -1,18 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { cmsPaths, ARTICLES_PAGE_SIZE, RSS_ITEMS, snapshotKey } from '../src/lib/cms';
+import { cmsPaths, ARTICLES_PAGE_SIZE, RSS_ITEMS, SCHOLARS_PAGE_SIZE, SCHOLAR_POSTS_PAGE_SIZE, snapshotKey } from '../src/lib/cms';
 import { contentEntries, MAX_KEYS_PER_RUN, writeSnapshots, type WriterDeps } from '../src/lib/snapshot-writer';
 import { MemoryKV } from './helpers';
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 /** A fake CMS public API. `version` is stamped into every body, so tests can see which fetch a snapshot came from. */
-function fakeCms(opts: { pages?: number; posts?: number; postTotal?: number; listPages?: number } = {}) {
+function fakeCms(opts: { pages?: number; posts?: number; postTotal?: number; listPages?: number; scholars?: number } = {}) {
   const state = { version: 1, fail: new Set<string>(), delay: new Map<string, Promise<void>>(), calls: [] as string[] };
   const sitemap = {
     items: [
       ...Array.from({ length: opts.pages ?? 2 }, (_, i) => ({ type: 'page', locale: i % 2 ? 'ar' : 'en', slug: `p${i}`, updated_at: '2026-01-01T00:00:00Z' })),
       ...Array.from({ length: opts.posts ?? 2 }, (_, i) => ({ type: 'post', locale: i % 2 ? 'ar' : 'en', slug: `n${i}`, updated_at: '2026-01-01T00:00:00Z' })),
     ],
+    scholars: Array.from({ length: opts.scholars ?? 0 }, (_, i) => ({ slug: `s${i}`, updated_at: '2026-01-01T00:00:00Z' })),
   };
   const fetchCms: WriterDeps['fetchCms'] = async (path) => {
     state.calls.push(path);
@@ -31,6 +32,11 @@ function fakeCms(opts: { pages?: number; posts?: number; postTotal?: number; lis
       const page = Number(url.searchParams.get('page'));
       const limit = Number(url.searchParams.get('limit'));
       return json({ items: [], page, limit, total: opts.postTotal ?? 0, v });
+    }
+    if (url.pathname === '/scholars') return json({ items: [], page: 1, limit: 24, total: 0, v });
+    if (url.pathname.startsWith('/scholars/')) {
+      const slug = url.pathname.split('/').pop()!;
+      return json({ scholar: { slug, name: slug }, posts: { items: [], page: 1, limit: 12, total: 0 }, post_counts: {}, v });
     }
     if (url.pathname.startsWith('/pages/') || url.pathname.startsWith('/posts/')) {
       const slug = url.pathname.split('/').pop()!;
@@ -51,17 +57,28 @@ describe('KV snapshot writer (single writer, audit UI-3)', () => {
     let now = 1_000;
     const deps: WriterDeps = { fetchCms: cms.fetchCms, kv: kv as never, now: () => now };
     const first = await writeSnapshots(deps);
-    // core 11 (sitemap; per locale: site, /lists/videos, /lists/articles, posts page 1 = the RSS page, /pages/about)
+    // core 13 (sitemap; per locale: site, /lists/videos, /lists/articles, posts page 1 = the RSS page, /scholars, /pages/about)
     // + 10 sitemap items + posts page 2 and /lists/articles pages 2..3 for each locale
     expect(RSS_ITEMS).toBe(ARTICLES_PAGE_SIZE);
-    expect(first).toMatchObject({ written: 11 + 10 + 2 + 4, failed: 0, keys: 27 });
+    expect(first).toMatchObject({ written: 13 + 10 + 2 + 4, failed: 0, keys: 29 });
     for (const path of [cmsPaths.site('ar'), cmsPaths.list('en', 'videos', 1), cmsPaths.list('ar', 'articles', 1), cmsPaths.list('en', 'articles', 3), cmsPaths.posts('ar', 1, RSS_ITEMS), cmsPaths.posts('en', 2, ARTICLES_PAGE_SIZE), cmsPaths.page('en', 'p0'), cmsPaths.post('ar', 'n1'), cmsPaths.sitemap()]) {
       expect(await read(kv, path), path).not.toBeNull();
     }
     now += 5 * 60_000;
     const second = await writeSnapshots(deps);
-    expect(second).toMatchObject({ written: 0, unchanged: 27 });
-    expect(kv.puts).toBe(27);
+    expect(second).toMatchObject({ written: 0, unchanged: 29 });
+    expect(kv.puts).toBe(29);
+  });
+
+  it('snapshots the scholars directory and each scholar page in both locales (UI#41)', async () => {
+    const kv = new MemoryKV();
+    const cms = fakeCms({ pages: 0, posts: 0, scholars: 2 });
+    const r = await writeSnapshots({ fetchCms: cms.fetchCms, kv: kv as never });
+    expect(r.failed).toBe(0);
+    for (const l of ['en', 'ar'] as const) {
+      expect(await read(kv, cmsPaths.scholars(l, 1, SCHOLARS_PAGE_SIZE)), l).not.toBeNull();
+      for (const slug of ['s0', 's1']) expect(await read(kv, cmsPaths.scholar(l, slug, 1, SCHOLAR_POSTS_PAGE_SIZE)), `${l} ${slug}`).not.toBeNull();
+    }
   });
 
   it('snapshots the About page in both locales on every run, once even when the sitemap lists it', async () => {
@@ -134,9 +151,9 @@ describe('KV snapshot writer (single writer, audit UI-3)', () => {
     for (let run = 0; run < 3; run++) {
       cms.state.calls.length = 0;
       const r = await writeSnapshots(deps, run);
-      expect(r.keys).toBe(11 + MAX_KEYS_PER_RUN);
-      expect(cms.state.calls.length).toBe(11 + MAX_KEYS_PER_RUN);
+      expect(r.keys).toBe(13 + MAX_KEYS_PER_RUN);
+      expect(cms.state.calls.length).toBe(13 + MAX_KEYS_PER_RUN);
     }
-    expect(kv.store.size).toBe(11 + 600);
+    expect(kv.store.size).toBe(13 + 600);
   });
 });

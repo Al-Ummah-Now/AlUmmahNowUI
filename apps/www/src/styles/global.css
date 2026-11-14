@@ -1614,6 +1614,16 @@ html:not([data-js]) .theme {
   font-weight: 400;
   color: inherit;
 }
+/* A scholar's byline over the media links to their page (UI#42) */
+.tl-ov .tl-author a {
+  color: inherit;
+  text-decoration: none;
+}
+.tl-ov .tl-author a:hover {
+  color: var(--color-paper);
+  text-decoration: underline;
+}
+.tl-ov .tl-author a:focus-visible,
 .tl-ov .tl-title a:focus-visible {
   outline: 2px solid var(--color-lantern);
   outline-offset: 2px;

@@ -10,7 +10,7 @@
  */
 import type { ListWire, PostsResponse, SitemapResponse } from './cms-types';
 import { validate } from './cms-types';
-import { cmsPaths, ARTICLES_PAGE_SIZE, RSS_ITEMS, snapshotKey } from './cms';
+import { cmsPaths, ARTICLES_PAGE_SIZE, RSS_ITEMS, SCHOLARS_PAGE_SIZE, SCHOLAR_POSTS_PAGE_SIZE, snapshotKey } from './cms';
 import { BUILTIN_LISTS } from './list-page';
 import type { KVNamespace } from './cf';
 import { LOCALES, type Locale } from './locale';
@@ -129,6 +129,11 @@ export function contentEntries(
         : { path: cmsPaths.post(item.locale, item.slug), isValid: validate.post },
     );
   }
+  // Each scholar's page (first page of their posts) in both languages (UI#41): with the CMS down a
+  // scholar page renders from its last-known-good copy instead of answering 503.
+  for (const s of sitemap?.scholars ?? []) {
+    for (const l of LOCALES) entries.push({ path: cmsPaths.scholar(l, s.slug, 1, SCHOLAR_POSTS_PAGE_SIZE), isValid: validate.scholar });
+  }
   for (const l of LOCALES) {
     const pages = Math.ceil((postTotals[l] ?? 0) / ARTICLES_PAGE_SIZE);
     for (let p = 2; p <= pages; p++) entries.push({ path: cmsPaths.posts(l, p, ARTICLES_PAGE_SIZE), isValid: validate.posts });
@@ -149,6 +154,8 @@ export async function writeSnapshots(deps: WriterDeps, run = Math.floor((deps.no
       { path: cmsPaths.site(l), isValid: validate.site },
       ...BUILTIN_LISTS.map((slug) => ({ path: cmsPaths.list(l, slug, 1), isValid: validate.list })),
       { path: cmsPaths.posts(l, 1, ARTICLES_PAGE_SIZE), isValid: validate.posts },
+      // The scholars directory, linked from the header (UI#41)
+      { path: cmsPaths.scholars(l, 1, SCHOLARS_PAGE_SIZE), isValid: validate.scholars },
       ...CORE_PAGES.map((slug) => ({ path: cmsPaths.page(l, slug), isValid: validate.page })),
     );
     // The RSS feed's first page, when its size differs from the articles list's
