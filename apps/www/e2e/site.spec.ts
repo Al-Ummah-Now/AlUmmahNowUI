@@ -49,12 +49,19 @@ test.describe('rendering', () => {
 });
 
 test.describe('routing', () => {
-  test('/ redirects by Accept-Language and cookie', async ({ request }) => {
+  test('/ is the language page itself (Accept-Language, then cookie), no redirect', async ({ request }) => {
     const ar = await request.get('/', { headers: { 'Accept-Language': 'ar-EG,ar;q=0.9' }, maxRedirects: 0 });
-    expect(ar.status()).toBe(302);
-    expect(ar.headers().location).toBe('/ar/');
+    expect(ar.status()).toBe(200);
+    expect(ar.headers()['content-language']).toBe('ar');
+    expect(ar.headers()['cache-control']).toBe('private, no-cache');
+    expect(ar.headers().vary).toBe('Cookie, Accept-Language');
+    const html = await ar.text();
+    expect(html).toContain('<html lang="ar"');
+    // Search engines index the language URLs, never /
+    expect(html).toMatch(/<link rel="canonical" href="[^"]*\/ar\/"/);
     const cookie = await request.get('/', { headers: { 'Accept-Language': 'ar', Cookie: 'aun_locale=en' }, maxRedirects: 0 });
-    expect(cookie.headers().location).toBe('/en/');
+    expect(cookie.status()).toBe(200);
+    expect(cookie.headers()['content-language']).toBe('en');
   });
 
   test('old /news/ urls 301 to /articles/, query kept', async ({ request }) => {

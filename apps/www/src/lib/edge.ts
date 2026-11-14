@@ -39,15 +39,30 @@ export function legacyArticlesRedirect(requestUrl: string): Response | null {
   });
 }
 
-/** `/` → `/en/` or `/ar/` (cookie, Accept-Language, default en). Never cached by shared caches. */
-export function rootRedirect(request: Request): Response | null {
+/**
+ * `/` is served in the visitor's language (cookie, then Accept-Language, default en) without a
+ * redirect: the request is rewritten to `/en/` or `/ar/` and goes through the same theme, HTML cache
+ * and render as that page, so a cached home page answers `/` straight from the edge. The page keeps
+ * its own canonical and hreflang (`/en/`, `/ar/`, x-default `/en/`), so search engines index the
+ * language URLs, never `/`. Field RUM: the 302 hop cost ~330 ms at p75.
+ */
+export function rootRewrite(request: Request): Request | null {
   const url = new URL(request.url);
-  if (url.pathname !== '/') return null;
+  if (url.pathname !== '/' || (request.method !== 'GET' && request.method !== 'HEAD')) return null;
   const locale = negotiateLocale(request.headers.get('Cookie'), request.headers.get('Accept-Language'));
-  return new Response(null, {
-    status: 302,
-    headers: { Location: `/${locale}/${url.search}`, Vary: 'Cookie, Accept-Language', 'Cache-Control': 'private, no-cache' },
-  });
+  return new Request(new URL(`/${locale}/${url.search}`, url), request);
+}
+
+/**
+ * The response for `/`: it depends on the cookie and Accept-Language, so no shared cache may keep it
+ * (the edge copy is the `/en/` or `/ar/` entry it came from). Content-Language names what was served.
+ */
+export function rootResponse(response: Response, locale: string): Response {
+  const out = new Response(response.body, response);
+  out.headers.set('Cache-Control', 'private, no-cache');
+  out.headers.set('Vary', 'Cookie, Accept-Language');
+  out.headers.set('Content-Language', locale);
+  return out;
 }
 
 /**

@@ -3,7 +3,7 @@
  *   0. passkey domain files (/.well-known/apple-app-site-association, assetlinks.json) on every
  *      host, apex included, never redirected (src/lib/well-known.ts)
  *   1. apex → www (301, path and query kept)
- *   2. `/` → /en/ or /ar/ (302); old News urls `/{l}/news/…` → `/{l}/articles/…` (301)
+ *   2. `/` served as /en/ or /ar/ (no redirect: rootRewrite); old News urls `/{l}/news/…` → `/{l}/articles/…` (301)
  *   3. the site theme the admin chose (src/lib/site-theme.ts), handed to Astro in a request header
  *   4. HTML edge cache for locale pages (Cache API, s-maxage 60, SWR 600), keyed by version and theme
  *   5. security headers on every response, static assets included (run_worker_first)
@@ -12,7 +12,7 @@
 import { handle } from '@astrojs/cloudflare/handler';
 import type { SSRManifest } from 'astro';
 import { App } from 'astro/app';
-import { apexRedirect, applySecurityHeaders, legacyArticlesRedirect, rootRedirect, withHtmlCache } from './lib/edge';
+import { apexRedirect, applySecurityHeaders, legacyArticlesRedirect, rootResponse, rootRewrite, withHtmlCache } from './lib/edge';
 import type { ExecutionContext } from './lib/cf';
 import { createCmsDeps } from './lib/cms';
 import { THEME_HEADER, THEME_SOURCE_HEADER, resolveTheme, withThemeHeader } from './lib/site-theme';
@@ -32,15 +32,16 @@ export function createExports(manifest: SSRManifest) {
   const app = new App(manifest);
   return {
     default: {
-      async fetch(request: Request, env: WwwEnv, ctx: ExecutionContext): Promise<Response> {
+      async fetch(incoming: Request, env: WwwEnv, ctx: ExecutionContext): Promise<Response> {
         // The passkey RP ID is the apex host: Apple and Google fetch these there and never follow a redirect
-        const wellKnown = wellKnownResponse(request, env);
+        const wellKnown = wellKnownResponse(incoming, env);
         if (wellKnown) return wellKnown;
         const cfg = config(env);
-        const apex = apexRedirect(request.url, cfg.siteUrl);
+        const apex = apexRedirect(incoming.url, cfg.siteUrl);
         if (apex) return apex;
-        const root = rootRedirect(request);
-        if (root) return applySecurityHeaders(root, cfg, '/');
+        // `/` is the visitor's language page itself, not a redirect to it
+        const root = rootRewrite(incoming);
+        const request = root ?? incoming;
         const moved = legacyArticlesRedirect(request.url);
         if (moved) return applySecurityHeaders(moved, cfg, new URL(request.url).pathname);
         const cache = typeof caches !== 'undefined' ? (caches as unknown as { default: Cache }).default : null;
@@ -56,7 +57,8 @@ export function createExports(manifest: SSRManifest) {
           out.headers.set(THEME_SOURCE_HEADER, theme.source);
           return out;
         };
-        const response = await withHtmlCache(request, cache, waitUntil, render, Date.now, undefined, cfg.version, theme?.id ?? '');
+        const served = await withHtmlCache(request, cache, waitUntil, render, Date.now, undefined, cfg.version, theme?.id ?? '');
+        const response = root ? rootResponse(served, new URL(request.url).pathname.split('/')[1] ?? 'en') : served;
         return applySecurityHeaders(response, cfg, new URL(request.url).pathname);
       },
       async scheduled(_controller: unknown, env: WwwEnv, ctx: ExecutionContext): Promise<void> {
