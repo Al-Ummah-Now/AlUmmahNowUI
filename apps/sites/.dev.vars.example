@@ -7,3 +7,4 @@ SITES_CLIENT_ID=0abd9eac-e47e-4a1a-90bd-18cffec0303c
 VIDEOS_WEB_URL=https://videos.qa.alummahnow.net
 VIDEOS_API_URL=http://localhost:8686
 WWW_URL=https://www.qa.alummahnow.net
+PROFILE_URL=https://profile.auth.qa.alummahnow.net

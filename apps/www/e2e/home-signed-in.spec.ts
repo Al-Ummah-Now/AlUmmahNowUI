@@ -49,7 +49,7 @@ test.describe('signed-in home', () => {
     // /auth/me has not answered yet: the hint alone already picks the signed-in hero
     await expect(hero(page).getByRole('link', { name: 'Continue watching' })).toBeVisible();
     await expect(hero(page).getByRole('link', { name: 'Create your account' })).toBeHidden();
-    await expect(page.locator('#account .signin-link')).toBeHidden();
+    await expect(page.locator('#account .aun-signin')).toBeHidden();
     release();
     await expect(button(page)).toContainText('Mahmoud');
     await expect(button(page)).not.toContainText(email);
@@ -89,7 +89,7 @@ test.describe('signed-in home', () => {
   test('a stale hint corrects itself: signed out shows sign-up and Sign in again', async ({ page, context }) => {
     await signedIn(page, null, { signedIn: false });
     await page.goto('/en/');
-    await expect(page.locator('#account .signin-link')).toBeVisible();
+    await expect(page.locator('#account .aun-signin')).toBeVisible();
     await expect(hero(page).getByRole('link', { name: 'Create your account' })).toBeVisible();
     await expect(hero(page).getByRole('link', { name: 'Continue watching' })).toBeHidden();
     await expect.poll(async () => (await context.cookies()).some((c) => c.name === 'aun_www_si' && c.value === '1')).toBe(false);
@@ -100,7 +100,7 @@ test.describe('signed-in home', () => {
     for (const path of ['/en/articles/', '/en/videos/', '/ar/articles/']) {
       await page.goto(path);
       await expect(button(page)).toBeVisible();
-      await expect(page.locator('#account .signin-link')).toHaveCount(0);
+      await expect(page.locator('#account .aun-signin')).toHaveCount(0);
       await expect(page.getByRole('link', { name: /Create your account|أنشئ حسابك/ })).toHaveCount(0);
     }
   });

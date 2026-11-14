@@ -1,8 +1,12 @@
 /**
  * Every page: the Light/Dark toggle (saved per device, as on www) and the header's account state.
  * HTML is cached and identical for everyone, so the header asks /auth/me (which also re-checks a
- * session older than 5 minutes with auth: a sign-out elsewhere ends it here).
+ * session older than 5 minutes with auth: a sign-out elsewhere ends it here). Signed in, the account
+ * button (avatar, name, caret) opens the account menu, a disclosure like www's (AlUmmahNow
+ * docs/design/NAV.md "Account menu"): who, the Al Ummah Now apps, Sign out.
  */
+import { fitToViewport } from '../../../../packages/render/src/menu-fit';
+
 const root = document.documentElement;
 
 function currentMode(): 'light' | 'dark' {
@@ -33,14 +37,83 @@ document.querySelector('[data-mode-toggle]')?.addEventListener('click', () => {
 });
 syncToggle();
 
+/** Name and email of this browser's session, on the button and in the menu's "who" row. */
+function fillAccount(name: string, email: string | null): void {
+  const shown = name || email || '';
+  document.querySelectorAll<HTMLElement>('[data-account-name]').forEach((el) => (el.textContent = shown));
+  document.querySelectorAll<HTMLElement>('[data-account-initial]').forEach((el) => (el.textContent = (Array.from(shown.trim())[0] ?? '?').toUpperCase()));
+  const signedInAs = document.querySelector<HTMLElement>('[data-account-signed-in-as]');
+  if (signedInAs) signedInAs.textContent = (signedInAs.dataset.template ?? '{name}').replace('{name}', shown);
+  const mail = document.querySelector<HTMLElement>('[data-account-email]');
+  if (!mail) return;
+  const at = email ? email.lastIndexOf('@') : -1;
+  mail.hidden = !email || at <= 0 || email === shown;
+  if (email && at > 0) {
+    mail.title = email;
+    const [local, domain] = [mail.querySelector('.aun-email-local'), mail.querySelector('.aun-email-domain')];
+    if (local) local.textContent = email.slice(0, at);
+    if (domain) domain.textContent = email.slice(at);
+  }
+}
+
+function accountMenu(): void {
+  const box = document.getElementById('account');
+  const button = box?.querySelector<HTMLButtonElement>('.aun-acct-btn');
+  const menu = box?.querySelector<HTMLElement>('.aun-menu');
+  if (!box || !button || !menu) return;
+  const items = () => Array.from(menu.querySelectorAll<HTMLElement>('a, button:not([disabled])'));
+  const open = (focusFirst: boolean) => {
+    menu.hidden = false;
+    fitToViewport(menu);
+    button.setAttribute('aria-expanded', 'true');
+    if (focusFirst) items()[0]?.focus();
+  };
+  const close = (focus: boolean) => {
+    menu.hidden = true;
+    button.setAttribute('aria-expanded', 'false');
+    if (focus) button.focus();
+  };
+  button.addEventListener('click', () => (menu.hidden ? open(false) : close(false)));
+  button.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      open(true);
+    }
+  });
+  // Escape closes it from the button too (focus stays on the button after a click)
+  box.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !menu.hidden) {
+      e.preventDefault();
+      close(true);
+    }
+  });
+  menu.addEventListener('keydown', (e) => {
+    const list = items();
+    const i = list.indexOf(document.activeElement as HTMLElement);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      list[(i + (e.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length]?.focus();
+    } else if (e.key === 'Home' || e.key === 'End') {
+      e.preventDefault();
+      list[e.key === 'Home' ? 0 : list.length - 1]?.focus();
+    }
+  });
+  document.addEventListener('click', (e) => {
+    if (!menu.hidden && !box.contains(e.target as Node)) close(false);
+  });
+  box.addEventListener('focusout', (e) => {
+    if (!menu.hidden && e.relatedTarget && !box.contains(e.relatedTarget as Node)) close(false);
+  });
+}
+accountMenu();
+
 async function account(): Promise<void> {
   try {
     const res = await fetch('/auth/me', { credentials: 'same-origin', headers: { Accept: 'application/json' } });
-    const body = (await res.json()) as { signedIn?: boolean; name?: string | null };
+    const body = (await res.json()) as { signedIn?: boolean; name?: string | null; email?: string | null };
     if (body.signedIn) {
       root.setAttribute('data-signed-in', '');
-      const label = document.querySelector<HTMLElement>('[data-account-name]');
-      if (label) label.textContent = (label.dataset.template ?? '{name}').replace('{name}', body.name ?? '');
+      fillAccount(body.name ?? '', body.email ?? null);
     } else {
       root.removeAttribute('data-signed-in');
     }

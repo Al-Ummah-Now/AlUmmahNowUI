@@ -1,13 +1,24 @@
 ---
+/**
+ * The scholar site header: the Al Ummah Now header contract (AlUmmahNow docs/design/NAV.md "Header";
+ * markup from the vendored packages/render/src/nav/header.js, styled by www's vendored
+ * aun-nav.generated.css; `npm run check:fanous` keeps both byte-identical). Order, mirrored in Arabic:
+ * the site's lockup · env badge · the site's own menu · Website, Videos · language · light/dark ·
+ * account (or Sign in). The account button and menu are drawn here and filled from /auth/me by
+ * src/scripts/site.ts (the HTML is cached and the same for everyone).
+ */
 import { fmt } from '../lib/i18n';
 import { siteName } from '../lib/seo';
 import type { PageContext } from '../lib/context';
 import type { SiteNavItem } from '../lib/site-types';
-import { modeIconSvg, modeToggleLabel } from '../../../../packages/render/src/mode-toggle';
+import { libraryUrl } from '../../../../packages/render/src/embeds';
+import { HEADER_LABELS, appLinksHtml, envBadgeHtml, langButtonHtml, signInHtml } from '../../../../packages/render/src/nav/header.js';
+import { modeIconSvg, modeToggleLabel } from '../../../../packages/render/src/nav/mode-toggle.js';
+import { siteBrandHtml } from '../../../../packages/render/src/site-brand';
 
 interface Props { ctx: PageContext; alternates: Partial<Record<'en' | 'ar', string>>; active?: string }
 const { ctx, alternates, active } = Astro.props;
-const { site, locale, t } = ctx;
+const { site, locale, t, cfg } = ctx;
 const name = siteName(site, locale);
 const logo = site.site.logoUrl || site.channel.avatarUrl;
 const PATHS: Record<Exclude<SiteNavItem['kind'], 'url' | 'page'>, string> = { home: '', videos: 'videos/', shorts: 'videos/?kind=shorts', posts: 'posts/', about: 'about/' };
@@ -29,35 +40,74 @@ const items: Item[] = site.site.navigation.flatMap((item): Item[] => {
 const other = locale === 'ar' ? 'en' : 'ar';
 const switchHref = site.site.locales.includes(other) ? alternates[other] ?? `/${other}/` : null;
 const returnTo = Astro.url.pathname + Astro.url.search;
+const L = HEADER_LABELS[locale];
+const wwwHref = `${cfg.wwwUrl}/${locale}/`;
+const videosHref = libraryUrl(cfg.videosWebUrl, locale);
+const toDark = modeToggleLabel(locale, false);
+const toLight = modeToggleLabel(locale, true);
+const icon = (id: string) => `<img class="aun-app-icon" data-app="${id}" src="/aun-nav/icons/${id}.webp" width="32" height="32" alt="" loading="lazy" decoding="async">`;
 ---
-<header class="site-header">
-  <div class="wrap header-row">
-    <a class="brand" href={`/${locale}/`} data-testid="site-brand">
-      {logo && <img src={logo} alt="" width="40" height="40" class="brand-logo" data-testid="site-logo" />}
-      <span class="brand-name">{name}</span>
-    </a>
-    <nav aria-label={t.mainNav} class="site-nav">
-      <ul>
-        {items.map((i) => (
-          <li>
-            <a href={i.href} aria-current={active === i.kind ? 'page' : undefined} rel={i.external ? 'noopener' : undefined} data-testid={`site-nav-${i.id}`}>{i.label}</a>
-          </li>
-        ))}
-      </ul>
-    </nav>
-    <div class="header-tools">
-      {switchHref && <a href={switchHref} hreflang={other} lang={other} data-testid="site-lang-switch">{t.language}</a>}
-      {/* Light / Dark: the videos site's toggle (packages/render/src/mode-toggle.ts), the Moon in light, the Sun in dark */}
-      <button type="button" class="mode-toggle" data-mode-toggle data-testid="theme-toggle" data-label-light={modeToggleLabel(locale, true)} data-label-dark={modeToggleLabel(locale, false)} aria-label={modeToggleLabel(locale, false)} title={modeToggleLabel(locale, false)}>
-        <Fragment set:html={modeIconSvg('moon', 'mode-icon mode-moon')} />
-        <Fragment set:html={modeIconSvg('sun', 'mode-icon mode-sun')} />
+<header class="site-header aun-header">
+  <div class="aun-header-row">
+    <Fragment set:html={siteBrandHtml({ lang: locale, href: `/${locale}/`, name, logoSrc: logo })} />
+    <Fragment set:html={envBadgeHtml(cfg.appEnv, locale)} />
+    <div class="aun-header-primary">
+      <nav aria-label={t.mainNav} class="site-nav">
+        <ul>
+          {items.map((i) => (
+            <li>
+              <a href={i.href} aria-current={active === i.kind ? 'page' : undefined} rel={i.external ? 'noopener' : undefined} data-testid={`site-nav-${i.id}`}>{i.label}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </div>
+    <div class="aun-header-tools">
+      <Fragment set:html={appLinksHtml({ lang: locale, links: [{ id: 'www', href: wwwHref }, { id: 'videos', href: videosHref }] })} />
+      {switchHref && <Fragment set:html={langButtonHtml({ lang: locale, href: switchHref })} />}
+      {/* Light / Dark: nav/header.js modeButtonHtml's button with both icons (CSS shows the mode on screen) */}
+      <button type="button" class="aun-icon-btn aun-mode" id="mode-toggle" data-testid="theme-toggle" data-mode-toggle data-label-light={toLight} data-label-dark={toDark} aria-label={toDark} title={toDark}>
+        <Fragment set:html={modeIconSvg('moon', 'mode-moon')} />
+        <Fragment set:html={modeIconSvg('sun', 'mode-sun')} />
       </button>
-      <a class="sign-in" href={`/auth/login?return=${encodeURIComponent(returnTo)}&lang=${locale}`} data-testid="site-sign-in" data-signed-out-only>{t.signIn}</a>
-      <form method="post" action="/auth/logout" class="account" data-signed-in-only data-testid="site-account">
-        <span class="account-name" data-account-name data-template={t.signedInAs}>{fmt(t.signedInAs, { name: '' })}</span>
-        <input type="hidden" name="return" value={`/${locale}/`} />
-        <button type="submit" data-testid="site-sign-out">{t.signOut}</button>
-      </form>
+      <Fragment set:html={signInHtml({ lang: locale, href: `/auth/login?return=${encodeURIComponent(returnTo)}&lang=${locale}` })} />
+      <div class="account" id="account" data-testid="site-account">
+        <button type="button" class="aun-acct-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="account-menu" data-testid="site-account-button">
+          <span class="aun-avatar" aria-hidden="true" data-account-initial></span>
+          <span class="aun-visually-hidden">{t.account}: </span>
+          <span class="aun-acct-name" dir="auto" data-account-name></span>
+          <svg class="aun-caret" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 6 8 10.5 12.5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </button>
+        <ul class="aun-menu" id="account-menu" hidden>
+          <li class="aun-menu-who">
+            <span class="aun-avatar aun-avatar--lg" aria-hidden="true" data-account-initial></span>
+            <span class="aun-menu-who-text">
+              <span class="aun-menu-who-name" dir="auto" data-account-name></span>
+              <span class="aun-visually-hidden" data-account-signed-in-as data-template={t.signedInAs}>{fmt(t.signedInAs, { name: '' })}</span>
+              <span class="aun-menu-who-sub aun-email" dir="ltr" data-account-email hidden><span class="aun-email-local"></span><span class="aun-email-domain"></span></span>
+            </span>
+          </li>
+          <li class="aun-menu-sep" aria-hidden="true"></li>
+          <li>
+            <span class="aun-menu-label" id="account-apps-label">{L.apps}</span>
+            <ul aria-labelledby="account-apps-label">
+              <li><a class="aun-menu-item" href={wwwHref}><Fragment set:html={icon('www')} /><span class="aun-menu-text">{L.www}</span></a></li>
+              <li><a class="aun-menu-item" href={videosHref}><Fragment set:html={icon('videos')} /><span class="aun-menu-text">{L.videos}</span></a></li>
+              <li><a class="aun-menu-item" href={cfg.profileUrl}><Fragment set:html={icon('profile')} /><span class="aun-menu-text">{t.profile}</span></a></li>
+            </ul>
+          </li>
+          <li class="aun-menu-sep" aria-hidden="true"></li>
+          <li>
+            <form method="post" action="/auth/logout">
+              <input type="hidden" name="return" value={`/${locale}/`} />
+              <button type="submit" class="aun-menu-item" data-testid="site-sign-out">
+                <svg class="aun-menu-icon aun-flip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4H5v16h4M14 8l4 4-4 4M18 12H8" /></svg>
+                <span class="aun-menu-text">{t.signOut}</span>
+              </button>
+            </form>
+          </li>
+        </ul>
+      </div>
     </div>
   </div>
 </header>

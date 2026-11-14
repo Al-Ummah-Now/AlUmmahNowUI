@@ -100,7 +100,7 @@ test.describe('draft preview', () => {
       await expect(page.locator('html')).toHaveAttribute('dir', l === 'ar' ? 'rtl' : 'ltr');
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(l === 'en' ? "This preview link doesn't work" : 'رابط المعاينة هذا لا يعمل');
       await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
-      await expect(page.locator('a.signin-link')).not.toHaveAttribute('href', /token/);
+      await expect(page.locator('a.aun-signin')).not.toHaveAttribute('href', /token/);
       await axeAndShot(page, `${l}-preview-broken`, info.project.name);
       res = await page.goto(`/preview?token=${token('pages', 1, 'good', Math.floor(Date.now() / 1000) - 60)}`);
       await expect(page).toHaveURL(/\/preview\/expired$/);

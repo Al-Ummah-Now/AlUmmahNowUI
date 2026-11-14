@@ -18,7 +18,7 @@ async function expectThemeColours(page: Page, theme: ThemeId, scheme: (typeof SC
   await expect.poll(() => css(page, 'html', 'background-color')).toBe(token(theme, scheme, '--fanous-color-background'));
   // The header is dark in every theme and mode, in the theme's own colour
   expect(await css(page, '.site-header', 'background-color')).toBe(token(theme, scheme, '--fanous-c-nav-bg'));
-  expect(await css(page, '.site-header .brand', 'color')).toBe(token(theme, scheme, '--fanous-c-nav-text'));
+  expect(await css(page, '.site-header .aun-brand', 'color')).toBe(token(theme, scheme, '--fanous-c-nav-text'));
   // The footer's text is readable on the footer
   expect(await css(page, '.site-footer a', 'color')).toBe(token(theme, scheme, '--fanous-c-nav-text'));
   // The hero is page content: the theme's light surface and text in Light, the night in Dark

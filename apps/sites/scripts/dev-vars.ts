@@ -21,6 +21,7 @@ if (existsSync(path)) {
     VIDEOS_WEB_URL: 'https://videos.qa.alummahnow.net',
     VIDEOS_API_URL: process.env.VIDEOS_API_URL || stub,
     WWW_URL: 'https://www.qa.alummahnow.net',
+    PROFILE_URL: 'https://profile.auth.qa.alummahnow.net',
   };
   writeFileSync(path, Object.entries(vars).map(([k, v]) => `${k}=${v}`).join('\n') + '\n', { mode: 0o600 });
   process.stdout.write('wrote .dev.vars (local vars and a random SESSION_SECRET)\n');

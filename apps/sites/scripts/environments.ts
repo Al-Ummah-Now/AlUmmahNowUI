@@ -28,6 +28,7 @@ const vars = (sub: string, clientId: string, env: string) => ({
   VIDEOS_WEB_URL: `https://videos.${sub}alummahnow.net`,
   VIDEOS_API_URL: `https://videos.api.${sub}alummahnow.net`,
   WWW_URL: `https://www.${sub}alummahnow.net`,
+  PROFILE_URL: `https://profile.auth.${sub}alummahnow.net`,
 });
 
 /** OAuth clients registered in AlUmmahNowAuth (migration 0034, "Al Ummah Now (sites)"). */

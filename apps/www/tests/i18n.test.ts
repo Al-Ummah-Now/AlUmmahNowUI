@@ -26,8 +26,8 @@ describe('i18n', () => {
     for (const k of Object.keys(enMap)) expect(placeholders(arMap[k]!), k).toEqual(placeholders(enMap[k]!));
   });
 
-  it('Arabic strings are actually Arabic (except the Latin wordmark and language name)', () => {
-    const latinAllowed = new Set(['home.wordmarkLatin', 'lang.switchTo']);
+  it('Arabic strings are actually Arabic (except the Latin wordmark)', () => {
+    const latinAllowed = new Set(['home.wordmarkLatin']);
     keys(ar).forEach((k, i) => {
       if (!latinAllowed.has(k)) expect(leaves(ar)[i], k).toMatch(/[؀-ۿ]/);
     });

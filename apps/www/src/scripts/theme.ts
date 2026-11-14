@@ -1,6 +1,6 @@
 /**
- * The Light / Dark toggle in the header (src/components/Header.astro), the videos site's: one icon
- * button named for the mode it switches to ("Switch to dark mode" while light), the Moon in light
+ * The Light / Dark toggle in the header (src/components/Header.astro, `#mode-toggle`: nav/header.js
+ * modeButtonHtml's button), the videos site's: one icon button named for the mode it switches to ("Switch to dark mode" while light), the Moon in light
  * and the Sun in dark (CSS, from data-current). There is no "System" option (owner decision 2026-11-13):
  * until the visitor clicks, the page follows the device (CSS prefers-color-scheme) and the
  * button shows that; a click saves the opposite of what is showing (localStorage, never throwing).
@@ -44,7 +44,7 @@ function applyMode(mode: Mode | null) {
 }
 
 export function initTheme() {
-  const button = document.querySelector<HTMLButtonElement>('#theme .theme-button');
+  const button = document.querySelector<HTMLButtonElement>('#mode-toggle');
   if (!button) return;
   const show = () => {
     const mode = currentMode();

@@ -14,7 +14,6 @@ export const ar: Messages = {
     languageSwitch: 'اللغة',
     accountMenu: 'الحساب',
     pagination: 'الصفحات',
-    home: 'الصفحة الرئيسية للأمة الآن',
   },
   nav: {
     home: 'الرئيسية',
@@ -24,8 +23,6 @@ export const ar: Messages = {
     about: 'من نحن',
   },
   lang: {
-    switchTo: 'English',
-    switchToLabel: 'اقرأ هذه الصفحة بالإنجليزية',
     notAvailable: 'هذه الصفحة غير متاحة بالعربية بعد، فهي معروضة بالإنجليزية.',
     /** أسماء اللغات كما تُقال في الجمل أدناه. */
     names: { en: 'بالإنجليزية', ar: 'بالعربية' },

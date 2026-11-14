@@ -17,6 +17,8 @@ export interface SitesEnv {
   VIDEOS_WEB_URL?: string;
   VIDEOS_API_URL?: string;
   WWW_URL?: string;
+  /** The profile app (account menu: Your profile). */
+  PROFILE_URL?: string;
   /** www's KV, shared: `site-config:<host>` holds the last good config of each host. */
   CONTENT_SNAPSHOT?: KVNamespace;
   ASSETS?: ServiceBinding;
@@ -34,6 +36,7 @@ export interface Config {
   videosWebUrl: string;
   videosApiUrl: string;
   wwwUrl: string;
+  profileUrl: string;
   isProduction: boolean;
   version: string;
 }
@@ -49,6 +52,7 @@ export function config(env: SitesEnv): Config {
     videosWebUrl: trim(env.VIDEOS_WEB_URL || 'https://videos.qa.alummahnow.net'),
     videosApiUrl: trim(env.VIDEOS_API_URL || 'http://localhost:8686'),
     wwwUrl: trim(env.WWW_URL || 'https://www.qa.alummahnow.net'),
+    profileUrl: trim(env.PROFILE_URL || 'https://profile.auth.qa.alummahnow.net'),
     isProduction: appEnv === 'production',
     version: env.CF_VERSION_METADATA?.id || 'dev',
   };

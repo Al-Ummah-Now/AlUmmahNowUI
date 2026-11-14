@@ -94,20 +94,23 @@ export async function callback(ctx: Ctx, fetcher: typeof fetch = fetch, getKey?:
   return redirect(state.returnTo, [clearLogin, cookie(SESSION_COOKIE, await seal(env.SESSION_SECRET, session as never), SESSION_TTL_SEC), hintCookie(true)], 303);
 }
 
-/** The header asks on every page; a session older than RECHECK_SEC is checked with auth first. */
+/**
+ * The header asks on every page (the account button and menu: name and email of this browser's own
+ * session); a session older than RECHECK_SEC is checked with auth first.
+ */
 export async function me(ctx: Ctx, fetcher: typeof fetch = fetch): Promise<Response> {
   const env = envOf(ctx);
   const session = await readSession(ctx);
   if (!session) return json({ signedIn: false }, readCookie(ctx.request.headers.get('Cookie'), SESSION_COOKIE) ? [clearCookie(SESSION_COOKIE), hintCookie(false)] : []);
-  if (!needsRecheck(session)) return json({ signedIn: true, name: session.name });
+  if (!needsRecheck(session)) return json({ signedIn: true, name: session.name, email: session.email });
   const cfg = config(env);
   const tokens = await refreshTokens(cfg, session.rt, fetcher).catch(() => undefined);
-  if (tokens === undefined) return json({ signedIn: true, name: session.name }); // auth unreachable: keep it, try next time
+  if (tokens === undefined) return json({ signedIn: true, name: session.name, email: session.email }); // auth unreachable: keep it, try next time
   if (!tokens) return json({ signedIn: false }, [clearCookie(SESSION_COOKIE), hintCookie(false)]); // signed out elsewhere
   const now = Math.floor(Date.now() / 1000);
   const renewed: SiteSession = { ...session, rt: tokens.refresh_token, checked: now };
   const left = Math.max(1, session.exp - now);
-  return json({ signedIn: true, name: session.name }, [cookie(SESSION_COOKIE, await seal(env.SESSION_SECRET as string, renewed as never), left)]);
+  return json({ signedIn: true, name: session.name, email: session.email }, [cookie(SESSION_COOKIE, await seal(env.SESSION_SECRET as string, renewed as never), left)]);
 }
 
 /** POST from the header's form (same origin only): ends the site session, then auth's. */
