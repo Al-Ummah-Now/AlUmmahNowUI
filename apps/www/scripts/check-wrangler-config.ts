@@ -1,6 +1,6 @@
 /**
  * Checks wrangler.jsonc against scripts/environments.ts (PLAN W9): worker names,
- * custom domains (www + apex on production), workers_dev off, vars, CMS service
+ * custom domains (www + apex; the apex serves the passkey domain files), workers_dev off, vars, CMS service
  * binding, KV snapshot, version metadata. Run in CI: npm run check:config
  */
 import { readFileSync } from 'node:fs';

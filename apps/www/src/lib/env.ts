@@ -3,13 +3,14 @@
  * validated config with local-dev defaults, so pages never read raw env.
  */
 import type { KVNamespace } from './cf';
+import type { WellKnownEnv } from './well-known';
 
 /** Service binding (only fetch is used; typed with the DOM Request/Response). */
 export interface ServiceBinding {
   fetch(request: Request): Promise<Response>;
 }
 
-export interface WwwEnv {
+export interface WwwEnv extends WellKnownEnv {
   APP_ENV?: string;
   SITE_URL?: string;
   AUTH_URL?: string;

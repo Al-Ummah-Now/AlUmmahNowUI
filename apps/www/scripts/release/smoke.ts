@@ -149,6 +149,19 @@ export async function runSmoke(opts: SmokeOptions): Promise<CheckResult[]> {
       assert(loc === `${e.www}/ar/articles/?page=2&smoke=1`, `location ${loc}`);
       return `HTTPS apex → ${loc}`;
     });
+    // Native passkey sign-in: Apple and Google fetch these from the RP ID (the apex), no redirect
+    await check('passkey domain files', async () => {
+      const aasa = await get(`${e.apex}/.well-known/apple-app-site-association`);
+      assert(aasa.status === 200, `AASA status ${aasa.status}`);
+      assert((aasa.headers.get('content-type') ?? '').startsWith('application/json'), 'AASA is not JSON');
+      const apps = ((await aasa.json()) as { webcredentials?: { apps?: unknown } }).webcredentials?.apps;
+      assert(Array.isArray(apps), 'AASA has no webcredentials.apps');
+      const links = await get(`${e.apex}/.well-known/assetlinks.json`);
+      assert(links.status === 200, `assetlinks status ${links.status}`);
+      const statements = (await links.json()) as unknown;
+      assert(Array.isArray(statements), 'assetlinks is not a list');
+      return `${(apps as unknown[]).length} Apple app(s), ${(statements as unknown[]).length} Android app(s)`;
+    });
   }
   return results;
 }

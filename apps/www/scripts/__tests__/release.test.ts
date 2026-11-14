@@ -182,6 +182,8 @@ describe('smoke', () => {
       if (url.includes('/this/does/not/exist')) return new Response('', { status: 404 });
       if (url.endsWith('/robots.txt')) return ok('User-agent: *\nAllow: /\n\nSitemap: x');
       if (url.startsWith(`${e.www}/ar/news/`)) return new Response(null, { status: 301, headers: { location: '/ar/articles/?page=2&smoke=1' } });
+      if (url === `${e.apex}/.well-known/apple-app-site-association`) return Response.json({ webcredentials: { apps: [] } });
+      if (url === `${e.apex}/.well-known/assetlinks.json`) return Response.json([]);
       if (url.startsWith(e.apex!)) return new Response(null, { status: 301, headers: { location: `${e.www}/ar/articles/?page=2&smoke=1` } });
       return new Response('', { status: 500 });
     }) as typeof fetch;
@@ -191,6 +193,7 @@ describe('smoke', () => {
     const results = await runSmoke({ env: 'production', fetchImpl: site() });
     expect(results.filter((r) => !r.ok)).toEqual([]);
     expect(results.map((r) => r.name)).toContain('apex → www');
+    expect(results.map((r) => r.name)).toContain('passkey domain files');
   });
   it('asserts the candidate version through the override header', async () => {
     const ok = await runSmoke({ env: 'production', overrides: { 'al-ummah-now-www': V2 }, fetchImpl: site() });

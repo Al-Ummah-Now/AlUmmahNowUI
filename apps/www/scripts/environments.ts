@@ -7,7 +7,7 @@ export interface WwwEnvironment {
   /** wrangler flags selecting the env (production is the top level) */
   envArgs: string[];
   www: string;
-  /** Apex that must 301 to www (production only) */
+  /** Apex: serves the passkey domain files (it is the env's passkey RP ID) and 301s everything else to www */
   apex: string | null;
   vars: Record<string, string>;
   cmsService: string;
@@ -48,7 +48,7 @@ export const ENVIRONMENTS: Record<EnvName, WwwEnvironment> = {
     worker: 'al-ummah-now-www-stage',
     envArgs: ['--env', 'stage'],
     www: 'https://www.stage.alummahnow.net',
-    apex: null,
+    apex: 'https://stage.alummahnow.net',
     vars: vars('stage.', PROD_STAGE_CLIENT, 'stage'),
     cmsService: 'al-ummah-now-cms-stage',
     kvId: '9a4d7ee84d43427dad2e73e5904a21c7',
@@ -59,7 +59,7 @@ export const ENVIRONMENTS: Record<EnvName, WwwEnvironment> = {
     worker: 'al-ummah-now-www-qa',
     envArgs: ['--env', 'qa'],
     www: 'https://www.qa.alummahnow.net',
-    apex: null,
+    apex: 'https://qa.alummahnow.net',
     vars: vars('qa.', QA_CLIENT, 'qa'),
     cmsService: 'al-ummah-now-cms-qa',
     kvId: '2784164e06164e99bb5e837733dd38a2',

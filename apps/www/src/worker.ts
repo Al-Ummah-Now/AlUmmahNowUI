@@ -1,5 +1,7 @@
 /**
  * Worker entry (astro.config.mjs workerEntryPoint). Wraps Astro's Cloudflare handler:
+ *   0. passkey domain files (/.well-known/apple-app-site-association, assetlinks.json) on every
+ *      host, apex included, never redirected (src/lib/well-known.ts)
  *   1. apex → www (301, path and query kept)
  *   2. `/` → /en/ or /ar/ (302); old News urls `/{l}/news/…` → `/{l}/articles/…` (301)
  *   3. the site theme the admin chose (src/lib/site-theme.ts), handed to Astro in a request header
@@ -16,6 +18,7 @@ import { createCmsDeps } from './lib/cms';
 import { THEME_HEADER, THEME_SOURCE_HEADER, resolveTheme, withThemeHeader } from './lib/site-theme';
 import { config, type WwwEnv } from './lib/env';
 import { writeSnapshots } from './lib/snapshot-writer';
+import { wellKnownResponse } from './lib/well-known';
 
 /** A client never chooses the theme header Astro reads. */
 function stripThemeHeader(request: Request): Request {
@@ -30,6 +33,9 @@ export function createExports(manifest: SSRManifest) {
   return {
     default: {
       async fetch(request: Request, env: WwwEnv, ctx: ExecutionContext): Promise<Response> {
+        // The passkey RP ID is the apex host: Apple and Google fetch these there and never follow a redirect
+        const wellKnown = wellKnownResponse(request, env);
+        if (wellKnown) return wellKnown;
         const cfg = config(env);
         const apex = apexRedirect(request.url, cfg.siteUrl);
         if (apex) return apex;
