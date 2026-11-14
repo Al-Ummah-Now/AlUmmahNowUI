@@ -61,8 +61,8 @@ describe('passkey domain files', () => {
 
   it('the worker answers them before the apex redirect', () => {
     const src = readFileSync(new URL('../src/worker.ts', import.meta.url), 'utf8');
-    expect(src.indexOf('wellKnownResponse(request, env)')).toBeGreaterThan(0);
-    expect(src.indexOf('wellKnownResponse(request, env)')).toBeLessThan(src.indexOf('apexRedirect(request.url'));
+    expect(src.indexOf('wellKnownResponse(incoming, env)')).toBeGreaterThan(0);
+    expect(src.indexOf('wellKnownResponse(incoming, env)')).toBeLessThan(src.indexOf('apexRedirect(incoming.url'));
   });
 
   it('every env names its apps; QA uses the .qa ids', () => {
