@@ -20,7 +20,8 @@ test('a site renders in English with its own theme, name, logo and menu', async 
   await expect(page.getByTestId('site-logo')).toHaveAttribute('src', 'https://images.alummahnow.net/e2e/logo.png');
   await expect(page.getByTestId('site-nav-books')).toHaveAttribute('href', 'https://example.com/books');
   await expect(page.getByTestId('site-video-card')).toHaveCount(2);
-  await expect(page.getByTestId('site-post')).toHaveCount(2);
+  // the five newest posts
+  await expect(page.getByTestId('site-post')).toHaveCount(5);
   // minimal platform mark: a small link, the report link always
   await expect(page.getByTestId('site-platform-link')).toBeVisible();
   await expect(page.getByTestId('site-report-link')).toBeVisible();
@@ -79,13 +80,43 @@ test('unknown hosts and sites in setup are a bare 404; an old subdomain redirect
   expect(old.headers()['location']).toBe(`http://${HOSTS.both}:${SITES_PORT}/en/posts/?page=2`);
 });
 
-test('robots and sitemap are per host; own-domain sitemaps list watch pages', async ({ request }) => {
+test('robots and sitemap are per host and complete; own-domain sitemaps list watch pages', async ({ request }) => {
   expect(await (await request.get(at(HOSTS.both, '/robots.txt'))).text()).toContain('Disallow: /');
-  const sub = await (await request.get(at(HOSTS.both, '/sitemap.xml'))).text();
-  expect(sub).toContain(`http://${HOSTS.both}:${SITES_PORT}/ar/posts/post-e2e-1/`);
+  const subRes = await request.get(at(HOSTS.both, '/sitemap.xml'));
+  expect(subRes.headers()['content-type']).toContain('application/xml');
+  const sub = await subRes.text();
+  const origin = `http://${HOSTS.both}:${SITES_PORT}`;
+  // every post, past the API's first page of 50, in both languages, with lastmod and alternates
+  for (const id of ['post-e2e-1', 'post-e2e-old-1', 'post-e2e-old-60']) {
+    for (const l of ['en', 'ar']) expect(sub).toContain(`<loc>${origin}/${l}/posts/${id}/</loc>`);
+  }
+  expect(sub.match(/<loc>[^<]*\/en\/posts\/post-e2e-[^<]*<\/loc>/g)).toHaveLength(62);
+  expect(sub).toContain(`<loc>${origin}/en/posts/post-e2e-1/</loc><lastmod>2026-11-10T10:00:00.000Z</lastmod>`);
+  expect(sub).toContain(`<xhtml:link rel="alternate" hreflang="x-default" href="${origin}/en/posts/post-e2e-1/"/>`);
   expect(sub).not.toContain('/watch/');
   const own = await (await request.get(at(HOSTS.custom, '/sitemap.xml'))).text();
   expect(own).toContain('/en/watch/vid-e2e-1/');
+  expect(own).toContain('/ar/watch/vid-e2e-2/');
+  expect(own).toContain('/en/watch/short-e2e-1/');
+  // a single-language site: its language only, no alternates
+  const ar = await (await request.get(at(HOSTS.arOnly, '/sitemap.xml'))).text();
+  expect(ar).toContain('/ar/posts/post-e2e-old-60/');
+  expect(ar).not.toContain('/en/');
+  expect(ar).not.toContain('xhtml:link');
+});
+
+test('canonical, hreflang and x-default are absolute on the primary host on every page type', async ({ page }) => {
+  const origin = `http://${HOSTS.custom}:${SITES_PORT}`;
+  for (const path of ['', 'videos/', 'posts/', 'posts/post-e2e-1/', 'about/', 'watch/vid-e2e-1/']) {
+    await page.goto(at(HOSTS.custom, `/ar/${path}`));
+    await expect(page.locator('link[rel="canonical"]'), path).toHaveAttribute('href', `${origin}/ar/${path}`);
+    await expect(page.locator('link[hreflang="en"]'), path).toHaveAttribute('href', `${origin}/en/${path}`);
+    await expect(page.locator('link[hreflang="x-default"]'), path).toHaveAttribute('href', `${origin}/en/${path}`);
+  }
+  // a subdomain watch page is canonical on the videos site, so it lists no site alternates
+  await page.goto(at(HOSTS.both, '/en/watch/vid-e2e-1/'));
+  await expect(page.locator('link[hreflang]')).toHaveCount(0);
+  await expect(page.getByTestId('site-lang-switch')).toHaveAttribute('href', '/ar/watch/vid-e2e-1/');
 });
 
 test('sign-in: one click, back on the same page, host-only session; sign-out ends it', async ({ page, context }) => {

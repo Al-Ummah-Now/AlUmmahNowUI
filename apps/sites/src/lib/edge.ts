@@ -101,7 +101,7 @@ export function applySecurityHeaders(response: Response, cfg: Config, opts: { ho
 export function isCacheableRequest(request: Request): boolean {
   if (request.method !== 'GET') return false;
   const url = new URL(request.url);
-  if (!/^\/(en|ar)(\/|$)/.test(url.pathname) && url.pathname !== '/sitemap.xml' && url.pathname !== '/robots.txt') return false;
+  if (!/^\/(en|ar)(\/|$)/.test(url.pathname) && url.pathname !== '/sitemap.xml' && !/^\/sitemaps\/[a-z0-9-]{1,40}\.xml$/.test(url.pathname) && url.pathname !== '/robots.txt') return false;
   for (const [k, v] of url.searchParams) {
     if (k === 'page' && /^[1-9]\d{0,2}$/.test(v)) continue;
     if (k === 'cursor' && v.length <= 200) continue;

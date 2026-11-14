@@ -20,9 +20,11 @@ interface Props {
   jsonLd?: unknown[];
   noindex?: boolean;
   active?: string;
+  /** false: no hreflang links (the canonical is on another host); the language switch still uses `alternates`. */
+  hreflang?: boolean;
 }
 
-const { ctx, title, description, alternates, canonical, ogType = 'website', ogImage, jsonLd = [], noindex, active } = Astro.props;
+const { ctx, title, description, alternates, canonical, ogType = 'website', ogImage, jsonLd = [], noindex, active, hreflang = true } = Astro.props;
 const { site, locale, t, cfg, scheme } = ctx;
 const name = siteName(site, locale);
 // Studio → Site → Search engines (SS16): the owner's title template (`%s` = this page's title)
@@ -51,7 +53,7 @@ const ld = [...siteJsonLd(site, locale, ctx.channelHref, scheme), ...jsonLd];
     {google && <meta name="google-site-verification" content={google} />}
     {bing && <meta name="msvalidate.01" content={bing} />}
     <link rel="canonical" href={canonical} />
-    {hreflangLinks(site, alternates, scheme).map((l) => <link rel="alternate" hreflang={l.hreflang} href={l.href} />)}
+    {hreflang && hreflangLinks(site, alternates, scheme).map((l) => <link rel="alternate" hreflang={l.hreflang} href={l.href} />)}
     <meta property="og:site_name" content={name} />
     <meta property="og:type" content={ogType} />
     <meta property="og:title" content={title} />

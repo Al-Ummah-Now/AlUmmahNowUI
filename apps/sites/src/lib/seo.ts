@@ -38,11 +38,19 @@ export function siteName(site: PublicSite, locale: Locale): string {
 export function hreflangLinks(site: PublicSite, alts: Partial<Record<Locale, string>>, scheme = 'https'): { hreflang: string; href: string }[] {
   const links = Object.entries(alts).map(([l, path]) => ({ hreflang: l, href: `${siteOrigin(site, scheme)}${path}` }));
   if (links.length > 1) {
-    const def = alts[site.site.locales[0] as Locale];
+    // x-default: the site's default language, else the first language this page has
+    const def = alts[site.site.locales[0] as Locale] ?? Object.values(alts)[0];
     if (def) links.push({ hreflang: 'x-default', href: `${siteOrigin(site, scheme)}${def}` });
   }
   return links;
 }
+
+/**
+ * Whether a watch page prints hreflang: only where it is its own canonical (own domain). On a
+ * subdomain site the canonical is the videos site, and alternates pointing at non-canonical site
+ * pages would contradict it.
+ */
+export const watchHasHreflang = (site: PublicSite) => site.site.primaryKind === 'custom';
 
 /** `WebSite` + `Person`/`Organization` with sameAs to the channel on the videos site. */
 export function siteJsonLd(site: PublicSite, locale: Locale, channelUrl: string, scheme = 'https'): unknown[] {

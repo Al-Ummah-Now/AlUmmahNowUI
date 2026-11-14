@@ -2,7 +2,7 @@
 import SiteLayout from '../../../layouts/SiteLayout.astro';
 import { pageContext } from '../../../lib/context';
 import { localizedTitle, siteVideo } from '../../../lib/data';
-import { alternates, watchCanonical } from '../../../lib/seo';
+import { alternates, watchCanonical, watchHasHreflang } from '../../../lib/seo';
 import { embedUrl, watchUrl } from '../../../../../../packages/render/src/embeds';
 
 const ctx = pageContext(Astro);
@@ -18,7 +18,7 @@ const paragraphs = (description ?? '').split(/\n{2,}/).slice(0, 6);
 const canonical = watchCanonical(site, locale, video.id, cfg.videosWebUrl, ctx.scheme);
 const ld = [{ '@context': 'https://schema.org', '@type': 'VideoObject', name: title, description: description ?? title, thumbnailUrl: video.thumbnailUrl ?? undefined, uploadDate: video.publishedAt ?? undefined, embedUrl: embedUrl(cfg.videosWebUrl, { kind: 'video', id: video.id, lang: locale }), url: canonical }];
 ---
-<SiteLayout ctx={ctx} title={title} description={description} alternates={alternates(site, `watch/${video.id}/`)} canonical={canonical} ogType="video.other" ogImage={video.thumbnailUrl} jsonLd={ld} active="videos">
+<SiteLayout ctx={ctx} title={title} description={description} alternates={alternates(site, `watch/${video.id}/`)} canonical={canonical} ogType="video.other" ogImage={video.thumbnailUrl} jsonLd={ld} active="videos" hreflang={watchHasHreflang(site)}>
   <section class="wrap section">
     <div class="player">
       <iframe src={embedUrl(cfg.videosWebUrl, { kind: 'video', id: video.id, lang: locale })} title={title} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy" data-testid="site-player"></iframe>
