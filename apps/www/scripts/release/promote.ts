@@ -70,6 +70,8 @@ export interface PromoteDeps {
   log: (line: string) => void;
   /** waits between retries (tests pass a no-op) */
   sleep?: (ms: number) => Promise<void>;
+  /** Waits until every host of the env answers over HTTPS (a just-attached custom domain needs DNS + a certificate). */
+  waitForHosts?: (env: ReleaseEnv) => Promise<void>;
 }
 
 export class ReleaseError extends Error {
@@ -142,8 +144,13 @@ export async function promote(app: ReleaseApp, env: ReleaseEnv, message: string,
     }
   };
 
-  // 2. Candidate at 0%: reachable only through the override header
+  // 2. Attach routes and custom domains first, then the candidate at 0%: reachable only through the
+  // override header. A host the candidate's config adds (2026-11-14: stage.alummahnow.net, the stage
+  // passkey RP ID) must exist before the pre-traffic smoke checks it; attaching it does not move
+  // traffic, the new host serves the current version until the 100% step.
   try {
+    run(app.cwd, ['triggers', 'deploy', ...app.configArgs]);
+    await deps.waitForHosts?.(env);
     await deployVersions(app, [`${candidate}@0%`, `${serving}@100%`], `${message} (0%)`, deps);
     await deps.waitForVersion(env, app.worker, candidate, true);
     const pre = failures(await deps.smoke(env, { [app.worker]: candidate }));
@@ -154,10 +161,9 @@ export async function promote(app: ReleaseApp, env: ReleaseEnv, message: string,
     throw new ReleaseError((error as Error).message, released, true);
   }
 
-  // 3. 100% traffic (custom domains are attached by triggers deploy), then the smoke a visitor would see
+  // 3. 100% traffic (routes and custom domains were attached in step 2), then the smoke a visitor would see
   try {
     await deployVersions(app, [`${candidate}@100%`], message, deps);
-    run(app.cwd, ['triggers', 'deploy', ...app.configArgs]);
     await deps.waitForVersion(env, app.worker, candidate, false);
     const post = failures(await deps.smoke(env));
     if (post.length) throw new Error(`post-promote smoke failed: ${post.join('; ')}`);
@@ -211,6 +217,40 @@ export async function waitForWwwVersion(
   throw new Error(`${worker} did not serve ${version} within ${timeoutMs / 1000}s (last: ${last})`);
 }
 
+/**
+ * Waits until the env's www and apex hosts answer over HTTPS (any status: the apex 301s most paths).
+ * A custom domain attached a moment ago has no DNS record or certificate yet, and `fetch` fails.
+ */
+export async function waitForWwwHosts(
+  env: ReleaseEnv,
+  log: (line: string) => void = () => {},
+  timeoutMs = 600_000,
+  doFetch: typeof fetch = fetch,
+  pauseMs = 10_000,
+): Promise<void> {
+  const e = ENVIRONMENTS[env];
+  const hosts = [e.www, e.apex].filter((h): h is string => Boolean(h));
+  const deadline = Date.now() + timeoutMs;
+  for (const host of hosts) {
+    let last = 'no response';
+    for (;;) {
+      try {
+        await doFetch(`${host}/healthz`, {
+          headers: { 'User-Agent': 'al-ummah-now-www-release' },
+          redirect: 'manual',
+          signal: AbortSignal.timeout(15_000),
+        });
+        break;
+      } catch (error) {
+        last = (error as Error).message;
+      }
+      if (Date.now() >= deadline) throw new Error(`${host} did not answer within ${timeoutMs / 1000}s (last: ${last})`);
+      log(`${host} does not answer yet (${last}); retrying in ${pauseMs / 1000}s`);
+      await new Promise((r) => setTimeout(r, pauseMs));
+    }
+  }
+}
+
 const isMain = process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(new URL(import.meta.url)));
 if (isMain) {
   const argv = process.argv.slice(2);
@@ -228,6 +268,7 @@ if (isMain) {
       run: runWrangler,
       smoke: (e, overrides) => runSmoke({ env: e, overrides }),
       waitForVersion: waitForWwwVersion,
+      waitForHosts: (e) => waitForWwwHosts(e, log),
       log,
     });
     writeResult({ env, status: 'promoted', released: [released] });
