@@ -1258,9 +1258,9 @@ html:not([data-js]) .theme {
   width: 1.125rem;
   height: 1.125rem;
 }
-/* the icon of the mode on screen */
-.theme-button[data-current='light'] .theme-icon:not([data-icon='light']),
-.theme-button[data-current='dark'] .theme-icon:not([data-icon='dark']) {
+/* the videos site's toggle: the Moon while light (switches to dark), the Sun while dark */
+.theme-button[data-current='light'] .mode-sun,
+.theme-button[data-current='dark'] .mode-moon {
   display: none;
 }
 

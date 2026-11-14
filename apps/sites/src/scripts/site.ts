@@ -15,7 +15,9 @@ function syncToggle(): void {
   const btn = document.querySelector<HTMLButtonElement>('[data-mode-toggle]');
   if (!btn) return;
   const mode = currentMode();
-  btn.setAttribute('aria-label', (mode === 'dark' ? btn.dataset.labelLight : btn.dataset.labelDark) ?? '');
+  const label = (mode === 'dark' ? btn.dataset.labelLight : btn.dataset.labelDark) ?? '';
+  btn.setAttribute('aria-label', label);
+  btn.setAttribute('title', label);
   btn.dataset.current = mode;
 }
 

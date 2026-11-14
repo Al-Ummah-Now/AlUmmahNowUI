@@ -34,9 +34,6 @@ export const ar: Messages = {
     otherHas: 'المقالات منشورة {language}.',
     listIn: 'المقالات {language}',
   },
-  theme: {
-    dark: 'الوضع الداكن',
-  },
   auth: {
     moreAccounts: 'حسابات أخرى',
     apps: 'تطبيقات الأمة الآن',

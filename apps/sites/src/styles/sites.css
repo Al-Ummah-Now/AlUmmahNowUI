@@ -189,11 +189,18 @@ img {
   align-items: center;
   justify-content: center;
 }
-.mode-icon::before {
-  content: '☾';
+.mode-toggle {
+  padding-inline: 0;
 }
-.mode-toggle[data-current='dark'] .mode-icon::before {
-  content: '☀';
+.mode-icon {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  flex: none;
+}
+/* the Moon while light (switches to dark), the Sun while dark */
+.mode-toggle:not([data-current='dark']) .mode-sun,
+.mode-toggle[data-current='dark'] .mode-moon {
+  display: none;
 }
 .mode-toggle {
   display: none !important;

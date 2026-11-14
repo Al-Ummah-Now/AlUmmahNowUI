@@ -1,6 +1,7 @@
 /**
- * The Light / Dark toggle in the header (src/components/Header.astro). One button, "Dark mode",
- * aria-pressed when the page is dark. There is no "System" option (owner decision 2026-11-13):
+ * The Light / Dark toggle in the header (src/components/Header.astro), the videos site's: one icon
+ * button named for the mode it switches to ("Switch to dark mode" while light), the Moon in light
+ * and the Sun in dark (CSS, from data-current). There is no "System" option (owner decision 2026-11-13):
  * until the visitor clicks, the page follows the device (CSS prefers-color-scheme) and the
  * button shows that; a click saves the opposite of what is showing (localStorage, never throwing).
  * The head script (MODE_SCRIPT, src/lib/theme-mode.ts) already applied a saved choice before paint.
@@ -48,7 +49,9 @@ export function initTheme() {
   const show = () => {
     const mode = currentMode();
     button.dataset.current = mode;
-    button.setAttribute('aria-pressed', String(mode === 'dark'));
+    const label = (mode === 'dark' ? button.dataset.labelLight : button.dataset.labelDark) ?? '';
+    button.setAttribute('aria-label', label);
+    button.setAttribute('title', label);
   };
 
   button.addEventListener('click', () => {
