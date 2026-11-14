@@ -31,7 +31,12 @@
     "VIDEOS_API_URL": "https://videos.api.alummahnow.net",
     "PROFILE_URL": "https://profile.auth.alummahnow.net",
     "CMS_PUBLIC_URL": "https://cms.alummahnow.net",
-    "ADMIN_API_URL": "https://admin.api.alummahnow.net"
+    "ADMIN_API_URL": "https://admin.api.alummahnow.net",
+    // Passkey domain files (src/lib/well-known.ts). APPLE_TEAM_ID: the owner's Apple Developer Team ID (empty: no Apple apps listed).
+    // ANDROID_APP_CERTS: same value as AlUmmahNowAuth's; add each Play app-signing and upload key SHA-256 per package.
+    "APPLE_TEAM_ID": "",
+    "APPLE_WEBCREDENTIALS_BUNDLE_IDS": "net.alummahnow.studio,net.alummahnow.studio.mac,net.alummahnow.admin,net.alummahnow.admin.mac",
+    "ANDROID_APP_CERTS": "{\"net.alummahnow.studio\": [\"5A:1B:3D:2B:57:6E:9A:2D:F0:BF:1B:E3:F1:8C:40:20:13:F9:5C:09:EA:EE:7C:F7:31:10:C4:2F:B5:69:DD:C0\"]}"
   },
   "services": [{ "binding": "CMS", "service": "al-ummah-now-cms" }],
   "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "bb7463036880446abdc652a56f0b6509" }, { "binding": "FEED", "id": "5f27cddf86c84bbdbb59445ad867253c" }],
@@ -46,7 +51,8 @@
       "name": "al-ummah-now-www-qa",
       "workers_dev": false,
       "preview_urls": false,
-      "routes": [{ "pattern": "www.qa.alummahnow.net", "custom_domain": true }],
+      // qa.alummahnow.net: the QA passkey RP ID, for the domain files; every other path 301s to www.qa
+      "routes": [{ "pattern": "www.qa.alummahnow.net", "custom_domain": true }, { "pattern": "qa.alummahnow.net", "custom_domain": true }],
       "vars": {
         "APP_ENV": "qa",
         "SITE_URL": "https://www.qa.alummahnow.net",
@@ -56,7 +62,12 @@
         "VIDEOS_API_URL": "https://videos.api.qa.alummahnow.net",
         "PROFILE_URL": "https://profile.auth.qa.alummahnow.net",
         "CMS_PUBLIC_URL": "https://cms.qa.alummahnow.net",
-        "ADMIN_API_URL": "https://admin.api.qa.alummahnow.net"
+        "ADMIN_API_URL": "https://admin.api.qa.alummahnow.net",
+        // Passkey domain files (src/lib/well-known.ts). APPLE_TEAM_ID: the owner's Apple Developer Team ID (empty: no Apple apps listed).
+        // ANDROID_APP_CERTS: same value as AlUmmahNowAuth's; add each Play app-signing and upload key SHA-256 per package.
+        "APPLE_TEAM_ID": "",
+        "APPLE_WEBCREDENTIALS_BUNDLE_IDS": "net.alummahnow.studio.qa,net.alummahnow.studio.mac.qa,net.alummahnow.admin.qa,net.alummahnow.admin.mac.qa",
+        "ANDROID_APP_CERTS": "{\"net.alummahnow.studio.qa\": [\"5A:1B:3D:2B:57:6E:9A:2D:F0:BF:1B:E3:F1:8C:40:20:13:F9:5C:09:EA:EE:7C:F7:31:10:C4:2F:B5:69:DD:C0\"]}"
       },
       "services": [{ "binding": "CMS", "service": "al-ummah-now-cms-qa" }],
       "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "2784164e06164e99bb5e837733dd38a2" }, { "binding": "FEED", "id": "6e459b34fb954cf4a199cfef57036a8c" }],
@@ -70,7 +81,8 @@
       "name": "al-ummah-now-www-stage",
       "workers_dev": false,
       "preview_urls": false,
-      "routes": [{ "pattern": "www.stage.alummahnow.net", "custom_domain": true }],
+      // stage.alummahnow.net: the stage passkey RP ID, for the domain files; every other path 301s to www.stage
+      "routes": [{ "pattern": "www.stage.alummahnow.net", "custom_domain": true }, { "pattern": "stage.alummahnow.net", "custom_domain": true }],
       "vars": {
         "APP_ENV": "stage",
         "SITE_URL": "https://www.stage.alummahnow.net",
@@ -80,7 +92,12 @@
         "VIDEOS_API_URL": "https://videos.api.stage.alummahnow.net",
         "PROFILE_URL": "https://profile.auth.stage.alummahnow.net",
         "CMS_PUBLIC_URL": "https://cms.stage.alummahnow.net",
-        "ADMIN_API_URL": "https://admin.api.stage.alummahnow.net"
+        "ADMIN_API_URL": "https://admin.api.stage.alummahnow.net",
+        // Passkey domain files (src/lib/well-known.ts). APPLE_TEAM_ID: the owner's Apple Developer Team ID (empty: no Apple apps listed).
+        // ANDROID_APP_CERTS: same value as AlUmmahNowAuth's; add each Play app-signing and upload key SHA-256 per package.
+        "APPLE_TEAM_ID": "",
+        "APPLE_WEBCREDENTIALS_BUNDLE_IDS": "net.alummahnow.studio,net.alummahnow.studio.mac,net.alummahnow.admin,net.alummahnow.admin.mac",
+        "ANDROID_APP_CERTS": "{\"net.alummahnow.studio\": [\"5A:1B:3D:2B:57:6E:9A:2D:F0:BF:1B:E3:F1:8C:40:20:13:F9:5C:09:EA:EE:7C:F7:31:10:C4:2F:B5:69:DD:C0\"]}"
       },
       "services": [{ "binding": "CMS", "service": "al-ummah-now-cms-stage" }],
       "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "9a4d7ee84d43427dad2e73e5904a21c7" }, { "binding": "FEED", "id": "33ddf8bb7eae439c91fcc4af22797f42" }],
