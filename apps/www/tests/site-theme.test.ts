@@ -80,6 +80,18 @@ html[data-theme='fawanees'].dark { --fanous-color-background: #09151e; --fanous-
     expect(() => parseThemes(`html[data-theme='x'] { --fanous-street-line: url("data:image/svg+xml,x"); }`)).toThrow(/unexpected value/);
   });
 
+  it('keeps the street tile and its variants, only as our own WebP files under /fanous/street/', () => {
+    const tile = (f: string) => `image-set(url("/fanous/street/${f}") 2x)`;
+    const src = `html[data-theme='fawanees'] { --fanous-color-background: #f3eee5; --fanous-c-nav-bg: #0e2b3d; }
+html[data-theme='fawanees']:not(.dark) { --fanous-color-background: #f3eee5; --fanous-c-nav-bg: #0e2b3d; --fanous-street-tile: ${tile('street-tile-1.webp')}; }
+html[data-theme='fawanees'].dark { --fanous-color-background: #09151e; --fanous-c-nav-bg: #0b1d2a; --fanous-street-tile: ${tile('street-tile-dark-1.webp')}; --fanous-street-tile-4: ${tile('street-tile-dark-4.webp')}; }`;
+    const css = buildOutputs(src, 'a'.repeat(40), new Set(['--fanous-color-background', '--fanous-c-nav-bg'])).css;
+    expect(css).toContain(`--fanous-street-tile:${tile('street-tile-dark-1.webp')}`);
+    expect(css).toContain(`--fanous-street-tile-4:${tile('street-tile-dark-4.webp')}`);
+    expect(() => parseThemes(`html[data-theme='x'] { --fanous-street-tile: image-set(url("https://evil.test/t.webp") 2x); }`)).toThrow(/unexpected value/);
+    expect(() => parseThemes(`html[data-theme='x'] { --fanous-street-tile-9: ${tile('street-tile-9.webp')}; }`)).toThrow(/unexpected value/);
+  });
+
   it('the vendored street module is the one the lock names', () => {
     const lock = JSON.parse(readFileSync('fanous.lock.json', 'utf8')) as { ref: string; street: Record<string, string>; outputs: Record<string, string> };
     expect(Object.keys(lock.street)).toEqual(['packages/fanous-tokens/street/fanous-street.js', 'packages/fanous-tokens/street/fanous-street.d.ts', 'packages/fanous-tokens/street/fanous-street.css']);

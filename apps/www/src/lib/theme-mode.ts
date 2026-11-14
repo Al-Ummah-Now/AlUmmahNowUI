@@ -32,11 +32,13 @@ export const parseMode = (v: unknown): Mode | null => (isMode(v) ? v : null);
  * Inline <head> script. Also marks the page as scripted (data-js) so the mode toggle,
  * which needs JS, only shows when it can work, and marks a signed-in browser (data-signed-in,
  * from the `aun_www_si` hint cookie, src/lib/auth.ts) so the cached HTML shows the signed-in
- * hero and header from the first paint. Keep it tiny and ES5; any change needs a
+ * hero and header from the first paint. It also picks this load's Fawanees street tile variant
+ * (data-fanous-street-variant, 1-4; fanous-street.css shows it) before first paint, so the street never
+ * swaps (tests may pin it with window.__AUN_STREET_VARIANT__). Keep it tiny and ES5; any change needs a
  * new MODE_SCRIPT_HASH (the unit test prints it).
  */
 export const MODE_SCRIPT =
-  '(function(){var d=document.documentElement;d.setAttribute("data-js","");try{var m=localStorage.getItem("aun_mode");if(m==="system"){m=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";localStorage.setItem("aun_mode",m)}if(m==="light"||m==="dark")d.setAttribute("data-mode",m)}catch(e){}if(/(?:^|; )aun_www_si=1/.test(document.cookie))d.setAttribute("data-signed-in","")})();';
+  '(function(){var d=document.documentElement;d.setAttribute("data-js","");d.setAttribute("data-fanous-street-variant",String(window.__AUN_STREET_VARIANT__||1+Math.floor(Math.random()*4)));try{var m=localStorage.getItem("aun_mode");if(m==="system"){m=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";localStorage.setItem("aun_mode",m)}if(m==="light"||m==="dark")d.setAttribute("data-mode",m)}catch(e){}if(/(?:^|; )aun_www_si=1/.test(document.cookie))d.setAttribute("data-signed-in","")})();';
 
 /** CSP source for MODE_SCRIPT: 'sha256-<base64>'. */
-export const MODE_SCRIPT_HASH = "'sha256-2XkOkcY2hBwNTh8D0LHOnwz1sAyTBwXFevtpwsvBvVQ='";
+export const MODE_SCRIPT_HASH = "'sha256-mt3wv4AFwu4xEZdx1D7nMMSntNAU6pTdQn/4cUbknxw='";
