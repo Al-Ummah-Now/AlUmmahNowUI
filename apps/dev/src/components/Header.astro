@@ -1,4 +1,5 @@
 ---
+import ThemeIcon from '../../../www/src/components/ThemeIcon.astro';
 import type { Strings } from '../i18n';
 import { PAGES, otherLocale, pagePath, type Locale, type PageSlug } from '../lib/pages';
 interface Props {
@@ -12,9 +13,10 @@ const label = (p: PageSlug) => (p === '' ? t.nav.home : t.nav[p]);
 ---
 <header class="site-header">
   <div class="wrap header-row">
-    <a class="brand" href={pagePath(locale, '')}>
+    {/* The brand exactly as www's Header.astro shows it: the real logo and the name, no lockup */}
+    <a class="brand" href={pagePath(locale, '')} aria-label={t.a11y.home}>
       <img src="/brand/logo-192.webp" alt="" width="40" height="40" />
-      <span class="brand-name">{t.meta.siteName}<span class="brand-tld">.dev</span></span>
+      {locale === 'ar' ? <span class="brand-ar">الأمة الآن</span> : <span>Al Ummah Now</span>}
     </a>
     <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-nav" data-menu-toggle>
       <span class="menu-bars" aria-hidden="true"></span>{t.nav.menu}
@@ -29,7 +31,7 @@ const label = (p: PageSlug) => (p === '' ? t.nav.home : t.nav[p]);
     <div class="header-tools">
       <a class="lang-link" href={pagePath(other, slug)} hreflang={other} lang={other}>{t.nav.language}</a>
       <button class="mode-toggle" type="button" aria-pressed="false" data-mode-toggle>
-        <svg class="mode-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="currentColor" /></svg>
+        <ThemeIcon mode="dark" />
         <span>{t.nav.toDark}</span>
       </button>
     </div>

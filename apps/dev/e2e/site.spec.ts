@@ -92,3 +92,19 @@ test('phone menu opens, every link is inside the screen, Escape closes it', asyn
     await expect(button).toHaveAttribute('aria-expanded', 'false');
   }
 });
+
+test('brand is the real logo and www’s wordmark, never a drawn mark', async ({ page }) => {
+  for (const locale of LOCALES) {
+    await page.goto(pagePath(locale, ''));
+    await expect(page.locator('.brand img')).toHaveAttribute('src', '/brand/logo-192.webp');
+    await expect(page.locator('.brand')).toHaveText(locale === 'ar' ? 'الأمة الآن' : 'Al Ummah Now');
+    await expect(page.locator('.hero-logo source')).toHaveAttribute('srcset', '/brand/logo-512.webp');
+    await expect(page.locator('.hero-logo img')).toHaveAttribute('src', '/brand/alummah-now-logo.png');
+    await expect(page.locator('.hero-wordmark')).toHaveText('الأمة الآن');
+    await expect(page.locator('.footer-mark')).toHaveText('الأمة الآن');
+    // No hand-drawn lanterns anywhere
+    await expect(page.locator('svg.lantern, svg.lantern-icon')).toHaveCount(0);
+    const img = await page.locator('.hero-logo img').evaluate((el) => getComputedStyle(el).filter + '|' + getComputedStyle(el).boxShadow);
+    expect(img).toBe('none|none');
+  }
+});

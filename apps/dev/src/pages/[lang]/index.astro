@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import Lantern from '../../components/Lantern.astro';
+import Icon from '../../../../www/src/components/Icon.astro';
 import { strings } from '../../i18n';
 import { pagePath, type Locale, type PageSlug } from '../../lib/pages';
 import { localePaths } from '../../lib/static-paths';
@@ -16,7 +16,9 @@ const go = (slug: string) => pagePath(locale, slug as PageSlug);
     <div class="hero-sky" aria-hidden="true"></div>
     <div class="wrap hero-inner">
       <div class="hero-text">
-        <p class="hero-name" lang={locale === 'ar' ? 'en' : 'ar'}>{t.meta.siteNameAlt}</p>
+        {/* www's hero wordmark: the Arabic name, and the Latin name under it on English pages */}
+        <p class="hero-wordmark" lang="ar" dir="rtl">الأمة الآن</p>
+        {locale === 'en' && <p class="hero-latin">Al Ummah Now</p>}
         <h1 id="page-title" class="display hero-title">{h.heroTitle}</h1>
         <p class="lead">{h.heroLead}</p>
         <div class="actions">
@@ -24,9 +26,11 @@ const go = (slug: string) => pagePath(locale, slug as PageSlug);
           <a class="button button-ghost" href={go('contact')}>{h.ctaPartners}</a>
         </div>
       </div>
-      <div class="hero-art">
-        <Lantern label={h.lanternLabel} uid="hero" />
-      </div>
+      {/* The real logo, unaltered: the same file www's hero uses (PNG for browsers without WebP) */}
+      <picture class="hero-logo">
+        <source srcset="/brand/logo-512.webp" type="image/webp" />
+        <img src="/brand/alummah-now-logo.png" alt="" width="512" height="512" fetchpriority="high" />
+      </picture>
     </div>
   </section>
 
@@ -36,12 +40,13 @@ const go = (slug: string) => pagePath(locale, slug as PageSlug);
       <ul class="pillars" role="list">
         {h.pillars.map((p) => (
           <li class="pillar">
+            <Icon name="star" class="pillar-icon" />
             <h3 class="pillar-title">{p.title}</h3>
             <p>{p.body}</p>
           </li>
         ))}
       </ul>
-      <p class="more"><a href={go('community')}>{h.pillarsMore}</a></p>
+      <p class="more"><a href={go('community')}>{h.pillarsMore}<Icon name="chevron" /></a></p>
     </div>
   </section>
 
@@ -71,7 +76,7 @@ const go = (slug: string) => pagePath(locale, slug as PageSlug);
             </li>
           ))}
         </ol>
-        <p class="more"><a href={go('infrastructure')}>{h.systemMore}</a></p>
+        <p class="more"><a href={go('infrastructure')}>{h.systemMore}<Icon name="chevron" /></a></p>
       </div>
     </div>
   </section>
@@ -98,7 +103,7 @@ const go = (slug: string) => pagePath(locale, slug as PageSlug);
         <div>
           <h2 id="waqf-teaser" class="h2">{h.waqfTitle}</h2>
           <p>{h.waqfBody}</p>
-          <p class="more"><a href={go('waqf')}>{h.waqfMore}</a></p>
+          <p class="more"><a href={go('waqf')}>{h.waqfMore}<Icon name="chevron" /></a></p>
         </div>
       </div>
     </div>

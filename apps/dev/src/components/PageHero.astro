@@ -1,6 +1,5 @@
 ---
-/** The night band at the top of every inner page: title, lead, a lantern hanging at the inline end. */
-import LanternIcon from './LanternIcon.astro';
+/** The night band at the top of every inner page: title and lead. */
 interface Props {
   title: string;
   lead: string;
@@ -8,12 +7,11 @@ interface Props {
 const { title, lead } = Astro.props;
 ---
 <section class="page-hero night" aria-labelledby="page-title">
-  <div class="wrap page-hero-inner">
+  <div class="wrap">
     <div class="page-hero-text">
       <h1 id="page-title" class="display">{title}</h1>
       <p class="lead">{lead}</p>
       <slot />
     </div>
-    <span class="page-hero-lantern" aria-hidden="true"><LanternIcon uid="ph" /></span>
   </div>
 </section>

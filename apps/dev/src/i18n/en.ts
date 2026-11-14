@@ -26,6 +26,10 @@ export const en = {
     description:
       'Al Ummah Now is an Islamic video-sharing community in Arabic and English. How it works, how it is built, and the waqf direction we are exploring.',
   },
+  a11y: {
+    // Same as www (apps/www/src/i18n/en.ts a11y.home)
+    home: 'Al Ummah Now home',
+  },
   nav: {
     skip: 'Skip to content',
     primary: 'Main',
@@ -53,6 +57,9 @@ export const en = {
     external: '(opens another site)',
   },
   footer: {
+    // www's tagline (apps/www/src/content/fallback/en.ts) and rights line
+    tagline: 'Share what matters to the Ummah',
+    rights: '© {year} Al Ummah Now',
     line: 'An Islamic video-sharing community in Arabic and English.',
     sites: 'Our sites',
     project: 'The project',
@@ -73,7 +80,6 @@ export const en = {
       'Al Ummah Now is a place for the Ummah to share videos and news without censorship, to interact, and to get educated, in Arabic and English. This site explains what it is for, how it is built, and the waqf direction we are exploring.',
     ctaDevelopers: 'How it is built',
     ctaPartners: 'Talk to us',
-    lanternLabel: 'A lit lantern, the Al Ummah Now emblem',
     pillarsTitle: 'What the community is for',
     pillars: [
       { title: 'Share videos', body: 'Channels upload videos and Shorts, go live, post updates and build playlists.' },

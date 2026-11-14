@@ -2,7 +2,7 @@
  * alummahnow.dev (wiki AUN-DEV-SITE §Design). Colours come from the Fanous tokens of the Fawanees
  * theme (packages/render/src/styles/fanous-themes.generated.css, imported first), so this site matches
  * www, the scholar sites, the videos site and the CMS in both modes. The bands marked `.night` are
- * dark in both modes, like the header in every Al Ummah Now app: a lantern is lit at night.
+ * dark in both modes, like the header and hero in every Al Ummah Now app.
  */
 
 @font-face {
@@ -223,18 +223,8 @@ main:focus {
   margin: 1.5rem 0 0;
   font-weight: 600;
 }
-.more a::after {
-  content: '';
-  display: inline-block;
-  width: 0.45em;
-  height: 0.45em;
-  margin-inline-start: 0.5em;
-  border-block-start: 2px solid currentColor;
-  border-inline-end: 2px solid currentColor;
-  transform: translateY(-0.08em) rotate(45deg);
-}
-[dir='rtl'] .more a::after {
-  transform: translateY(-0.08em) rotate(-45deg);
+.more a .dir-icon {
+  margin-inline-start: 0.35em;
 }
 
 /* ---------- Night bands ---------- */
@@ -277,24 +267,18 @@ main:focus {
   font-size: 1.05rem;
   flex-shrink: 0;
 }
+/* As www (apps/www/src/styles/global.css .brand img, .brand-ar): the logo as it is, the name beside it */
 .brand img {
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: 50%;
-  box-shadow: 0 0 0 1px rgb(244 174 58 / 0.5), 0 0 18px rgb(244 174 58 / 0.35);
 }
-.brand-name {
-  font-family: var(--font-display);
-  letter-spacing: 0.01em;
-}
-.brand-name:lang(ar) {
+.brand-ar {
   font-family: var(--font-arabic);
+  font-size: 1.25rem;
+  line-height: 1;
 }
-.brand-tld {
-  color: var(--gold-hi);
-  font-family: var(--font-mono);
-  font-weight: 500;
-  font-size: 0.85em;
-  margin-inline-start: 2px;
-}
+
 .site-nav ul {
   display: flex;
   gap: 4px;
@@ -348,11 +332,7 @@ main:focus {
   border-color: var(--gold);
   color: var(--gold-hi);
 }
-.mode-icon {
-  width: 16px;
-  height: 16px;
-}
-.mode-toggle[aria-pressed='true'] .mode-icon {
+.mode-toggle[aria-pressed='true'] .theme-icon {
   color: var(--gold-hi);
 }
 /* The toggle needs JS; it only shows when the page is scripted */
@@ -434,9 +414,7 @@ html:not([data-js]) .menu-button {
   .mode-toggle {
     padding: 6px 11px;
   }
-  .brand-name {
-    font-size: 0.98rem;
-  }
+  
 }
 
 /* ---------- Buttons ---------- */
@@ -521,15 +499,7 @@ html:not([data-js]) .menu-button {
   align-items: center;
   gap: clamp(24px, 5vw, 72px);
 }
-.hero-name {
-  margin: 0 0 0.75rem;
-  color: var(--gold-hi);
-  font-size: 1.35rem;
-}
-.hero-name:lang(ar) {
-  font-family: var(--font-arabic);
-  font-size: 1.6rem;
-}
+
 .hero-title {
   font-size: clamp(2.3rem, 1.2rem + 4vw, 4.4rem);
   margin-block-end: 1.25rem;
@@ -541,55 +511,45 @@ html:not([data-js]) .menu-button {
 .hero-text .lead {
   max-width: 54ch;
 }
-.hero-art {
-  display: flex;
-  justify-content: center;
-  align-self: start;
-  margin-block-start: calc(-1 * clamp(40px, 7vw, 96px));
+
+/* www's hero wordmark (global.css .hero-wordmark, .hero-latin) */
+.hero-wordmark {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  font-family: var(--font-arabic);
+  font-weight: 700;
+  color: var(--gold);
+  font-size: clamp(3.75rem, 11vw, 8.5rem);
+  line-height: 1.15;
 }
-.hero-art .lantern {
-  width: min(100%, 380px);
+.hero-latin {
+  margin: 0.25rem 0 1.5rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.125rem, 2.2vw, 1.5rem);
+  letter-spacing: 0.02em;
+  color: var(--gold-soft);
+}
+html[lang='ar'] .hero-wordmark {
+  margin-block-end: 1.5rem;
+}
+/* The real logo, unaltered: no glow, ring, recolouring or cropping (the file is already round) */
+.hero-logo {
+  justify-self: center;
+}
+.hero-logo img {
+  width: min(22rem, 70vw);
   height: auto;
-  filter: drop-shadow(0 30px 60px rgb(244 174 58 / 0.25));
 }
 @media (max-width: 820px) {
   .hero-inner {
     grid-template-columns: 1fr;
   }
-  .hero-art {
+  .hero-logo {
     order: -1;
-    margin-block-start: calc(-1 * clamp(40px, 7vw, 96px));
   }
-  .hero-art .lantern {
-    width: 160px;
-  }
-}
-
-/* The lantern breathes, slowly; still with reduced motion */
-.lantern-glow,
-.lantern-halo {
-  animation: flicker 5.5s ease-in-out infinite;
-  transform-origin: center;
-}
-.lantern-halo {
-  animation-duration: 7s;
-}
-@keyframes flicker {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  45% {
-    opacity: 0.86;
-  }
-  55% {
-    opacity: 0.95;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .lantern-glow,
-  .lantern-halo {
-    animation: none;
+  .hero-logo img {
+    width: min(12rem, 50vw);
   }
 }
 
@@ -610,32 +570,7 @@ html:not([data-js]) .menu-button {
 .page-hero .display {
   margin-block-end: 1rem;
 }
-.page-hero-lantern {
-  position: relative;
-  flex-shrink: 0;
-  width: 84px;
-  margin-block-start: calc(-1 * clamp(40px, 6vw, 80px));
-  padding-block-start: 60px;
-}
-.page-hero-lantern::before {
-  content: '';
-  position: absolute;
-  inset-block-start: 0;
-  inset-inline-start: 50%;
-  width: 2px;
-  height: 64px;
-  background: linear-gradient(var(--gold-deep), var(--gold));
-}
-.page-hero-lantern .lantern-icon {
-  width: 84px;
-  height: auto;
-  filter: drop-shadow(0 0 22px rgb(251 198 97 / 0.55));
-}
-@media (max-width: 640px) {
-  .page-hero-lantern {
-    display: none;
-  }
-}
+
 .hero-source {
   margin: 0;
   font-size: 0.95rem;
@@ -711,16 +646,7 @@ html:not([data-js]) .menu-button {
 .pillar + .pillar {
   border-inline-start: 1px solid var(--line);
 }
-.pillar::before {
-  content: '';
-  display: block;
-  width: 28px;
-  height: 28px;
-  margin-block-end: 18px;
-  background: var(--accent);
-  clip-path: polygon(50% 0, 64% 36%, 100% 50%, 64% 64%, 50% 100%, 36% 64%, 0 50%, 36% 36%);
-  opacity: 0.9;
-}
+
 .pillar-title {
   font-size: 1.15rem;
   margin-block-end: 0.5rem;
@@ -1137,144 +1063,11 @@ html:not([data-js]) .menu-button {
   }
 }
 
-/* ---------- Lantern street (infrastructure pipeline) ---------- */
-.night-soft {
-  --street-line: var(--gold);
-}
 .band-street {
   background:
     radial-gradient(70% 90% at 50% 0%, color-mix(in srgb, var(--gold) 12%, transparent), transparent 70%),
     var(--surface);
   border-block-end: 1px solid var(--line);
-}
-.street {
-  position: relative;
-  margin-block: 2rem 0.5rem;
-}
-.street-cable {
-  position: absolute;
-  inset-inline: 0;
-  top: 0;
-  width: 100%;
-  height: 60px;
-  color: var(--edge-strong);
-}
-.street-steps {
-  position: relative;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-  gap: 18px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.street-step {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding-block-start: 22px;
-}
-.street-hang {
-  position: relative;
-  display: block;
-  padding-block-start: 26px;
-}
-.street-hang::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  inset-inline-start: 50%;
-  width: 1.5px;
-  height: 30px;
-  background: var(--edge-strong);
-}
-.street-step:nth-child(even) .street-hang {
-  padding-block-start: 14px;
-}
-.street-step:nth-child(even) .street-hang::before {
-  height: 18px;
-}
-.lantern-icon {
-  width: 46px;
-  height: auto;
-  filter: drop-shadow(0 6px 16px color-mix(in srgb, var(--gold) 55%, transparent));
-}
-.street-n {
-  display: inline-grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  margin-block: 14px 10px;
-  border-radius: 50%;
-  border: 1px solid var(--accent);
-  color: var(--link);
-  font-weight: 700;
-  font-size: 0.9rem;
-  background: var(--raised);
-}
-.street-title {
-  font-size: 1.1rem;
-  margin-block-end: 0.4rem;
-}
-.street-body {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.97rem;
-  padding: 14px 16px;
-  border: 1px solid var(--edge);
-  border-radius: 12px;
-  background: var(--raised);
-  box-shadow: var(--shadow);
-  text-align: start;
-  flex: 1;
-}
-@media (max-width: 900px) {
-  .street-cable {
-    display: none;
-  }
-  .street-steps {
-    grid-auto-flow: row;
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-  .street-steps::before {
-    content: '';
-    position: absolute;
-    inset-block: 10px 10px;
-    inset-inline-start: 23px;
-    width: 2px;
-    background: linear-gradient(var(--edge-strong), var(--accent), var(--edge-strong));
-  }
-  .street-step {
-    display: grid;
-    grid-template-columns: 48px 1fr;
-    grid-template-areas: 'lamp title' 'lamp body';
-    align-items: start;
-    column-gap: 16px;
-    text-align: start;
-    padding-block: 0 22px;
-  }
-  .street-hang,
-  .street-step:nth-child(even) .street-hang {
-    grid-area: lamp;
-    padding: 0;
-  }
-  .street-hang::before {
-    display: none;
-  }
-  .street-n {
-    display: none;
-  }
-  .street-title {
-    grid-area: title;
-    padding-block-start: 10px;
-  }
-  .street-body {
-    grid-area: body;
-  }
 }
 
 /* ---------- Steps (release, contributing) ---------- */
@@ -1488,24 +1281,38 @@ html:not([data-js]) .menu-button {
   grid-template-columns: 1.6fr 1fr 1fr;
   gap: 32px;
 }
-.footer-name {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  font-size: 1.1rem;
-}
-.footer-name img {
-  border-radius: 50%;
-}
-.footer-name span {
-  color: var(--gold-hi);
-  font-weight: 400;
-}
+
 .footer-note {
   color: var(--night-muted);
   font-size: 0.88rem;
   max-width: 48ch;
+}
+/* www's footer mark and tagline (global.css .footer-mark, .footer-tagline, .footer-base) */
+.footer-mark {
+  margin: 0;
+  font-family: var(--font-arabic);
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--gold);
+}
+.footer-tagline {
+  margin: 0.25rem 0 1rem;
+  color: var(--night-text);
+}
+.footer-base {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  padding-block-start: 1.5rem;
+  border-block-start: 1px solid rgb(244 174 58 / 0.2);
+  color: var(--night-muted);
+  font-size: 0.88rem;
+}
+.footer-base p {
+  margin: 0;
 }
 .footer-h {
   font-size: 0.95rem;
@@ -1537,6 +1344,10 @@ html:not([data-js]) .menu-button {
 }
 
 /* ---------- 404 ---------- */
+.notfound-logo img {
+  width: 140px;
+  height: auto;
+}
 .notfound {
   min-height: 100vh;
   display: grid;
@@ -1546,10 +1357,7 @@ html:not([data-js]) .menu-button {
   padding: 40px var(--gutter);
   text-align: center;
 }
-.notfound-lantern {
-  width: 140px;
-  height: auto;
-}
+
 .notfound-cols {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1566,5 +1374,117 @@ html:not([data-js]) .menu-button {
 @media (max-width: 640px) {
   .notfound-cols {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Icons from www's set (apps/www/src/components/Icon.astro) ---------- */
+.dir-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+}
+[dir='rtl'] .dir-icon {
+  transform: scaleX(-1);
+}
+.pillar-icon {
+  width: 30px;
+  height: 30px;
+  margin-block-end: 16px;
+  color: var(--accent);
+}
+.theme-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------- Flow (infrastructure pipeline): numbered steps joined by a line ---------- */
+.flow {
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 18px;
+  margin: 2rem 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+.flow::before {
+  content: '';
+  position: absolute;
+  inset-inline: 10%;
+  top: 21px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--edge-strong), var(--accent), var(--edge-strong));
+}
+.flow-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.flow-n {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-block-end: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: var(--raised);
+  color: var(--link);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.flow-title {
+  font-size: 1.1rem;
+  margin-block-end: 0.5rem;
+}
+.flow-body {
+  flex: 1;
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  background: var(--raised);
+  box-shadow: var(--shadow);
+  color: var(--muted);
+  font-size: 0.97rem;
+  text-align: start;
+}
+@media (max-width: 900px) {
+  .flow {
+    grid-auto-flow: row;
+    gap: 0;
+  }
+  .flow::before {
+    inset-inline: auto;
+    inset-inline-start: 21px;
+    top: 10px;
+    bottom: 10px;
+    width: 2px;
+    height: auto;
+    background: linear-gradient(var(--edge-strong), var(--accent), var(--edge-strong));
+  }
+  .flow-step {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    grid-template-areas: 'n title' 'n body';
+    column-gap: 16px;
+    align-items: start;
+    text-align: start;
+    padding-block-end: 22px;
+  }
+  .flow-n {
+    grid-area: n;
+    margin: 0;
+  }
+  .flow-title {
+    grid-area: title;
+    padding-block-start: 10px;
+  }
+  .flow-body {
+    grid-area: body;
   }
 }
