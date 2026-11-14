@@ -11,7 +11,9 @@
   font-weight: 400;
   font-display: swap;
   src: url('/fonts/noto-naskh-arabic-arabic-400-normal.woff2') format('woff2');
-  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+  unicode-range:
+    U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41,
+    U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
 }
 @font-face {
   font-family: 'Noto Naskh Arabic';
@@ -19,7 +21,9 @@
   font-weight: 700;
   font-display: swap;
   src: url('/fonts/noto-naskh-arabic-arabic-700-normal.woff2') format('woff2');
-  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+  unicode-range:
+    U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41,
+    U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
 }
 
 :root {
@@ -221,7 +225,7 @@ main:focus {
   font-size: clamp(1.1rem, 1rem + 0.45vw, 1.3rem);
   line-height: 1.6;
   max-width: 62ch;
-  color: var(--night-muted);
+  color: var(--muted);
 }
 .section-lead {
   max-width: 68ch;
@@ -237,20 +241,38 @@ main:focus {
   margin-inline-start: 0.35em;
 }
 
-/* ---------- Night bands ---------- */
+/* ---------- Lantern bands (hero, page heads, waqf, footer, 404) ----------
+ * Designed for both modes. Light is a Fawanees morning: warm parchment, the lantern's gold as light
+ * rather than fill, dark amber marks (contrast AA on the parchment). Dark is the Fawanees night:
+ * deep blue, gold glow, gold marks. Components read only the --band-* tokens below.
+ */
 .night {
-  --link: var(--gold-hi);
-  --text: var(--night-text);
-  --muted: var(--night-muted);
-  --focus: var(--gold-soft);
-  color: var(--night-text);
-  background:
-    radial-gradient(120% 80% at 50% 120%, rgb(244 174 58 / 0.16), transparent 60%),
-    url('/brand/pattern.svg') repeat,
-    linear-gradient(180deg, var(--night-1), var(--night-0));
-  background-size: auto, 96px 96px, auto;
+  --band-text: var(--fanous-color-text-primary);
+  --band-muted: var(--fanous-color-text-secondary);
+  --band-mark: linear-gradient(180deg, #b8660a, #7a4300);
+  --band-mark-soft: var(--fanous-color-link);
+  --band-hover: #5c3200;
+  --band-line: rgb(138 90 18 / 0.28);
+  --band-chip-bg: rgb(255 253 249 / 0.85);
+  --band-chip-line: rgb(138 73 0 / 0.35);
+  --band-ghost-bg: rgb(255 255 255 / 0.72);
+  --band-ghost-line: rgb(138 90 18 / 0.55);
+  --band-glyph: linear-gradient(180deg, #c97a12, #7a4300);
+  --band-glyph-glow: drop-shadow(0 8px 22px rgb(201 122 18 / 0.28));
+  --band-bg:
+    radial-gradient(120% 80% at 50% 120%, rgb(244 174 58 / 0.2), transparent 60%), url('/brand/pattern.svg') repeat,
+    linear-gradient(180deg, #fffaf0, #f6ecd9);
+  --link: var(--fanous-color-link);
+  --text: var(--band-text);
+  --muted: var(--band-muted);
+  --focus: var(--fanous-color-focus-ring);
+  color: var(--band-text);
+  background: var(--band-bg);
+  background-size:
+    auto,
+    96px 96px,
+    auto;
 }
-
 /* ---------- Buttons ---------- */
 .actions {
   display: flex;
@@ -268,26 +290,31 @@ main:focus {
   font-weight: 700;
   text-decoration: none;
   border: 1px solid transparent;
-  transition: background-color 0.15s, border-color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
 }
 .button-primary {
   background: linear-gradient(180deg, var(--gold-hi), var(--gold));
   color: var(--night-0);
   border-color: var(--gold-deep);
-  box-shadow: 0 8px 24px -10px rgb(244 174 58 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.45);
+  box-shadow:
+    0 8px 24px -10px rgb(244 174 58 / 0.7),
+    inset 0 1px 0 rgb(255 255 255 / 0.45);
 }
 .button-primary:hover {
   background: var(--gold-hi);
   text-decoration: none;
 }
 .button-ghost {
-  color: var(--night-text);
-  border-color: rgb(245 207 146 / 0.55);
-  background: rgb(14 43 61 / 0.6);
+  color: var(--band-text, var(--text));
+  border-color: var(--band-ghost-line, var(--edge-strong));
+  background: var(--band-ghost-bg, var(--raised));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
 }
 .button-ghost:hover {
-  border-color: var(--gold-hi);
-  color: var(--gold-hi);
+  border-color: var(--band-hover, var(--accent));
+  color: var(--band-hover, var(--link));
 }
 .button-quiet {
   color: var(--text);
@@ -309,18 +336,24 @@ main:focus {
   position: relative;
   overflow: hidden;
   padding-block: clamp(40px, 7vw, 96px) clamp(48px, 8vw, 112px);
-  border-block-end: 1px solid rgb(244 174 58 / 0.25);
+  border-block-end: 1px solid var(--band-line);
+  /* Light: morning parchment with the sun behind the logo; a gold hairline closes it */
+  --band-bg:
+    linear-gradient(90deg, transparent, rgb(244 174 58 / 0.55), transparent) bottom / 100% 1px no-repeat,
+    radial-gradient(70% 90% at 50% -20%, rgb(255 255 255 / 0.9), transparent 60%), url('/brand/pattern.svg') repeat,
+    linear-gradient(180deg, #fffbf2 0%, #fbf1dc 60%, #f3e5c8 100%);
+  background-size:
+    auto,
+    auto,
+    96px 96px,
+    auto;
 }
 .hero-sky {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(40% 55% at 78% 46%, rgb(251 198 97 / 0.2), transparent 70%),
-    radial-gradient(3px 3px at 12% 22%, rgb(251 198 97 / 0.6), transparent),
-    radial-gradient(2px 2px at 30% 70%, rgb(251 198 97 / 0.45), transparent),
-    radial-gradient(2px 2px at 60% 14%, rgb(247 241 232 / 0.5), transparent),
-    radial-gradient(3px 3px at 88% 80%, rgb(251 198 97 / 0.4), transparent),
-    radial-gradient(2px 2px at 48% 88%, rgb(247 241 232 / 0.35), transparent);
+    radial-gradient(38% 55% at 78% 46%, rgb(244 174 58 / 0.34), transparent 70%),
+    radial-gradient(22% 30% at 78% 46%, rgb(255 236 190 / 0.7), transparent 70%);
   pointer-events: none;
 }
 [dir='rtl'] .hero-sky {
@@ -353,7 +386,10 @@ main:focus {
   margin: 0;
   font-family: var(--font-arabic);
   font-weight: 700;
-  color: var(--gold);
+  color: transparent;
+  background: var(--band-mark);
+  -webkit-background-clip: text;
+  background-clip: text;
   font-size: clamp(3.75rem, 11vw, 8.5rem);
   line-height: 1.15;
 }
@@ -362,7 +398,7 @@ main:focus {
   font-family: var(--font-display);
   font-size: clamp(1.125rem, 2.2vw, 1.5rem);
   letter-spacing: 0.02em;
-  color: var(--gold-soft);
+  color: var(--band-mark-soft);
 }
 html[lang='ar'] .hero-wordmark {
   margin-block-end: 1.5rem;
@@ -390,7 +426,23 @@ html[lang='ar'] .hero-wordmark {
 /* ---------- Inner page hero ---------- */
 .page-hero {
   padding-block: clamp(40px, 6vw, 80px) clamp(40px, 6vw, 72px);
-  border-block-end: 1px solid rgb(244 174 58 / 0.25);
+  border-block-end: 1px solid var(--band-line);
+  /* Light: a lit page head, warm light from the inline-end corner over the parchment */
+  --band-bg:
+    linear-gradient(90deg, transparent, rgb(244 174 58 / 0.5), transparent) bottom / 100% 1px no-repeat,
+    radial-gradient(60% 120% at 100% 0%, rgb(244 174 58 / 0.22), transparent 60%), url('/brand/pattern.svg') repeat,
+    linear-gradient(180deg, #fffdf9, #f7eedd);
+  background-size:
+    auto,
+    auto,
+    96px 96px,
+    auto;
+}
+[dir='rtl'] .page-hero {
+  --band-bg:
+    linear-gradient(90deg, transparent, rgb(244 174 58 / 0.5), transparent) bottom / 100% 1px no-repeat,
+    radial-gradient(60% 120% at 0% 0%, rgb(244 174 58 / 0.22), transparent 60%), url('/brand/pattern.svg') repeat,
+    linear-gradient(180deg, #fffdf9, #f7eedd);
 }
 .page-hero-inner {
   position: relative;
@@ -420,16 +472,16 @@ html[lang='ar'] .hero-wordmark {
 .jump a {
   display: inline-block;
   padding: 7px 14px;
-  border: 1px solid rgb(245 207 146 / 0.4);
+  border: 1px solid var(--band-chip-line);
   border-radius: var(--radius-chip);
-  color: var(--night-text);
+  color: var(--band-text);
   text-decoration: none;
   font-size: 0.92rem;
-  background: rgb(14 43 61 / 0.55);
+  background: var(--band-chip-bg);
 }
 .jump a:hover {
-  border-color: var(--gold-hi);
-  color: var(--gold-hi);
+  border-color: var(--band-hover);
+  color: var(--band-hover);
 }
 
 /* ---------- Bands ---------- */
@@ -437,14 +489,12 @@ html[lang='ar'] .hero-wordmark {
   padding-block: var(--band);
 }
 .band-raised {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--surface) 100%, transparent), var(--bg));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 100%, transparent), var(--bg));
   border-block: 1px solid var(--line);
 }
 .band-news {
   background:
-    radial-gradient(60% 100% at 100% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
-    var(--surface);
+    radial-gradient(60% 100% at 100% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%), var(--surface);
 }
 .split {
   display: grid;
@@ -646,12 +696,28 @@ html[lang='ar'] .hero-wordmark {
   gap: clamp(20px, 4vw, 56px);
   padding: clamp(28px, 5vw, 56px);
   border-radius: var(--radius-panel);
-  border: 1px solid rgb(244 174 58 / 0.35);
-  box-shadow: 0 30px 60px -30px rgb(9 21 30 / 0.6);
+  border: 1px solid var(--band-line);
+  /* Light: a parchment panel lit from behind the glyph, a white top edge and an amber shadow */
+  --band-line: rgb(138 90 18 / 0.38);
+  --band-bg:
+    radial-gradient(45% 90% at 12% 50%, rgb(244 174 58 / 0.3), transparent 70%), url('/brand/pattern.svg') repeat,
+    linear-gradient(135deg, #fffaf0 0%, #fbeccb 100%);
+  background-size:
+    auto,
+    96px 96px,
+    auto;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.9),
+    0 28px 56px -30px rgb(122 67 0 / 0.4);
+}
+[dir='rtl'] .waqf-teaser {
+  --band-bg:
+    radial-gradient(45% 90% at 88% 50%, rgb(244 174 58 / 0.3), transparent 70%), url('/brand/pattern.svg') repeat,
+    linear-gradient(225deg, #fffaf0 0%, #fbeccb 100%);
 }
 .waqf-teaser p {
   max-width: 62ch;
-  color: var(--night-muted);
+  color: var(--band-muted);
 }
 .waqf-glyph {
   font-family: var(--font-arabic);
@@ -659,10 +725,10 @@ html[lang='ar'] .hero-wordmark {
   font-size: clamp(4.5rem, 3rem + 6vw, 8.5rem);
   line-height: 1;
   color: transparent;
-  background: linear-gradient(180deg, var(--gold-hi), var(--gold-deep));
+  background: var(--band-glyph);
   -webkit-background-clip: text;
   background-clip: text;
-  filter: drop-shadow(0 0 30px rgb(244 174 58 / 0.3));
+  filter: var(--band-glyph-glow);
 }
 .waqf-def {
   display: grid;
@@ -672,9 +738,7 @@ html[lang='ar'] .hero-wordmark {
   padding: clamp(24px, 4vw, 48px);
   border-radius: var(--radius-panel);
   border: 1px solid var(--edge);
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 60%),
-    var(--raised);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 60%), var(--raised);
   box-shadow: var(--shadow);
 }
 .waqf-def .waqf-glyph {
@@ -729,8 +793,7 @@ html[lang='ar'] .hero-wordmark {
 .panel-glow {
   border-color: var(--edge-strong);
   background:
-    radial-gradient(80% 120% at 100% 0%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 60%),
-    var(--raised);
+    radial-gradient(80% 120% at 100% 0%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 60%), var(--raised);
 }
 .panel-alert {
   border-inline-start: 5px solid var(--accent);
@@ -899,8 +962,7 @@ html[lang='ar'] .hero-wordmark {
 
 .band-street {
   background:
-    radial-gradient(70% 90% at 50% 0%, color-mix(in srgb, var(--gold) 12%, transparent), transparent 70%),
-    var(--surface);
+    radial-gradient(70% 90% at 50% 0%, color-mix(in srgb, var(--gold) 12%, transparent), transparent 70%), var(--surface);
   border-block-end: 1px solid var(--line);
 }
 
@@ -958,9 +1020,7 @@ html[lang='ar'] .hero-wordmark {
 }
 .env-2 {
   border-color: var(--edge-strong);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--gold) 12%, transparent), transparent 55%),
-    var(--raised);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 12%, transparent), transparent 55%), var(--raised);
 }
 .env-name {
   font-size: 1.2rem;
@@ -1082,13 +1142,11 @@ html[lang='ar'] .hero-wordmark {
 .contact-card-main {
   border-color: var(--edge-strong);
   background:
-    radial-gradient(90% 120% at 0% 0%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 60%),
-    var(--raised);
+    radial-gradient(90% 120% at 0% 0%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 60%), var(--raised);
 }
 [dir='rtl'] .contact-card-main {
   background:
-    radial-gradient(90% 120% at 100% 0%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 60%),
-    var(--raised);
+    radial-gradient(90% 120% at 100% 0%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 60%), var(--raised);
 }
 .contact-title {
   font-family: var(--font-display);
@@ -1107,8 +1165,18 @@ html[lang='ar'] .hero-wordmark {
 /* ---------- Footer ---------- */
 .site-footer {
   padding-block: 56px 40px;
-  border-block-start: 1px solid rgb(244 174 58 / 0.25);
+  border-block-start: 1px solid var(--band-line);
   font-size: 0.95rem;
+  /* Light: warm sand under the page, a gold hairline on top and the pattern faint in it */
+  --band-bg:
+    linear-gradient(90deg, transparent, rgb(244 174 58 / 0.7), transparent) top / 100% 2px no-repeat,
+    radial-gradient(80% 60% at 50% 0%, rgb(255 250 238 / 0.85), transparent 70%), url('/brand/pattern.svg') repeat,
+    linear-gradient(180deg, #f0e7d6, #e6d9c2);
+  background-size:
+    auto,
+    auto,
+    96px 96px,
+    auto;
 }
 .footer-grid {
   display: grid;
@@ -1117,7 +1185,7 @@ html[lang='ar'] .hero-wordmark {
 }
 
 .footer-note {
-  color: var(--night-muted);
+  color: var(--band-muted);
   font-size: 0.88rem;
   max-width: 48ch;
 }
@@ -1128,11 +1196,15 @@ html[lang='ar'] .hero-wordmark {
   font-size: 2.25rem;
   font-weight: 700;
   line-height: 1.3;
-  color: var(--gold);
+  width: fit-content;
+  color: transparent;
+  background: var(--band-mark);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 .footer-tagline {
   margin: 0.25rem 0 1rem;
-  color: var(--night-text);
+  color: var(--band-text);
 }
 .footer-base {
   grid-column: 1 / -1;
@@ -1141,8 +1213,8 @@ html[lang='ar'] .hero-wordmark {
   justify-content: space-between;
   gap: 0.5rem 1.5rem;
   padding-block-start: 1.5rem;
-  border-block-start: 1px solid rgb(244 174 58 / 0.2);
-  color: var(--night-muted);
+  border-block-start: 1px solid var(--band-line);
+  color: var(--band-muted);
   font-size: 0.88rem;
 }
 .footer-base p {
@@ -1150,7 +1222,7 @@ html[lang='ar'] .hero-wordmark {
 }
 .footer-h {
   font-size: 0.95rem;
-  color: var(--gold-soft);
+  color: var(--band-mark-soft);
   margin-block-end: 0.75rem;
 }
 .site-footer ul {
@@ -1161,11 +1233,11 @@ html[lang='ar'] .hero-wordmark {
   gap: 6px;
 }
 .site-footer a {
-  color: var(--night-text);
+  color: var(--band-text);
   text-decoration: none;
 }
 .site-footer a:hover {
-  color: var(--gold-hi);
+  color: var(--band-hover);
   text-decoration: underline;
 }
 @media (max-width: 760px) {
@@ -1183,6 +1255,13 @@ html[lang='ar'] .hero-wordmark {
   height: auto;
 }
 .notfound {
+  --band-bg:
+    radial-gradient(50% 45% at 50% 22%, rgb(244 174 58 / 0.3), transparent 70%), url('/brand/pattern.svg') repeat,
+    linear-gradient(180deg, #fffbf2, #f3e5c8);
+  background-size:
+    auto,
+    96px 96px,
+    auto;
   min-height: 100vh;
   display: grid;
   place-items: center;
@@ -1203,7 +1282,7 @@ html[lang='ar'] .hero-wordmark {
   margin-block-end: 0.75rem;
 }
 .notfound p {
-  color: var(--night-muted);
+  color: var(--band-muted);
 }
 @media (max-width: 640px) {
   .notfound-cols {
@@ -1365,4 +1444,98 @@ html[lang='ar'] .hero-wordmark {
   margin-block-start: 1.5rem;
   color: var(--muted);
   font-size: 0.875rem;
+}
+
+/* ---------- Lantern bands in dark mode ---------- */
+html[data-mode='dark'] .night {
+  --band-text: var(--night-text);
+  --band-muted: var(--night-muted);
+  --band-mark: linear-gradient(180deg, var(--gold-hi), var(--gold));
+  --band-mark-soft: var(--gold-soft);
+  --band-hover: var(--gold-hi);
+  --band-line: rgb(244 174 58 / 0.25);
+  --band-chip-bg: rgb(14 43 61 / 0.55);
+  --band-chip-line: rgb(245 207 146 / 0.4);
+  --band-ghost-bg: rgb(14 43 61 / 0.6);
+  --band-ghost-line: rgb(245 207 146 / 0.55);
+  --band-glyph: linear-gradient(180deg, var(--gold-hi), var(--gold-deep));
+  --band-glyph-glow: drop-shadow(0 0 30px rgb(244 174 58 / 0.3));
+  --band-bg:
+    radial-gradient(120% 80% at 50% 120%, rgb(244 174 58 / 0.16), transparent 60%), url('/brand/pattern.svg') repeat,
+    linear-gradient(180deg, var(--night-1), var(--night-0));
+  --link: var(--gold-hi);
+  --focus: var(--gold-soft);
+}
+html[data-mode='dark'] .night,
+html[data-mode='dark'] .hero,
+html[data-mode='dark'] .page-hero,
+html[data-mode='dark'] .waqf-teaser,
+html[data-mode='dark'] .site-footer,
+html[data-mode='dark'] .notfound {
+  --band-bg:
+    radial-gradient(120% 80% at 50% 120%, rgb(244 174 58 / 0.16), transparent 60%), url('/brand/pattern.svg') repeat,
+    linear-gradient(180deg, var(--night-1), var(--night-0));
+  background-size:
+    auto,
+    96px 96px,
+    auto;
+}
+html[data-mode='dark'] .waqf-teaser {
+  box-shadow: 0 30px 60px -30px rgb(9 21 30 / 0.6);
+}
+html[data-mode='dark'] .hero-sky {
+  background:
+    radial-gradient(40% 55% at 78% 46%, rgb(251 198 97 / 0.2), transparent 70%),
+    radial-gradient(3px 3px at 12% 22%, rgb(251 198 97 / 0.6), transparent),
+    radial-gradient(2px 2px at 30% 70%, rgb(251 198 97 / 0.45), transparent),
+    radial-gradient(2px 2px at 60% 14%, rgb(247 241 232 / 0.5), transparent),
+    radial-gradient(3px 3px at 88% 80%, rgb(251 198 97 / 0.4), transparent),
+    radial-gradient(2px 2px at 48% 88%, rgb(247 241 232 / 0.35), transparent);
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-mode='light']) .night {
+    --band-text: var(--night-text);
+    --band-muted: var(--night-muted);
+    --band-mark: linear-gradient(180deg, var(--gold-hi), var(--gold));
+    --band-mark-soft: var(--gold-soft);
+    --band-hover: var(--gold-hi);
+    --band-line: rgb(244 174 58 / 0.25);
+    --band-chip-bg: rgb(14 43 61 / 0.55);
+    --band-chip-line: rgb(245 207 146 / 0.4);
+    --band-ghost-bg: rgb(14 43 61 / 0.6);
+    --band-ghost-line: rgb(245 207 146 / 0.55);
+    --band-glyph: linear-gradient(180deg, var(--gold-hi), var(--gold-deep));
+    --band-glyph-glow: drop-shadow(0 0 30px rgb(244 174 58 / 0.3));
+    --band-bg:
+      radial-gradient(120% 80% at 50% 120%, rgb(244 174 58 / 0.16), transparent 60%), url('/brand/pattern.svg') repeat,
+      linear-gradient(180deg, var(--night-1), var(--night-0));
+    --link: var(--gold-hi);
+    --focus: var(--gold-soft);
+  }
+  html:not([data-mode='light']) .night,
+  html:not([data-mode='light']) .hero,
+  html:not([data-mode='light']) .page-hero,
+  html:not([data-mode='light']) .waqf-teaser,
+  html:not([data-mode='light']) .site-footer,
+  html:not([data-mode='light']) .notfound {
+    --band-bg:
+      radial-gradient(120% 80% at 50% 120%, rgb(244 174 58 / 0.16), transparent 60%), url('/brand/pattern.svg') repeat,
+      linear-gradient(180deg, var(--night-1), var(--night-0));
+    background-size:
+      auto,
+      96px 96px,
+      auto;
+  }
+  html:not([data-mode='light']) .waqf-teaser {
+    box-shadow: 0 30px 60px -30px rgb(9 21 30 / 0.6);
+  }
+  html:not([data-mode='light']) .hero-sky {
+    background:
+      radial-gradient(40% 55% at 78% 46%, rgb(251 198 97 / 0.2), transparent 70%),
+      radial-gradient(3px 3px at 12% 22%, rgb(251 198 97 / 0.6), transparent),
+      radial-gradient(2px 2px at 30% 70%, rgb(251 198 97 / 0.45), transparent),
+      radial-gradient(2px 2px at 60% 14%, rgb(247 241 232 / 0.5), transparent),
+      radial-gradient(3px 3px at 88% 80%, rgb(251 198 97 / 0.4), transparent),
+      radial-gradient(2px 2px at 48% 88%, rgb(247 241 232 / 0.35), transparent);
+  }
 }

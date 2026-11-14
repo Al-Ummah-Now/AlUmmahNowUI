@@ -136,3 +136,70 @@ test('every status comes from the wiki’s feature registry the site was built f
   expect(chips.length).toBeGreaterThan(0);
   for (const c of chips) expect(Object.values(label.en)).toContain(c.trim());
 });
+
+test.describe('light and dark: the hero, page heads, waqf panel and footer change with the mode', () => {
+  const bg = (page: import('@playwright/test').Page, sel: string) =>
+    page.locator(sel).first().evaluate((el) => {
+      const s = getComputedStyle(el);
+      return `${s.backgroundImage} | ${s.color}`;
+    });
+  const DARK_BLUE = /rgb\(11, 29, 42\)|rgb\(9, 21, 30\)/; // --night-1 / --night-0 in the band gradient
+
+  test('the system setting decides on first paint, in both modes', async ({ page }) => {
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.goto('/en/');
+      await expect(page.locator('html')).not.toHaveAttribute('data-mode', /./);
+      for (const sel of ['.hero', '.waqf-teaser', '.site-footer']) {
+        const v = await bg(page, sel);
+        if (scheme === 'dark') expect(v, sel).toMatch(DARK_BLUE);
+        else expect(v, sel).not.toMatch(DARK_BLUE);
+      }
+      await page.goto('/ar/technology/');
+      const head = await bg(page, '.page-hero');
+      if (scheme === 'dark') expect(head).toMatch(DARK_BLUE);
+      else expect(head).not.toMatch(DARK_BLUE);
+    }
+  });
+
+  test('a click changes the hero at once, and the choice survives a reload and other pages', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto('/en/');
+    const before = await bg(page, '.hero');
+    expect(before).toMatch(DARK_BLUE);
+    await page.getByTestId('theme-toggle').click();
+    await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
+    const after = await bg(page, '.hero');
+    expect(after).not.toBe(before);
+    expect(after).not.toMatch(DARK_BLUE);
+    expect(await bg(page, '.site-footer')).not.toMatch(DARK_BLUE);
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
+    expect(await bg(page, '.hero')).toBe(after);
+    // the saved choice wins over the device on another page, from the first paint
+    await page.goto('/ar/waqf/');
+    expect(await bg(page, '.page-hero')).not.toMatch(DARK_BLUE);
+    await page.getByTestId('theme-toggle').click();
+    await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
+    expect(await bg(page, '.page-hero')).toMatch(DARK_BLUE);
+  });
+
+  test('no flash: the saved mode is on <html> before the stylesheet paints', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.goto('/en/');
+    await page.evaluate(() => localStorage.setItem('aun_mode', 'dark'));
+    const seen: string[] = [];
+    await page.exposeFunction('reportMode', (m: string) => seen.push(m));
+    await page.addInitScript(() => {
+      // runs before any page script: record the mode the first time <body> exists
+      new MutationObserver((_, obs) => {
+        if (document.body) {
+          (window as unknown as { reportMode: (m: string) => void }).reportMode(document.documentElement.getAttribute('data-mode') ?? 'none');
+          obs.disconnect();
+        }
+      }).observe(document, { childList: true, subtree: true });
+    });
+    await page.goto('/en/community/');
+    await expect.poll(() => seen[0]).toBe('dark');
+  });
+});

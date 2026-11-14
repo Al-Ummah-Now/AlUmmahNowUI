@@ -16,15 +16,19 @@ import { ENVIRONMENTS, PRODUCTION_ORIGIN, parseEnvArg, type BuildEnv } from './e
 
 /**
  * Nothing on the site is inline or third-party: scripts, styles and fonts are files on this origin.
+ * The one exception is Cloudflare Web Analytics, which Cloudflare injects at the edge: its beacon
+ * script and the address it reports to are allowed exactly, as www allows them (apps/www/src/lib/edge.ts).
  * Forms post nowhere (Contact links to the videos site's form), so form-action is 'none'.
  */
+export const CF_ANALYTICS_SCRIPT = 'https://static.cloudflareinsights.com';
+export const CF_ANALYTICS_CONNECT = 'https://cloudflareinsights.com';
 export const CSP = [
   "default-src 'none'",
-  "script-src 'self'",
+  `script-src 'self' ${CF_ANALYTICS_SCRIPT}`,
   "style-src 'self'",
   "img-src 'self'",
   "font-src 'self'",
-  "connect-src 'self'",
+  `connect-src 'self' ${CF_ANALYTICS_CONNECT}`,
   "manifest-src 'self'",
   "base-uri 'none'",
   "form-action 'none'",

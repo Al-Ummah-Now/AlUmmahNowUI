@@ -15,9 +15,13 @@ describe('env files', () => {
     }
     expect(headersFile('production')).not.toContain('X-Robots-Tag');
   });
-  it('CSP allows nothing inline or third-party', () => {
+  it('CSP allows nothing inline, and no third party but Cloudflare Web Analytics (as www)', () => {
     expect(CSP).toContain("default-src 'none'");
-    expect(CSP).not.toMatch(/unsafe-inline|unsafe-eval|https?:/);
+    expect(CSP).not.toMatch(/unsafe-inline|unsafe-eval/);
+    expect(CSP).toContain("script-src 'self' https://static.cloudflareinsights.com;");
+    expect(CSP).toContain("connect-src 'self' https://cloudflareinsights.com;");
+    // no other origin anywhere
+    expect(CSP.replace(/https:\/\/(static\.)?cloudflareinsights\.com/g, '')).not.toMatch(/https?:/);
     expect(headersFile('production')).toContain(`Content-Security-Policy: ${CSP}`);
   });
 });
