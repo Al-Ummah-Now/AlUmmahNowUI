@@ -4,12 +4,19 @@
  * raw HTML escaped, unsafe links dropped), image (our image hosts only, alt text kept), video (the
  * channel's own video through the embed player), button (own path or https://), quote, divider,
  * latest posts, latest videos (or a playlist of this channel). Unknown blocks are skipped.
+ *
+ * Rendered by the shared page-builder renderer (packages/render/src/page-blocks; wiki
+ * AUN-CMS-PAGE-BUILDER), so a site page looks like a www or CMS page in the site's own theme. The
+ * embed player and the channel's posts and videos are this Worker's components, in the renderer's
+ * slots.
  */
 import VideoGrid from './VideoGrid.astro';
 import PostCard from './PostCard.astro';
 import { renderMarkdown } from '../../../../packages/render/src/markdown';
 import { normalizeImageUrl } from '../../../../packages/render/src/images';
 import { embedUrl } from '../../../../packages/render/src/embeds';
+import { renderPageBlocks } from '../../../../packages/render/src/page-blocks/page-blocks.generated';
+import { slotHtml, splitSlots } from '../../../../packages/render/src/page-blocks/slots';
 import { channelPosts, channelVideos, playlistVideos, siteVideo, localizedTitle, type SitePost, type SiteVideo } from '../lib/data';
 import type { PageContext } from '../lib/context';
 import type { SiteBlock } from '../lib/site-types';
@@ -19,91 +26,89 @@ const { ctx, blocks, testId = 'site-blocks' } = Astro.props;
 const { site, locale, cfg } = ctx;
 const channelId = site.channel.id;
 
-type Rendered =
-  | { id: string; kind: 'html'; html: string }
-  | { id: string; kind: 'image'; url: string; alt: string; caption: string | null }
-  | { id: string; kind: 'video'; video: SiteVideo }
-  | { id: string; kind: 'cta'; label: string; href: string; external: boolean }
-  | { id: string; kind: 'quote'; text: string; cite: string | null }
-  | { id: string; kind: 'divider' }
-  | { id: string; kind: 'posts'; posts: SitePost[] }
-  | { id: string; kind: 'videos'; videos: SiteVideo[] };
+/** A block in the renderer's served shape, or a slot this Worker fills. */
+type Prepared =
+  | { slot: false; block: Record<string, unknown> & { id: string; type: string } }
+  | { slot: true; id: string; kind: 'video'; video: SiteVideo }
+  | { slot: true; id: string; kind: 'posts'; posts: SitePost[] }
+  | { slot: true; id: string; kind: 'videos'; videos: SiteVideo[] };
 
 const SAFE_HREF = (h: string) => /^https:\/\//.test(h) || /^\/(?!\/)/.test(h);
+/** A Studio button is a button on the page, not a call-to-action panel. */
+const BUTTON = { align: 'start', width: 'content', tone: 'none', space: 's' } as const;
+/** Studio block ids are free text: the renderer takes [a-z0-9-] ids only, so each gets its position. */
+const idOf = (i: number) => `sb-${i}`;
 
-const rendered = (
+const prepared = (
   await Promise.all(
-    blocks.slice(0, 60).map(async (b): Promise<Rendered | null> => {
+    blocks.slice(0, 60).map(async (b, i): Promise<Prepared | null> => {
+      const id = idOf(i);
       switch (b.type) {
         case 'markdown':
-          return b.text?.trim() ? { id: b.id, kind: 'html', html: renderMarkdown(b.text, { renderVideo: () => '' }) } : null;
+          return b.text?.trim() ? { slot: false, block: { id, type: 'markdown', text: b.text } } : null;
         case 'image': {
           const url = normalizeImageUrl(b.url);
-          return url ? { id: b.id, kind: 'image', url, alt: b.alt ?? '', caption: b.caption ?? null } : null;
+          return url ? { slot: false, block: { id, type: 'image', image: { url, alt: b.alt ?? '', width: null, height: null }, caption: b.caption ?? null, size: 'content' } } : null;
         }
         case 'video': {
           const video = await siteVideo(ctx.data, channelId, b.videoId);
-          return video ? { id: b.id, kind: 'video', video } : null;
+          return video ? { slot: true, id, kind: 'video', video } : null;
         }
         case 'cta':
-          return b.label?.trim() && SAFE_HREF(b.href) ? { id: b.id, kind: 'cta', label: b.label, href: b.href, external: b.href.startsWith('https://') } : null;
+          return b.label?.trim() && SAFE_HREF(b.href) ? { slot: false, block: { id, type: 'cta', heading: null, text: null, label: b.label, url: b.href, tone: 'primary', appearance: BUTTON } } : null;
         case 'quote':
-          return b.text?.trim() ? { id: b.id, kind: 'quote', text: b.text, cite: b.cite ?? null } : null;
+          return b.text?.trim() ? { slot: false, block: { id, type: 'quote', variant: 'quote', text: b.text, cite: b.cite ?? null } } : null;
         case 'divider':
-          return { id: b.id, kind: 'divider' };
+          return { slot: false, block: { id, type: 'divider', style_kind: 'line', style: 'line', size: 'm' } };
         case 'posts': {
           const { items } = await channelPosts(ctx.data, channelId, 1, Math.min(Math.max(b.count, 1), 12));
-          return items.length ? { id: b.id, kind: 'posts', posts: items } : null;
+          return items.length ? { slot: true, id, kind: 'posts', posts: items } : null;
         }
         case 'videos': {
           const n = Math.min(Math.max(b.count, 1), 24);
           const videos = b.playlistId ? await playlistVideos(ctx.data, channelId, b.playlistId, n) : (await channelVideos(ctx.data, channelId, { limit: n })).items;
-          return videos.length ? { id: b.id, kind: 'videos', videos } : null;
+          return videos.length ? { slot: true, id, kind: 'videos', videos } : null;
         }
         default:
           return null;
       }
     }),
   )
-).filter((x): x is Rendered => x !== null);
+).filter((x): x is Prepared => x !== null);
+
+const slots = new Map(prepared.flatMap((p) => (p.slot ? [[p.id, p] as const] : [])));
+const html = renderPageBlocks(
+  prepared.map((p) => (p.slot ? { id: p.id, type: p.kind === 'video' ? 'video' : p.kind } : p.block)),
+  {
+    locale,
+    // The site's own links: its paths and https only (the Studio editor allows nothing else).
+    href: (u) => (SAFE_HREF(u) ? u : null),
+    markdown: (text) => renderMarkdown(text, { renderVideo: () => '' }),
+    image: (ref, o) => {
+      const e = (v: string) => v.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+      return `<img src="${e(ref.url)}" alt="${e(ref.alt ?? '')}"${o.className ? ` class="${e(o.className)}"` : ''} loading="lazy" decoding="async">`;
+    },
+    slot: (b) => (slots.has(b.id) ? slotHtml(b, { tag: 'div' }) : null),
+  },
+);
+const parts = splitSlots(html);
 ---
 <div class="site-blocks" data-testid={testId}>
-  {rendered.map((r) => {
-    switch (r.kind) {
-      case 'html':
-        return <div class="prose block" data-block="markdown" set:html={r.html} />;
-      case 'image':
-        return (
-          <figure class="block block-image" data-block="image">
-            <img src={r.url} alt={r.alt} loading="lazy" />
-            {r.caption && <figcaption>{r.caption}</figcaption>}
-          </figure>
-        );
+  {parts.map((part, i) => {
+    if (i % 2 === 0) return <Fragment set:html={part} />;
+    const s = slots.get(part);
+    if (!s) return null;
+    switch (s.kind) {
       case 'video':
         return (
-          <div class="block block-video player" data-block="video">
-            <iframe src={embedUrl(cfg.videosWebUrl, { kind: 'video', id: r.video.id, lang: locale })} title={localizedTitle(r.video, locale)} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe>
+          <div class="player">
+            <iframe src={embedUrl(cfg.videosWebUrl, { kind: 'video', id: s.video.id, lang: locale })} title={localizedTitle(s.video, locale)} allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe>
           </div>
         );
-      case 'cta':
-        return (
-          <p class="block block-cta" data-block="cta">
-            <a class="button" href={r.href} rel={r.external ? 'noopener' : undefined}>{r.label}</a>
-          </p>
-        );
-      case 'quote':
-        return (
-          <blockquote class="block block-quote" data-block="quote" dir="auto">
-            <p>{r.text}</p>
-            {r.cite && <footer>{r.cite}</footer>}
-          </blockquote>
-        );
-      case 'divider':
-        return <hr class="block block-divider" data-block="divider" />;
       case 'posts':
-        return <div class="block block-posts narrow" data-block="posts">{r.posts.map((p) => <PostCard ctx={ctx} post={p} />)}</div>;
+        return <div class="block-posts">{s.posts.map((p) => <PostCard ctx={ctx} post={p} />)}</div>;
       case 'videos':
-        return <div class="block block-videos" data-block="videos"><VideoGrid videos={r.videos} locale={locale} /></div>;
+        return <VideoGrid videos={s.videos} locale={locale} />;
     }
   })}
 </div>

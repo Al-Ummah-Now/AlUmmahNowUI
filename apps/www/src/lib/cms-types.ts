@@ -1,4 +1,5 @@
 /** CMS public read API v1 (docs/CMS_PUBLIC_API.md). Keep in step with the contract. */
+import type { ServedBlock } from '../../../../packages/render/src/page-blocks/page-blocks.generated';
 import type { FeedItem } from './feed';
 import type { Locale } from './locale';
 
@@ -138,19 +139,11 @@ export interface BlockVideoItem {
   snapshot: CuratedSnapshot | null;
 }
 
-/** Page blocks (docs/CMS_PUBLIC_API.md "Blocks"). New types may appear: unknown ones are skipped. */
-export type Block =
-  | { id: string; type: 'markdown'; text: string }
-  | { id: string; type: 'image'; image: MediaRef; caption: string | null; size: 'content' | 'wide' }
-  | { id: string; type: 'gallery'; columns: 2 | 3 | 4; items: { image: MediaRef; caption: string | null }[] }
-  | { id: string; type: 'posts'; heading: string | null; mode: 'latest' | 'tag' | 'picked'; items: PostSummary[] }
-  | { id: string; type: 'cards'; heading: string | null; tag: string | null; page_size: number; filter: boolean }
-  | { id: string; type: 'videos'; heading: string | null; items: BlockVideoItem[] }
-  | { id: string; type: 'video'; kind: 'video' | 'playlist'; ref_id: string; caption: string | null; snapshot: CuratedSnapshot | null }
-  | { id: string; type: 'cta'; heading: string | null; text: string | null; label: string; url: string; tone: 'primary' | 'quiet' }
-  | { id: string; type: 'columns'; text: string; image: MediaRef | null; caption: string | null; image_side: 'start' | 'end' }
-  | { id: string; type: 'quote'; variant: 'quote' | 'callout'; text: string; cite: string | null }
-  | { id: string; type: 'divider'; style: 'line' | 'space'; size: 's' | 'm' | 'l' };
+/**
+ * Page blocks as served (docs/CMS_PUBLIC_API.md "Blocks"): the shared page-builder schema, vendored
+ * from the monorepo (scripts/sync-page-blocks.ts). New types may appear: unknown ones are skipped.
+ */
+export type Block = ServedBlock;
 
 /**
  * What the CMS stored for a curated item. The picker takes it and the CMS refreshes it every

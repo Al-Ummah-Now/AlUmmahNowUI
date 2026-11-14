@@ -28,7 +28,8 @@ for (const l of LOCALES) {
     // Editors may change the copy on QA and stage: the owner's title is checked locally only.
     if (local) await expect(h1).toHaveText(H1[l]);
     else await expect(h1).not.toHaveText('');
-    await expect(page.locator('main .prose :is(h2, h3)').first()).toBeVisible();
+    // A markdown body (.prose) or blocks from the shared renderer (.pb; CMS migration 0022 builds About from blocks).
+    await expect(page.locator('main :is(.prose, .pb) :is(h2, h3)').first()).toBeVisible();
 
     const description = await page.locator('meta[name="description"]').getAttribute('content');
     if (local) expect(description).toBe(STUB_DESCRIPTION);

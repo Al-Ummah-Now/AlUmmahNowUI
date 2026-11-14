@@ -24,7 +24,9 @@
     "sync:fanous": "node --experimental-strip-types --no-warnings scripts/sync-fanous.ts",
     "check:fanous": "node --experimental-strip-types --no-warnings scripts/sync-fanous.ts --check",
     "sync:posts": "node --experimental-strip-types --no-warnings scripts/sync-posts.ts",
-    "check:posts": "node --experimental-strip-types --no-warnings scripts/sync-posts.ts --check"
+    "check:posts": "node --experimental-strip-types --no-warnings scripts/sync-posts.ts --check",
+    "sync:page-blocks": "node --experimental-strip-types --no-warnings scripts/sync-page-blocks.ts",
+    "check:page-blocks": "node --experimental-strip-types --no-warnings scripts/sync-page-blocks.ts --check"
   },
   "dependencies": {
     "@astrojs/cloudflare": "12.6.13",

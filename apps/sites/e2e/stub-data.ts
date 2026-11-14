@@ -83,3 +83,34 @@ export const POSTS = [
   // Older posts past the first page of 50, so the sitemap has to follow the pages (#1215)
   ...Array.from({ length: 60 }, (_, i) => ({ id: `post-e2e-old-${i + 1}`, channelId: CHANNEL_ID, type: 'text', content: `Older post ${i + 1}.`, likes: 0, comments: 0, createdAt: new Date(Date.UTC(2026, 9, 30 - Math.floor(i / 2), 10)).toISOString(), status: 'published', visibility: 'public' })),
 ];
+
+/** A site page with one of every Studio block type (SS16), rendered by the shared page-builder renderer. */
+export const SITE_PAGE = {
+  id: 'pg_e2e_welcome',
+  slug: 'welcome',
+  title: { en: 'Welcome', ar: 'أهلًا بكم' },
+  description: { en: 'Start here.', ar: 'ابدأ من هنا.' },
+  status: 'published',
+  updatedAt: '2026-11-12T10:00:00Z',
+  createdAt: '2026-11-12T10:00:00Z',
+  blocks: {
+    en: [
+      { id: 'Intro Text', type: 'markdown', text: 'Welcome to the channel.\n\n- Watch the **latest videos**.\n- Read the posts.\n\n<script>alert(1)</script>' },
+      { id: 'img', type: 'image', url: 'https://images.alummahnow.net/e2e/banner.png', alt: 'A lantern-lit street', caption: 'The street at dusk.' },
+      { id: 'vid', type: 'video', videoId: 'vid-e2e-1' },
+      { id: 'btn', type: 'cta', label: 'All videos', href: '/en/videos/' },
+      { id: 'bad', type: 'cta', label: 'Bad link', href: 'javascript:alert(1)' },
+      { id: 'q', type: 'quote', text: 'And cooperate in righteousness and piety.', cite: 'Al-Maʾidah 5:2' },
+      { id: 'hr', type: 'divider' },
+      { id: 'posts', type: 'posts', count: 2 },
+      { id: 'videos', type: 'videos', count: 2 },
+      { id: 'future', type: 'hologram' },
+    ],
+    ar: [
+      { id: 'intro', type: 'markdown', text: 'أهلًا بكم في القناة.\n\n- شاهد **أحدث المرئيات**.\n- اقرأ المنشورات.' },
+      { id: 'q', type: 'quote', text: 'وتعاونوا على البر والتقوى', cite: 'المائدة ٢' },
+      { id: 'btn', type: 'cta', label: 'كل المرئيات', href: '/ar/videos/' },
+      { id: 'videos', type: 'videos', count: 2 },
+    ],
+  },
+};

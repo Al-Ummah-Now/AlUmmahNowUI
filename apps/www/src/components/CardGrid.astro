@@ -16,7 +16,7 @@ const t = strings(locale);
 const hid = `cards-${id}-h`;
 ---
 <section class="blk-cards" aria-labelledby={heading ? hid : undefined} aria-label={heading ? undefined : t.cards.label}>
-  {heading && <h2 id={hid} class="blk-heading">{heading}</h2>}
+  {heading && <h2 id={hid} class="pb-heading">{heading}</h2>}
   {grid.filter && (
     <nav class="card-filter" aria-label={t.cards.filter}>
       <ul>

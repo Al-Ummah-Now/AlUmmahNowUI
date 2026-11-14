@@ -9,6 +9,8 @@ import { defineConfig, devices } from '@playwright/test';
 const PORT = process.env.WWW_PORT || '4321';
 const WWW_URL = (process.env.WWW_URL || `http://localhost:${PORT}`).replace(/\/+$/, '');
 const local = !process.env.WWW_URL;
+/** The stub CMS's port (STUB_CMS_PORT) when another checkout's stub already holds 8585. */
+const STUB = `http://localhost:${process.env.STUB_CMS_PORT || '8585'}`;
 
 export default defineConfig({
   testDir: './e2e',
@@ -34,7 +36,7 @@ export default defineConfig({
         {
           command: 'npm run build && node --experimental-strip-types --no-warnings e2e/seed-feed.ts && npm run preview',
           // The videos API through the stub CMS, which answers /api/sites/by-channel (scholar sites) and proxies the rest to QA
-          env: { VIDEOS_API_URL: `http://localhost:${process.env.STUB_CMS_PORT || '8585'}` },
+          env: { VIDEOS_API_URL: STUB, CMS_PUBLIC_URL: STUB, ADMIN_API_URL: STUB },
           url: `${WWW_URL}/healthz`,
           timeout: 180_000,
           reuseExistingServer: !process.env.CI,
@@ -44,7 +46,7 @@ export default defineConfig({
         {
           // The CMS preview API stand-in (e2e/stub-cms.ts); everything else it answers 503.
           command: 'node --experimental-strip-types --no-warnings e2e/stub-cms.ts',
-          url: 'http://localhost:8585/api/preview/v1/pages/0',
+          url: `${STUB}/api/preview/v1/pages/0`,
           timeout: 30_000,
           reuseExistingServer: !process.env.CI,
         },

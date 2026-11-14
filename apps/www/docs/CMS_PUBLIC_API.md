@@ -133,23 +133,38 @@ References are resolved when the page is read: a block that is incomplete in the
 images/posts/videos are all gone or no longer public, is **left out**, so www never renders an empty
 frame. A page saved before blocks existed is served as `[{ id: "body", type: "markdown", text: body }]`.
 
+The schema is the shared page-builder module (wiki AUN-CMS-PAGE-BUILDER), vendored from the
+monorepo by `scripts/sync-page-blocks.ts` into `packages/render/src/page-blocks/` (`ServedBlock` in
+`page-blocks.generated.ts`, checked by `npm run check:page-blocks`). In short:
+
 ```ts
-type Block =
-  | { id: string; type: 'markdown'; text: string }                           // same markdown rules as body
-  | { id: string; type: 'image'; image: MediaRef; caption: string | null; size: 'content' | 'wide' }
-  | { id: string; type: 'gallery'; columns: 2 | 3 | 4; items: { image: MediaRef; caption: string | null }[] }
-  | { id: string; type: 'posts'; heading: string | null; mode: 'latest' | 'tag' | 'picked'; items: PostSummary[] }
-  | { id: string; type: 'cards'; heading: string | null; tag: string | null; page_size: number; filter: boolean }
+type Block = { id: string; type: BlockType; appearance: BlockStyle } & (
+  | { type: 'hero'; eyebrow; title; subtitle; background: 'gradient' | 'image' | 'plain'; image: MediaRef | null; height: 's' | 'm' | 'l'; buttons: { label; url; variant }[] }
+  | { type: 'markdown'; text: string }                           // same markdown rules as body
+  | { type: 'image'; image: MediaRef; caption: string | null; size: 'content' | 'wide' }
+  | { type: 'gallery'; columns: 2 | 3 | 4; items: { image: MediaRef; caption: string | null }[] }
+  | { type: 'layout'; columns: 2 | 3; items: { image; heading; text; label; url }[] }   // 2 or 3 columns
+  | { type: 'columns'; text: string; image: MediaRef | null; caption: string | null; image_side: 'start' | 'end' }
+  | { type: 'cardgrid'; heading; intro; columns: 2 | 3 | 4; items: { image; title; text; label; url }[] }
+  | { type: 'cta'; heading: string | null; text: string | null; label: string; url: string; tone: 'primary' | 'quiet' }
+  | { type: 'quote'; variant: 'quote' | 'callout'; text: string; cite: string | null }
+  | { type: 'faq'; heading: string | null; items: { q: string; a: string }[] }
+  | { type: 'stats'; heading: string | null; variant: 'stats' | 'features'; items: { value; label; text; icon }[] }
+  | { type: 'posts'; heading: string | null; mode: 'latest' | 'tag' | 'picked'; items: PostSummary[] }
+  | { type: 'cards'; heading: string | null; tag: string | null; page_size: number; filter: boolean }
       // a grid of card posts: www reads GET /cards?locale&tag&page&limit=page_size; filter = show the tag filter
-  | { id: string; type: 'videos'; heading: string | null; items: { kind: 'video' | 'playlist' | 'channel'; ref_id: string; title_override: string | null; snapshot: CuratedSnapshot | null }[] }
-  | { id: string; type: 'video'; kind: 'video' | 'playlist'; ref_id: string; caption: string | null; snapshot: CuratedSnapshot | null }
-  | { id: string; type: 'cta'; heading: string | null; text: string | null; label: string; url: string; tone: 'primary' | 'quiet' }
-      // url: "/..." (www-relative, no locale prefix) or https://
-  | { id: string; type: 'columns'; text: string; image: MediaRef | null; caption: string | null; image_side: 'start' | 'end' }
-      // start/end are logical: the image is on the right in Arabic when image_side = start
-  | { id: string; type: 'quote'; variant: 'quote' | 'callout'; text: string; cite: string | null }
-  | { id: string; type: 'divider'; style: 'line' | 'space'; size: 's' | 'm' | 'l' };
+  | { type: 'videos'; heading: string | null; items: { kind; ref_id; title_override; snapshot: CuratedSnapshot | null }[] }
+  | { type: 'video'; kind: 'video' | 'playlist'; ref_id: string; caption: string | null; snapshot: CuratedSnapshot | null }
+  | { type: 'divider'; style_kind: 'line' | 'space'; style: 'line' | 'space'; size: 's' | 'm' | 'l' }   // style: v1 name
+  | { type: 'contact'; heading; text; label; href }
+);
+interface BlockStyle { align: 'start' | 'center'; width: 'content' | 'wide' | 'full'; tone: 'none' | 'soft' | 'raised' | 'accent' | 'night'; space: 's' | 'm' | 'l' }
 ```
+
+- Links (`url`) are `"/..."` (www-relative, no locale prefix) or `https://`. `start`/`end` are logical
+  (the image is on the right in Arabic when `image_side = start`).
+- `appearance` holds theme-safe choices only (no colours, no CSS); a page saved before it existed reads
+  the type's default. Every tone is drawn from the active Fanous theme, light and dark.
 
 - `image.alt` is the block's own description when set, else the library's; `null` = decorative.
 - `posts`: `latest` and `tag` list live posts of the page's locale (at most 12); `picked` keeps the
@@ -181,8 +196,15 @@ heading/body as the description.
 
 ### How www renders them
 
-- `src/lib/blocks.ts` resolves blocks once on the server (markdown, pictures, shelves, the `/cards`
-  page for `?tag=` and `?page=`); `src/components/Blocks.astro` lays them out. Unknown types are skipped.
+- `src/lib/blocks.ts` resolves blocks once on the server (markdown with video facades, the video
+  facade, shelves, the `/cards` page for `?tag=` and `?page=`), then renders them with the shared
+  renderer (`renderPageBlocks`, the same one the CMS editor's live preview uses), plugging in www's
+  responsive pictures, markdown and link rules. The card grid, video shelves and post lists are www's
+  components in the renderer's slots (`packages/render/src/page-blocks/slots.ts`);
+  `src/components/Blocks.astro` fills them in. The blocks lay themselves out with the shared
+  `page-blocks.generated.css`. A page whose first block is a hero shows no page header: the hero is its
+  h1. Unknown types are skipped.
+- The scholar sites render Studio site blocks with the same renderer (`apps/sites/src/components/SiteBlocks.astro`).
 - Card posts: `src/components/CardViewer.astro` renders every slide (real text, one shown), with
   Next/Back and dots as links to `?slide=N` (works without JS); `src/scripts/cards.ts` adds instant
   moves, arrow keys in the reading direction (Arabic: ← is next), swipe, `#N`, neighbour preloading

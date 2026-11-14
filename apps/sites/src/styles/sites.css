@@ -9,6 +9,7 @@
 @import '../../../www/src/styles/aun-nav.generated.css';
 @import '../../../../packages/render/src/styles/fanous-street.generated.css';
 @import '../../../../packages/render/src/posts/posts.css';
+@import '../../../../packages/render/src/page-blocks/page-blocks.generated.css';
 
 @font-face {
   font-family: 'Noto Naskh Arabic';
@@ -390,34 +391,15 @@ html[data-signed-in] .site-header .aun-signin {
   }
 }
 
-/* Site pages (SS16): blocks */
-.site-blocks {
-  display: grid;
-  gap: 1.5rem;
+/* Site pages (SS16): blocks, laid out by the shared page-blocks.generated.css. The page's .wrap
+   already gives the gutter, so the blocks take none of their own. */
+.site-blocks .pb {
+  --pb-gutter: 0px;
 }
-.block-image img {
-  display: block;
-  width: 100%;
-  height: auto;
-  border-radius: var(--fanous-radius-md);
-}
-.block-image figcaption {
-  color: var(--text-soft);
-  font-size: 0.9rem;
-  margin-block-start: 0.5rem;
-}
-.block-quote {
-  margin: 0;
-  padding-inline-start: 1rem;
-  border-inline-start: 4px solid var(--line);
-}
-.block-quote footer {
-  color: var(--text-soft);
-}
-.block-divider {
-  border: 0;
-  border-block-start: 1px solid var(--line);
-  margin: 0;
+/* A site page's title sits on the blocks' reading column (page-blocks: content 46rem). */
+.site-page > h1 {
+  max-width: 46rem;
+  margin-inline: auto;
 }
 .button {
   display: inline-flex;

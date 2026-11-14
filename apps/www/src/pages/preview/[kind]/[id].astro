@@ -65,7 +65,7 @@ const description = data ? data.content.seo_description || (data.kind === 'page'
 >
   {data && <PreviewBanner slot="banner" locale={locale} status={data.status} minutes={minutesLeft(data.expiresAt)} editUrl={data.editUrl} />}
   {data && body ? (
-    data.kind === 'page' ? <PageArticle page={data.content} html={body.html} blocks={built?.blocks} locale={locale} cfg={cfg} cmsOrigin={new URL(rc.cfg.cmsPublicUrl).origin} /> : <PostArticle post={data.content} html={body.html} locale={locale} slide={slide} pathname={here} cmsOrigin={new URL(rc.cfg.cmsPublicUrl).origin} />
+    data.kind === 'page' ? <PageArticle page={data.content} html={body.html} built={built} locale={locale} cfg={cfg} cmsOrigin={new URL(rc.cfg.cmsPublicUrl).origin} /> : <PostArticle post={data.content} html={body.html} locale={locale} slide={slide} pathname={here} cmsOrigin={new URL(rc.cfg.cmsPublicUrl).origin} />
   ) : (
     <PreviewMessage locale={locale} problem={result.state === 'ok' ? 'unavailable' : result.state} cmsUrl={`${cfg.cmsPublicUrl}/${kind}/${id}`} />
   )}

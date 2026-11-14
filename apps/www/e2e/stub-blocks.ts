@@ -1,7 +1,11 @@
 /**
  * Block and card-post fixtures for the stub CMS (e2e/stub-cms.ts), shaped like the CMS public API
  * (docs/CMS_PUBLIC_API.md "Blocks", "Card posts"):
- *  - /pages/stories (en) and /pages/qisas (ar): pages built from every block type;
+ *  - /pages/stories (en) and /pages/qisas (ar): pages built from the v1 block types;
+ *  - /pages/every-block (en) and /pages/kull-al-kutal (ar): the shared page-builder sample page, one of
+ *    every block type (packages/render/src/page-blocks/page-blocks.sample.generated.ts), served the way
+ *    the CMS serves it; its video thumbnails are on the videos origin (SAMPLE_THUMBS, which the
+ *    specs answer in the browser);
  *  - /lists/articles, /lists/videos and /lists/picks (list pages, docs/specs/WWW-PAGES.md);
  *  - /posts/<slug> for the card posts below (404 for one only in the other locale), /posts (the
  *    Articles list: summaries carry ≤ 10 slides) and /cards (newest first, ?tag=, paging);
@@ -9,6 +13,8 @@
  * Only these answer; every other public path stays 503 (the rest of the suite uses built-in content).
  */
 import { deflateSync } from 'node:zlib';
+import { normalizePageBlocks, servePageBlocks } from '../../../packages/render/src/page-blocks/page-blocks.generated.ts';
+import { samplePageBlocks, sampleServeRefs } from '../../../packages/render/src/page-blocks/page-blocks.sample.generated.ts';
 
 const ORIGIN = `http://localhost:${Number(process.env.STUB_CMS_PORT || 8585)}`;
 const now = '2026-11-08T10:00:00.000Z';
@@ -27,6 +33,14 @@ const IMAGES: Record<number, [number, number, string, string]> = {
   14: [1080, 1350, '133a4e', 'fbc661'],
   15: [1080, 1350, '2a2416', 'd3dfdd'],
   16: [1080, 1350, '060f15', '0a5c6e'],
+  // The page-builder sample's media 1–7 (sampleServeRefs declares 1200×750).
+  21: [1200, 750, '0e4d5c', 'f5a443'],
+  22: [1200, 750, '12282f', '4f8f86'],
+  23: [1200, 750, '8a5a12', 'ffd9a3'],
+  24: [1200, 750, '0a5c6e', 'b5cbcb'],
+  25: [1200, 750, '184456', 'f5cf92'],
+  26: [1200, 750, '3a1f3d', 'e8b477'],
+  27: [1200, 750, '0b1d2a', '7fb7b0'],
 };
 
 const crcTable = Array.from({ length: 256 }, (_, n) => {
@@ -174,6 +188,23 @@ const pageOf = (slug: string, locale: 'en' | 'ar', title: string, summary: strin
   seo_title: null, seo_description: null, cover: null, published_at: now, updated_at: now, alternates: [], images: [], blocks,
 });
 
+/** Where the sample page's video thumbnails live (allowed by www as the videos origin; never fetched from it in tests). */
+export const SAMPLE_THUMBS = 'https://videos.qa.alummahnow.net/sample-thumbs/';
+export const SAMPLE_THUMB_IMAGE = 22;
+
+/** The page-builder sample page as the CMS serves it, with fresh video snapshots (no live lookups). */
+function samplePage(locale: 'en' | 'ar') {
+  const refs = sampleServeRefs(locale, (id) => `${ORIGIN}/media/${20 + id}.png`, (key) => `${SAMPLE_THUMBS}${key.replace(':', '-')}.png`);
+  const snapshot = (kind: string, ref: string) => {
+    const snap = refs.snapshot(kind, ref);
+    return snap ? { ...snap, refreshed_at: new Date().toISOString() } : snap;
+  };
+  const blocks = servePageBlocks(normalizePageBlocks(samplePageBlocks(locale)), { ...refs, snapshot } as Parameters<typeof servePageBlocks>[1]);
+  return locale === 'en'
+    ? pageOf('every-block', 'en', 'Every block', 'One of every page-builder block.', blocks)
+    : pageOf('kull-al-kutal', 'ar', 'كل الكتل', 'كتلة من كل نوع في منشئ الصفحات.', blocks);
+}
+
 const PAGES: Record<string, unknown> = {
   'picks:en': { ...pageOf('picks', 'en', 'Editors’ picks', 'A page the editors put together by hand.', []), list_kind: 'curated' },
   'stories:en': pageOf('stories', 'en', 'Stories', 'Card stories, pictures and news from the community.', EN_BLOCKS),
@@ -235,7 +266,9 @@ export function publicFixture(url: URL): { status: number; body: unknown } | nul
   const locale = url.searchParams.get('locale') ?? 'en';
   const page = /^\/pages\/([^/]+)$/.exec(path);
   if (page) {
-    const row = PAGES[`${decodeURIComponent(page[1]!)}:${locale}`];
+    const slug = decodeURIComponent(page[1]!);
+    if ((slug === 'every-block' && locale === 'en') || (slug === 'kull-al-kutal' && locale === 'ar')) return { status: 200, body: samplePage(locale) };
+    const row = PAGES[`${slug}:${locale}`];
     return row ? { status: 200, body: row } : null;
   }
   const list = /^\/lists\/([^/]+)$/.exec(path);

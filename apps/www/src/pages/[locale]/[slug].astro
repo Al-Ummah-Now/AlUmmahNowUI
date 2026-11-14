@@ -89,7 +89,7 @@ const jsonLd = page ? [...(body?.videos ?? []), ...(built?.videos ?? [])].map((v
   contentLocale={page?.locale}
 >
   {page && body ? (
-    <PageArticle page={page} html={body.html} blocks={built?.blocks} locale={locale} cfg={cfg} cmsOrigin={new URL(cfg.cmsPublicUrl).origin} />
+    <PageArticle page={page} html={body.html} built={built} locale={locale} cfg={cfg} cmsOrigin={new URL(cfg.cmsPublicUrl).origin} />
   ) : (
     <ErrorView locale={locale} kind="unavailable" />
   )}
