@@ -81,7 +81,7 @@ export const en = {
     ctaPartners: 'Talk to us',
     pillarsTitle: 'What the community is for',
     pillars: [
-      { title: 'Share videos', body: 'Channels upload videos and Shorts, go live, post updates and build playlists.' },
+      { title: 'Share videos', body: 'Channels upload videos and Shorts, post updates and build playlists.' },
       { title: 'Share news without censorship', body: 'A place to share what is happening, with published rules, open reporting and people, not algorithms, making the final call.' },
       { title: 'Interact', body: 'Comment, subscribe, get notified and share anywhere with embeds and short links.' },
       { title: 'Get educated', body: 'Channels share Quran recitation, Tafsir, Fiqh and talks, and scholars can have their own sites.' },
@@ -90,7 +90,7 @@ export const en = {
     liveTitle: 'Live today',
     live: [
       { title: 'www.alummahnow.net', body: 'The public site: the home timeline, articles, scholar pages and video rails.', href: WWW },
-      { title: 'videos.alummahnow.net', body: 'Watch, upload, go live, comment and subscribe.', href: VIDEOS },
+      { title: 'videos.alummahnow.net', body: 'Watch, upload, comment and subscribe.', href: VIDEOS },
       { title: 'Scholar sites', body: 'White-label sites for scholars on alummahnow.org, run from the same platform.', href: 'https://www.alummahnow.net/en/scholars/' },
     ],
     systemTitle: 'The system at a glance',
@@ -134,7 +134,7 @@ export const en = {
       'Share videos and news without censorship, interact and get educated, in Arabic and English. What the Al Ummah Now community is for and how moderation works.',
     heroTitle: 'A community to share, talk and get educated',
     heroLead:
-      'Al Ummah Now is a content-sharing site: channels publish videos, Shorts, live streams, posts and playlists, and viewers watch, comment, subscribe and share. Everything works in Arabic and English.',
+      'Al Ummah Now is a content-sharing site: channels publish videos, Shorts, posts and playlists, and viewers watch, comment, subscribe and share. Everything works in Arabic and English.',
     sections: [
       {
         id: 'share',
@@ -142,7 +142,7 @@ export const en = {
         lead: 'Channels publish in every format the platform supports.',
         items: [
           { title: 'Videos and Shorts', body: 'A Short is three minutes or less and vertical or square; the uploader can override it.', feature: 'videos-and-shorts', sources: [{ label: 'Shorts rule', href: `${WIKI}/epics/CHAT-SHORTS-shorts-rule.md` }] },
-          { title: 'Live streams', body: 'Go live from Studio and watch on the live page. Two live providers run side by side.', feature: 'live-streams', sources: [{ label: 'D3 live provider', href: `${WIKI}/epics/D3-live-provider.md` }] },
+          { title: 'Live streams', body: 'Studio Live, Go live and the live watch page are built and in a release. Production cannot take a stream yet: Bunny Stream Live is still waiting for preview access, and the self-hosted edge has no production host and no RTMP ingest.', feature: 'live-streams', sources: [{ label: 'D3 live provider', href: `${WIKI}/epics/D3-live-provider.md` }] },
           { title: 'Posts, playlists and channel sections', body: 'Community posts, personal and unlisted playlists, and channel pages arranged in sections.', feature: 'posts-playlists-sections', sources: [{ label: 'Channel sections', href: `${WIKI}/epics/AUN-CHANNEL-SECTIONS-channel-sections.md` }] },
           { title: 'Uploads by invitation for now', body: 'Uploading and creating channels are invite-only. Admins give creators a tier; subscriptions may open this up later.', feature: 'creator-tiers', sources: [{ label: 'O25', href: `${WIKI}/epics/decisions.md#o25-invite-only-uploads-with-admin-assigned-creator-tiers` }] },
         ] as Item[],
@@ -154,7 +154,7 @@ export const en = {
           'People should be able to share what is happening to the Ummah without it quietly disappearing. That is the aim. In practice it means clear rules, open reporting, and people, not automated systems, making the decisions.',
         items: [
           { title: 'Published rules', body: 'The Community Guidelines are public in Arabic and English. They are the rules; there is no hidden list.', feature: 'community-rules', sources: [{ label: 'E06', href: `${WIKI}/epics/E06-community-moderation.md` }] },
-          { title: 'Anyone can report', body: 'Videos, comments, channels and live streams can be reported, with bot protection on the report form.', feature: 'reporting', sources: [{ label: 'Bot protection', href: `${WIKI}/guides/bot-protection.md` }] },
+          { title: 'Anyone can report', body: 'Videos, comments and channels can be reported, with bot protection on the report form.', feature: 'reporting', sources: [{ label: 'Bot protection', href: `${WIKI}/guides/bot-protection.md` }] },
           { title: 'AI holds, people decide', body: 'Automated moderation never deletes anything. It can only hold content for a person to review. In production it runs in shadow mode: it records what it would hold, and an admin switches holding on per category.', feature: 'ai-moderation', sources: [{ label: 'E28 AI moderation', href: `${WIKI}/epics/E28-ai-moderation.md` }] },
           { title: 'No tolerance for child abuse material', body: 'It is removed, the evidence is preserved under a legal hold, and it is reported to the authorities.', feature: 'csam-intake', sources: [{ label: 'CSAM response spec', href: `${GH}/AlUmmahNow/blob/main/docs/specs/CSAM-RESPONSE.md` }] },
           { title: 'Moderation reports', body: 'We are considering publishing regular moderation statistics in Arabic and English. No decision has been made yet.', feature: 'transparency-reports', sources: [{ label: 'M6', href: `${WIKI}/epics/decisions.md#m6-transparency-reporting` }] },
@@ -204,7 +204,7 @@ export const en = {
       {
         title: 'Web apps',
         items: [
-          { title: 'Videos site', body: 'Next.js on Cloudflare Workers: watch pages, Studio, live, channels and the creator tools.', feature: 'videos-site', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md` }] },
+          { title: 'Videos site', body: 'Next.js on Cloudflare Workers: watch pages, Studio, channels and the creator tools.', feature: 'videos-site', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md` }] },
           { title: 'Public site and scholar sites', body: 'Astro on Workers, sharing one rendering package and the same themes.', feature: 'www-and-sites', sources: [{ label: 'AlUmmahNowUI', href: `${WIKI}/repos/AlUmmahNowUI.md` }] },
           { title: 'Admin', body: 'Staff tools with live updates over a realtime Worker, a contact inbox, a delivery dashboard and an errors page with Retry.', feature: 'videos-admin', sources: [{ label: 'System map', href: `${WIKI}/README.md#system-map` }] },
           { title: 'CMS', body: 'bknd on a Worker, with our own admin screens in place of bknd’s. It runs the www pages, articles and the home timeline.', feature: 'cms', sources: [{ label: 'AlUmmahNowCMS', href: `${WIKI}/repos/AlUmmahNowCMS.md` }] },
@@ -275,7 +275,7 @@ export const en = {
     details: [
       { title: 'Two providers, side by side', body: 'Bunny and R2 both run in production behind an admin switch, and production plays Bunny first. Players report startup time, rebuffering and errors for each, and the admin compares them before deciding whether to switch.', feature: 'media-providers', sources: [{ label: 'O32', href: `${WIKI}/epics/decisions.md#o32-run-bunny-and-r2-side-by-side-before-switching` }] },
       { title: 'Signed, never stored', body: 'Playback URLs are signed for each response and never saved. Share images stay on our own domain so previews on social networks don’t break.', feature: 'signed-urls', sources: [{ label: 'Signed URLs', href: `${WIKI}/guides/video-delivery.md#signed-urls` }] },
-      { title: 'Live on two providers', body: 'Bunny Stream Live and a self-hosted path run together and new streams are shared between them, so the choice is made on data.', feature: 'live-streams', sources: [{ label: 'D3', href: `${WIKI}/epics/D3-live-provider.md` }] },
+      { title: 'Two live providers, not on production yet', body: 'Bunny Stream Live and a self-hosted path are built to run together and share new streams, so the choice can be made on data. Neither takes production streams yet: Bunny Live is a closed preview our libraries are not admitted to, and the self-hosted edge takes HTTPS push only and has no production host.', feature: 'live-streams', sources: [{ label: 'D3', href: `${WIKI}/epics/D3-live-provider.md` }] },
       { title: 'Failures are visible', body: 'A failed transcode is recorded with where and why. After three failures it appears on the admin Errors page with Retry, and viewers keep playing from Bunny.', feature: 'error-reporting', sources: [{ label: 'Video delivery', href: `${WIKI}/guides/video-delivery.md` }] },
     ] as Item[],
     environmentsTitle: 'Three environments',
