@@ -34,14 +34,19 @@ interface Props {
   contentLocale?: Locale;
   /** An extra feed for this page (a scholar's articles), listed after the site's. */
   feed?: { title: string; href: string } | null;
+  /**
+   * The canonical and hreflang set when they live on another host (a scholar's own site, lib/scholar-site).
+   * `alternates` still drives the language switch.
+   */
+  seoLinks?: { canonical: string; hreflang: { hreflang: string; href: string }[] } | null;
 }
 
-const { cfg, locale, title, description, alternates, nav, settings, ogImage, ogType = 'website', jsonLd = [], noindex, errorPage, notice, noticeLink, contentLocale, feed } = Astro.props;
+const { cfg, locale, title, description, alternates, nav, settings, ogImage, ogType = 'website', jsonLd = [], noindex, errorPage, notice, noticeLink, contentLocale, feed, seoLinks } = Astro.props;
 const t = strings(locale);
 const siteName = settings?.site_title || t.meta.siteName;
 const fullTitle = title === siteName ? siteName : `${title} | ${siteName}`;
 const desc = (description || settings?.tagline || t.meta.defaultDescription).slice(0, 300);
-const { canonical, hreflang } = headLinks(cfg, alternates, { locale, contentLocale, pathname: Astro.url.pathname, errorPage });
+const { canonical, hreflang } = seoLinks && !errorPage ? seoLinks : headLinks(cfg, alternates, { locale, contentLocale, pathname: Astro.url.pathname, errorPage });
 const other = otherLocale(locale);
 const switchHref = alternates[other] ?? `/${other}/`;
 const image = ogImageUrl(cfg, ogImage);

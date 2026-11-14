@@ -20,7 +20,8 @@ if (existsSync(path)) {
     AUTH_URL: 'https://auth.qa.alummahnow.net',
     WWW_CLIENT_ID: 'ecda6f18-89cb-415c-b746-7e77184d75a2',
     VIDEOS_WEB_URL: 'https://videos.qa.alummahnow.net',
-    VIDEOS_API_URL: 'https://videos.api.qa.alummahnow.net',
+    // Local E2E points it at the stub CMS (playwright.config.ts), which stands in for /api/sites/by-channel
+    VIDEOS_API_URL: process.env.VIDEOS_API_URL || 'https://videos.api.qa.alummahnow.net',
     PROFILE_URL: 'https://profile.auth.qa.alummahnow.net',
     CMS_PUBLIC_URL: process.env.CMS_PUBLIC_URL || 'http://localhost:8585',
     // The site theme (/public/site-theme): local E2E's stub answers it on the CMS stub's port

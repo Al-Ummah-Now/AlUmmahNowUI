@@ -3,7 +3,9 @@
  * /api/preview/v1 answers, plus the block and card-post fixtures in e2e/stub-blocks.ts (two pages,
  * card posts, /cards and their images); everything else is 503, so the rest of the suite still
  * renders from built-in content exactly as with no CMS at all. It also answers the videos admin's
- * `/public/site-theme` (STUB_SITE_THEME, default zujaj).
+ * `/public/site-theme` (STUB_SITE_THEME, default zujaj), and stands in for the videos API (www's
+ * VIDEOS_API_URL in local E2E): `/api/sites/by-channel/:id` from e2e/stub-scholar-sites.ts, every
+ * other `/api/` path proxied to the QA videos API (VIDEOS_UPSTREAM), as when www read it directly.
  *
  * Tokens are `v1.<base64url {k,id,exp}>.<sig>`: sig `good` is valid, `expired` is what the CMS says
  * for an old token, anything else is invalid. Rows: pages/1 (English draft), posts/2 (Arabic draft),
@@ -12,9 +14,11 @@
 import { createServer } from 'node:http';
 import { Buffer } from 'node:buffer';
 import { PREVIEW_ROWS, publicFixture, stubImage } from './stub-blocks.ts';
+import { scholarSitesFixture, siteByChannel } from './stub-scholar-sites.ts';
 
 const PORT = Number(process.env.STUB_CMS_PORT || 8585);
 const STUB_SITE_THEME = process.env.STUB_SITE_THEME || 'zujaj';
+const VIDEOS_UPSTREAM = process.env.VIDEOS_UPSTREAM || 'https://videos.api.qa.alummahnow.net';
 const now = '2026-11-08T10:00:00.000Z';
 const ROWS: Record<string, unknown> = {
   'pages/1': {
@@ -46,8 +50,40 @@ createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30' });
     return res.end(JSON.stringify({ theme: STUB_SITE_THEME }));
   }
+  const sites = scholarSitesFixture(url.pathname.replace(/^\/api\/public\/v1/, ''), url.searchParams.get('locale') ?? 'en');
+  if (sites && url.pathname.startsWith('/api/public/v1/')) return send(sites.status, sites.body);
   const fixture = publicFixture(url);
   if (fixture) return send(fixture.status, fixture.body);
+  const site = siteByChannel(url.pathname);
+  if (site) {
+    res.writeHead(site.status, { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' });
+    return res.end(JSON.stringify(site.body));
+  }
+  // The rest of the videos API: passed through to QA unchanged (method, body, Origin, and its CORS
+  // answer), as when www and the browser read it directly
+  if (url.pathname.startsWith('/api/') && !/^\/api\/(public|preview)\//.test(url.pathname)) {
+    const chunks: Buffer[] = [];
+    req.on('data', (c: Buffer) => chunks.push(c));
+    req.on('end', () => {
+      const headers: Record<string, string> = {};
+      for (const h of ['accept', 'content-type', 'origin', 'access-control-request-method', 'access-control-request-headers']) {
+        const v = req.headers[h];
+        if (typeof v === 'string') headers[h] = v;
+      }
+      const method = req.method ?? 'GET';
+      fetch(`${VIDEOS_UPSTREAM}${url.pathname}${url.search}`, { method, headers, body: method === 'GET' || method === 'HEAD' ? undefined : Buffer.concat(chunks), signal: AbortSignal.timeout(10_000) })
+        .then(async (up) => {
+          const out: Record<string, string> = {};
+          up.headers.forEach((v, k) => {
+            if (k === 'content-type' || k === 'cache-control' || k === 'vary' || k.startsWith('access-control-')) out[k] = v;
+          });
+          res.writeHead(up.status, out);
+          res.end(Buffer.from(await up.arrayBuffer()));
+        })
+        .catch(() => send(502, { error: 'upstream' }));
+    });
+    return;
+  }
   const m = /^\/api\/preview\/v1\/(pages|posts)\/(\d+)$/.exec(url.pathname);
   if (!m) return send(503, { error: 'stub' });
   const auth = /^Bearer (v1\.([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+))$/.exec(req.headers.authorization ?? '');

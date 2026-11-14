@@ -33,6 +33,8 @@ export default defineConfig({
     ? [
         {
           command: 'npm run build && node --experimental-strip-types --no-warnings e2e/seed-feed.ts && npm run preview',
+          // The videos API through the stub CMS, which answers /api/sites/by-channel (scholar sites) and proxies the rest to QA
+          env: { VIDEOS_API_URL: `http://localhost:${process.env.STUB_CMS_PORT || '8585'}` },
           url: `${WWW_URL}/healthz`,
           timeout: 180_000,
           reuseExistingServer: !process.env.CI,

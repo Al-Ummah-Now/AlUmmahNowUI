@@ -195,9 +195,18 @@ export interface PostsResponse { items: PostSummary[]; page: number; limit: numb
 export interface CardsResponse { items: PostSummary[]; page: number; limit: number; total: number; tags: string[] }
 export interface SitemapResponse {
   /** translation_key pairs one item's languages (absent from older CMS versions) */
-  items: { type: 'page' | 'post'; locale: Locale; slug: string; updated_at: string; translation_key?: string | null }[];
+  items: {
+    type: 'page' | 'post'; locale: Locale; slug: string; updated_at: string; translation_key?: string | null;
+    /** Additive: a scholar post reference's community post and channel (null for staff posts; absent on older CMS builds). */
+    ref_post_id?: string | null;
+    ref_channel_id?: string | null;
+  }[];
   /** Scholar pages (both locales each). Absent from older CMS versions. */
-  scholars?: { slug: string; updated_at: string }[];
+  scholars?: {
+    slug: string; updated_at: string;
+    /** Additive: the scholar's primary channel (absent on older CMS builds). */
+    primary_channel_id?: string | null;
+  }[];
 }
 
 export interface ScholarSummary {
@@ -215,6 +224,8 @@ export interface Scholar extends ScholarSummary {
   bio_en: string | null;
   bio_ar: string | null;
   channel_ids: string[];
+  /** Additive: the primary channel (CMS `scholars.primary_channel_id`; absent on older builds, where it is channel_ids[0]). */
+  primary_channel_id?: string | null;
   created_at: string;
 }
 export interface ScholarsResponse { items: ScholarSummary[]; page: number; limit: number; total: number }
