@@ -12,9 +12,6 @@ export const ar: Strings = {
     description:
       'الأمة الآن مجتمع إسلامي لمشاركة المرئيات بالعربية والإنجليزية: كيف يعمل، وكيف بُني، والتوجّه الذي ندرسه ليكون وقفًا.',
   },
-  a11y: {
-    home: 'الصفحة الرئيسية للأمة الآن',
-  },
   nav: {
     skip: 'تخطَّ إلى المحتوى',
     primary: 'الرئيسية',
@@ -25,8 +22,8 @@ export const ar: Strings = {
     'open-source': 'المصدر المفتوح',
     waqf: 'الوقف',
     contact: 'تواصل معنا',
-    language: 'English',
-    toLight: 'الوضع الفاتح',
+    /** The header lockup's second line (NAV.md: every app but www names itself) */
+    appName: 'المطوّرون',
   },
   status: {
     live: 'يعمل الآن',

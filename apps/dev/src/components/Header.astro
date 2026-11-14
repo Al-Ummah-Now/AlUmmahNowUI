@@ -1,12 +1,16 @@
 ---
 /**
- * The Al Ummah Now header, as www's (apps/www/src/components/Header.astro): the same markup, class
- * names and order, styled by www's own header.css and aun-nav.generated.css (imported in Base.astro)
- * and driven by www's own toggle script, so it cannot drift (owner: "UNIFY"; AlUmmahNow
- * docs/design/NAV.md). This static site has no search and no account, so those two are left out.
+ * The Al Ummah Now header, as www's (apps/www/src/components/Header.astro): the shared contract
+ * (AlUmmahNow docs/design/NAV.md "Header"), markup from the vendored builders
+ * (packages/render/src/nav/header.js, check:fanous), styled by www's aun-nav.generated.css and
+ * header.css (imported in Base.astro) and driven by www's own toggle script, so it cannot drift.
+ * This static site has no search and no account, so those two are left out. The HTML is the same
+ * in every environment, so the QA / STAGE badge is added from the host by the header's script.
  */
-import { modeIconSvg, modeToggleLabel } from '../../../../packages/render/src/mode-toggle';
+import { appLinksHtml, brandHtml, envBadgeHtml, langButtonHtml } from '../../../../packages/render/src/nav/header.js';
+import { modeIconSvg, modeToggleLabel } from '../../../../packages/render/src/nav/mode-toggle.js';
 import type { Strings } from '../i18n';
+import { VIDEOS, WWW } from '../lib/links';
 import { PAGES, otherLocale, pagePath, type Locale, type PageSlug } from '../lib/pages';
 interface Props {
   locale: Locale;
@@ -18,28 +22,27 @@ const other = otherLocale(locale);
 const label = (p: PageSlug) => (p === '' ? t.nav.home : t.nav[p]);
 const toDark = modeToggleLabel(locale, false);
 const toLight = modeToggleLabel(locale, true);
+const badges = JSON.stringify({ qa: envBadgeHtml('qa', locale), stage: envBadgeHtml('stage', locale) });
 ---
-<header class="site-header">
-  <div class="wrap">
-    <a class="brand" href={pagePath(locale, '')} aria-label={t.a11y.home}>
-      <img src="/brand/logo-192.webp" alt="" width="40" height="40" />
-      {locale === 'ar' ? <span class="brand-ar">الأمة الآن</span> : <span>Al Ummah Now</span>}
-    </a>
-    <nav class="primary-nav" aria-label={t.nav.primary}>
-      <ul>
-        {PAGES.filter((p) => p !== '').map((p) => (
-          <li><a href={pagePath(locale, p)} aria-current={p === slug ? 'page' : undefined}>{label(p)}</a></li>
-        ))}
-      </ul>
-    </nav>
-    <div class="header-tools">
-      <div class="theme" id="theme">
-        <button type="button" class="theme-button aun-icon-btn" data-testid="theme-toggle" aria-label={toDark} title={toDark} data-label-dark={toDark} data-label-light={toLight} data-current="light">
-          <Fragment set:html={modeIconSvg('moon', 'theme-icon mode-moon')} />
-          <Fragment set:html={modeIconSvg('sun', 'theme-icon mode-sun')} />
-        </button>
-      </div>
-      <a class="lang-switch aun-lang" href={pagePath(other, slug)} hreflang={other} lang={other}>{t.nav.language}</a>
+<header class="site-header site-header--wide aun-header" data-env-badges={badges}>
+  <div class="aun-header-row">
+    <Fragment set:html={brandHtml({ lang: locale, href: pagePath(locale, ''), app: t.nav.appName, logoSrc: '/brand/logo-192.webp' })} />
+    <div class="aun-header-primary">
+      <nav class="primary-nav" aria-label={t.nav.primary}>
+        <ul>
+          {PAGES.filter((p) => p !== '').map((p) => (
+            <li><a href={pagePath(locale, p)} aria-current={p === slug ? 'page' : undefined}>{label(p)}</a></li>
+          ))}
+        </ul>
+      </nav>
+    </div>
+    <div class="aun-header-tools">
+      <Fragment set:html={appLinksHtml({ lang: locale, links: [{ id: 'www', href: `${WWW}/${locale}/` }, { id: 'videos', href: `${VIDEOS}/${locale}` }] })} />
+      <Fragment set:html={langButtonHtml({ lang: locale, href: pagePath(other, slug) })} />
+      <button type="button" class="aun-icon-btn aun-mode" id="mode-toggle" data-testid="theme-toggle" aria-label={toDark} title={toDark} data-label-dark={toDark} data-label-light={toLight} data-current="light">
+        <Fragment set:html={modeIconSvg('moon', 'mode-moon')} />
+        <Fragment set:html={modeIconSvg('sun', 'mode-sun')} />
+      </button>
     </div>
   </div>
 </header>
@@ -47,4 +50,8 @@ const toLight = modeToggleLabel(locale, true);
   // www's Light / Dark toggle, as it is (apps/www/src/scripts/theme.ts)
   import { initTheme } from '../../../www/src/scripts/theme';
   initTheme();
+  // The HTML is the same in every environment: the QA / STAGE badge (nav/header.js envBadgeHtml) from the host
+  const env = /^(qa|stage)\./.exec(location.hostname)?.[1];
+  const header = document.querySelector<HTMLElement>('.site-header');
+  if (env && header?.dataset.envBadges) header.querySelector('.aun-brand')?.insertAdjacentHTML('afterend', (JSON.parse(header.dataset.envBadges) as Record<string, string>)[env] ?? '');
 </script>
