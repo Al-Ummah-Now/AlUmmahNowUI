@@ -96,7 +96,7 @@ describe('waitForWwwHosts: a just-attached custom domain needs DNS and a certifi
     let apexFailures = 2;
     const doFetch = (async (url: string) => {
       seen.push(url);
-      if (url.startsWith('https://stage.alummahnow.net') && apexFailures-- > 0) throw new TypeError('fetch failed');
+      if (new URL(url).host === 'stage.alummahnow.net' && apexFailures-- > 0) throw new TypeError('fetch failed');
       return new Response(null, { status: 301 });
     }) as unknown as typeof fetch;
     await waitForWwwHosts('stage', () => {}, 5_000, doFetch, 1);
