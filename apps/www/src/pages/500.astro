@@ -15,6 +15,6 @@ const { cfg } = runtime(Astro);
 const b = builtinContent(locale);
 Astro.response.status = 500;
 ---
-<BaseLayout cfg={cfg} locale={locale} title={strings(locale).errors.serverTitle} alternates={{ en: '/en/', ar: '/ar/' }} nav={{ header: b.headerNav, footer: b.footerNav }} settings={b.site.settings} noindex>
+<BaseLayout cfg={cfg} locale={locale} title={strings(locale).errors.serverTitle} alternates={{ en: '/en/', ar: '/ar/' }} nav={{ header: b.headerNav, footer: b.footerNav }} settings={b.site.settings} noindex errorPage>
   <ErrorView locale={locale} kind="server" />
 </BaseLayout>

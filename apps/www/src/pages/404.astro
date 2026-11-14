@@ -16,6 +16,6 @@ const { cfg } = runtime(Astro);
 const b = builtinContent(locale);
 Astro.response.status = 404;
 ---
-<BaseLayout cfg={cfg} locale={locale} title={strings(locale).errors.notFoundTitle} alternates={{ en: '/en/', ar: '/ar/' }} nav={{ header: b.headerNav, footer: b.footerNav }} settings={b.site.settings} noindex>
+<BaseLayout cfg={cfg} locale={locale} title={strings(locale).errors.notFoundTitle} alternates={{ en: '/en/', ar: '/ar/' }} nav={{ header: b.headerNav, footer: b.footerNav }} settings={b.site.settings} noindex errorPage>
   <ErrorView locale={locale} kind="not_found" />
 </BaseLayout>
