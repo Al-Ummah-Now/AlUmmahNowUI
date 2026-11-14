@@ -64,7 +64,7 @@ export const ar: Strings = {
     ctaPartners: 'تواصل معنا',
     pillarsTitle: 'لماذا هذا المجتمع',
     pillars: [
-      { title: 'شارك المرئيات', body: 'ترفع القنوات المرئيات والمقاطع القصيرة، وتبث مباشرة، وتنشر المنشورات، وتنشئ قوائم التشغيل.' },
+      { title: 'شارك المرئيات', body: 'ترفع القنوات المرئيات والمقاطع القصيرة، وتنشر المنشورات، وتنشئ قوائم التشغيل.' },
       { title: 'شارك الأخبار بلا رقابة', body: 'مكان لمشاركة ما يحدث، بقواعد منشورة وإبلاغ مفتوح للجميع، والقرار الأخير فيه للبشر لا للخوارزميات.' },
       { title: 'تفاعل', body: 'علّق واشترك وتلقَّ الإشعارات، وشارك في أي مكان عبر التضمين والروابط القصيرة.' },
       { title: 'تعلّم', body: 'تشارك القنوات تلاوات القرآن والتفسير والفقه والكلمات، ويمكن أن يكون للعلماء مواقعهم الخاصة.' },
@@ -73,7 +73,7 @@ export const ar: Strings = {
     liveTitle: 'يعمل اليوم',
     live: [
       { title: 'www.alummahnow.net', body: 'الموقع العام: الخط الزمني للرئيسية، والمقالات، وصفحات العلماء، وصفوف المرئيات.', href: WWW },
-      { title: 'videos.alummahnow.net', body: 'شاهد وارفع وابثّ مباشرة وعلّق واشترك.', href: VIDEOS },
+      { title: 'videos.alummahnow.net', body: 'شاهد وارفع وعلّق واشترك.', href: VIDEOS },
       { title: 'مواقع العلماء', body: 'مواقع بهوية مستقلة للعلماء على alummahnow.org، تعمل من المنصة نفسها.', href: 'https://www.alummahnow.net/ar/scholars/' },
     ],
     systemTitle: 'المنظومة في لمحة',
@@ -117,7 +117,7 @@ export const ar: Strings = {
       'شارك المرئيات والأخبار بلا رقابة، وتفاعل، وتعلّم، بالعربية والإنجليزية. الغاية من مجتمع الأمة الآن وكيف يعمل الإشراف.',
     heroTitle: 'مجتمع للمشاركة والحوار والتعلّم',
     heroLead:
-      'الأمة الآن موقع لمشاركة المحتوى: تنشر القنوات المرئيات والمقاطع القصيرة والبث المباشر والمنشورات وقوائم التشغيل، ويشاهد الجمهور ويعلّق ويشترك ويشارك. وكل ذلك بالعربية والإنجليزية.',
+      'الأمة الآن موقع لمشاركة المحتوى: تنشر القنوات المرئيات والمقاطع القصيرة والمنشورات وقوائم التشغيل، ويشاهد الجمهور ويعلّق ويشترك ويشارك. وكل ذلك بالعربية والإنجليزية.',
     sections: [
       {
         id: 'share',
@@ -125,7 +125,7 @@ export const ar: Strings = {
         lead: 'تنشر القنوات بكل الأشكال التي تدعمها المنصة.',
         items: [
           { title: 'المرئيات والمقاطع القصيرة', body: 'المقطع القصير مدته ثلاث دقائق أو أقل، وهو عمودي أو مربع، ويمكن لصاحبه أن يغيّر ذلك.', feature: 'videos-and-shorts', sources: [{ label: 'قاعدة المقاطع القصيرة', href: `${WIKI}/epics/CHAT-SHORTS-shorts-rule.md` }] },
-          { title: 'البث المباشر', body: 'ابدأ البث من الاستوديو وشاهده في صفحة البث. يعمل مزوّدان للبث جنبًا إلى جنب.', feature: 'live-streams', sources: [{ label: 'D3 مزوّد البث', href: `${WIKI}/epics/D3-live-provider.md` }] },
+          { title: 'البث المباشر', body: 'صفحات البث في الاستوديو وزر «ابدأ البث» وصفحة مشاهدة البث مبنية وضمن إصدار. لكن بيئة الإنتاج لا تستقبل بثًا بعد: ما زال Bunny Stream Live ينتظر الانضمام إلى نسخته التجريبية، والمسار المستضاف ذاتيًا ليس له عنوان في الإنتاج ولا يستقبل RTMP.', feature: 'live-streams', sources: [{ label: 'D3 مزوّد البث', href: `${WIKI}/epics/D3-live-provider.md` }] },
           { title: 'المنشورات وقوائم التشغيل وأقسام القناة', body: 'منشورات المجتمع، وقوائم تشغيل شخصية وغير مدرجة، وصفحات قنوات مرتّبة في أقسام.', feature: 'posts-playlists-sections', sources: [{ label: 'أقسام القناة', href: `${WIKI}/epics/AUN-CHANNEL-SECTIONS-channel-sections.md` }] },
           { title: 'الرفع بدعوة حاليًا', body: 'رفع المرئيات وإنشاء القنوات بدعوة فقط. يمنح المشرفون صنّاع المحتوى مستوى، وقد تفتح الاشتراكات هذا لاحقًا.', feature: 'creator-tiers', sources: [{ label: 'O25', href: `${WIKI}/epics/decisions.md#o25-invite-only-uploads-with-admin-assigned-creator-tiers` }] },
         ] as Item[],
@@ -137,7 +137,7 @@ export const ar: Strings = {
           'من حق الناس أن يشاركوا ما يحدث للأمة دون أن يختفي بصمت. هذه هي الغاية. وهي تعني عمليًا قواعد واضحة، وإبلاغًا مفتوحًا، وقرارات يتخذها البشر لا الأنظمة الآلية.',
         items: [
           { title: 'قواعد منشورة', body: 'إرشادات المجتمع منشورة بالعربية والإنجليزية. هي القواعد، ولا توجد قائمة خفية.', feature: 'community-rules', sources: [{ label: 'E06', href: `${WIKI}/epics/E06-community-moderation.md` }] },
-          { title: 'الإبلاغ متاح للجميع', body: 'يمكن الإبلاغ عن المرئيات والتعليقات والقنوات والبث المباشر، مع حماية من البرامج الآلية في نموذج الإبلاغ.', feature: 'reporting', sources: [{ label: 'الحماية من البرامج الآلية', href: `${WIKI}/guides/bot-protection.md` }] },
+          { title: 'الإبلاغ متاح للجميع', body: 'يمكن الإبلاغ عن المرئيات والتعليقات والقنوات، مع حماية من البرامج الآلية في نموذج الإبلاغ.', feature: 'reporting', sources: [{ label: 'الحماية من البرامج الآلية', href: `${WIKI}/guides/bot-protection.md` }] },
           { title: 'الذكاء الاصطناعي يوقف، والبشر يقررون', body: 'الإشراف الآلي لا يحذف شيئًا أبدًا، بل يوقف المحتوى فقط ليراجعه إنسان. ويعمل في بيئة الإنتاج في وضع الظل: يسجّل ما كان سيوقفه، ويفعّل المشرف الإيقاف لكل فئة على حدة.', feature: 'ai-moderation', sources: [{ label: 'E28 الإشراف بالذكاء الاصطناعي', href: `${WIKI}/epics/E28-ai-moderation.md` }] },
           { title: 'لا تسامح مع مواد إساءة معاملة الأطفال', body: 'تُزال، وتُحفظ الأدلة تحت حجز قانوني، ويُبلَّغ عنها للجهات المختصة.', feature: 'csam-intake', sources: [{ label: 'مواصفة الاستجابة', href: `${GH}/AlUmmahNow/blob/main/docs/specs/CSAM-RESPONSE.md` }] },
           { title: 'تقارير الإشراف', body: 'ندرس نشر إحصاءات دورية عن الإشراف بالعربية والإنجليزية، ولم يُتخذ قرار بعد.', feature: 'transparency-reports', sources: [{ label: 'M6', href: `${WIKI}/epics/decisions.md#m6-transparency-reporting` }] },
@@ -187,7 +187,7 @@ export const ar: Strings = {
       {
         title: 'تطبيقات الويب',
         items: [
-          { title: 'موقع المرئيات', body: 'Next.js على Cloudflare Workers: صفحات المشاهدة، والاستوديو، والبث المباشر، والقنوات، وأدوات صنّاع المحتوى.', feature: 'videos-site', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md` }] },
+          { title: 'موقع المرئيات', body: 'Next.js على Cloudflare Workers: صفحات المشاهدة، والاستوديو، والقنوات، وأدوات صنّاع المحتوى.', feature: 'videos-site', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md` }] },
           { title: 'الموقع العام ومواقع العلماء', body: 'Astro على Workers، بحزمة عرض واحدة مشتركة والسمات نفسها.', feature: 'www-and-sites', sources: [{ label: 'AlUmmahNowUI', href: `${WIKI}/repos/AlUmmahNowUI.md` }] },
           { title: 'لوحة الإدارة', body: 'أدوات الفريق مع تحديثات فورية عبر عامل للاتصال اللحظي، وصندوق رسائل التواصل، ولوحة لتوصيل المرئيات، وصفحة للأخطاء فيها زر إعادة المحاولة.', feature: 'videos-admin', sources: [{ label: 'خريطة المنظومة', href: `${WIKI}/README.md#system-map` }] },
           { title: 'نظام إدارة المحتوى', body: 'bknd على عامل Worker، بشاشات إدارة من صنعنا بدل شاشات bknd. يدير صفحات www والمقالات والخط الزمني للرئيسية.', feature: 'cms', sources: [{ label: 'AlUmmahNowCMS', href: `${WIKI}/repos/AlUmmahNowCMS.md` }] },
@@ -258,7 +258,7 @@ export const ar: Strings = {
     details: [
       { title: 'مزوّدان جنبًا إلى جنب', body: 'يعمل Bunny وR2 في بيئة الإنتاج خلف مفتاح في الإدارة، ويُشغَّل Bunny أولًا. ويُبلغ المشغّل عن زمن البدء والتقطّع والأخطاء لكل منهما، وتقارن الإدارة بينهما قبل تقرير التحويل.', feature: 'media-providers', sources: [{ label: 'O32', href: `${WIKI}/epics/decisions.md#o32-run-bunny-and-r2-side-by-side-before-switching` }] },
       { title: 'روابط موقّعة لا تُحفظ', body: 'روابط التشغيل تُوقَّع مع كل استجابة ولا تُحفظ أبدًا. وصور المشاركة تبقى على نطاقنا فلا تنكسر معاينات الشبكات الاجتماعية.', feature: 'signed-urls', sources: [{ label: 'الروابط الموقّعة', href: `${WIKI}/guides/video-delivery.md#signed-urls` }] },
-      { title: 'البث المباشر على مزوّدين', body: 'يعمل Bunny Stream Live ومسار مستضاف ذاتيًا معًا، وتُوزَّع البثوث الجديدة بينهما، ليكون الاختيار مبنيًا على البيانات.', feature: 'live-streams', sources: [{ label: 'D3', href: `${WIKI}/epics/D3-live-provider.md` }] },
+      { title: 'مزوّدان للبث المباشر، لم يصلا إلى الإنتاج بعد', body: 'بُني Bunny Stream Live ومسار مستضاف ذاتيًا ليعملا معًا وتُوزَّع البثوث الجديدة بينهما، فيكون الاختيار مبنيًا على البيانات. ولا يستقبل أيٌّ منهما بثًا في الإنتاج بعد: Bunny Live نسخة تجريبية مغلقة لم تُقبل مكتباتنا فيها، والمسار المستضاف ذاتيًا يستقبل الرفع عبر HTTPS فقط وليس له عنوان في الإنتاج.', feature: 'live-streams', sources: [{ label: 'D3', href: `${WIKI}/epics/D3-live-provider.md` }] },
       { title: 'الأعطال ظاهرة', body: 'يُسجَّل كل تحويل فاشل مع مكانه وسببه. وبعد ثلاث محاولات فاشلة يظهر في صفحة الأخطاء مع زر إعادة المحاولة، ويواصل المشاهدون التشغيل من Bunny.', feature: 'error-reporting', sources: [{ label: 'توصيل المرئيات', href: `${WIKI}/guides/video-delivery.md` }] },
     ] as Item[],
     environmentsTitle: 'ثلاث بيئات',
