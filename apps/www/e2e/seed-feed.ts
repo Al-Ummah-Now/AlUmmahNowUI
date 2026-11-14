@@ -16,8 +16,20 @@ import { fileURLToPath } from 'node:url';
 import type { FeedItem } from '../src/lib/feed.ts';
 import { layoutFeed, post, video } from '../tests/feed-fixture.ts';
 
-export const SEED_NOW = Date.now();
 const HOUR = 3_600_000;
+const DAY = 24 * HOUR;
+/**
+ * The seed's "now": the most recent 06:30 UTC, never the wall clock. The timeline groups items by UTC
+ * day, so offsets from the real time put the seeded posts into different day groups at different
+ * hours, and the JS-placed garlands then hang a lantern over a post at some hours (2026-11-14, 07:00
+ * UTC: "@900px lantern at 233,602: 79% drawn", iphone ar). A fixed time of day keeps the grouping, and
+ * so the layout, the same on every run; 06:30 is a layout the street checks pass on. Always in the
+ * past, so the newest item is from today or yesterday.
+ */
+export const SEED_NOW = seedAnchor(Date.now());
+export function seedAnchor(now: number, timeOfDay = 6.5 * HOUR): number {
+  return Math.floor((now - timeOfDay) / DAY) * DAY + timeOfDay;
+}
 const at = (hoursAgo: number) => new Date(SEED_NOW - hoursAgo * HOUR).toISOString();
 
 const ORDINALS = { en: ['one', 'two', 'three', 'four', 'five'], ar: ['الأولى', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة'] };
