@@ -127,7 +127,9 @@ export function parseThemes(css: string): Map<string, ThemeBlocks> {
       .filter(([name]) => KEEP.test(name))
       .map(([name, value]) => {
         const lights = name === '--fanous-street-lights' && LIGHTS.test(value);
-        if (!lights && /[<>{}]|url\(|expression/i.test(value)) throw new Error(`unexpected value for ${name}: ${value}`);
+        // The street tile: only our own WebP files under /fanous/street/ (copied into public/)
+        const band = /^--fanous-street-tile(-[1-4])?$/.test(name) && /^image-set\(url\("\/fanous\/street\/[a-z0-9-]+\.webp"\) 2x\)$/.test(value);
+        if (!lights && !band && /[<>{}]|url\(|expression/i.test(value)) throw new Error(`unexpected value for ${name}: ${value}`);
         return `${name}:${value}`;
       });
     for (const sel of selector.split(',').map((s) => s.trim())) {

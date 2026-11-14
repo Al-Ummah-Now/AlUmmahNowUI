@@ -4,40 +4,58 @@ import { IS_PRODUCTION, SCHEMES } from './site-theme';
 
 /**
  * The Fawanees lantern street on www (the shared module, vendored by scripts/sync-fanous.ts;
- * design: AlUmmahNow docs/design/FAWANEES-STREET.md). Through the non-production ?theme= preview,
- * in light and dark, English and Arabic: the street is on; garlands hang somewhere on the home
- * page; no control or text block is see-through; every lantern on screen is drawn whole (the
- * screen with and without the street, compared by pixels); other themes draw none; and with
- * reduced motion the distant lights stand still.
+ * design: AlUmmahNow docs/design/FAWANEES-STREET.md). The street is pre-made art painted by CSS:
+ * a wide image tile of strings and lit lanterns that wraps both ways, repeated behind the whole
+ * page over a small distant-lights tile. The theme gives 4 tile variants per mode; the inline head
+ * script picks one per load before first paint (<html data-fanous-street-variant>), and only that
+ * one downloads. Through the non-production ?theme= preview, in light and dark, English and Arabic:
+ *   - the street is on, shows the picked variant of this mode's tile, repeated, centred, at its
+ *     own size (never stretched), down the whole page, and no other variant is fetched;
+ *   - the timeline column has its light frost (a soft-edged blur layer behind its content);
+ *   - no control or text block is see-through;
+ * a test can pin the variant; other themes have no street; the street adds no element, fixed
+ * layer or animation (nothing to do on scroll).
  */
 test.skip(IS_PRODUCTION, 'production ignores ?theme= previews');
-// The pixel check decodes screenshots from data: URLs
+// The style tag that stills transitions is inline (www's CSP allows no inline styles)
 test.use({ bypassCSP: true });
 
 const DEPTHS = [0, 900, 1800];
-let checkedOnScreen = 0;
+const TILE = /street-tile(?:-dark)?-([1-4])\.webp/;
 
+/** Opens a page, recording which street tile files it fetched. */
 async function open(page: Page, path: string) {
+  const fetched = new Set<string>();
+  page.on('request', (req) => {
+    const m = req.url().match(/street-tile[\w-]*\.webp/);
+    if (m) fetched.add(m[0]);
+  });
   await page.goto(path);
   await page.waitForLoadState('networkidle').catch(() => {});
   await page.addStyleTag({ content: '*,*::before,*::after{transition:none!important;animation-duration:0s!important;animation-delay:0s!important}' });
-  await expect(page.locator('html')).toHaveClass(/fanous-street/);
+  return fetched;
 }
 
-/**
- * Waits until the module has stopped re-measuring (layout settles after images and fonts). The module
- * waits for a quiet second and measures at most every 2 s, so a reading only counts as settled when it
- * holds for longer than that.
- */
-async function stable(page: Page) {
-  let last = '';
-  for (let i = 0; i < 10; i++) {
-    // The markup itself, not its length: a garland that moves keeps the same number of characters
-    const now = await page.evaluate(() => `${document.getElementById('fanous-street')?.innerHTML}:${document.documentElement.scrollHeight}`);
-    if (now === last) return;
-    last = now;
-    await page.waitForTimeout(2_200);
-  }
+/** The street's layers and the timeline frost, as the browser computes them. */
+function street(page: Page) {
+  return page.evaluate(() => {
+    const before = getComputedStyle(document.body, '::before');
+    const after = getComputedStyle(document.body, '::after');
+    const wrap = document.querySelector('.tl-wrap');
+    const frost = wrap ? getComputedStyle(wrap, '::before') : null;
+    return {
+      on: document.documentElement.classList.contains('fanous-street'),
+      variant: document.documentElement.getAttribute('data-fanous-street-variant'),
+      lights: before.content !== 'none' ? before.backgroundImage : 'none',
+      tile: after.content !== 'none' ? after.backgroundImage : 'none',
+      repeat: after.backgroundRepeat,
+      at: after.backgroundPosition,
+      size: after.backgroundSize,
+      position: after.position,
+      covers: Math.round(parseFloat(after.height)) >= document.documentElement.scrollHeight - 2,
+      frost: frost && frost.content !== 'none' ? { blur: frost.backdropFilter, bg: frost.backgroundColor, mask: frost.getPropertyValue('mask-image') || frost.getPropertyValue('-webkit-mask-image') } : null,
+    };
+  });
 }
 
 /** Translucent controls and text blocks whose backdrop is the page (the street would show through). */
@@ -58,110 +76,74 @@ function seeThrough(page: Page) {
   });
 }
 
-/** Lanterns on screen that are not drawn whole (something sits in front of them). */
-async function cutLanterns(page: Page) {
-  await stable(page);
-  const boxes = await page.evaluate(() => {
-    const paints = (e: Element) => { const st = getComputedStyle(e); return !((st.backgroundColor === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(st.backgroundColor)) && st.backgroundImage === 'none'); };
-    const chrome = Array.from(document.querySelectorAll('body *')).filter((e) => !e.closest('#fanous-street, #fanous-street-lights') && ['fixed', 'sticky'].includes(getComputedStyle(e).position) && paints(e))
-      .map((e) => e.getBoundingClientRect()).filter((r) => r.width && r.height && r.bottom > 0 && r.top < innerHeight);
-    const hit = (b: { x: number; y: number; w: number; h: number }) => chrome.some((r) => b.x < r.right && b.x + b.w > r.left && b.y < r.bottom && b.y + b.h > r.top);
-    return Array.from(document.querySelectorAll('#fanous-street .fs-l use')).map((u) => { const r = u.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; })
-      .filter((b) => b.y >= 0 && b.y + b.h <= innerHeight && b.x >= 0 && b.x + b.w <= innerWidth && !hit(b));
-  });
-  checkedOnScreen += boxes.length;
-  if (!boxes.length) return [];
-  const on = (await page.screenshot()).toString('base64');
-  await page.evaluate(() => { document.getElementById('fanous-street')!.style.visibility = 'hidden'; });
-  const off = (await page.screenshot()).toString('base64');
-  await page.evaluate(() => { document.getElementById('fanous-street')!.style.visibility = ''; });
-  return page.evaluate(async ({ on, off, boxes }) => {
-    const load = (b: string) => new Promise<HTMLImageElement>((res) => { const i = new Image(); i.onload = () => res(i); i.src = `data:image/png;base64,${b}`; });
-    const [a, b] = await Promise.all([load(on), load(off)]);
-    const px = (img: HTMLImageElement) => { const c = document.createElement('canvas'); c.width = img.width; c.height = img.height; const g = c.getContext('2d')!; g.drawImage(img, 0, 0); return g.getImageData(0, 0, c.width, c.height).data; };
-    const A = px(a), B = px(b), W = a.width, k = a.width / innerWidth;
-    const out: string[] = [];
-    for (const bx of boxes) {
-      const x0 = Math.round(bx.x * k), x1 = Math.round((bx.x + bx.w) * k), y0 = Math.round(bx.y * k), y1 = Math.round((bx.y + bx.h) * k);
-      let rows = 0;
-      for (let y = y0; y < y1; y++) {
-        for (let x = x0; x < x1; x++) { const i = (y * W + x) * 4; if (Math.abs(A[i]! - B[i]!) + Math.abs(A[i + 1]! - B[i + 1]!) + Math.abs(A[i + 2]! - B[i + 2]!) > 18) { rows++; break; } }
-      }
-      if (rows / (y1 - y0) < 0.85) out.push(`lantern at ${Math.round(bx.x)},${Math.round(bx.y)}: ${Math.round((100 * rows) / (y1 - y0))}% drawn`);
-    }
-    return out;
-  }, { on, off, boxes });
-}
-
 for (const scheme of SCHEMES) {
   test.describe(`street, ${scheme}`, () => {
     test.use({ colorScheme: scheme });
     for (const locale of LOCALES) {
-      test(`home ${locale}: garlands, nothing see-through, every lantern whole`, async ({ page }, info) => {
-        // iPhone, ar: a JS-placed garland hangs a lantern over the next post ("@900px lantern at 233,602:
-        // 79% drawn"), at any hour (the 06:30 seed anchor did not fix it: main failed at 07:41 UTC on
-        // 2026-11-14). The JS garlands are being replaced by the approved image street (the Fawanees www PR,
-        // AlUmmahNow #1266); drop this fixme when it lands.
-        test.fixme(info.project.name === 'iphone' && locale === 'ar', 'garland over a post on iphone ar; replaced by the image street (AlUmmahNow #1266)');
+      test(`home ${locale}: the picked tile behind the page, only it fetched, timeline frosted, nothing see-through`, async ({ page }) => {
         test.setTimeout(120_000);
-        await open(page, `/${locale}/?theme=fawanees`);
-        await stable(page);
-        // Phones: the home timeline on stage leaves no gap tall enough for a garland; the street becomes the full-page
-        // background instead (#69), so the lantern counts are checked on desktop only until then
-        const phone = info.project.name !== 'desktop';
-        if (!phone) expect(await page.locator('#fanous-street .fs-l').count(), 'lanterns on the page').toBeGreaterThan(0);
+        const fetched = await open(page, `/${locale}/?theme=fawanees`);
+        const s = await street(page);
+        expect(s.on, 'street on').toBe(true);
+        expect(s.variant, 'a variant picked before first paint').toMatch(/^[1-4]$/);
+        expect(s.tile, 'the street tile').toMatch(TILE);
+        expect(s.tile.match(TILE)?.[1], 'the picked variant').toBe(s.variant);
+        expect(s.tile.includes('-dark-'), `the ${scheme} tile`).toBe(scheme === 'dark');
+        expect(s.lights, 'distant lights').toMatch(/url\(/);
+        expect(s.repeat, 'repeated both ways').toBe('repeat');
+        expect(s.at, 'centred on the page').toMatch(/^50% 0(%|px)?$/);
+        expect(s.size, "shown at the tile's own size").toBe('auto');
+        expect(s.position, 'scrolls with the page').toBe('absolute');
+        expect(s.covers, 'down the whole page').toBe(true);
+        // Only the picked variant downloads (an unused variant's custom property fetches nothing)
+        expect([...fetched], 'tiles fetched').toEqual([s.tile.match(/street-tile[\w-]*\.webp/)![0]]);
+        const res = await page.request.get(`/fanous/street/${[...fetched][0]}`);
+        expect(res.status()).toBe(200);
+        expect(res.headers()['content-type']).toContain('image/webp');
+        // The timeline's light frost: a few px of blur, a faint tint, edges faded by a mask
+        expect(s.frost, 'timeline frost layer').not.toBeNull();
+        expect(s.frost!.blur, 'a light blur').toMatch(/^blur\([1-6]px\)$/);
+        expect(s.frost!.mask, 'soft edges').toMatch(/gradient/);
         const problems: string[] = [];
-        checkedOnScreen = 0;
         const maxY = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
         for (const depth of DEPTHS.filter((d) => d <= maxY)) {
           await page.evaluate((y) => window.scrollTo(0, y), depth);
           await page.waitForTimeout(300);
-          for (const s of await seeThrough(page)) problems.push(`@${depth}px see-through: ${s}`);
-          for (const c of await cutLanterns(page)) problems.push(`@${depth}px ${c}`);
+          for (const x of await seeThrough(page)) problems.push(`@${depth}px see-through: ${x}`);
         }
         expect(problems, problems.join('\n')).toEqual([]);
-        // The whole-lantern check must have looked at real lanterns
-        if (!phone) expect(checkedOnScreen, 'lanterns checked on screen').toBeGreaterThan(0);
       });
     }
   });
 }
 
-test('other themes draw no street', async ({ page }) => {
+test('a test can pin the street variant (visual snapshots stay stable)', async ({ page }) => {
+  await page.addInitScript(() => { (window as unknown as { __AUN_STREET_VARIANT__: number }).__AUN_STREET_VARIANT__ = 3; });
+  const fetched = await open(page, '/en/?theme=fawanees');
+  await expect(page.locator('html')).toHaveAttribute('data-fanous-street-variant', '3');
+  expect([...fetched].every((f) => /-3\.webp$/.test(f)), [...fetched].join(', ')).toBe(true);
+});
+
+test('other themes have no street and fetch no tile', async ({ page }) => {
   for (const theme of ['lantern', 'zujaj', 'nahas']) {
-    await page.goto(`/en/?theme=${theme}`);
-    await page.waitForLoadState('networkidle').catch(() => {});
+    const fetched = await open(page, `/en/?theme=${theme}`);
     await expect(page.locator('html'), theme).not.toHaveClass(/fanous-street/);
-    await expect(page.locator('#fanous-street'), theme).toHaveCount(0);
+    expect((await street(page)).tile, theme).toBe('none');
+    expect([...fetched], theme).toEqual([]);
   }
 });
 
-for (const motion of ['reduce', 'no-preference'] as const) {
-  test(`distant lights ${motion === 'reduce' ? 'stand still with reduced motion' : 'drift at 0.2x the scroll'}; no animations`, async ({ browser }, info) => {
-    test.skip(info.project.name !== 'desktop', 'one viewport is enough');
-    const context = await browser.newContext({ reducedMotion: motion, viewport: { width: 1366, height: 900 }, baseURL: info.project.use.baseURL });
-    const page = await context.newPage();
-    await page.goto('/en/?theme=fawanees');
-    await expect(page.locator('#fanous-street-lights')).toHaveCount(1);
-    // The lights move by a transform (no repaint), within one 260px tile
-    const pos = () => page.evaluate(() => {
-      const t = getComputedStyle(document.getElementById('fanous-street-lights')!).transform;
-      return t === 'none' ? 0 : Math.round(new DOMMatrix(t).m42 * 10) / 10;
-    });
-    expect(await pos()).toBe(0);
-    // The page may be shorter than 700px of scroll (stage content): expect 0.2x of where it really scrolled
-    await page.evaluate(() => window.scrollTo(0, 700));
-    const y = await page.evaluate(() => window.scrollY);
-    expect(y, 'the page scrolls').toBeGreaterThan(100);
-    const want = motion === 'reduce' ? 0 : Math.round(-((0.2 * y) % 260) * 10) / 10;
-    await expect.poll(pos).toBeCloseTo(want, 0);
-    // The background itself never moves (moving it would repaint the whole window every frame)
-    expect(await page.evaluate(() => getComputedStyle(document.getElementById('fanous-street-lights')!).backgroundPositionY)).toBe('0px');
-    const ours = await page.evaluate(() => document.getAnimations().filter((a) => {
+test('the street adds no element, fixed layer or animation', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'one viewport is enough');
+  await open(page, '/en/?theme=fawanees');
+  await expect(page.locator('html')).toHaveClass(/fanous-street/);
+  const r = await page.evaluate(() => ({
+    elements: document.querySelectorAll('#fanous-street, #fanous-street-lights').length,
+    fixed: [getComputedStyle(document.body, '::before').position, getComputedStyle(document.body, '::after').position].filter((p) => p === 'fixed').length,
+    animations: document.getAnimations().filter((a) => {
       const t = (a.effect as KeyframeEffect | null)?.target as Element | null;
-      return !!t && (t === document.documentElement || !!t.closest('#fanous-street, #fanous-street-lights'));
-    }).length);
-    expect(ours, 'the street runs no animations').toBe(0);
-    await context.close();
-  });
-}
+      return t === document.documentElement || t === document.body;
+    }).length,
+  }));
+  expect(r).toEqual({ elements: 0, fixed: 0, animations: 0 });
+});

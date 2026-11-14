@@ -3278,11 +3278,45 @@ html:not([data-js]) .ci-nav {
 }
 
 /* The lantern street (Fawanees; the shared module adds html.fanous-street): a flat page behind the
-   distant lights (no page gradient), and on phones the timeline cards stack edge to edge, so their
-   gaps grow enough for a garland of whole lanterns. */
+   street (no page gradient). The street runs unbroken behind the whole page, lanterns across the
+   full width: the timeline column, its heading block, day labels, sections and gaps paint no
+   background, so only real content (cards, media, the hero) covers it. Text that sits on the
+   street gets a soft halo of the page colour around its glyphs only, so it reads crisply where a
+   string or lantern passes behind it; the timeline column adds a light, soft-edged frost (below). */
 html.fanous-street { --page-bg: none; }
-@media (max-width: 767px) {
-  html.fanous-street .tl-list { gap: 76px; }
-  html.fanous-street .tl-day + .tl-day { margin-block-start: 56px; }
+html.fanous-street :is(.tl-head, .tl-date, .tl-card:not(.tl-bare) .tl-body, .tl-foot) {
+  text-shadow: 0 0 2px var(--bg), 0 0 6px var(--bg), 0 0 10px var(--bg);
 }
+/* A light frost over the street behind the timeline column (heading, day labels, rules and the
+   gaps between posts): a few px of blur and a faint tint of the page colour, so the street still
+   reads behind it, only softened. It is a layer behind the column's content (cards stay sharp and
+   opaque on top) whose edges fade out on all four sides: no band, no box edge. Light and dark use
+   the same treatment (the tint follows --bg). */
+html.fanous-street .tl-wrap {
+  position: relative;
+  z-index: 0;
+  --tl-frost-out: 0px;
+  --tl-frost-fade: 1rem;
+}
+@media (min-width: 48rem) {
+  html.fanous-street .tl-wrap { --tl-frost-out: 4rem; --tl-frost-fade: 6rem; }
+}
+html.fanous-street .tl-wrap::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -4rem calc(-1 * var(--tl-frost-out));
+  pointer-events: none;
+  background: color-mix(in srgb, var(--bg) 22%, transparent);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  --tl-frost-x: linear-gradient(90deg, transparent, #000 var(--tl-frost-fade), #000 calc(100% - var(--tl-frost-fade)), transparent);
+  --tl-frost-y: linear-gradient(transparent, #000 6rem, #000 calc(100% - 6rem), transparent);
+  -webkit-mask-image: var(--tl-frost-x), var(--tl-frost-y);
+  -webkit-mask-composite: source-in;
+  mask-image: var(--tl-frost-x), var(--tl-frost-y);
+  mask-composite: intersect;
+}
+
+
 
