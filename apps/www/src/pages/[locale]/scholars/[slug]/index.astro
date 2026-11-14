@@ -4,6 +4,11 @@
  * on the main site or not, card posts included; `?page=`), and their channel's latest public videos
  * from the videos API (`?after=` = the videos API cursor), embeddable in place. Both languages share
  * the slug; the bio and name follow the page's language with a fallback to the other.
+ *
+ * Every scholar gets this same full page, with or without a scholar site (AUN-SCHOLAR-SITES SS6: the
+ * page is fuelled by the channel's community posts either way). Only the head changes when the primary
+ * channel has a live site (lib/scholar-site.ts): canonical and og:url on the site's home page, hreflang
+ * on the site's languages. No site, or the lookup failed: canonical on this page.
  */
 import ArticlesList from '../../../../components/ArticlesList.astro';
 import Icon from '../../../../components/Icon.astro';
@@ -16,6 +21,7 @@ import { facadeHtml } from '../../../../lib/facade';
 import { otherLocale } from '../../../../lib/locale';
 import { pictureHtml } from '../../../../lib/picture';
 import { itemListLd, scholarLd } from '../../../../lib/seo';
+import { channelSite, siteHome } from '../../../../lib/scholar-site';
 import { CURSOR, fetchChannelVideos, localizeItem } from '../../../../lib/videos';
 
 const VIDEOS_PER_PAGE = 8;
@@ -36,7 +42,11 @@ if (res.status === 'unavailable') Astro.response.status = 503;
 const data = res.status === 'ok' ? res.data : null;
 const s = data?.scholar ?? null;
 const channelId = s?.channel_ids[0] ?? null;
-const videos = channelId ? await fetchChannelVideos(rc.videos, channelId, { cursor: after, limit: VIDEOS_PER_PAGE }) : { items: [], cursor: '' };
+// The site belongs to the primary channel (CMS primary_channel_id; older CMS builds: the first linked channel, which it is by definition)
+const [videos, site] = await Promise.all([
+  channelId ? fetchChannelVideos(rc.videos, channelId, { cursor: after, limit: VIDEOS_PER_PAGE }) : Promise.resolve({ items: [], cursor: '' }),
+  channelSite(rc.videos, s?.primary_channel_id ?? channelId),
+]);
 const items = videos.items.map((v) => localizeItem(v, locale));
 const posts = data?.posts ?? { items: [], page, limit: PAGE_SIZE, total: 0 };
 const pages = Math.max(1, Math.ceil(posts.total / PAGE_SIZE));
@@ -49,10 +59,11 @@ const qs = (p: number) => (p === 1 ? '' : `?page=${p}`);
 // Paged views (more articles, more videos) are not separate pages for search engines.
 const paged = page > 1 || after !== null;
 const channelHref = channelId ? channelUrl(cfg.videosWebUrl, { id: channelId, lang: locale }) : null;
+const siteSeo = site.kind === 'live' ? siteHome(site.link) : null;
 const title = s ? fmt(t.scholars.pageTitle, { name: s.name }) : t.errors.unavailableTitle;
 const jsonLd = s
   ? [
-      scholarLd(cfg, { name: s.name, url: base, description: s.bio, image: s.avatar?.url ?? null, locale, sameAs: channelHref ? [channelHref] : [] }),
+      scholarLd(cfg, { name: s.name, url: base, description: s.bio, image: s.avatar?.url ?? null, locale, sameAs: [...(siteSeo ? [siteSeo.canonical] : []), ...(channelHref ? [channelHref] : [])] }),
       // The scholar's videos as a list (their watch pages carry the VideoObject)
       ...[itemListLd(cfg, items, locale)].filter(Boolean),
     ]
@@ -70,6 +81,7 @@ const jsonLd = s
   jsonLd={jsonLd}
   noindex={!s || paged}
   feed={s ? { title: fmt(t.scholars.rss, { name: s.name }), href: `${base}rss.xml` } : null}
+  seoLinks={s ? siteSeo : null}
 >
   {s ? (
     <>

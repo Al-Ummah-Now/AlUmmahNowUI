@@ -97,7 +97,7 @@ interface CuratedSnapshot {
 | `/posts` | `locale`, `page` (1-based, default 1), `limit` (1–20, default 10) | `{ items: PostSummary[], page: number, limit: number, total: number }` newest first |
 | `/posts/:slug` | `locale` | `Post` or 404 |
 | `/cards` | `locale`, `tag` (optional), `page` (1-based, default 1), `limit` (1–24, default 12) | `{ items: PostSummary[], page: number, limit: number, total: number, tags: string[] }` card posts only, newest first; `tags` = every tag on this locale's live card posts (for the filter) |
-| `/sitemap` | — | `{ items: { type: 'page' \| 'post', locale: Locale, slug: string, updated_at: string }[] }` (pages with show_in_sitemap only) |
+| `/sitemap` | — | `{ items: { type: 'page' \| 'post', locale: Locale, slug: string, updated_at: string, translation_key?, ref_post_id?, ref_channel_id? }[], scholars?: { slug, updated_at, primary_channel_id? }[] }` (pages with show_in_sitemap only). `ref_*` and `primary_channel_id` are read when present (additive, AlUmmahNow#1215): www leaves out scholar pages and post references whose channel has a live scholar site. Without them every URL stays listed. The scholar answer (`/scholars/:slug`) may carry `primary_channel_id` too; without it www uses `channel_ids[0]` |
 | `/media/*` | — | the R2 object, `Cache-Control: public, max-age=31536000, immutable` |
 | `/media/*` | `w` (1–1600), `f` (`avif` \| `webp` \| `jpeg` \| `png`) | the variant: `Content-Type` of `f`, immutable cache, `X-Variant: hit`. Not made yet: the **original**, `Cache-Control: public, max-age=60, s-maxage=60`, `X-Variant: pending`, and the job is queued. Malformed `w`/`f` → 400 |
 

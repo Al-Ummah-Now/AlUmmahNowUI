@@ -65,6 +65,12 @@ every QA deploy and every promote.
   searches per viewer in localStorage (removable, "Clear recent searches"). No suggestions when the
   CMS doesn't answer; the full search page still works. Inventory: the header box (every page) and
   the box on the search page.
+- **Scholar sites** (`src/lib/scholar-site.ts`, AUN-SCHOLAR-SITES SS6/SS7): `GET {VIDEOS_API_URL}/api/sites/by-channel/:id`
+  (cached 5 min) says whether a scholar's primary channel has a live site. The pages never change for it: the
+  scholar page stays the full page (profile, posts, videos) and a post referencing the channel's community post
+  still renders. Only the head moves: the scholar page's canonical and og:url are the site's home page
+  (`https://{host}/{default}/`, hreflang on its languages), the post's are the site's post page
+  (`https://{host}/{l}/posts/{id}/`), and the sitemap leaves both out. A failed lookup keeps www canonical.
 - **Videos**: metadata from the videos API; only items it returns as public render (others are
   skipped and logged). `src/lib/embeds.ts` is the only place that builds videos-site URLs. Embeds
   are facades: thumbnail plus a real play button; the iframe loads on click. CMS markdown can embed

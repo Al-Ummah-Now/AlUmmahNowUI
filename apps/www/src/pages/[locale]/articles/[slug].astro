@@ -9,6 +9,7 @@ import { loadChrome, markSource, requestContext, routeLocale } from '../../../li
 import { otherLocale } from '../../../lib/locale';
 import { plainText } from '../../../lib/markdown';
 import { articleLd, videoObjectLd } from '../../../lib/seo';
+import { channelSite, REF_POST_ID, sitePostSeo } from '../../../lib/scholar-site';
 
 const locale = routeLocale(Astro);
 const slug = Astro.params.slug ?? '';
@@ -39,7 +40,15 @@ if (result.status === 'not_found') return new Response(null, { status: 404 });
 if (result.status === 'unavailable') Astro.response.status = 503;
 
 const post = result.status === 'ok' ? result.data : null;
-const body = post ? await renderBody(rc, post.body, post.locale, post.images) : null;
+// A post referencing a community post of a channel with a live site (AUN-SCHOLAR-SITES SS6): this page
+// still renders in full, only its canonical, og:url and hreflang point to the site's post page.
+// No site, or the lookup failed: this page is canonical.
+const ref = post?.ref && REF_POST_ID.test(post.ref.post_id) ? post.ref : null;
+const [body, site] = await Promise.all([
+  post ? renderBody(rc, post.body, post.locale, post.images) : Promise.resolve(null),
+  ref ? channelSite(rc.videos, ref.channel_id) : Promise.resolve(null),
+]);
+const siteSeo = post && ref && site?.kind === 'live' ? sitePostSeo(site.link, post.locale, ref.post_id) : null;
 const alternates = post ? documentAlternates(post, post.alternates, (l, s) => `/${l}/articles/${encodeURIComponent(s)}/`) : {};
 const translated = post && post.locale !== locale;
 const cardSeo = post ? cardPostSeo(post) : null;
@@ -52,7 +61,7 @@ const jsonLd = post
       articleLd(cfg, {
         title: post.title,
         description,
-        url: alternates[post.locale] ?? Astro.url.pathname,
+        url: siteSeo?.canonical ?? alternates[post.locale] ?? Astro.url.pathname,
         image: cardSeo?.image ?? null,
         published: post.published_at,
         modified: post.updated_at,
@@ -79,6 +88,7 @@ const jsonLd = post
   notice={post && translated ? fmt(t.lang.onlyIn, { language: t.lang.names[post.locale] }) : null}
   noticeLink={post && translated ? { href: alternates[post.locale]!, label: fmt(t.lang.readIn, { language: t.lang.names[post.locale] }), lang: post.locale } : null}
   contentLocale={post?.locale}
+  seoLinks={siteSeo}
 >
   {post && body ? (
     <PostArticle post={post} html={body.html} locale={locale} slide={slide} pathname={Astro.url.pathname} cmsOrigin={new URL(cfg.cmsPublicUrl).origin} videosWebUrl={cfg.videosWebUrl} />

@@ -5,10 +5,14 @@
  * - CMS pages and posts, with hreflang + x-default between the languages of one item
  *   (CMS translation_key), never a second copy of a static section;
  * - scholar pages in both languages.
+ * Scholar pages and scholar post references whose canonical is the scholar's own site (a live site,
+ * AUN-SCHOLAR-SITES SS7) are left out: that site's sitemap lists them (withoutSiteCanonicals).
  */
 import { escapeHtml as x } from './html';
 import { LOCALES, type Locale } from './locale';
 import type { SitemapResponse } from './cms-types';
+import type { SiteLookup } from './scholar-site';
+import { mapLimit } from './scholar-site';
 
 type Item = SitemapResponse['items'][number];
 type Scholar = NonNullable<SitemapResponse['scholars']>[number];
@@ -67,4 +71,32 @@ export function buildSitemap(siteUrl: string, items: Item[], scholars: Scholar[]
   }
 
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urls.join('\n')}\n</urlset>\n`;
+}
+
+/** Distinct channels looked up per sitemap build, at most (each lookup is up to 3 subrequests: cache read, fetch, cache write). */
+export const MAX_SITE_LOOKUPS = 150;
+const LOOKUP_CONCURRENCY = 8;
+const CHANNEL = /^[A-Za-z0-9_-]{1,64}$/;
+
+/**
+ * The sitemap without what is canonical on a scholar's site: scholar pages whose primary channel has
+ * a live site, and post references to that channel's community posts. A channel whose lookup failed
+ * (or past MAX_SITE_LOOKUPS) keeps its URLs here: www stays canonical until it knows otherwise.
+ */
+export async function withoutSiteCanonicals(
+  data: { items: Item[]; scholars: Scholar[] },
+  lookup: (channelId: string) => Promise<SiteLookup>,
+  log?: (message: string, data?: Record<string, unknown>) => void,
+): Promise<{ items: Item[]; scholars: Scholar[] }> {
+  const valid = (c: string | null | undefined): c is string => typeof c === 'string' && CHANNEL.test(c);
+  const channels = [...new Set([...data.scholars.map((s) => s.primary_channel_id), ...data.items.map((i) => (i.type === 'post' && i.ref_post_id ? i.ref_channel_id : null))].filter(valid))];
+  if (channels.length > MAX_SITE_LOOKUPS) log?.('sitemap: scholar site lookups capped', { channels: channels.length, max: MAX_SITE_LOOKUPS });
+  const checked = channels.slice(0, MAX_SITE_LOOKUPS);
+  const results = await mapLimit(checked, LOOKUP_CONCURRENCY, (c) => lookup(c).catch((): SiteLookup => ({ kind: 'unknown' })));
+  const live = new Set(checked.filter((_, i) => results[i]?.kind === 'live'));
+  if (!live.size) return data;
+  return {
+    items: data.items.filter((i) => !(i.type === 'post' && i.ref_post_id && valid(i.ref_channel_id) && live.has(i.ref_channel_id))),
+    scholars: data.scholars.filter((s) => !(valid(s.primary_channel_id) && live.has(s.primary_channel_id))),
+  };
 }
