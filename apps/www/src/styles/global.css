@@ -83,6 +83,8 @@ html[data-theme] {
   --header-shadow: 0 8px 24px -18px rgb(0 0 0 / 0.6);
   --page-head-bg: var(--fanous-color-surface);
   --page-head-glow: 0.12;
+  /* lantern light on reading pages (CMS pages, articles) on the lantern street: faint by day */
+  --reading-glow: 0.15;
   --solid-bg: var(--fanous-c-button-primary-bg);
   --solid-bg-hover: var(--fanous-c-button-primary-hover);
   --solid-edge: inset 0 0 0 1px var(--fanous-c-button-primary-border);
@@ -126,6 +128,7 @@ html[data-theme] {
     --header-shadow: 0 1px 0 rgb(255 255 255 / 0.03), 0 8px 24px -16px rgb(0 0 0 / 0.8);
     --page-head-bg: linear-gradient(180deg, var(--fanous-color-surface), var(--fanous-color-background));
     --hero-glow: 0.16;
+    --reading-glow: 0.6;
     --hero-shade: linear-gradient(180deg, color-mix(in srgb, var(--fanous-color-surface) 60%, transparent), color-mix(in srgb, var(--fanous-color-background) 85%, transparent));
     --hero-line: var(--fanous-color-divider);
     --hero-bg: var(--color-night);
@@ -154,6 +157,7 @@ html[data-theme][data-mode='dark'] {
   --header-shadow: 0 1px 0 rgb(255 255 255 / 0.03), 0 8px 24px -16px rgb(0 0 0 / 0.8);
   --page-head-bg: linear-gradient(180deg, var(--fanous-color-surface), var(--fanous-color-background));
   --hero-glow: 0.16;
+  --reading-glow: 0.6;
   --hero-shade: linear-gradient(180deg, color-mix(in srgb, var(--fanous-color-surface) 60%, transparent), color-mix(in srgb, var(--fanous-color-background) 85%, transparent));
   --hero-line: var(--fanous-color-divider);
   --hero-bg: var(--color-night);
@@ -3331,6 +3335,10 @@ html.fanous-street .reading > .wrap {
   --rd-frost-out: 0px;
   --rd-frost-fade: 1rem;
   --rd-section-pad: clamp(2.5rem, 6vw, 4.5rem);
+  /* Lantern light: the theme's own lantern colour (its primary: Fawanees gold), so every theme lights
+     it its own way, at --reading-glow (stronger at night, faint by day). */
+  --rd-gold: var(--fanous-color-primary);
+  --rd-glow: var(--reading-glow);
 }
 @media (min-width: 48rem) {
   html.fanous-street .reading > .wrap { --rd-frost-out: 4rem; --rd-frost-fade: 6rem; }
@@ -3341,7 +3349,12 @@ html.fanous-street .reading > .wrap::before {
   z-index: -1;
   inset: calc(-1 * var(--rd-section-pad)) calc(-1 * var(--rd-frost-out));
   pointer-events: none;
-  background: color-mix(in srgb, var(--bg) 22%, transparent);
+  /* The frost, lit warm from above as if by the lanterns: a soft gold light over the column's top,
+     a fainter pool lower down, on the usual page-colour tint. */
+  background:
+    radial-gradient(80% 30rem at 50% 0, color-mix(in srgb, var(--rd-gold) calc(var(--rd-glow) * 34%), transparent), transparent 75%),
+    radial-gradient(70% 26rem at 40% 75%, color-mix(in srgb, var(--rd-gold) calc(var(--rd-glow) * 20%), transparent), transparent 75%),
+    color-mix(in srgb, var(--bg) 22%, transparent);
   -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
   --rd-frost-x: linear-gradient(90deg, transparent, #000 var(--rd-frost-fade), #000 calc(100% - var(--rd-frost-fade)), transparent);
@@ -3351,8 +3364,14 @@ html.fanous-street .reading > .wrap::before {
   mask-image: var(--rd-frost-x), var(--rd-frost-y);
   mask-composite: intersect;
 }
+/* The halo: the page colour tight around the glyphs (it keeps the text's contrast against the
+   street), then a soft lantern-gold glow beyond it; headings glow a little warmer. The text colours
+   do not change. */
 html.fanous-street .reading :is(.prose, .section-tags, .blk-heading, .blk-caption, .blk-quote, .card-title, .card-date, .pagination > p, .articles-list, .rail-title, .rail-meta, .empty-note) {
-  text-shadow: 0 0 2px var(--bg), 0 0 6px var(--bg), 0 0 10px var(--bg);
+  text-shadow: 0 0 2px var(--bg), 0 0 6px var(--bg), 0 0 10px color-mix(in srgb, var(--fanous-color-primary) calc(var(--reading-glow) * 60%), transparent), 0 0 22px color-mix(in srgb, var(--fanous-color-primary) calc(var(--reading-glow) * 40%), transparent);
+}
+html.fanous-street .reading :is(.prose :is(h1, h2, h3, h4), .blk-heading, .card-title) {
+  text-shadow: 0 0 2px var(--bg), 0 0 6px var(--bg), 0 0 12px color-mix(in srgb, var(--fanous-color-primary) calc(var(--reading-glow) * 100%), transparent), 0 0 28px color-mix(in srgb, var(--fanous-color-primary) calc(var(--reading-glow) * 60%), transparent);
 }
 
 
