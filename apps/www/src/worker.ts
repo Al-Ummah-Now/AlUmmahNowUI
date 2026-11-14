@@ -19,6 +19,7 @@ import { THEME_HEADER, THEME_SOURCE_HEADER, resolveTheme, withThemeHeader } from
 import { config, type WwwEnv } from './lib/env';
 import { writeSnapshots } from './lib/snapshot-writer';
 import { wellKnownResponse } from './lib/well-known';
+import { withStreetVariant } from '../../../packages/render/src/street-variant';
 
 /** A client never chooses the theme header Astro reads. */
 function stripThemeHeader(request: Request): Request {
@@ -57,7 +58,9 @@ export function createExports(manifest: SSRManifest) {
           out.headers.set(THEME_SOURCE_HEADER, theme.source);
           return out;
         };
-        const served = await withHtmlCache(request, cache, waitUntil, render, Date.now, undefined, cfg.version, theme?.id ?? '');
+        const cached = await withHtmlCache(request, cache, waitUntil, render, Date.now, undefined, cfg.version, theme?.id ?? '');
+        // The street's tile variant, per response after the cache read (never in the cached copy)
+        const served = withStreetVariant(cached, request);
         const response = root ? rootResponse(served, new URL(request.url).pathname.split('/')[1] ?? 'en') : served;
         return applySecurityHeaders(response, cfg, new URL(request.url).pathname);
       },

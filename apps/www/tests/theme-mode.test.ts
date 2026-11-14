@@ -35,9 +35,8 @@ describe('theme mode', () => {
       const localStorage = { getItem, setItem: (k: string, v: string) => (saved[k] = v) };
       const matchMedia = () => ({ matches: prefersDark });
       new Function('document', 'localStorage', 'matchMedia', 'window', MODE_SCRIPT)(document, localStorage, matchMedia, {});
-      // Every load picks one of the street tile variants, whatever the mode or storage does
-      expect(attrs['data-fanous-street-variant']).toMatch(/^[1-4]$/);
-      delete attrs['data-fanous-street-variant'];
+      // The street's tile variant is the Worker's job now (packages/render/src/street-variant.ts)
+      expect(attrs['data-fanous-street-variant']).toBeUndefined();
       return { attrs, saved };
     };
     expect(run(() => 'dark').attrs).toEqual({ 'data-js': '', 'data-mode': 'dark' });
@@ -51,10 +50,4 @@ describe('theme mode', () => {
     }).attrs).toEqual({ 'data-js': '' });
   });
 
-  it('the head script lets a test pin the street tile variant', () => {
-    const attrs: Record<string, string> = {};
-    const document = { documentElement: { setAttribute: (k: string, v: string) => (attrs[k] = v) }, cookie: '' };
-    new Function('document', 'localStorage', 'matchMedia', 'window', MODE_SCRIPT)(document, { getItem: () => null }, () => ({ matches: false }), { __AUN_STREET_VARIANT__: 3 });
-    expect(attrs['data-fanous-street-variant']).toBe('3');
-  });
 });
