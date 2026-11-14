@@ -24,14 +24,19 @@ async function open(page: Page, path: string) {
   await expect(page.locator('html')).toHaveClass(/fanous-street/);
 }
 
-/** Waits until the module has stopped re-measuring (layout settles after images and fonts). */
+/**
+ * Waits until the module has stopped re-measuring (layout settles after images and fonts). The module
+ * waits for a quiet second and measures at most every 2 s, so a reading only counts as settled when it
+ * holds for longer than that.
+ */
 async function stable(page: Page) {
   let last = '';
-  for (let i = 0; i < 20; i++) {
-    const now = await page.evaluate(() => `${document.getElementById('fanous-street')?.innerHTML.length}:${document.documentElement.scrollHeight}`);
+  for (let i = 0; i < 10; i++) {
+    // The markup itself, not its length: a garland that moves keeps the same number of characters
+    const now = await page.evaluate(() => `${document.getElementById('fanous-street')?.innerHTML}:${document.documentElement.scrollHeight}`);
     if (now === last) return;
     last = now;
-    await page.waitForTimeout(350);
+    await page.waitForTimeout(2_200);
   }
 }
 
