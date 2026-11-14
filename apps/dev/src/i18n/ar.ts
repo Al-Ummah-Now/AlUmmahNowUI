@@ -124,10 +124,10 @@ export const ar: Strings = {
         title: 'شارك المرئيات',
         lead: 'تنشر القنوات بكل الأشكال التي تدعمها المنصة.',
         items: [
-          { title: 'المرئيات والمقاطع القصيرة', body: 'المقطع القصير مدته ثلاث دقائق أو أقل، وهو عمودي أو مربع، ويمكن لصاحبه أن يغيّر ذلك.', status: 'live', sources: [{ label: 'قاعدة المقاطع القصيرة', href: `${WIKI}/epics/CHAT-SHORTS-shorts-rule.md` }] },
-          { title: 'البث المباشر', body: 'ابدأ البث من الاستوديو وشاهده في صفحة البث. يعمل مزوّدان للبث جنبًا إلى جنب.', status: 'live', sources: [{ label: 'D3 مزوّد البث', href: `${WIKI}/epics/D3-live-provider.md` }] },
-          { title: 'المنشورات وقوائم التشغيل وأقسام القناة', body: 'منشورات المجتمع، وقوائم تشغيل شخصية وغير مدرجة، وصفحات قنوات مرتّبة في أقسام.', status: 'live', sources: [{ label: 'أقسام القناة', href: `${WIKI}/epics/AUN-CHANNEL-SECTIONS-channel-sections.md` }] },
-          { title: 'الرفع بدعوة حاليًا', body: 'رفع المرئيات وإنشاء القنوات بدعوة فقط. يمنح المشرفون صنّاع المحتوى مستوى، وقد تفتح الاشتراكات هذا لاحقًا.', status: 'live', sources: [{ label: 'O25', href: `${WIKI}/epics/decisions.md#o25-invite-only-uploads-with-admin-assigned-creator-tiers` }] },
+          { title: 'المرئيات والمقاطع القصيرة', body: 'المقطع القصير مدته ثلاث دقائق أو أقل، وهو عمودي أو مربع، ويمكن لصاحبه أن يغيّر ذلك.', feature: 'videos-and-shorts', sources: [{ label: 'قاعدة المقاطع القصيرة', href: `${WIKI}/epics/CHAT-SHORTS-shorts-rule.md` }] },
+          { title: 'البث المباشر', body: 'ابدأ البث من الاستوديو وشاهده في صفحة البث. يعمل مزوّدان للبث جنبًا إلى جنب.', feature: 'live-streams', sources: [{ label: 'D3 مزوّد البث', href: `${WIKI}/epics/D3-live-provider.md` }] },
+          { title: 'المنشورات وقوائم التشغيل وأقسام القناة', body: 'منشورات المجتمع، وقوائم تشغيل شخصية وغير مدرجة، وصفحات قنوات مرتّبة في أقسام.', feature: 'posts-playlists-sections', sources: [{ label: 'أقسام القناة', href: `${WIKI}/epics/AUN-CHANNEL-SECTIONS-channel-sections.md` }] },
+          { title: 'الرفع بدعوة حاليًا', body: 'رفع المرئيات وإنشاء القنوات بدعوة فقط. يمنح المشرفون صنّاع المحتوى مستوى، وقد تفتح الاشتراكات هذا لاحقًا.', feature: 'creator-tiers', sources: [{ label: 'O25', href: `${WIKI}/epics/decisions.md#o25-invite-only-uploads-with-admin-assigned-creator-tiers` }] },
         ] as Item[],
       },
       {
@@ -136,11 +136,11 @@ export const ar: Strings = {
         lead:
           'من حق الناس أن يشاركوا ما يحدث للأمة دون أن يختفي بصمت. هذه هي الغاية. وهي تعني عمليًا قواعد واضحة، وإبلاغًا مفتوحًا، وقرارات يتخذها البشر لا الأنظمة الآلية.',
         items: [
-          { title: 'قواعد منشورة', body: 'إرشادات المجتمع منشورة بالعربية والإنجليزية. هي القواعد، ولا توجد قائمة خفية.', status: 'live', sources: [{ label: 'E06', href: `${WIKI}/epics/E06-community-moderation.md` }] },
-          { title: 'الإبلاغ متاح للجميع', body: 'يمكن الإبلاغ عن المرئيات والتعليقات والقنوات والبث المباشر، مع حماية من البرامج الآلية في نموذج الإبلاغ.', status: 'live', sources: [{ label: 'الحماية من البرامج الآلية', href: `${WIKI}/guides/bot-protection.md` }] },
-          { title: 'الذكاء الاصطناعي يوقف، والبشر يقررون', body: 'الإشراف الآلي لا يحذف شيئًا أبدًا، بل يوقف المحتوى فقط ليراجعه إنسان. وهو يعمل اليوم في وضع التنبيه فقط على بيئة الاختبار.', status: 'building', sources: [{ label: 'E28 الإشراف بالذكاء الاصطناعي', href: `${WIKI}/epics/E28-ai-moderation.md` }] },
-          { title: 'لا تسامح مع مواد إساءة معاملة الأطفال', body: 'تُزال، وتُحفظ الأدلة تحت حجز قانوني، ويُبلَّغ عنها للجهات المختصة.', status: 'rolling', sources: [{ label: 'مواصفة الاستجابة', href: `${GH}/AlUmmahNow/blob/main/docs/specs/CSAM-RESPONSE.md` }] },
-          { title: 'تقارير الإشراف', body: 'ندرس نشر إحصاءات دورية عن الإشراف بالعربية والإنجليزية، ولم يُتخذ قرار بعد.', status: 'planned', sources: [{ label: 'M6', href: `${WIKI}/epics/decisions.md#m6-transparency-reporting` }] },
+          { title: 'قواعد منشورة', body: 'إرشادات المجتمع منشورة بالعربية والإنجليزية. هي القواعد، ولا توجد قائمة خفية.', feature: 'community-rules', sources: [{ label: 'E06', href: `${WIKI}/epics/E06-community-moderation.md` }] },
+          { title: 'الإبلاغ متاح للجميع', body: 'يمكن الإبلاغ عن المرئيات والتعليقات والقنوات والبث المباشر، مع حماية من البرامج الآلية في نموذج الإبلاغ.', feature: 'reporting', sources: [{ label: 'الحماية من البرامج الآلية', href: `${WIKI}/guides/bot-protection.md` }] },
+          { title: 'الذكاء الاصطناعي يوقف، والبشر يقررون', body: 'الإشراف الآلي لا يحذف شيئًا أبدًا، بل يوقف المحتوى فقط ليراجعه إنسان. ويعمل في بيئة الإنتاج في وضع الظل: يسجّل ما كان سيوقفه، ويفعّل المشرف الإيقاف لكل فئة على حدة.', feature: 'ai-moderation', sources: [{ label: 'E28 الإشراف بالذكاء الاصطناعي', href: `${WIKI}/epics/E28-ai-moderation.md` }] },
+          { title: 'لا تسامح مع مواد إساءة معاملة الأطفال', body: 'تُزال، وتُحفظ الأدلة تحت حجز قانوني، ويُبلَّغ عنها للجهات المختصة.', feature: 'csam-intake', sources: [{ label: 'مواصفة الاستجابة', href: `${GH}/AlUmmahNow/blob/main/docs/specs/CSAM-RESPONSE.md` }] },
+          { title: 'تقارير الإشراف', body: 'ندرس نشر إحصاءات دورية عن الإشراف بالعربية والإنجليزية، ولم يُتخذ قرار بعد.', feature: 'transparency-reports', sources: [{ label: 'M6', href: `${WIKI}/epics/decisions.md#m6-transparency-reporting` }] },
         ] as Item[],
       },
       {
@@ -148,10 +148,10 @@ export const ar: Strings = {
         title: 'تفاعل',
         lead: 'أن يتحدث الناس بعضهم مع بعض هو جوهر المجتمع.',
         items: [
-          { title: 'التعليقات والاشتراكات', body: 'علّق واشترك باسمك، دون أن تحتاج إلى قناة خاصة بك.', status: 'live', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md` }] },
-          { title: 'الإشعارات', body: 'جرس للمرئيات الجديدة من القنوات التي اشتركت فيها، وشارة تختفي على كل أجهزتك حين تفتحه.', status: 'live', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md#notification-badge-and-read-state` }] },
-          { title: 'التضمين', body: 'يمكن تضمين المرئيات والمقاطع القصيرة وقوائم التشغيل في مواقع أخرى، مع oEmbed ونافذة مشاركة.', status: 'live', sources: [{ label: 'E25', href: `${WIKI}/epics/E25-sharing-embeds.md` }] },
-          { title: 'روابط المشاركة القصيرة', body: 'روابط قصيرة على alummahnow.link للمرئيات والقنوات والمنشورات وقوائم التشغيل.', status: 'rolling', sources: [{ label: 'AUN-SHORT-LINKS', href: `${WIKI}/epics/AUN-SHORT-LINKS-short-share-links.md` }] },
+          { title: 'التعليقات والاشتراكات', body: 'علّق واشترك باسمك، دون أن تحتاج إلى قناة خاصة بك.', feature: 'comments-subscriptions', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md` }] },
+          { title: 'الإشعارات', body: 'جرس للمرئيات الجديدة من القنوات التي اشتركت فيها، وشارة تختفي على كل أجهزتك حين تفتحه.', feature: 'notifications', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md#notification-badge-and-read-state` }] },
+          { title: 'التضمين', body: 'يمكن تضمين المرئيات والمقاطع القصيرة وقوائم التشغيل في مواقع أخرى، مع oEmbed ونافذة مشاركة.', feature: 'embeds', sources: [{ label: 'E25', href: `${WIKI}/epics/E25-sharing-embeds.md` }] },
+          { title: 'روابط المشاركة القصيرة', body: 'روابط قصيرة على alummahnow.link للمرئيات والقنوات والمنشورات وقوائم التشغيل.', feature: 'short-links', sources: [{ label: 'AUN-SHORT-LINKS', href: `${WIKI}/epics/AUN-SHORT-LINKS-short-share-links.md` }] },
         ] as Item[],
       },
       {
@@ -159,9 +159,9 @@ export const ar: Strings = {
         title: 'تعلّم',
         lead: 'كثير مما تشاركه القنوات يُتعلَّم منه. وتحفظ المنصة كلمات صنّاع المحتوى وتصنيفاتهم كما هي.',
         items: [
-          { title: 'تصنيفات المحتوى', body: 'تحتفظ تصنيفات مثل التفسير والفقه وتلاوة القرآن والمحاضرات الإسلامية بأسمائها.', status: 'live', sources: [{ label: 'دليل أسلوب النصوص', href: `${WIKI}/guides/copy-tone.md` }] },
-          { title: 'صفحات العلماء ومواقعهم', body: 'صفحات للعلماء على www، ومواقع بهوية مستقلة للعلماء على alummahnow.org.', status: 'live', sources: [{ label: 'AUN-SEO', href: `${WIKI}/epics/AUN-SEO-search-visibility.md` }] },
-          { title: 'الترجمة النصية', body: 'ترجمة نصية بالعربية والإنجليزية، تؤخذ فيها آيات القرآن من النص الرسمي ويؤكدها صاحب المرئي.', status: 'planned', sources: [{ label: 'AUN-CAPTIONS', href: `${WIKI}/epics/AUN-CAPTIONS-transcription-translation.md` }] },
+          { title: 'تصنيفات المحتوى', body: 'تحتفظ تصنيفات مثل التفسير والفقه وتلاوة القرآن والمحاضرات الإسلامية بأسمائها.', feature: 'content-categories', sources: [{ label: 'دليل أسلوب النصوص', href: `${WIKI}/guides/copy-tone.md` }] },
+          { title: 'صفحات العلماء ومواقعهم', body: 'صفحات للعلماء على www، ومواقع بهوية مستقلة للعلماء على alummahnow.org.', feature: 'scholar-sites', sources: [{ label: 'AUN-SEO', href: `${WIKI}/epics/AUN-SEO-search-visibility.md` }] },
+          { title: 'تفريغ النصوص والترجمة النصية', body: 'يفرّغ صنّاع المحتوى نصوص مرئياتهم في الاستوديو، بدقائق يحددها مستواهم. وتُطابَق آيات القرآن مع النص الرسمي ويؤكدها صاحب المرئي. والترجمة إلى لغات أخرى مخطط لها.', feature: 'transcripts', sources: [{ label: 'AUN-CAPTIONS', href: `${WIKI}/epics/AUN-CAPTIONS-transcription-translation.md` }] },
         ] as Item[],
       },
       {
@@ -169,8 +169,8 @@ export const ar: Strings = {
         title: 'العربية والإنجليزية في كل مكان',
         lead: 'كل شاشة موجودة باللغتين، والعربية من اليمين إلى اليسار في كل مكان، لا ترجمة لاحقة.',
         items: [
-          { title: 'اللغتان في كل التطبيقات', body: 'الموقع العام، وموقع المرئيات، وتسجيل الدخول، ونظام إدارة المحتوى، والتطبيقات الأصلية.', status: 'live', sources: [{ label: 'E03', href: `${WIKI}/epics/E03-i18n-enhancement.md` }] },
-          { title: 'مصطلحات واحدة', body: 'الكلمات نفسها في كل التطبيقات، فلا يصادف المشاهد اسمين لشيء واحد.', status: 'live', sources: [{ label: 'المسرد', href: `${WIKI}/guides/glossary.md` }] },
+          { title: 'اللغتان في كل التطبيقات', body: 'الموقع العام، وموقع المرئيات، وتسجيل الدخول، ونظام إدارة المحتوى، والتطبيقات الأصلية.', feature: 'bilingual', sources: [{ label: 'E03', href: `${WIKI}/epics/E03-i18n-enhancement.md` }] },
+          { title: 'مصطلحات واحدة', body: 'الكلمات نفسها في كل التطبيقات، فلا يصادف المشاهد اسمين لشيء واحد.', sources: [{ label: 'المسرد', href: `${WIKI}/guides/glossary.md` }] },
         ] as Item[],
       },
     ],
@@ -187,36 +187,43 @@ export const ar: Strings = {
       {
         title: 'تطبيقات الويب',
         items: [
-          { title: 'موقع المرئيات', body: 'Next.js على Cloudflare Workers: صفحات المشاهدة، والاستوديو، والبث المباشر، والقنوات، وأدوات صنّاع المحتوى.', status: 'live', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md` }] },
-          { title: 'الموقع العام ومواقع العلماء', body: 'Astro على Workers، بحزمة عرض واحدة مشتركة والسمات نفسها.', status: 'live', sources: [{ label: 'AlUmmahNowUI', href: `${WIKI}/repos/AlUmmahNowUI.md` }] },
-          { title: 'لوحة الإدارة', body: 'أدوات الفريق مع تحديثات فورية عبر عامل للاتصال اللحظي، وصندوق رسائل التواصل، ولوحة لتوصيل المرئيات، وصفحة للأخطاء فيها زر إعادة المحاولة.', status: 'live', sources: [{ label: 'خريطة المنظومة', href: `${WIKI}/README.md#system-map` }] },
-          { title: 'نظام إدارة المحتوى', body: 'bknd على عامل Worker، بشاشات إدارة من صنعنا بدل شاشات bknd. يدير صفحات www والمقالات والخط الزمني للرئيسية.', status: 'live', sources: [{ label: 'AlUmmahNowCMS', href: `${WIKI}/repos/AlUmmahNowCMS.md` }] },
+          { title: 'موقع المرئيات', body: 'Next.js على Cloudflare Workers: صفحات المشاهدة، والاستوديو، والبث المباشر، والقنوات، وأدوات صنّاع المحتوى.', feature: 'videos-site', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md` }] },
+          { title: 'الموقع العام ومواقع العلماء', body: 'Astro على Workers، بحزمة عرض واحدة مشتركة والسمات نفسها.', feature: 'www-and-sites', sources: [{ label: 'AlUmmahNowUI', href: `${WIKI}/repos/AlUmmahNowUI.md` }] },
+          { title: 'لوحة الإدارة', body: 'أدوات الفريق مع تحديثات فورية عبر عامل للاتصال اللحظي، وصندوق رسائل التواصل، ولوحة لتوصيل المرئيات، وصفحة للأخطاء فيها زر إعادة المحاولة.', feature: 'videos-admin', sources: [{ label: 'خريطة المنظومة', href: `${WIKI}/README.md#system-map` }] },
+          { title: 'نظام إدارة المحتوى', body: 'bknd على عامل Worker، بشاشات إدارة من صنعنا بدل شاشات bknd. يدير صفحات www والمقالات والخط الزمني للرئيسية.', feature: 'cms', sources: [{ label: 'AlUmmahNowCMS', href: `${WIKI}/repos/AlUmmahNowCMS.md` }] },
         ] as Item[],
       },
       {
         title: 'الهوية',
         items: [
-          { title: 'الدخول الموحّد', body: 'نسختنا من OpenAuth: OAuth 2.0 وOpenID Connect مع PKCE. سجّل الدخول مرة تكن مسجّلًا في كل التطبيقات، وتسجيل الخروج ينهيه في كل مكان.', status: 'live', sources: [{ label: 'المصادقة', href: `${WIKI}/guides/authentication.md` }] },
-          { title: 'رموز قصيرة العمر', body: 'رمز الوصول صالح 15 دقيقة. ورموز التحديث تتجدد، وإعادة استخدام رمز قديم تُلغي العائلة كلها.', status: 'live', sources: [{ label: 'الرموز', href: `${WIKI}/guides/authentication.md#tokens` }] },
-          { title: 'مفاتيح المرور', body: 'الدخول بمفاتيح المرور مُطلق في خدمة الدخول. واشتراطها على الفريق مكتمل، ويُفعَّل بعد أن يسجّل المالك مفتاحه.', status: 'rolling', sources: [{ label: 'AUTH-PASSKEYS', href: `${WIKI}/epics/AUTH-PASSKEYS-passkeys-everywhere.md` }] },
+          { title: 'الدخول الموحّد', body: 'نسختنا من OpenAuth: OAuth 2.0 وOpenID Connect مع PKCE. سجّل الدخول مرة تكن مسجّلًا في كل التطبيقات، وتسجيل الخروج ينهيه في كل مكان.', feature: 'sso', sources: [{ label: 'المصادقة', href: `${WIKI}/guides/authentication.md` }] },
+          { title: 'رموز قصيرة العمر', body: 'رمز الوصول صالح 15 دقيقة. ورموز التحديث تتجدد، وإعادة استخدام رمز قديم تُلغي العائلة كلها.', feature: 'short-lived-tokens', sources: [{ label: 'الرموز', href: `${WIKI}/guides/authentication.md#tokens` }] },
+          { title: 'مفاتيح المرور', body: 'الدخول بمفاتيح المرور متاح على الويب وفي التطبيقات الأصلية. واشتراطها على فريق العمل مكتمل، ويبقى معطّلًا حتى يفعّله المشرف العام.', feature: 'passkeys', sources: [{ label: 'AUTH-PASSKEYS', href: `${WIKI}/epics/AUTH-PASSKEYS-passkeys-everywhere.md` }] },
         ] as Item[],
       },
       {
         title: 'التطبيقات الأصلية',
         items: [
-          { title: 'نواة Rust مشتركة', body: 'عميل الواجهة البرمجية، وتسجيل الدخول، والمزامنة، والرفع، ومحرّك وسائط بلغة Rust، مع ربط بلغات Swift وKotlin وC#.', status: 'building', sources: [{ label: 'AlUmmahNowCore', href: `${WIKI}/repos/AlUmmahNowCore.md` }] },
-          { title: 'Apple وAndroid وWindows وLinux والتلفاز', body: 'تطبيقات الاستوديو تعمل على أجهزة Apple وAndroid وWindows وLinux، ولتطبيقات Android وسطح المكتب إصدارات تجريبية على GitHub. تطبيقات المشاهدة والتلفاز قيد التطوير، ولا يوجد أي تطبيق في متجر عام بعد.', status: 'building', sources: [{ label: 'E23 هندسة الإصدارات', href: `${WIKI}/epics/E23-release-engineering.md` }] },
+          { title: 'نواة Rust مشتركة', body: 'عميل الواجهة البرمجية، وتسجيل الدخول، والمزامنة، والرفع، ومحرّك وسائط بلغة Rust، مع ربط بلغات Swift وKotlin وC#.', feature: 'rust-core', sources: [{ label: 'AlUmmahNowCore', href: `${WIKI}/repos/AlUmmahNowCore.md` }] },
+          { title: 'Apple وAndroid وWindows وLinux والتلفاز', body: 'تطبيقات الاستوديو تعمل على أجهزة Apple وAndroid وWindows وLinux، ولتطبيقات Android وسطح المكتب إصدارات تجريبية على GitHub. تطبيقات المشاهدة والتلفاز قيد التطوير، ولا يوجد أي تطبيق في متجر عام بعد.', feature: 'native-apps', sources: [{ label: 'E23 هندسة الإصدارات', href: `${WIKI}/epics/E23-release-engineering.md` }] },
         ] as Item[],
       },
       {
         title: 'التصميم والذكاء الاصطناعي',
         items: [
-          { title: 'نظام التصميم فانوس', body: 'أربع سمات مبنية على هوية الفانوس، ومجموعة رموز واحدة للويب والتطبيقات الأصلية، وتباين مفحوص في كل سمة.', status: 'live', sources: [{ label: 'السمات', href: `${WIKI}/guides/theming.md` }] },
-          { title: 'الإشراف بالذكاء الاصطناعي على Cloudflare', body: 'يفحص Workers AI المحتوى ولا يملك إلا إيقافه للمراجعة. ويعمل في وضع التنبيه فقط على بيئة الاختبار.', status: 'building', sources: [{ label: 'E28', href: `${WIKI}/epics/E28-ai-moderation.md` }] },
-          { title: 'الترجمة النصية', body: 'تحويل الكلام إلى نص على Workers AI هو المحرّك المقترح، ومكان تشغيله ما زال قرارًا مفتوحًا.', status: 'planned', sources: [{ label: 'AUN-CAPTIONS', href: `${WIKI}/epics/AUN-CAPTIONS-transcription-translation.md` }] },
+          { title: 'نظام التصميم فانوس', body: 'أربع سمات مبنية على هوية الفانوس، ومجموعة رموز واحدة للويب والتطبيقات الأصلية، وتباين مفحوص في كل سمة.', feature: 'fanous-themes', sources: [{ label: 'السمات', href: `${WIKI}/guides/theming.md` }] },
+          { title: 'الإشراف بالذكاء الاصطناعي على Cloudflare', body: 'يفحص Workers AI المحتوى ولا يملك إلا إيقافه للمراجعة. ويعمل في بيئة الإنتاج في وضع الظل.', feature: 'ai-moderation', sources: [{ label: 'E28', href: `${WIKI}/epics/E28-ai-moderation.md` }] },
+          { title: 'تفريغ النصوص', body: 'يجري التفريغ في مهام خلفية، وتُطابَق آيات القرآن مع فهرس محلي للنص الرسمي قبل أن يؤكدها صاحب المرئي.', feature: 'transcripts', sources: [{ label: 'AUN-CAPTIONS', href: `${WIKI}/epics/AUN-CAPTIONS-transcription-translation.md` }] },
         ] as Item[],
       },
     ],
+    features: {
+      title: 'كل الميزات وأين وصلت',
+      lead: 'مبنية من سجل الميزات في الويكي، المرجع المعتمد للمشروع. كل حالة هنا هي حالتها في السجل، وكل ميزة تعمل الآن تذكر الإصدار الذي وصلت فيه إلى المستخدمين.',
+      source: 'سجل الميزات، إيداع الويكي {sha}',
+      before: 'قبل {tag}',
+      wiki: 'الويكي',
+    },
     principlesTitle: 'كيف نبني',
     principles: [
       { title: 'غير متزامن دائمًا', body: 'الأعمال الثقيلة تمر عبر طوابير مع إعادة المحاولة وطوابير للرسائل المتعذّرة. وإذا فشل شيء ظهر في صفحة الأخطاء في لوحة الإدارة مع زر إعادة المحاولة.', sources: [{ label: 'O26', href: `${WIKI}/epics/decisions.md#o26-always-async-with-admin-visible-errors` }] },
@@ -249,10 +256,10 @@ export const ar: Strings = {
       { label: 'O32', href: `${WIKI}/epics/decisions.md#o32-run-bunny-and-r2-side-by-side-before-switching` },
     ],
     details: [
-      { title: 'مزوّدان جنبًا إلى جنب', body: 'يخدم Bunny وR2 بيئة الإنتاج معًا. ويُبلغ المشغّل عن زمن البدء والتقطّع والأخطاء لكل منهما، وتقارن الإدارة بينهما قبل تقرير التحويل.', status: 'live', sources: [{ label: 'O32', href: `${WIKI}/epics/decisions.md#o32-run-bunny-and-r2-side-by-side-before-switching` }] },
-      { title: 'روابط موقّعة لا تُحفظ', body: 'روابط التشغيل تُوقَّع مع كل استجابة ولا تُحفظ أبدًا. وصور المشاركة تبقى على نطاقنا فلا تنكسر معاينات الشبكات الاجتماعية.', status: 'live', sources: [{ label: 'الروابط الموقّعة', href: `${WIKI}/guides/video-delivery.md#signed-urls` }] },
-      { title: 'البث المباشر على مزوّدين', body: 'يعمل Bunny Stream Live ومسار مستضاف ذاتيًا معًا، وتُوزَّع البثوث الجديدة بينهما، ليكون الاختيار مبنيًا على البيانات.', status: 'live', sources: [{ label: 'D3', href: `${WIKI}/epics/D3-live-provider.md` }] },
-      { title: 'الأعطال ظاهرة', body: 'يُسجَّل كل تحويل فاشل مع مكانه وسببه. وبعد ثلاث محاولات فاشلة يظهر في صفحة الأخطاء مع زر إعادة المحاولة، ويواصل المشاهدون التشغيل من Bunny.', status: 'live', sources: [{ label: 'توصيل المرئيات', href: `${WIKI}/guides/video-delivery.md` }] },
+      { title: 'مزوّدان جنبًا إلى جنب', body: 'يعمل Bunny وR2 في بيئة الإنتاج خلف مفتاح في الإدارة، ويُشغَّل Bunny أولًا. ويُبلغ المشغّل عن زمن البدء والتقطّع والأخطاء لكل منهما، وتقارن الإدارة بينهما قبل تقرير التحويل.', feature: 'media-providers', sources: [{ label: 'O32', href: `${WIKI}/epics/decisions.md#o32-run-bunny-and-r2-side-by-side-before-switching` }] },
+      { title: 'روابط موقّعة لا تُحفظ', body: 'روابط التشغيل تُوقَّع مع كل استجابة ولا تُحفظ أبدًا. وصور المشاركة تبقى على نطاقنا فلا تنكسر معاينات الشبكات الاجتماعية.', feature: 'signed-urls', sources: [{ label: 'الروابط الموقّعة', href: `${WIKI}/guides/video-delivery.md#signed-urls` }] },
+      { title: 'البث المباشر على مزوّدين', body: 'يعمل Bunny Stream Live ومسار مستضاف ذاتيًا معًا، وتُوزَّع البثوث الجديدة بينهما، ليكون الاختيار مبنيًا على البيانات.', feature: 'live-streams', sources: [{ label: 'D3', href: `${WIKI}/epics/D3-live-provider.md` }] },
+      { title: 'الأعطال ظاهرة', body: 'يُسجَّل كل تحويل فاشل مع مكانه وسببه. وبعد ثلاث محاولات فاشلة يظهر في صفحة الأخطاء مع زر إعادة المحاولة، ويواصل المشاهدون التشغيل من Bunny.', feature: 'error-reporting', sources: [{ label: 'توصيل المرئيات', href: `${WIKI}/guides/video-delivery.md` }] },
     ] as Item[],
     environmentsTitle: 'ثلاث بيئات',
     environmentsLead: 'QA للاختبار، وstage مرشّحة للإصدار بشكل الإنتاج وبيانات خاصة بها، ثم الإنتاج.',

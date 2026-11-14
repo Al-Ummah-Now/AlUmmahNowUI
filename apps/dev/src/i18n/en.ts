@@ -8,6 +8,7 @@
 import { WIKI, GH, VIDEOS, WWW, STATUS_PAGE } from '../lib/links.ts';
 
 export type Status = 'live' | 'rolling' | 'building' | 'planned';
+/** A feature's status is never written here: `feature` is its id in the wiki's feature registry (src/lib/registry.ts). */
 export interface Link {
   label: string;
   href: string;
@@ -15,7 +16,7 @@ export interface Link {
 export interface Item {
   title: string;
   body: string;
-  status?: Status;
+  feature?: string;
   sources?: Link[];
 }
 
@@ -140,10 +141,10 @@ export const en = {
         title: 'Share videos',
         lead: 'Channels publish in every format the platform supports.',
         items: [
-          { title: 'Videos and Shorts', body: 'A Short is three minutes or less and vertical or square; the uploader can override it.', status: 'live', sources: [{ label: 'Shorts rule', href: `${WIKI}/epics/CHAT-SHORTS-shorts-rule.md` }] },
-          { title: 'Live streams', body: 'Go live from Studio and watch on the live page. Two live providers run side by side.', status: 'live', sources: [{ label: 'D3 live provider', href: `${WIKI}/epics/D3-live-provider.md` }] },
-          { title: 'Posts, playlists and channel sections', body: 'Community posts, personal and unlisted playlists, and channel pages arranged in sections.', status: 'live', sources: [{ label: 'Channel sections', href: `${WIKI}/epics/AUN-CHANNEL-SECTIONS-channel-sections.md` }] },
-          { title: 'Uploads by invitation for now', body: 'Uploading and creating channels are invite-only. Admins give creators a tier; subscriptions may open this up later.', status: 'live', sources: [{ label: 'O25', href: `${WIKI}/epics/decisions.md#o25-invite-only-uploads-with-admin-assigned-creator-tiers` }] },
+          { title: 'Videos and Shorts', body: 'A Short is three minutes or less and vertical or square; the uploader can override it.', feature: 'videos-and-shorts', sources: [{ label: 'Shorts rule', href: `${WIKI}/epics/CHAT-SHORTS-shorts-rule.md` }] },
+          { title: 'Live streams', body: 'Go live from Studio and watch on the live page. Two live providers run side by side.', feature: 'live-streams', sources: [{ label: 'D3 live provider', href: `${WIKI}/epics/D3-live-provider.md` }] },
+          { title: 'Posts, playlists and channel sections', body: 'Community posts, personal and unlisted playlists, and channel pages arranged in sections.', feature: 'posts-playlists-sections', sources: [{ label: 'Channel sections', href: `${WIKI}/epics/AUN-CHANNEL-SECTIONS-channel-sections.md` }] },
+          { title: 'Uploads by invitation for now', body: 'Uploading and creating channels are invite-only. Admins give creators a tier; subscriptions may open this up later.', feature: 'creator-tiers', sources: [{ label: 'O25', href: `${WIKI}/epics/decisions.md#o25-invite-only-uploads-with-admin-assigned-creator-tiers` }] },
         ] as Item[],
       },
       {
@@ -152,11 +153,11 @@ export const en = {
         lead:
           'People should be able to share what is happening to the Ummah without it quietly disappearing. That is the aim. In practice it means clear rules, open reporting, and people, not automated systems, making the decisions.',
         items: [
-          { title: 'Published rules', body: 'The Community Guidelines are public in Arabic and English. They are the rules; there is no hidden list.', status: 'live', sources: [{ label: 'E06', href: `${WIKI}/epics/E06-community-moderation.md` }] },
-          { title: 'Anyone can report', body: 'Videos, comments, channels and live streams can be reported, with bot protection on the report form.', status: 'live', sources: [{ label: 'Bot protection', href: `${WIKI}/guides/bot-protection.md` }] },
-          { title: 'AI holds, people decide', body: 'Automated moderation never deletes anything. It can only hold content for a person to review. It runs in flag-only mode on our test environment today.', status: 'building', sources: [{ label: 'E28 AI moderation', href: `${WIKI}/epics/E28-ai-moderation.md` }] },
-          { title: 'No tolerance for child abuse material', body: 'It is removed, the evidence is preserved under a legal hold, and it is reported to the authorities.', status: 'rolling', sources: [{ label: 'CSAM response spec', href: `${GH}/AlUmmahNow/blob/main/docs/specs/CSAM-RESPONSE.md` }] },
-          { title: 'Moderation reports', body: 'We are considering publishing regular moderation statistics in Arabic and English. No decision has been made yet.', status: 'planned', sources: [{ label: 'M6', href: `${WIKI}/epics/decisions.md#m6-transparency-reporting` }] },
+          { title: 'Published rules', body: 'The Community Guidelines are public in Arabic and English. They are the rules; there is no hidden list.', feature: 'community-rules', sources: [{ label: 'E06', href: `${WIKI}/epics/E06-community-moderation.md` }] },
+          { title: 'Anyone can report', body: 'Videos, comments, channels and live streams can be reported, with bot protection on the report form.', feature: 'reporting', sources: [{ label: 'Bot protection', href: `${WIKI}/guides/bot-protection.md` }] },
+          { title: 'AI holds, people decide', body: 'Automated moderation never deletes anything. It can only hold content for a person to review. In production it runs in shadow mode: it records what it would hold, and an admin switches holding on per category.', feature: 'ai-moderation', sources: [{ label: 'E28 AI moderation', href: `${WIKI}/epics/E28-ai-moderation.md` }] },
+          { title: 'No tolerance for child abuse material', body: 'It is removed, the evidence is preserved under a legal hold, and it is reported to the authorities.', feature: 'csam-intake', sources: [{ label: 'CSAM response spec', href: `${GH}/AlUmmahNow/blob/main/docs/specs/CSAM-RESPONSE.md` }] },
+          { title: 'Moderation reports', body: 'We are considering publishing regular moderation statistics in Arabic and English. No decision has been made yet.', feature: 'transparency-reports', sources: [{ label: 'M6', href: `${WIKI}/epics/decisions.md#m6-transparency-reporting` }] },
         ] as Item[],
       },
       {
@@ -164,10 +165,10 @@ export const en = {
         title: 'Interact',
         lead: 'Talking to each other is the point of a community.',
         items: [
-          { title: 'Comments and subscriptions', body: 'Comment and subscribe as yourself, without needing a channel of your own.', status: 'live', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md` }] },
-          { title: 'Notifications', body: 'A bell for new videos from channels you subscribe to, with a badge that clears on every device when you open it.', status: 'live', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md#notification-badge-and-read-state` }] },
-          { title: 'Embeds', body: 'Videos, Shorts and playlists can be embedded on other sites, with oEmbed and a share dialog.', status: 'live', sources: [{ label: 'E25', href: `${WIKI}/epics/E25-sharing-embeds.md` }] },
-          { title: 'Short share links', body: 'Short links on alummahnow.link for videos, channels, posts and playlists.', status: 'rolling', sources: [{ label: 'AUN-SHORT-LINKS', href: `${WIKI}/epics/AUN-SHORT-LINKS-short-share-links.md` }] },
+          { title: 'Comments and subscriptions', body: 'Comment and subscribe as yourself, without needing a channel of your own.', feature: 'comments-subscriptions', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md` }] },
+          { title: 'Notifications', body: 'A bell for new videos from channels you subscribe to, with a badge that clears on every device when you open it.', feature: 'notifications', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md#notification-badge-and-read-state` }] },
+          { title: 'Embeds', body: 'Videos, Shorts and playlists can be embedded on other sites, with oEmbed and a share dialog.', feature: 'embeds', sources: [{ label: 'E25', href: `${WIKI}/epics/E25-sharing-embeds.md` }] },
+          { title: 'Short share links', body: 'Short links on alummahnow.link for videos, channels, posts and playlists.', feature: 'short-links', sources: [{ label: 'AUN-SHORT-LINKS', href: `${WIKI}/epics/AUN-SHORT-LINKS-short-share-links.md` }] },
         ] as Item[],
       },
       {
@@ -175,9 +176,9 @@ export const en = {
         title: 'Get educated',
         lead: 'Much of what channels share is there to learn from. The platform keeps the creators’ own words and categories.',
         items: [
-          { title: 'Content categories', body: 'Categories such as Tafsir, Fiqh, Quran recitation and Islamic Lectures keep their names.', status: 'live', sources: [{ label: 'Copy tone guide', href: `${WIKI}/guides/copy-tone.md` }] },
-          { title: 'Scholar pages and scholar sites', body: 'Scholar pages on www, and white-label sites for scholars on alummahnow.org.', status: 'live', sources: [{ label: 'AUN-SEO', href: `${WIKI}/epics/AUN-SEO-search-visibility.md` }] },
-          { title: 'Captions and translation', body: 'Captions in Arabic and English, with Quran passages taken from the official text and confirmed by the creator.', status: 'planned', sources: [{ label: 'AUN-CAPTIONS', href: `${WIKI}/epics/AUN-CAPTIONS-transcription-translation.md` }] },
+          { title: 'Content categories', body: 'Categories such as Tafsir, Fiqh, Quran recitation and Islamic Lectures keep their names.', feature: 'content-categories', sources: [{ label: 'Copy tone guide', href: `${WIKI}/guides/copy-tone.md` }] },
+          { title: 'Scholar pages and scholar sites', body: 'Scholar pages on www, and white-label sites for scholars on alummahnow.org.', feature: 'scholar-sites', sources: [{ label: 'AUN-SEO', href: `${WIKI}/epics/AUN-SEO-search-visibility.md` }] },
+          { title: 'Transcripts and captions', body: 'Creators transcribe their videos in Studio, with caption minutes set by their tier. Quran passages are matched to the official text and confirmed by the creator. Translation is planned.', feature: 'transcripts', sources: [{ label: 'AUN-CAPTIONS', href: `${WIKI}/epics/AUN-CAPTIONS-transcription-translation.md` }] },
         ] as Item[],
       },
       {
@@ -185,8 +186,8 @@ export const en = {
         title: 'Arabic and English, everywhere',
         lead: 'Every screen exists in both languages, and Arabic is right-to-left throughout, not a translated afterthought.',
         items: [
-          { title: 'Both languages on every app', body: 'The public site, the videos site, sign-in, the CMS and the native apps.', status: 'live', sources: [{ label: 'E03', href: `${WIKI}/epics/E03-i18n-enhancement.md` }] },
-          { title: 'One vocabulary', body: 'The same words in every app, so a viewer never meets two names for one thing.', status: 'live', sources: [{ label: 'Glossary', href: `${WIKI}/guides/glossary.md` }] },
+          { title: 'Both languages on every app', body: 'The public site, the videos site, sign-in, the CMS and the native apps.', feature: 'bilingual', sources: [{ label: 'E03', href: `${WIKI}/epics/E03-i18n-enhancement.md` }] },
+          { title: 'One vocabulary', body: 'The same words in every app, so a viewer never meets two names for one thing.', sources: [{ label: 'Glossary', href: `${WIKI}/guides/glossary.md` }] },
         ] as Item[],
       },
     ],
@@ -203,36 +204,43 @@ export const en = {
       {
         title: 'Web apps',
         items: [
-          { title: 'Videos site', body: 'Next.js on Cloudflare Workers: watch pages, Studio, live, channels and the creator tools.', status: 'live', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md` }] },
-          { title: 'Public site and scholar sites', body: 'Astro on Workers, sharing one rendering package and the same themes.', status: 'live', sources: [{ label: 'AlUmmahNowUI', href: `${WIKI}/repos/AlUmmahNowUI.md` }] },
-          { title: 'Admin', body: 'Staff tools with live updates over a realtime Worker, a contact inbox, a delivery dashboard and an errors page with Retry.', status: 'live', sources: [{ label: 'System map', href: `${WIKI}/README.md#system-map` }] },
-          { title: 'CMS', body: 'bknd on a Worker, with our own admin screens in place of bknd’s. It runs the www pages, articles and the home timeline.', status: 'live', sources: [{ label: 'AlUmmahNowCMS', href: `${WIKI}/repos/AlUmmahNowCMS.md` }] },
+          { title: 'Videos site', body: 'Next.js on Cloudflare Workers: watch pages, Studio, live, channels and the creator tools.', feature: 'videos-site', sources: [{ label: 'AlUmmahNow', href: `${WIKI}/repos/AlUmmahNow.md` }] },
+          { title: 'Public site and scholar sites', body: 'Astro on Workers, sharing one rendering package and the same themes.', feature: 'www-and-sites', sources: [{ label: 'AlUmmahNowUI', href: `${WIKI}/repos/AlUmmahNowUI.md` }] },
+          { title: 'Admin', body: 'Staff tools with live updates over a realtime Worker, a contact inbox, a delivery dashboard and an errors page with Retry.', feature: 'videos-admin', sources: [{ label: 'System map', href: `${WIKI}/README.md#system-map` }] },
+          { title: 'CMS', body: 'bknd on a Worker, with our own admin screens in place of bknd’s. It runs the www pages, articles and the home timeline.', feature: 'cms', sources: [{ label: 'AlUmmahNowCMS', href: `${WIKI}/repos/AlUmmahNowCMS.md` }] },
         ] as Item[],
       },
       {
         title: 'Identity',
         items: [
-          { title: 'Single sign-on', body: 'Our fork of OpenAuth: OAuth 2.0 and OpenID Connect with PKCE. Sign in once and you are signed in on every app; sign out ends it everywhere.', status: 'live', sources: [{ label: 'Authentication', href: `${WIKI}/guides/authentication.md` }] },
-          { title: 'Short-lived tokens', body: 'Access tokens last 15 minutes. Refresh tokens rotate, and reusing an old one revokes the whole family.', status: 'live', sources: [{ label: 'Tokens', href: `${WIKI}/guides/authentication.md#tokens` }] },
-          { title: 'Passkeys', body: 'Passkey sign-in is released in the sign-in service. Requiring passkeys for staff is built and switched on once the owner has registered one.', status: 'rolling', sources: [{ label: 'AUTH-PASSKEYS', href: `${WIKI}/epics/AUTH-PASSKEYS-passkeys-everywhere.md` }] },
+          { title: 'Single sign-on', body: 'Our fork of OpenAuth: OAuth 2.0 and OpenID Connect with PKCE. Sign in once and you are signed in on every app; sign out ends it everywhere.', feature: 'sso', sources: [{ label: 'Authentication', href: `${WIKI}/guides/authentication.md` }] },
+          { title: 'Short-lived tokens', body: 'Access tokens last 15 minutes. Refresh tokens rotate, and reusing an old one revokes the whole family.', feature: 'short-lived-tokens', sources: [{ label: 'Tokens', href: `${WIKI}/guides/authentication.md#tokens` }] },
+          { title: 'Passkeys', body: 'Passkey sign-in is live on the web and in the native apps. Requiring passkeys for staff is built and stays off until a super admin switches it on.', feature: 'passkeys', sources: [{ label: 'AUTH-PASSKEYS', href: `${WIKI}/epics/AUTH-PASSKEYS-passkeys-everywhere.md` }] },
         ] as Item[],
       },
       {
         title: 'Native apps',
         items: [
-          { title: 'Shared Rust core', body: 'API client, sign-in, sync, uploads and a media engine in Rust, with bindings for Swift, Kotlin and C#.', status: 'building', sources: [{ label: 'AlUmmahNowCore', href: `${WIKI}/repos/AlUmmahNowCore.md` }] },
-          { title: 'Apple, Android, Windows, Linux and TVs', body: 'Studio apps work on Apple devices, Android, Windows and Linux, and Android and desktop have pre-releases on GitHub. Viewer and TV apps are in development. None is in a public app store yet.', status: 'building', sources: [{ label: 'E23 release engineering', href: `${WIKI}/epics/E23-release-engineering.md` }] },
+          { title: 'Shared Rust core', body: 'API client, sign-in, sync, uploads and a media engine in Rust, with bindings for Swift, Kotlin and C#.', feature: 'rust-core', sources: [{ label: 'AlUmmahNowCore', href: `${WIKI}/repos/AlUmmahNowCore.md` }] },
+          { title: 'Apple, Android, Windows, Linux and TVs', body: 'Studio apps work on Apple devices, Android, Windows and Linux, and Android and desktop have pre-releases on GitHub. Viewer and TV apps are in development. None is in a public app store yet.', feature: 'native-apps', sources: [{ label: 'E23 release engineering', href: `${WIKI}/epics/E23-release-engineering.md` }] },
         ] as Item[],
       },
       {
         title: 'Design and AI',
         items: [
-          { title: 'Fanous design system', body: 'Four themes built on the lantern identity, one set of tokens for web and native, and contrast checked in every theme.', status: 'live', sources: [{ label: 'Theming', href: `${WIKI}/guides/theming.md` }] },
-          { title: 'AI moderation on Cloudflare', body: 'Workers AI checks content and can only hold it for review. It runs in flag-only mode on our test environment.', status: 'building', sources: [{ label: 'E28', href: `${WIKI}/epics/E28-ai-moderation.md` }] },
-          { title: 'Captions', body: 'Speech-to-text on Workers AI is the recommended engine; where transcription runs is still an open decision.', status: 'planned', sources: [{ label: 'AUN-CAPTIONS', href: `${WIKI}/epics/AUN-CAPTIONS-transcription-translation.md` }] },
+          { title: 'Fanous design system', body: 'Four themes built on the lantern identity, one set of tokens for web and native, and contrast checked in every theme.', feature: 'fanous-themes', sources: [{ label: 'Theming', href: `${WIKI}/guides/theming.md` }] },
+          { title: 'AI moderation on Cloudflare', body: 'Workers AI checks content and can only hold it for review. Production runs it in shadow mode.', feature: 'ai-moderation', sources: [{ label: 'E28', href: `${WIKI}/epics/E28-ai-moderation.md` }] },
+          { title: 'Transcripts', body: 'Transcription runs as background jobs, and Quran passages are matched against a local index of the official text before the creator confirms them.', feature: 'transcripts', sources: [{ label: 'AUN-CAPTIONS', href: `${WIKI}/epics/AUN-CAPTIONS-transcription-translation.md` }] },
         ] as Item[],
       },
     ],
+    features: {
+      title: 'Every feature and where it stands',
+      lead: 'Built from the feature registry in the wiki, the project’s source of record. Each status is the registry’s own, and a live feature names the production release it shipped in.',
+      source: 'Feature registry, wiki commit {sha}',
+      before: 'before {tag}',
+      wiki: 'Wiki',
+    },
     principlesTitle: 'How we build',
     principles: [
       { title: 'Always asynchronous', body: 'Heavy work goes through queues with retries and dead-letter queues. When something fails, it shows up on the admin Errors page with a Retry button.', sources: [{ label: 'O26', href: `${WIKI}/epics/decisions.md#o26-always-async-with-admin-visible-errors` }] },
@@ -265,10 +273,10 @@ export const en = {
       { label: 'O32', href: `${WIKI}/epics/decisions.md#o32-run-bunny-and-r2-side-by-side-before-switching` },
     ],
     details: [
-      { title: 'Two providers, side by side', body: 'Bunny and R2 both serve production. Players report startup time, rebuffering and errors for each, and the admin compares them before deciding whether to switch.', status: 'live', sources: [{ label: 'O32', href: `${WIKI}/epics/decisions.md#o32-run-bunny-and-r2-side-by-side-before-switching` }] },
-      { title: 'Signed, never stored', body: 'Playback URLs are signed for each response and never saved. Share images stay on our own domain so previews on social networks don’t break.', status: 'live', sources: [{ label: 'Signed URLs', href: `${WIKI}/guides/video-delivery.md#signed-urls` }] },
-      { title: 'Live on two providers', body: 'Bunny Stream Live and a self-hosted path run together and new streams are shared between them, so the choice is made on data.', status: 'live', sources: [{ label: 'D3', href: `${WIKI}/epics/D3-live-provider.md` }] },
-      { title: 'Failures are visible', body: 'A failed transcode is recorded with where and why. After three failures it appears on the admin Errors page with Retry, and viewers keep playing from Bunny.', status: 'live', sources: [{ label: 'Video delivery', href: `${WIKI}/guides/video-delivery.md` }] },
+      { title: 'Two providers, side by side', body: 'Bunny and R2 both run in production behind an admin switch, and production plays Bunny first. Players report startup time, rebuffering and errors for each, and the admin compares them before deciding whether to switch.', feature: 'media-providers', sources: [{ label: 'O32', href: `${WIKI}/epics/decisions.md#o32-run-bunny-and-r2-side-by-side-before-switching` }] },
+      { title: 'Signed, never stored', body: 'Playback URLs are signed for each response and never saved. Share images stay on our own domain so previews on social networks don’t break.', feature: 'signed-urls', sources: [{ label: 'Signed URLs', href: `${WIKI}/guides/video-delivery.md#signed-urls` }] },
+      { title: 'Live on two providers', body: 'Bunny Stream Live and a self-hosted path run together and new streams are shared between them, so the choice is made on data.', feature: 'live-streams', sources: [{ label: 'D3', href: `${WIKI}/epics/D3-live-provider.md` }] },
+      { title: 'Failures are visible', body: 'A failed transcode is recorded with where and why. After three failures it appears on the admin Errors page with Retry, and viewers keep playing from Bunny.', feature: 'error-reporting', sources: [{ label: 'Video delivery', href: `${WIKI}/guides/video-delivery.md` }] },
     ] as Item[],
     environmentsTitle: 'Three environments',
     environmentsLead: 'QA for testing, stage as the release candidate with production’s shape and its own data, and production.',

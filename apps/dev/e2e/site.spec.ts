@@ -113,3 +113,26 @@ test('brand is the real logo and www’s wordmark, never a drawn mark', async ({
     expect(img).toBe('none|none');
   }
 });
+
+test('every status comes from the wiki’s feature registry the site was built from', async ({ page, request }) => {
+  const reg = (await (await request.get('/feature-registry.json')).json()) as { source: { sha: string }; features: { id: string; status: string; name: { en: string; ar: string } }[] };
+  expect(reg.features.length).toBeGreaterThan(0);
+  for (const locale of LOCALES) {
+    await page.goto(pagePath(locale, 'technology'));
+    for (const f of reg.features) {
+      const row = page.locator(`#feature-${f.id}`);
+      await expect(row).toHaveCount(1);
+      await expect(row.locator('.registry-name')).toHaveText(f.name[locale]);
+      // the row sits in its status's group
+      await expect(page.locator(`section[aria-labelledby="registry-${f.status}"] #feature-${f.id}`)).toHaveCount(1);
+    }
+    const sha = reg.source.sha === 'local' ? 'local' : reg.source.sha.slice(0, 7);
+    await expect(page.locator('.registry-source')).toContainText(sha);
+  }
+  // the chips on the other pages show the same status as the registry
+  const label = { en: { live: 'Live', rolling: 'Built, rolling out', building: 'In development', planned: 'Planned' } };
+  await page.goto(pagePath('en', 'community'));
+  const chips = await page.locator('.tile .chip').allTextContents();
+  expect(chips.length).toBeGreaterThan(0);
+  for (const c of chips) expect(Object.values(label.en)).toContain(c.trim());
+});
