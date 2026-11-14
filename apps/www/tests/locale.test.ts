@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { articlesPath, localeFromPath, negotiateLocale, statusPageUrl, swapLocale } from '../src/lib/locale';
 import { navHref } from '../src/lib/context';
-import { rootRedirect } from '../src/lib/edge';
+import { rootResponse, rootRewrite } from '../src/lib/edge';
 
 describe('negotiateLocale (for /)', () => {
   it('prefers the aun_locale cookie', () => {
@@ -28,16 +28,25 @@ describe('negotiateLocale (for /)', () => {
   });
 });
 
-describe('rootRedirect', () => {
-  it('302s / with Vary and private caching, keeping the query', () => {
-    const res = rootRedirect(new Request('https://www.alummahnow.net/?utm=x', { headers: { 'Accept-Language': 'ar' } }))!;
-    expect(res.status).toBe(302);
-    expect(res.headers.get('Location')).toBe('/ar/?utm=x');
-    expect(res.headers.get('Vary')).toBe('Cookie, Accept-Language');
-    expect(res.headers.get('Cache-Control')).toContain('private');
+describe('rootRewrite / rootResponse (no locale redirect)', () => {
+  it('serves / as the negotiated language page, keeping the query and headers', () => {
+    const req = rootRewrite(new Request('https://www.alummahnow.net/?utm=x', { headers: { 'Accept-Language': 'ar', Cookie: 'a=b' } }))!;
+    expect(req.url).toBe('https://www.alummahnow.net/ar/?utm=x');
+    expect(req.headers.get('Cookie')).toBe('a=b');
+    expect(rootRewrite(new Request('https://www.alummahnow.net/'))!.url).toBe('https://www.alummahnow.net/en/');
   });
-  it('leaves other paths alone', () => {
-    expect(rootRedirect(new Request('https://www.alummahnow.net/en/'))).toBeNull();
+  it('leaves other paths and non-GET requests alone', () => {
+    expect(rootRewrite(new Request('https://www.alummahnow.net/en/'))).toBeNull();
+    expect(rootRewrite(new Request('https://www.alummahnow.net/', { method: 'POST' }))).toBeNull();
+  });
+  it('the answer at / is private, varies on cookie and language, and names its language', async () => {
+    const page = new Response('<html></html>', { headers: { 'Cache-Control': 'public, max-age=0, s-maxage=60', 'Content-Type': 'text/html' } });
+    const res = rootResponse(page, 'ar');
+    expect(res.headers.get('Cache-Control')).toBe('private, no-cache');
+    expect(res.headers.get('Vary')).toBe('Cookie, Accept-Language');
+    expect(res.headers.get('Content-Language')).toBe('ar');
+    expect(res.headers.get('Content-Type')).toBe('text/html');
+    expect(await res.text()).toBe('<html></html>');
   });
 });
 
