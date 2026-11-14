@@ -21,7 +21,7 @@ const coverHtml = page.cover ? pictureHtml(page.cover, cmsOrigin, { sizes: SIZES
       {coverHtml && <Fragment set:html={coverHtml} />}
     </div>
   </header>
-  <div class="section">
+  <div class="section reading">
     <div class="wrap">
       {blocks ? (
         <Blocks blocks={blocks} locale={locale} contentLocale={page.locale} cfg={cfg} />
