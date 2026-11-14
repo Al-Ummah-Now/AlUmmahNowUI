@@ -96,6 +96,26 @@
   outline-offset: 2px;
 }
 
+/* the bar's first line never wraps: the links and search share what the brand and tools leave
+   (flex-basis 0: a long list of links scrolls in place instead of pushing the tools down) */
+.site-header .aun-header-primary {
+  flex: 1 1 0;
+}
+/* A site with a long list of links (apps/dev) adds .site-header--wide: the bar uses the full
+   width, and its links take their own row below 1280px instead of 1024px. */
+.site-header--wide {
+  --aun-header-max: none;
+}
+@media (max-width: 79.99rem) {
+  .site-header--wide .aun-header-primary {
+    order: 3;
+    flex: 0 0 100%;
+    padding-block-end: 0.5rem;
+  }
+  .site-header--wide .primary-nav {
+    margin-inline-start: -0.75rem;
+  }
+}
 /* below 1024px the links and the search take a row of their own under the bar (the links scroll) */
 @media (max-width: 63.99rem) {
   .site-header .aun-header-primary {
