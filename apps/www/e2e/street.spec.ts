@@ -133,13 +133,20 @@ for (const motion of ['reduce', 'no-preference'] as const) {
     const page = await context.newPage();
     await page.goto('/en/?theme=fawanees');
     await expect(page.locator('#fanous-street-lights')).toHaveCount(1);
-    const pos = () => page.evaluate(() => getComputedStyle(document.getElementById('fanous-street-lights')!).backgroundPositionY);
-    expect(await pos()).toBe('0px');
+    // The lights move by a transform (no repaint), within one 260px tile
+    const pos = () => page.evaluate(() => {
+      const t = getComputedStyle(document.getElementById('fanous-street-lights')!).transform;
+      return t === 'none' ? 0 : Math.round(new DOMMatrix(t).m42 * 10) / 10;
+    });
+    expect(await pos()).toBe(0);
     // The page may be shorter than 700px of scroll (stage content): expect 0.2x of where it really scrolled
     await page.evaluate(() => window.scrollTo(0, 700));
     const y = await page.evaluate(() => window.scrollY);
     expect(y, 'the page scrolls').toBeGreaterThan(100);
-    await expect.poll(pos).toBe(motion === 'reduce' ? '0px' : `${-Math.round(0.2 * y)}px`);
+    const want = motion === 'reduce' ? 0 : Math.round(-((0.2 * y) % 260) * 10) / 10;
+    await expect.poll(pos).toBeCloseTo(want, 0);
+    // The background itself never moves (moving it would repaint the whole window every frame)
+    expect(await page.evaluate(() => getComputedStyle(document.getElementById('fanous-street-lights')!).backgroundPositionY)).toBe('0px');
     const ours = await page.evaluate(() => document.getAnimations().filter((a) => {
       const t = (a.effect as KeyframeEffect | null)?.target as Element | null;
       return !!t && (t === document.documentElement || !!t.closest('#fanous-street, #fanous-street-lights'));
