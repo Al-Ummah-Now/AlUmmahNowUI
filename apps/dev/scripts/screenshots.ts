@@ -1,6 +1,6 @@
 /**
  * Full-page screenshots of every page for review (wiki AUN-DEV-SITE; UI PRs wait for the owner's look):
- * desktop 1440 and phone 390, English and Arabic, dark mode; plus light-mode shots of the home page.
+ * desktop 1440 and phone 390, English and Arabic, dark and light mode.
  *
  *   DEV_SITE_URL=http://127.0.0.1:4323 node --experimental-strip-types scripts/screenshots.ts [outDir]
  *
@@ -37,13 +37,14 @@ async function shoot(browser: Browser, mode: 'dark' | 'light', vp: keyof typeof 
 
 const browser = await chromium.launch();
 try {
-  for (const vp of Object.keys(VIEWPORTS) as (keyof typeof VIEWPORTS)[]) {
-    for (const locale of LOCALES) {
-      for (const slug of PAGES) await shoot(browser, 'dark', vp, locale, pagePath(locale, slug), slug || 'home');
-      await shoot(browser, 'dark', vp, locale, `/${locale}/no-such-page/`, '404');
+  for (const mode of ['dark', 'light'] as const) {
+    for (const vp of Object.keys(VIEWPORTS) as (keyof typeof VIEWPORTS)[]) {
+      for (const locale of LOCALES) {
+        for (const slug of PAGES) await shoot(browser, mode, vp, locale, pagePath(locale, slug), slug || 'home');
+        await shoot(browser, mode, vp, locale, `/${locale}/no-such-page/`, '404');
+      }
     }
   }
-  for (const vp of Object.keys(VIEWPORTS) as (keyof typeof VIEWPORTS)[]) await shoot(browser, 'light', vp, 'en', '/en/', 'home');
 } finally {
   await browser.close();
 }

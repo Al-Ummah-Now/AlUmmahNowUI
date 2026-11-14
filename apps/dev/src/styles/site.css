@@ -343,7 +343,7 @@ main:focus {
     radial-gradient(70% 90% at 50% -20%, rgb(255 255 255 / 0.9), transparent 60%), url('/brand/pattern.svg') repeat,
     linear-gradient(180deg, #fffbf2 0%, #fbf1dc 60%, #f3e5c8 100%);
   background-size:
-    auto,
+    100% 1px,
     auto,
     96px 96px,
     auto;
@@ -352,7 +352,7 @@ main:focus {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(38% 55% at 78% 46%, rgb(244 174 58 / 0.34), transparent 70%),
+    radial-gradient(38% 55% at 78% 46%, rgb(244 174 58 / 0.26), transparent 70%),
     radial-gradient(22% 30% at 78% 46%, rgb(255 236 190 / 0.7), transparent 70%);
   pointer-events: none;
 }
@@ -433,7 +433,7 @@ html[lang='ar'] .hero-wordmark {
     radial-gradient(60% 120% at 100% 0%, rgb(244 174 58 / 0.22), transparent 60%), url('/brand/pattern.svg') repeat,
     linear-gradient(180deg, #fffdf9, #f7eedd);
   background-size:
-    auto,
+    100% 1px,
     auto,
     96px 96px,
     auto;
@@ -1173,7 +1173,7 @@ html[lang='ar'] .hero-wordmark {
     radial-gradient(80% 60% at 50% 0%, rgb(255 250 238 / 0.85), transparent 70%), url('/brand/pattern.svg') repeat,
     linear-gradient(180deg, #f0e7d6, #e6d9c2);
   background-size:
-    auto,
+    100% 2px,
     auto,
     96px 96px,
     auto;
