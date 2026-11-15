@@ -295,6 +295,64 @@ for (const l of ['en', 'ar'] as const) {
   });
 }
 
+// Owner (2026-11-15): a scholar site keeps its own theme's colours in the shared header; the layout
+// and controls are every app's. The colours come only from the theme's --fanous-c-nav-* tokens.
+test('the header wears the site\'s own theme (nahas), from its nav tokens, never Fawanees\'; contrast holds', async ({ page }) => {
+  const read = () =>
+    page.evaluate(() => {
+      const probe = document.createElement('div');
+      document.body.append(probe);
+      const resolve = (token: string, prop: 'backgroundColor' | 'color' | 'borderTopColor') => {
+        probe.style.cssText = `background-color: var(${token}); color: var(${token}); border: 1px solid var(${token})`;
+        return getComputedStyle(probe)[prop];
+      };
+      const header = getComputedStyle(document.querySelector('.site-header')!);
+      const lang = getComputedStyle(document.querySelector('.aun-lang')!);
+      const out = {
+        header: header.backgroundColor,
+        langText: lang.color,
+        langBorder: lang.borderTopColor,
+        navBg: resolve('--fanous-c-nav-bg', 'backgroundColor'),
+        navText: resolve('--fanous-c-nav-text', 'color'),
+        navBorder: resolve('--fanous-c-nav-search-border', 'borderTopColor'),
+      };
+      probe.remove();
+      return out;
+    });
+  for (const scheme of ['light', 'dark'] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    for (const l of ['en', 'ar'] as const) {
+      await page.goto(at(HOSTS.both, `/${l}/`));
+      await expect(page.locator('html')).toHaveAttribute('data-theme', 'nahas');
+      const own = await read();
+      expect([own.header, own.langText, own.langBorder], `${scheme} ${l}`).toEqual([own.navBg, own.navText, own.navBorder]);
+      // the same page in Fawanees would have other colours: the site's theme is what shows
+      const fawanees = await page.evaluate(async () => {
+        document.documentElement.setAttribute('data-theme', 'fawanees');
+        await new Promise((r) => requestAnimationFrame(() => r(null)));
+        return getComputedStyle(document.querySelector('.site-header')!).backgroundColor;
+      });
+      expect(fawanees, `${scheme} ${l}`).not.toBe(own.header);
+      await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'nahas'));
+      // one line, the contract's height, in the site's theme
+      const phone = (page.viewportSize()?.width ?? 1366) < 640;
+      expect((await page.locator('.site-header').boundingBox())!.height).toBe(phone ? 56 : 64);
+      // the controls' contrast in the site's theme (and in the menu panel below 1024px)
+      const contrast = async (what: string) => {
+        const out = await new AxeBuilder({ page }).include('.site-header').withRules(['color-contrast']).analyze();
+        expect(out.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`), `${scheme} ${l} ${what}`).toEqual([]);
+      };
+      await contrast('bar');
+      if ((page.viewportSize()?.width ?? 1366) < 1024) {
+        await page.locator('.aun-menu-collapse').click();
+        await expect(page.locator('#site-menu')).toBeVisible();
+        await contrast('menu panel');
+        await page.keyboard.press('Escape');
+      }
+    }
+  }
+});
+
 test('a11y (WCAG 2.2 AA), header only: en and ar, light and dark, signed out', async ({ page }) => {
   for (const scheme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme: scheme });
