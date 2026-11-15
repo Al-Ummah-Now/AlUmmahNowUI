@@ -52,9 +52,10 @@ for (const l of LOCALES) {
 
   test(`${l}: one line on every screen, full width, one typeface; below 1024px the menu panel holds the links and search`, async ({ page }) => {
     const rtl = l === 'ar';
-    for (const [w, bar] of [[1440, 64], [1024, 64], [1023, 64], [800, 64], [390, 56]] as const) {
+    for (const [w, bar] of [[1440, 64], [1024, 64], [1023, 64], [800, 64], [430, 56], [412, 56], [390, 56]] as const) {
       await page.setViewportSize({ width: w, height: 844 });
       await page.goto(`/${l}/articles/`);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${w} no sideways scroll`).toBe(true);
       expect((await box(page, '.site-header')).height, `${w}`).toBe(bar);
       const mark = await box(page, '.aun-brand-mark');
       const menu = page.getByRole('button', { name: HEADER_LABELS[l].menu });

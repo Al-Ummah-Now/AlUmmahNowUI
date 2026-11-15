@@ -53,13 +53,16 @@ function site(host: string, over: Record<string, unknown>) {
   };
 }
 
+export const LONG_NAME = { en: 'Sheikh Mustafa Elbadry Institute for Islamic Studies and Quran Sciences', ar: 'معهد الشيخ مصطفى البدري للدراسات الإسلامية وعلوم القرآن الكريم' };
+
 type StubEntry = { site?: { status?: string; primaryHost?: string } } & Record<string, unknown>;
 
 export function stubSites(): Record<string, StubEntry | undefined> {
   return {
     [HOSTS.both]: site(HOSTS.both, {}),
     [HOSTS.arOnly]: site(HOSTS.arOnly, { themeRef: 'zujaj@1.0.0', locales: ['ar'], platformMark: 'required', name: { ar: 'موقع عربي' } }),
-    [HOSTS.custom]: site(HOSTS.custom, { themeRef: 'lantern@1.0.0', primaryKind: 'custom', platformMark: 'none' }),
+    // a long name: the header still holds one line (the wordmark truncates)
+    [HOSTS.custom]: site(HOSTS.custom, { themeRef: 'lantern@1.0.0', primaryKind: 'custom', platformMark: 'none', name: LONG_NAME }),
     [HOSTS.old]: { redirectTo: `http://${HOSTS.both}:${SITES_PORT}` },
     [HOSTS.setup]: undefined,
   };
