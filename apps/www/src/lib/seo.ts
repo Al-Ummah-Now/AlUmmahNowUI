@@ -11,12 +11,20 @@ export type Alternates = Partial<Record<Locale, string>>;
 export const absolute = (cfg: Config, path: string) => (/^https?:\/\//.test(path) ? path : `${cfg.siteUrl}${path}`);
 
 /**
- * og:image / twitter:image: always a 1200x630 JPEG (SHARE_CARD), so chat apps show the large preview
- * with the text under it: the page image's card made by the videos app (shareCardUrl: never a signed
- * URL, crawlers keep it for weeks), else the brand card (the owner's art, as supplied).
+ * og:image / twitter:image. A 1200x630 JPEG card (SHARE_CARD, `card: true`) whenever possible, so chat
+ * apps show the large preview with the text under it: the page image's card made by the videos app
+ * (shareCardUrl), or the brand card (the owner's art, as supplied) for a page without an image. A
+ * picture the videos app can't frame (not https on our hosts) is used as it is, without a declared
+ * size; a signed (expiring) one never is: crawlers keep it for weeks.
  */
-export const ogImageUrl = (cfg: Config, image: string | null | undefined) =>
-  absolute(cfg, shareCardUrl(cfg.videosWebUrl, image) || BRAND_CARD_PATH);
+export function ogImage(cfg: Config, image: string | null | undefined): { url: string; card: boolean } {
+  const card = shareCardUrl(cfg.videosWebUrl, image);
+  if (card) return { url: absolute(cfg, card), card: true };
+  const stable = stableImageUrl(cfg.videosWebUrl, image);
+  return stable ? { url: absolute(cfg, stable), card: false } : { url: absolute(cfg, BRAND_CARD_PATH), card: true };
+}
+
+export const ogImageUrl = (cfg: Config, image: string | null | undefined) => ogImage(cfg, image).url;
 
 export function hreflangLinks(cfg: Config, alternates: Alternates): { hreflang: string; href: string }[] {
   const links: { hreflang: string; href: string }[] = [];
