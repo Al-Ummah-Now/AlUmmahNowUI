@@ -90,7 +90,7 @@ test('one line on every screen, as www: below 1024px the links leave the bar for
       await page.setViewportSize({ width: w, height: 844 });
       await page.goto(pagePath(locale, 'infrastructure'));
       expect((await page.locator('.site-header').boundingBox())!.height, `${locale} ${w}`).toBe(bar);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${locale} ${w} no sideways scroll`).toBe(true);
       const menu = page.getByRole('button', { name: rtl ? 'القائمة' : 'Menu' });
       if (w >= 1024) {
         // full width: the brand 16px from the edge, mirrored in Arabic
