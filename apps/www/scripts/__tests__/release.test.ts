@@ -37,6 +37,19 @@ describe('wrangler config check', () => {
     bad.vars.ANDROID_APP_CERTS = JSON.stringify({ 'net.alummahnow.studio': [CI_ANDROID_CERT.toLowerCase()] });
     expect(checkWranglerConfig(bad)).toEqual(['production: vars.ANDROID_APP_CERTS must not list the CI pre-release key (production trusts Play-signed builds only)']);
   });
+  it('binds only this env\'s internal API key from the Secrets Store (newsletter), never another env\'s or a var', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mutating a parsed config fixture
+    const bad = structuredClone(real) as Record<string, any>;
+    bad.env.qa.secrets_store_secrets = [{ ...bad.env.qa.secrets_store_secrets[0], secret_name: 'internal-api-key' }];
+    bad.env.stage.secrets_store_secrets = [...bad.env.stage.secrets_store_secrets, { binding: 'OTHER', store_id: 'f8eddc9944d041919ed8dc7d08d32308', secret_name: 'google-oauth-client-secret-stage' }];
+    delete bad.secrets_store_secrets;
+    bad.vars.INTERNAL_API_KEY = 'x';
+    const errors = checkWranglerConfig(bad).join('\n');
+    expect(errors).toMatch(/qa: secrets_store_secrets must be exactly INTERNAL_API_KEY → internal-api-key-qa/);
+    expect(errors).toMatch(/stage: secrets_store_secrets must be exactly INTERNAL_API_KEY → internal-api-key-stage/);
+    expect(errors).toMatch(/production: secrets_store_secrets must be exactly INTERNAL_API_KEY → internal-api-key in store/);
+    expect(errors).toMatch(/production: INTERNAL_API_KEY must come from the Secrets Store, never a var/);
+  });
   it('requires the FEED namespace per env, separate from CONTENT_SNAPSHOT', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mutating a parsed config fixture
     const bad = structuredClone(real) as Record<string, any>;

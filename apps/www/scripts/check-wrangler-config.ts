@@ -21,7 +21,17 @@ interface Block {
   kv_namespaces?: { binding: string; id: string }[];
   version_metadata?: { binding: string };
   triggers?: { crons?: string[] };
+  secrets_store_secrets?: { binding: string; store_id: string; secret_name: string }[];
 }
+
+/** The account's Secrets Store (AlUmmahNow scripts/release/ensure-resources.ts SECRETS_STORE_ID). */
+export const SECRETS_STORE_ID = 'f8eddc9944d041919ed8dc7d08d32308';
+/**
+ * The only Secrets Store secret www reads, per env: the videos admin API's internal key (the same
+ * secret admin-api binds), for the newsletter (src/lib/newsletter.ts). Least privilege: one binding,
+ * this env's secret only, never another env's.
+ */
+export const INTERNAL_API_KEY_SECRET: Record<EnvName, string> = { production: 'internal-api-key', stage: 'internal-api-key-stage', qa: 'internal-api-key-qa' };
 interface WranglerConfig extends Block {
   main?: string;
   assets?: { directory?: string; binding?: string; run_worker_first?: boolean };
@@ -61,6 +71,12 @@ export function checkWranglerConfig(config: WranglerConfig): string[] {
     if (block.version_metadata?.binding !== 'CF_VERSION_METADATA') p('version_metadata binding CF_VERSION_METADATA is required (healthz version, release smoke)');
     // The single writer of the KV snapshots (src/lib/snapshot-writer.ts SNAPSHOT_CRON); triggers are not inherited.
     if (!(block.triggers?.crons ?? []).includes('*/5 * * * *')) p('triggers.crons must include "*/5 * * * *" (KV snapshot writer)');
+    const store = block.secrets_store_secrets ?? [];
+    const key = INTERNAL_API_KEY_SECRET[name];
+    if (store.length !== 1 || store[0]!.binding !== 'INTERNAL_API_KEY' || store[0]!.store_id !== SECRETS_STORE_ID || store[0]!.secret_name !== key) {
+      p(`secrets_store_secrets must be exactly INTERNAL_API_KEY → ${key} in store ${SECRETS_STORE_ID}`);
+    }
+    if (block.vars && 'INTERNAL_API_KEY' in block.vars) p('INTERNAL_API_KEY must come from the Secrets Store, never a var');
     if (block.vars && 'SESSION_SECRET' in block.vars) p('SESSION_SECRET must be a secret, never a var');
     if (name === 'production' && (block.vars?.ANDROID_APP_CERTS ?? '').toUpperCase().includes(CI_ANDROID_CERT)) {
       p('vars.ANDROID_APP_CERTS must not list the CI pre-release key (production trusts Play-signed builds only)');
