@@ -24,10 +24,18 @@ async function stubSuggest(page: Page, status = 200) {
   return seen;
 }
 
+/** The header's search box: in the bar from 1024px, in the menu panel below (opened first). */
+async function headerSearch(page: Page, name: string) {
+  const menu = page.locator('.site-header .aun-menu-collapse');
+  if (await menu.isVisible()) await menu.click();
+  return page.getByRole('combobox', { name });
+}
+const headerId = (page: Page) => ((page.viewportSize()?.width ?? 1366) >= 1024 ? 'site-search' : 'panel-search');
+
 test('ar: the header box suggests as you type, with the combobox ARIA, marks and keyboard', async ({ page }) => {
   const seen = await stubSuggest(page);
   await page.goto('/ar/');
-  const box = page.getByRole('combobox', { name: 'ابحث في المقالات' });
+  const box = await headerSearch(page, 'ابحث في المقالات');
   await expect(box).toHaveAttribute('aria-expanded', 'false');
   await box.fill('احمد');
   const list = page.getByRole('listbox');
@@ -37,7 +45,7 @@ test('ar: the header box suggests as you type, with the combobox ARIA, marks and
   await expect(list.getByRole('option')).toHaveCount(3);
   await expect(list.getByRole('group')).toHaveCount(2);
   await expect(list.locator('mark').first()).toHaveText('أَحمد');
-  await expect(page.locator('form[data-search] [role="status"]').first()).toHaveText('اقتراحان');
+  await expect(page.locator('form[data-search]:visible [role="status"]')).toHaveText('اقتراحان');
 
   const results = await new AxeBuilder({ page }).include('form[data-search]').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
   expect(results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
@@ -53,7 +61,7 @@ test('ar: the header box suggests as you type, with the combobox ARIA, marks and
 test('en: Enter with no suggestion picked runs the full search; the search is remembered', async ({ page }) => {
   await stubSuggest(page);
   await page.goto('/en/');
-  const box = page.getByRole('combobox', { name: 'Search articles' });
+  const box = await headerSearch(page, 'Search articles');
   await box.fill('prayer times');
   await box.press('Enter');
   await expect(page).toHaveURL(/\/en\/search\?q=prayer\+times$/);
@@ -62,18 +70,22 @@ test('en: Enter with no suggestion picked runs the full search; the search is re
   await expect(pageBox).toHaveValue('prayer times');
 
   // The empty header box shows the recent search on focus.
-  await expect(page.locator('form[data-search][data-enhanced="true"]')).toHaveCount(2);
-  const header = page.locator('#site-search-input');
+  // the bar's box, the menu panel's box (the same search below 1024px) and the page's
+  await expect(page.locator('form[data-search][data-enhanced="true"]')).toHaveCount(3);
+  const id = headerId(page);
+  await headerSearch(page, 'Search articles');
+  const header = page.locator(`#${id}-input`);
+  await expect(header).toBeVisible();
   await header.focus();
-  await expect(page.locator('#site-search-list').getByRole('option')).toHaveText(['prayer times×']);
-  await page.getByRole('button', { name: 'Clear recent searches' }).first().click();
-  await expect(page.locator('#site-search-list')).toBeHidden();
+  await expect(page.locator(`#${id}-list`).getByRole('option')).toHaveText(['prayer times×']);
+  await page.locator(`#${id}-list`).locator('xpath=..').getByRole('button', { name: 'Clear recent searches' }).click();
+  await expect(page.locator(`#${id}-list`)).toBeHidden();
 });
 
 test('en: the suggest endpoint failing leaves the full search working', async ({ page }) => {
   await stubSuggest(page, 404);
   await page.goto('/en/');
-  const box = page.getByRole('combobox', { name: 'Search articles' });
+  const box = await headerSearch(page, 'Search articles');
   await box.fill('ramadan');
   await page.waitForTimeout(400);
   await expect(page.getByRole('listbox')).toBeHidden();

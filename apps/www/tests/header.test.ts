@@ -15,19 +15,34 @@ const markup = HEADER.slice(HEADER.indexOf('<header'));
 describe('www header = the header contract', () => {
   it('takes every shared piece from the builders, none written by hand', () => {
     expect(HEADER).toContain("from '../../../../packages/render/src/nav/header.js'");
-    for (const call of ['brandHtml(', 'envBadgeHtml(cfg.appEnv', 'appLinksHtml(', 'langButtonHtml(', 'signInHtml(']) expect(markup, call).toContain(call);
+    for (const call of ['menuButtonHtml(', 'brandHtml(', 'envBadgeHtml(cfg.appEnv', 'appLinksHtml(', 'langButtonHtml(', 'signInHtml(']) expect(markup, call).toContain(call);
     for (const cls of ['aun-brand', 'aun-env', 'aun-apps', 'aun-app', 'aun-lang', 'aun-signin']) expect(markup, cls).not.toContain(`class="${cls}`);
   });
 
-  it('keeps the contract order: brand, env, links + search, app links, language, light/dark, account', () => {
+  it('keeps the contract order: menu, brand, env, links + search, app links, language, light/dark, account', () => {
     expect(HEADER_ORDER).toEqual(['menu', 'brand', 'env', 'primary', 'actions', 'apps', 'lang', 'mode', 'account']);
     const at = (s: string) => {
       const i = markup.indexOf(s);
       expect(i, s).toBeGreaterThanOrEqual(0);
       return i;
     };
-    const order = ['brandHtml(', 'envBadgeHtml(', 'class="aun-header-primary"', 'appLinksHtml(', 'langButtonHtml(', 'class="aun-icon-btn aun-mode"', 'id="account"', 'signInHtml('].map(at);
+    const order = ['menuButtonHtml(', 'brandHtml(', 'envBadgeHtml(', 'class="aun-header-primary aun-collapse"', 'appLinksHtml(', 'langButtonHtml(', 'class="aun-icon-btn aun-mode"', 'id="account"', 'signInHtml('].map(at);
     expect(order).toEqual([...order].sort((a, b) => a - b));
+  });
+
+  it('one line on every screen: the links and search collapse into the menu panel below 1024px', () => {
+    expect(markup).toContain("menuButtonHtml({ lang: locale, panel: 'site-menu' })");
+    expect(markup).toContain('class="aun-header-primary aun-collapse"');
+    const panel = markup.slice(markup.indexOf('<div id="site-menu" class="aun-header-panel" popover>'));
+    expect(panel.length).toBeLessThan(markup.length);
+    expect(markup.indexOf('id="site-menu"')).toBeLessThan(markup.indexOf('</header>'));
+    expect(panel).toContain('aria-current={current(i.href)}');
+    expect(panel).toContain('<SearchBox cfg={cfg} locale={locale} id="panel-search" />');
+  });
+
+  it('full width and the contract\'s typeface: header.css has no centring, row moves or header font', () => {
+    const css = readFileSync('src/styles/header.css', 'utf8');
+    for (const gone of ['--aun-header-max', 'min-height: var(--aun-header-height)', 'order: 3', 'site-header--wide', '.aun-brand-name:lang(ar)']) expect(css, gone).not.toContain(gone);
   });
 
   it('the Light / Dark button is modeButtonHtml\'s (same element, class, id, test id, name and title)', () => {

@@ -3,8 +3,8 @@
  * imports this file as it is). The bar, brand, environment badge, app links, language, light/dark
  * and Sign in / account controls are the shared contract (AlUmmahNow docs/design/NAV.md "Header":
  * aun-nav.generated.css, markup from packages/render/src/nav/header.js); this file holds only what
- * www adds: its header tokens, its own links and search in the primary slot and their phone rows.
- * Page tokens it reads: --header-bg, --header-shadow, --color-lantern, --wide, --gutter, --font-arabic.
+ * www adds: its header tokens, its own links and search in the primary slot and in the menu panel.
+ * Page tokens it reads: --header-bg, --header-shadow, --color-lantern.
  * Breakpoints are the contract's only: 1280, 1024, 768, 640 and 400px.
  */
 
@@ -31,19 +31,11 @@
   color: var(--text);
 }
 
-/* ---------- bar (.aun-header: 64px, 56px below 640px, sticky) ---------- */
+/* ---------- bar (.aun-header: 64px, 56px below 640px, sticky, full width, one typeface) ---------- */
 .site-header {
-  /* the page's header material, and the row lined up with the page's content column */
+  /* the page's header material */
   --aun-header-bg: var(--header-bg);
-  --aun-header-max: calc(var(--wide) - 2 * var(--gutter));
   box-shadow: var(--header-shadow);
-}
-/* the first line keeps the bar's height when www's links and search wrap to rows of their own */
-.site-header .aun-header-tools {
-  min-height: var(--aun-header-height);
-}
-.site-header .aun-brand-name:lang(ar) {
-  font-family: var(--font-arabic);
 }
 
 /* ---------- www's own links and search (.aun-header-primary) ---------- */
@@ -96,46 +88,31 @@
   outline-offset: 2px;
 }
 
-/* the bar's first line never wraps: the links and search share what the brand and tools leave
-   (flex-basis 0: a long list of links scrolls in place instead of pushing the tools down) */
+/* the bar is one line: the links and search share what the brand and tools leave (flex-basis 0: a
+   long list of links scrolls in place instead of pushing the tools down). Below 1024px they leave
+   the bar (.aun-collapse, aun-nav.generated.css) for the menu panel. */
 .site-header .aun-header-primary {
   flex: 1 1 0;
 }
-/* A site with a long list of links (apps/dev) adds .site-header--wide: the bar uses the full
-   width, and its links take their own row below 1280px instead of 1024px. */
-.site-header--wide {
-  --aun-header-max: none;
+
+/* ---------- the menu panel (.aun-header-panel popover, below 1024px): the same links and search ---------- */
+.panel-nav ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-@media (max-width: 79.99rem) {
-  .site-header--wide .aun-header-primary {
-    order: 3;
-    flex: 0 0 100%;
-    padding-block-end: 0.5rem;
-  }
-  .site-header--wide .primary-nav {
-    margin-inline-start: -0.75rem;
-  }
+.panel-nav a[aria-current='page'] {
+  box-shadow: inset 3px 0 0 var(--color-lantern);
 }
-/* below 1024px the links and the search take a row of their own under the bar (the links scroll) */
-@media (max-width: 63.99rem) {
-  .site-header .aun-header-primary {
-    order: 3;
-    flex: 0 0 100%;
-    flex-wrap: wrap;
-    row-gap: 0.25rem;
-    padding-block-end: 0.5rem;
-  }
-  .primary-nav {
-    flex: 1 1 auto;
-    margin-inline-start: -0.75rem;
-  }
+.panel-nav a[aria-current='page']:dir(rtl) {
+  box-shadow: inset -3px 0 0 var(--color-lantern);
 }
-/* phone: the search box takes the last row */
-@media (max-width: 39.99rem) {
-  .site-header .search-header {
-    flex-basis: 100%;
-    max-inline-size: none;
-  }
+.site-header .aun-header-panel .search-header {
+  flex: none;
+  max-inline-size: none;
 }
 
 /* ---------- account (src/scripts/site.ts builds the button and menu once /auth/me answers) ---------- */

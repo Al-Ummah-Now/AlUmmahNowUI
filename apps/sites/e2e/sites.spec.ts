@@ -11,7 +11,7 @@ import AxeBuilder from '@axe-core/playwright';
 const LABEL_IN_NAME = { rules: { 'label-content-name-mismatch': { enabled: true } } };
 import { expect, test } from '@playwright/test';
 import { HOSTS, SITES_PORT } from './stub-data.ts';
-import { appLinksHtml, langButtonHtml, signInHtml } from '../../../packages/render/src/nav/header.js';
+import { appLinksHtml, langButtonHtml, menuButtonHtml, signInHtml } from '../../../packages/render/src/nav/header.js';
 import { siteBrandHtml } from '../../../packages/render/src/site-brand.ts';
 
 const at = (host: string, path = '/') => `http://${host}:${SITES_PORT}${path}`;
@@ -139,13 +139,14 @@ test('sign-in: one click, back on the same page, host-only session; sign-out end
   // the shared account button (avatar, name, caret) opens the account menu: who, apps, Sign out
   const button = page.getByTestId('site-account-button');
   await expect(button).toBeVisible();
-  await expect(button).toContainText('Test Viewer');
+  // the name in the page's language, from the videos profile, as www shows it (auth's token has only the Latin name)
+  await expect(button).toContainText('مشاهد التجربة');
   await expect(page.locator('.site-header .aun-signin')).toBeHidden();
   await button.click();
   await expect(button).toHaveAttribute('aria-expanded', 'true');
   const menu = page.locator('#account-menu');
   await expect(menu).toBeVisible();
-  await expect(menu.locator('.aun-menu-who-name')).toHaveText('Test Viewer');
+  await expect(menu.locator('.aun-menu-who-name')).toHaveText('مشاهد التجربة');
   await expect(menu.locator('.aun-menu-who-sub')).toHaveAttribute('title', 'viewer@example.com');
   await expect(menu.getByRole('link', { name: 'الموقع' })).toHaveAttribute('href', 'https://www.qa.alummahnow.net/ar/');
   await expect(menu.getByRole('link', { name: 'المرئيات' })).toHaveAttribute('href', 'https://videos.qa.alummahnow.net/ar');
@@ -160,6 +161,12 @@ test('sign-in: one click, back on the same page, host-only session; sign-out end
   expect(session?.domain).toBe(HOSTS.both); // host-only, never .sites.localhost / .alummahnow.org
   // another site on the same zone does not see it
   expect((await context.cookies(at(HOSTS.arOnly, '/'))).some((c) => c.name === '__Host-aun_site')).toBe(false);
+  // the English page names the same account in English
+  await page.keyboard.press('Escape');
+  await page.goto(at(HOSTS.both, '/en/posts/'));
+  await expect(page.getByTestId('site-account-button')).toContainText('Test Viewer');
+  await page.goto(at(HOSTS.both, '/ar/posts/'));
+  await page.getByTestId('site-account-button').click();
   await page.getByTestId('site-sign-out').click();
   await expect(page).toHaveURL(at(HOSTS.both, '/ar/'));
   await expect(page.locator('.site-header .aun-signin')).toBeVisible();
@@ -198,19 +205,21 @@ test('the header is the Al Ummah Now header contract: builders, order, sizes, ph
   expect(html).toContain(appLinksHtml({ lang: 'en', links: [{ id: 'www', href: 'https://www.qa.alummahnow.net/en/' }, { id: 'videos', href: 'https://videos.qa.alummahnow.net/en' }] }));
   expect(html).toContain(langButtonHtml({ lang: 'en', href: '/ar/videos/' }));
   expect(html).toContain(signInHtml({ lang: 'en', href: `/auth/login?return=${encodeURIComponent('/en/videos/')}&lang=en` }));
+  expect(html).toContain(menuButtonHtml({ lang: 'en', panel: 'site-menu' }));
   // no environment badge on a local run (QA and stage only)
   expect(html).not.toContain('class="aun-env"');
 
   await page.goto(at(HOSTS.both, '/en/videos/'));
   const row = await page.locator('.site-header .aun-header-row > *').evaluateAll((els) => els.map((e) => e.className.split(' ')[0]));
-  expect(row).toEqual(['aun-brand', 'aun-header-primary', 'aun-header-tools']);
+  // the menu button first (slot 1; shown below 1024px only), then the lockup
+  expect(row).toEqual(['aun-icon-btn', 'aun-brand', 'aun-header-primary', 'aun-header-tools']);
   const tools = await page.locator('.aun-header-tools > *').evaluateAll((els) => els.map((e) => e.id || e.className.split(' ')[0]));
   // language first, then light/dark, then the account (Sign in signed out)
   expect(tools).toEqual(['aun-apps', 'aun-lang', 'mode-toggle', 'aun-signin', 'account']);
   await expect(page.locator('.aun-lang')).toHaveAccessibleName('Switch to Arabic: العربية');
   const phone = (page.viewportSize()?.width ?? 1366) < 640;
   const h = async (sel: string) => (await page.locator(sel).first().boundingBox())!.height;
-  expect(await h('.site-header .aun-header-tools')).toBe(phone ? 56 : 64);
+  expect(await h('.site-header')).toBe(phone ? 56 : 64);
   for (const sel of ['.aun-lang', '.aun-mode', '.aun-signin']) expect(await h(sel), sel).toBe(40);
   expect((await page.locator('.aun-brand-mark').boundingBox())!.width).toBe(phone ? 32 : 36);
   if (phone) await expect(page.locator('.aun-apps')).toBeHidden();
@@ -222,6 +231,45 @@ test('the header is the Al Ummah Now header contract: builders, order, sizes, ph
   expect((await page.locator('.site-header').boundingBox())!.y).toBe(0);
 });
 
+for (const l of ['en', 'ar'] as const) {
+  test(`${l}: one line on every screen, full width, one typeface; below 1024px the menu panel holds the links`, async ({ page }) => {
+    const rtl = l === 'ar';
+    for (const [w, bar] of [[1440, 64], [1024, 64], [1023, 64], [800, 64], [390, 56]] as const) {
+      await page.setViewportSize({ width: w, height: 844 });
+      await page.goto(at(HOSTS.both, `/${l}/videos/`));
+      const header = page.locator('.site-header');
+      expect((await header.boundingBox())!.height, `${w}`).toBe(bar);
+      // full width: the lockup 16px from the edge (12px on phones), mirrored in Arabic
+      const mark = (await page.locator('.aun-brand-mark').boundingBox())!;
+      const menu = page.getByRole('button', { name: l === 'ar' ? 'القائمة' : 'Menu' });
+      if (w >= 1024) {
+        expect(rtl ? w - (mark.x + mark.width) : mark.x, `${w}`).toBe(16);
+        await expect(menu).toBeHidden();
+        await expect(page.locator('.site-nav')).toBeVisible();
+        continue;
+      }
+      await expect(page.locator('.site-nav')).toBeHidden();
+      await expect(menu).toBeVisible();
+      const mb = (await menu.boundingBox())!;
+      expect([mb.width, mb.height]).toEqual([40, 40]);
+      expect(rtl ? w - (mb.x + mb.width) : mb.x, `${w}`).toBe(w < 640 ? 12 : 16);
+      // the panel opens without script, right under the bar, with the same links (aria-current kept)
+      await menu.click();
+      const panel = page.locator('#site-menu');
+      await expect(panel).toBeVisible();
+      expect((await panel.boundingBox())!.y).toBe(bar);
+      await expect(panel.getByRole('link')).toHaveText(await page.locator('.site-nav a').allTextContents());
+      await expect(panel.locator('a[aria-current="page"]')).toHaveCount(1);
+      await page.keyboard.press('Escape');
+      await expect(panel).toBeHidden();
+    }
+    // one typeface: every text in the bar uses the header's font
+    const fonts = await page.locator('.site-header :is(.aun-brand-name, .site-nav a, .aun-lang, .aun-signin)').evaluateAll((els) => [...new Set(els.map((e) => getComputedStyle(e).fontFamily))]);
+    expect(fonts).toHaveLength(1);
+    expect(fonts[0]).toContain(rtl ? 'Noto Naskh Arabic' : 'system-ui');
+  });
+}
+
 test('a11y (WCAG 2.2 AA), header only: en and ar, light and dark, signed out', async ({ page }) => {
   for (const scheme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme: scheme });
@@ -229,6 +277,13 @@ test('a11y (WCAG 2.2 AA), header only: en and ar, light and dark, signed out', a
       await page.goto(at(HOSTS.both, path));
       const out = await new AxeBuilder({ page }).include('.site-header').options(LABEL_IN_NAME).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
       expect(out.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`), `${scheme} ${path}`).toEqual([]);
+      if ((page.viewportSize()?.width ?? 1366) < 1024) {
+        await page.locator('.aun-menu-collapse').click();
+        await expect(page.locator('#site-menu')).toBeVisible();
+        const panel = await new AxeBuilder({ page }).include('.site-header').options(LABEL_IN_NAME).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
+        expect(panel.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`), `${scheme} ${path} menu panel`).toEqual([]);
+        await page.keyboard.press('Escape');
+      }
     }
   }
 });

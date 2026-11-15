@@ -4,7 +4,10 @@
  * controls of every app. Markup from the vendored builders (packages/render/src/nav/header.js, kept
  * byte-identical by `npm run check:fanous`), styled by aun-nav.generated.css; www adds only its own
  * links and search in the primary slot (src/styles/header.css). Order, mirrored in Arabic:
- * brand · env badge · links + search · app links · language · light/dark · account (or Sign in).
+ * menu (below 1024px) · brand · env badge · links + search · app links · language · light/dark ·
+ * account (or Sign in). Below 1024px the links and search leave the bar (`aun-collapse`) and the menu
+ * button opens them again in the `.aun-header-panel` popover (no script needed), so the bar is one
+ * 64px (56px) line on every screen.
  * apps/dev renders the same header (its tests compare its markup with this file).
  */
 import Icon from './Icon.astro';
@@ -15,7 +18,7 @@ import type { NavItem } from '../lib/cms-types';
 import { libraryUrl } from '../lib/embeds';
 import type { Config } from '../lib/env';
 import type { Locale } from '../lib/locale';
-import { appLinksHtml, brandHtml, envBadgeHtml, langButtonHtml, signInHtml } from '../../../../packages/render/src/nav/header.js';
+import { appLinksHtml, brandHtml, envBadgeHtml, langButtonHtml, menuButtonHtml, signInHtml } from '../../../../packages/render/src/nav/header.js';
 import { modeIconSvg, modeToggleLabel } from '../../../../packages/render/src/nav/mode-toggle.js';
 
 interface Props { cfg: Config; locale: Locale; nav: NavItem[]; switchHref: string }
@@ -34,9 +37,10 @@ const videosUrl = libraryUrl(cfg.videosWebUrl, locale);
 ---
 <header class="site-header aun-header">
   <div class="aun-header-row">
+    <Fragment set:html={menuButtonHtml({ lang: locale, panel: 'site-menu' })} />
     <Fragment set:html={brandHtml({ lang: locale, href: `/${locale}/`, logoSrc: '/brand/logo-192.webp' })} />
     <Fragment set:html={envBadgeHtml(cfg.appEnv, locale)} />
-    <div class="aun-header-primary">
+    <div class="aun-header-primary aun-collapse">
       <nav class="primary-nav" aria-label={t.a11y.primaryNav}>
         <ul>
           {items.map((i) => (
@@ -86,6 +90,17 @@ const videosUrl = libraryUrl(cfg.videosWebUrl, locale);
         <Fragment set:html={signInHtml({ lang: locale, href: loginHref })} />
       </div>
     </div>
+  </div>
+  <!-- below 1024px: the same links and search, opened by the menu button (first in the bar) -->
+  <div id="site-menu" class="aun-header-panel" popover>
+    <nav class="panel-nav" aria-label={t.a11y.primaryNav}>
+      <ul>
+        {items.map((i) => (
+          <li><a href={i.href} aria-current={current(i.href)}>{i.label}</a></li>
+        ))}
+      </ul>
+    </nav>
+    <SearchBox cfg={cfg} locale={locale} id="panel-search" />
   </div>
   <template id="caret-icon"><Icon name="caret" /></template>
   <template id="signout-icon"><svg class="aun-flip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4H5v16h4M14 8l4 4-4 4M18 12H8" /></svg></template>
