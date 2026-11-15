@@ -4,6 +4,7 @@ import { navHref } from '../lib/context';
 import { helpUrl } from '../lib/contact';
 import type { NavItem, SiteSettings } from '../lib/cms-types';
 import { statusPageUrl, type Locale } from '../lib/locale';
+import NewsletterForm from './NewsletterForm.astro';
 
 interface Props { locale: Locale; nav: NavItem[]; settings: SiteSettings | null; videosWebUrl: string }
 const { locale, nav, settings, videosWebUrl } = Astro.props;
@@ -40,6 +41,11 @@ const year = new Date().getUTCFullYear();
         </nav>
       )}
     </div>
+    <section class="footer-newsletter" aria-labelledby="footer-newsletter-title" data-testid="footer-newsletter">
+      <h2 id="footer-newsletter-title" class="footer-newsletter-title">{t.newsletter.title}</h2>
+      <p class="footer-newsletter-intro">{t.newsletter.intro}</p>
+      <NewsletterForm locale={locale} id="footer-newsletter" variant="footer" />
+    </section>
     <div class="footer-base">
       <p>{fmt(t.footer.rights, { year })}</p>
       <p lang={locale === 'ar' ? 'en' : 'ar'}>{locale === 'ar' ? 'Al Ummah Now' : 'الأمة الآن'}</p>

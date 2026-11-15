@@ -107,7 +107,7 @@ describe('preview responses at the edge', () => {
     expect(normal.headers.get('Content-Security-Policy')).toContain('static.cloudflareinsights.com');
     expect(normal.headers.get('X-Robots-Tag')).toBeNull();
     // The light/dark head script still runs on previews (allowed by hash); the beacon does not
-    expect(contentSecurityPolicy(qa, { analytics: false })).toContain(`script-src 'self' ${MODE_SCRIPT_HASH};`);
+    expect(contentSecurityPolicy(qa, { analytics: false })).toContain(`script-src 'self' ${MODE_SCRIPT_HASH} https://challenges.cloudflare.com;`);
   });
 
   it('the HTML edge cache never stores or serves a preview', async () => {

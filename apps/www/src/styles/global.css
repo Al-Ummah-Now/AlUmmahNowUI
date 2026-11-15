@@ -1108,6 +1108,137 @@ main {
   margin: 0;
 }
 
+/* ---------- newsletter (components/NewsletterForm.astro) ---------- */
+.footer-newsletter {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.5rem 2rem;
+  padding: 1.5rem;
+  border-radius: var(--radius-media);
+  background: color-mix(in srgb, var(--color-night) 70%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-on-night) 16%, transparent);
+}
+@media (min-width: 48rem) {
+  .footer-newsletter {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    align-items: center;
+  }
+  .footer-newsletter .nl-form {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+.footer-newsletter-title {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--color-lantern);
+}
+.footer-newsletter-intro {
+  margin: 0;
+  color: var(--color-on-night-soft);
+}
+.nl-form {
+  position: relative;
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.nl-label {
+  font-weight: 600;
+}
+.nl-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.nl-input {
+  flex: 1 1 14rem;
+  min-width: 0;
+  min-height: 3rem;
+  padding-inline: 1rem;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--control-line);
+}
+.nl-input[aria-invalid='true'] {
+  box-shadow: inset 0 0 0 2px var(--fanous-color-error-text);
+}
+[dir='rtl'] .nl-input {
+  text-align: right;
+}
+.nl-submit {
+  flex: 0 0 auto;
+  border: 0;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.nl-submit:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+.nl-status {
+  margin: 0;
+  min-height: 1.5em;
+}
+.nl-status-error {
+  color: var(--fanous-color-error-text);
+  font-weight: 600;
+}
+.nl-trap {
+  position: absolute;
+  inset-inline-start: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+/* in the footer the form sits on the night colours in every mode */
+.nl-footer .nl-label {
+  color: var(--color-on-night);
+}
+.nl-footer .nl-input {
+  background: var(--color-night-deep);
+  color: var(--color-on-night);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-on-night) 45%, transparent);
+}
+.nl-footer .nl-input[aria-invalid='true'],
+.nl-footer .nl-status-error {
+  color: var(--color-on-night);
+}
+.nl-footer .nl-input[aria-invalid='true'] {
+  box-shadow: inset 0 0 0 2px var(--color-lantern);
+}
+.nl-footer .nl-status-error {
+  padding-inline-start: 0.75rem;
+  border-inline-start: 3px solid var(--color-lantern);
+}
+.nl-page .nl-form {
+  max-width: 36rem;
+  padding: 1.5rem;
+  border-radius: var(--radius-media);
+  background: var(--surface-raised);
+  box-shadow: var(--card-shadow), inset 0 0 0 1px var(--line);
+}
+.nl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+}
+.nl-actions form {
+  margin: 0;
+}
+.nl-home {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  color: var(--link);
+  font-weight: 600;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

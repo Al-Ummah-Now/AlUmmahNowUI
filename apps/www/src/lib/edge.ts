@@ -83,6 +83,9 @@ export function formActionSources(authUrl: string): string[] {
   return sources;
 }
 
+/** Cloudflare Turnstile: its script and widget frame (the newsletter form, src/scripts/newsletter-form.ts). */
+export const TURNSTILE_ORIGIN = 'https://challenges.cloudflare.com';
+
 export function contentSecurityPolicy(cfg: Config, opts: { analytics?: boolean } = {}): string {
   const https = cfg.siteUrl.startsWith('https://');
   const analytics = opts.analytics ?? true;
@@ -90,9 +93,10 @@ export function contentSecurityPolicy(cfg: Config, opts: { analytics?: boolean }
     "default-src 'self'",
     // Cloudflare Web Analytics: the zone injects its beacon into HTML responses (not on previews).
     // The one inline script is the light/dark head script, allowed by its hash (theme-mode.ts).
+    // Turnstile (challenges.cloudflare.com) loads only when the newsletter sign-up is asked for a check
     analytics
-      ? `script-src 'self' ${MODE_SCRIPT_HASH} https://static.cloudflareinsights.com`
-      : `script-src 'self' ${MODE_SCRIPT_HASH}`,
+      ? `script-src 'self' ${MODE_SCRIPT_HASH} https://static.cloudflareinsights.com ${TURNSTILE_ORIGIN}`
+      : `script-src 'self' ${MODE_SCRIPT_HASH} ${TURNSTILE_ORIGIN}`,
     "style-src 'self'",
     `img-src ${imgSrcSources(cfg.cmsPublicUrl, cfg.videosWebUrl).join(' ')}`,
     "font-src 'self'",
@@ -102,7 +106,7 @@ export function contentSecurityPolicy(cfg: Config, opts: { analytics?: boolean }
     `connect-src 'self' ${new URL(cfg.authUrl).origin} ${new URL(cfg.cmsPublicUrl).origin} ${new URL(cfg.videosApiUrl).origin}${analytics ? ' https://cloudflareinsights.com' : ''}`,
     // the timeline's hover previews and the Shorts viewer play the platform's MP4s
     `media-src ${VIDEO_MEDIA_HOSTS.map((h) => `https://${h}`).join(' ')}`,
-    `frame-src ${embedOrigin(cfg.videosWebUrl)}`,
+    `frame-src ${embedOrigin(cfg.videosWebUrl)} ${TURNSTILE_ORIGIN}`,
     "frame-ancestors 'none'",
     "object-src 'none'",
     "base-uri 'self'",

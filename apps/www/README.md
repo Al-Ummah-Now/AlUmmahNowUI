@@ -33,6 +33,7 @@ written only by the CMS feed job; www only reads it), `ASSETS`, `CF_VERSION_META
 | Where | Name | Purpose |
 |---|---|---|
 | each www Worker | `SESSION_SECRET` | 64 hex chars (`openssl rand -hex 32`); AES-GCM key of the session and sign-in cookies. `npx wrangler secret put SESSION_SECRET [--env stage\|qa]`. Never printed or committed. |
+| Secrets Store (binding `INTERNAL_API_KEY`) | `internal-api-key` / `-stage` / `-qa` | the videos admin API's internal key (the same secret admin-api reads); the newsletter form, confirm and unsubscribe pages call `/internal/newsletter/*` with it. A store binding, not a Worker secret, so the deploy token needs Secrets Store read. Local dev and E2E use the stub's key (`e2e/stub-newsletter.ts`). |
 | GitHub Actions | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` | deploys, promotes, rollbacks, secrets check |
 | GitHub Actions | `QA_SEED_PASSWORD`, `STAGE_SEED_PASSWORD` | optional E2E sign-in with the seeded QA/stage accounts |
 
@@ -87,6 +88,13 @@ every QA deploy and every promote.
   article components and layout as the live page, plus a "Preview — not published" banner.
   Responses are `private, no-store, no-transform` (no edge cache, no analytics beacon injection),
   `noindex`, `Referrer-Policy: no-referrer`; broken, expired or deleted links get friendly pages.
+- **Newsletter** (`src/lib/newsletter.ts`, UI#6): a sign-up form in every page's footer and on
+  `/{l}/newsletter/`. The videos admin API stores, confirms (double opt-in) and sends through its
+  mail queue (AlUmmahNow `docs/features/newsletter.md`); www only forwards with the internal key
+  and the visitor's IP. Same answer for every address. Works without JavaScript (POST → 303 `?s=`);
+  Cloudflare Turnstile loads only when the admin API asks for a check. The confirm and unsubscribe
+  links change nothing on GET (mail scanners) and act on a button POST; unsubscribe also takes the
+  RFC 8058 one-click POST. Those pages are `no-store`, `noindex`, `no-referrer`.
 - **Site theme** (`src/lib/site-theme.ts`, UI#54): www follows the theme the admin picks for the
   whole site (videos admin → Site theme), one of the four built-in Fanous themes (Fawanees,
   Lantern, Zujaj, Nahas; `src/lib/site-themes.generated.ts`, synced from AlUmmahNow by
