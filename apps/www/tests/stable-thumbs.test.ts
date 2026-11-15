@@ -163,10 +163,12 @@ describe('rendered markup and JSON-LD never carry signed thumbnails', () => {
     expect(snapshotItem(rows[0]!, NOW, false, WEB)!.thumbnailUrl).toBe(STABLE);
   });
 
-  it('og:image / twitter:image', () => {
-    expect(ogImageUrl(prod, PATH_FORM)).toBe(STABLE);
+  it('og:image / twitter:image: the 1200x630 card, never a signed URL', () => {
+    // a video thumbnail: that video's card on the videos app (large link previews, 2026-11-15)
+    expect(ogImageUrl(prod, PATH_FORM)).toBe(`${WEB}/og/v/${ID}.jpg`);
     expect(ogImageUrl(prod, `https://vz-1.b-cdn.net/x/a.jpg?token=t&expires=${exp}`)).toBe('https://www.alummahnow.net/brand/og-default.jpg');
-    expect(ogImageUrl(prod, 'https://cms.alummahnow.net/media/a.jpg')).toBe('https://cms.alummahnow.net/media/a.jpg');
+    // any other picture on our hosts: framed by /og/i/ (base64url of the picture)
+    expect(ogImageUrl(prod, 'https://cms.alummahnow.net/media/a.jpg')).toBe(`${WEB}/og/i/${Buffer.from('https://cms.alummahnow.net/media/a.jpg').toString('base64url')}.jpg`);
     expect(ogImageUrl(prod, null)).toBe('https://www.alummahnow.net/brand/og-default.jpg');
     for (const u of [PATH_FORM, QUERY_FORM, PRIV]) expectUnsigned(ogImageUrl(prod, u));
   });

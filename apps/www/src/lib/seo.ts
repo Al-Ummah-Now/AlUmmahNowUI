@@ -4,17 +4,19 @@ import type { Locale } from './locale';
 import { embedUrl, watchUrl } from './embeds';
 import { isoDuration, type VideoItem } from './videos';
 import { itemThumb, stableImageUrl } from './images';
+import { BRAND_CARD_PATH, shareCardUrl } from './share-card';
 
 export type Alternates = Partial<Record<Locale, string>>;
 
 export const absolute = (cfg: Config, path: string) => (/^https?:\/\//.test(path) ? path : `${cfg.siteUrl}${path}`);
 
 /**
- * og:image / twitter:image: crawlers and link unfurlers keep it for weeks, so never a signed
- * (expiring) URL: a video thumbnail becomes the stable /thumb one (stableImageUrl), else the brand image.
+ * og:image / twitter:image: always a 1200x630 JPEG (SHARE_CARD), so chat apps show the large preview
+ * with the text under it: the page image's card made by the videos app (shareCardUrl: never a signed
+ * URL, crawlers keep it for weeks), else the brand card (the owner's art, as supplied).
  */
 export const ogImageUrl = (cfg: Config, image: string | null | undefined) =>
-  absolute(cfg, stableImageUrl(cfg.videosWebUrl, image) || '/brand/og-default.jpg');
+  absolute(cfg, shareCardUrl(cfg.videosWebUrl, image) || BRAND_CARD_PATH);
 
 export function hreflangLinks(cfg: Config, alternates: Alternates): { hreflang: string; href: string }[] {
   const links: { hreflang: string; href: string }[] = [];
