@@ -105,11 +105,6 @@ jobs:
       - run: npm ci
         working-directory: .
 
-      # The wiki's feature registry at main's commit (apps/dev/scripts/registry.ts). dev-registry.yml
-      # re-runs this job, and the stage and production jobs after it, when the registry changes.
-      - name: Feature registry (wiki main, pinned to its commit)
-        run: npm run registry
-
       - name: Checks (lint, typecheck, unit, wrangler config)
         run: |
           npm run lint
@@ -522,6 +517,16 @@ jobs:
 
       - run: npm ci
         working-directory: .
+
+      # The wiki's feature registry (apps/dev/scripts/registry.ts), pinned to one wiki commit for the
+      # whole job: the checks need src/data/registry.json, and the build re-reads the same commit.
+      # dev-registry.yml re-runs this job, and the stage and production jobs after it, when it changes.
+      - name: Feature registry (wiki main, pinned to its commit)
+        run: |
+          ref=$(git ls-remote https://github.com/Al-Ummah-Now/AlUmmahNowWiki.git refs/heads/main | cut -f1)
+          [ -n "$ref" ] || { echo "::error::could not read the wiki's main"; exit 1; }
+          echo "REGISTRY_REF=$ref" >> "$GITHUB_ENV"
+          REGISTRY_REF=$ref npm run registry
 
       - name: Checks (lint, typecheck, unit, wrangler config)
         run: |
