@@ -1,0 +1,31 @@
+---
+/**
+ * Continue watching (AlUmmahNowUI#4): the signed-in viewer's started, unfinished videos, between the
+ * hero and the timeline. The HTML is the same for every visitor (the page is edge-cached): the row
+ * ships hidden and empty, and src/scripts/continue-watching.ts fills and shows it for a signed-in
+ * browser from /auth/continue-watching. Nothing to continue, paused history or any failure: it stays
+ * hidden. Each video opens its watch page on the videos site, where the player resumes.
+ */
+import { strings } from '../i18n';
+import { libraryUrl } from '../lib/embeds';
+import type { Config } from '../lib/env';
+import type { Locale } from '../lib/locale';
+
+interface Props { cfg: Config; locale: Locale }
+const { cfg, locale } = Astro.props;
+const t = strings(locale).continueWatching;
+const labels = { watched: t.watched };
+---
+<section class="cw" aria-labelledby="cw-title" data-continue data-locale={locale} data-labels={JSON.stringify(labels)} hidden>
+  <div class="wrap">
+    <div class="cw-head">
+      <h2 id="cw-title">{t.title}</h2>
+      <a class="cw-all" href={`${libraryUrl(cfg.videosWebUrl, locale)}/history`}>{t.seeAll}</a>
+    </div>
+    <ul class="cw-list" data-continue-list></ul>
+  </div>
+</section>
+<script>
+  import { initContinueWatching } from '../scripts/continue-watching';
+  initContinueWatching();
+</script>

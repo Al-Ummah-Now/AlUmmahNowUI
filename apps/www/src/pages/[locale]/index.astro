@@ -1,6 +1,7 @@
 ---
 /**
- * Home (docs/specs/WWW-PAGES.md D1): the hero, then the timeline, nothing else. The timeline is the
+ * Home (docs/specs/WWW-PAGES.md D1): the hero, Continue watching for a signed-in browser (filled
+ * client-side, UI#4), then the timeline. The timeline is the
  * CMS-managed feed of posts, card posts, videos, playlists and channels, read from Workers KV
  * (src/lib/feed.ts), pinned first then newest first, with "Load more" (?before=<cursor>). When the
  * feed is missing the timeline is the CMS posts list (cache → CMS → snapshot → built-in), so the
@@ -8,6 +9,7 @@
  *
  * ?before= pages (no-JS "Load more", and what the script fetches) show only the timeline.
  */
+import ContinueWatching from '../../components/ContinueWatching.astro';
 import Icon from '../../components/Icon.astro';
 import Timeline from '../../components/Timeline.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
@@ -75,6 +77,8 @@ const empty = timeline.pinned.length === 0 && timeline.items.length === 0;
       </div>
     </section>
   )}
+
+  {!later && <ContinueWatching cfg={cfg} locale={locale} />}
 
   <section class="section tl-section" aria-labelledby="timeline-title">
     <div class="tl-wrap">

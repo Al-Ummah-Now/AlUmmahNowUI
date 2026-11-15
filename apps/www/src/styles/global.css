@@ -1336,6 +1336,124 @@ html:not([data-js]) .theme {
  * Fawanees surfaces with a hairline border, an inner top highlight and a soft drop shadow, the
  * same depth as the sign-in panels; pinned cards carry a lantern edge on the reading side.
  */
+/* ---------- Continue watching (src/components/ContinueWatching.astro, filled client-side) ---------- */
+.cw {
+  padding-block: clamp(1.75rem, 4vw, 2.5rem) 0.5rem;
+}
+.cw[hidden] {
+  display: none;
+}
+.cw-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin-block-end: 1rem;
+}
+.cw-head h2 {
+  margin: 0;
+  font-size: 1.375rem;
+}
+.cw-all {
+  color: var(--link);
+  font-weight: 600;
+}
+.cw-list {
+  /* the containing block of the cards' visually-hidden text, so it never escapes the scroller */
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(13.5rem, 16rem);
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0.25rem 0.125rem 0.75rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  list-style: none;
+}
+.cw-item {
+  min-inline-size: 0;
+  scroll-snap-align: start;
+}
+.cw-link {
+  display: grid;
+  gap: 0.5rem;
+  color: var(--text);
+  text-decoration: none;
+}
+.cw-link:focus-visible {
+  outline: var(--focus);
+  outline-offset: 3px;
+  border-radius: var(--radius-media);
+}
+.cw-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--radius-media);
+  background: var(--color-night) url('/brand/pattern.svg');
+  background-size: 96px 96px;
+}
+.cw-thumb img {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  filter: var(--media-filter);
+}
+.cw-badge {
+  position: absolute;
+  inset-block-end: 0.75rem;
+  inset-inline-end: 0.5rem;
+  padding: 0.0625rem 0.4375rem;
+  border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--color-night-deep) 85%, transparent);
+  color: var(--color-paper);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+/* how far they got: the theme's primary on a dim track along the bottom edge */
+.cw-progress {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: 0.25rem;
+  background: color-mix(in srgb, var(--color-night-deep) 60%, transparent);
+}
+.cw-progress > span {
+  display: block;
+  block-size: 100%;
+  background: var(--fanous-color-primary);
+}
+.cw-title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.cw-link:hover .cw-title {
+  text-decoration: underline;
+}
+.cw-channel {
+  margin: 0.25rem 0 0;
+  color: var(--text-soft);
+  font-size: 0.875rem;
+}
+@media (max-width: 40rem) {
+  .cw-list {
+    grid-auto-columns: 72%;
+    gap: 0.875rem;
+  }
+}
+
 .tl-section {
   --tl-card-shadow: 0 1px 2px rgb(7 40 50 / 0.06), 0 8px 24px -12px rgb(7 40 50 / 0.18);
   --tl-card-edge: inset 0 1px 0 rgb(255 255 255 / 0.7);

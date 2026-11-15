@@ -36,8 +36,10 @@ test.describe('home is one list', () => {
       for (const name of l === 'en' ? ['Chosen for you', 'All featured videos', 'All articles'] : ['اخترناها لك', 'كل المرئيات المختارة', 'كل المقالات']) {
         await expect(main.getByText(name, { exact: true })).toHaveCount(0);
       }
-      // Main's sections: the hero and the timeline only
-      await expect(main.locator(':scope > section')).toHaveCount(2);
+      // Main's sections: the hero, the Continue watching row (UI#4, hidden until a signed-in viewer
+      // has something to resume) and the timeline
+      await expect(main.locator(':scope > section')).toHaveCount(3);
+      await expect(main.locator(':scope > section.cw')).toBeHidden();
     });
   }
 });
