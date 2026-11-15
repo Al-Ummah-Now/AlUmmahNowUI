@@ -18,7 +18,7 @@ import { createCmsDeps } from './lib/cms';
 import { THEME_HEADER, THEME_SOURCE_HEADER, resolveTheme, withThemeHeader } from './lib/site-theme';
 import { config, type WwwEnv } from './lib/env';
 import { writeSnapshots } from './lib/snapshot-writer';
-import { wellKnownResponse } from './lib/well-known';
+import { passkeyFilesResponse } from './lib/well-known';
 
 /** A client never chooses the theme header Astro reads. */
 function stripThemeHeader(request: Request): Request {
@@ -34,7 +34,7 @@ export function createExports(manifest: SSRManifest) {
     default: {
       async fetch(incoming: Request, env: WwwEnv, ctx: ExecutionContext): Promise<Response> {
         // The passkey RP ID is the apex host: Apple and Google fetch these there and never follow a redirect
-        const wellKnown = wellKnownResponse(incoming, env);
+        const wellKnown = await passkeyFilesResponse(incoming, env);
         if (wellKnown) return wellKnown;
         const cfg = config(env);
         const apex = apexRedirect(incoming.url, cfg.siteUrl);
