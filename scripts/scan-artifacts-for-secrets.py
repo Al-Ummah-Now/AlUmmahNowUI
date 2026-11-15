@@ -83,7 +83,7 @@ def scan_path(path, secrets):
     return findings
 
 
-def main(argv):
+def main(argv, annotate=True):
     names, paths, remove = [], [], False
     it = iter(argv)
     for a in it:
@@ -104,11 +104,12 @@ def main(argv):
             print(f'ok: {p}')
             continue
         bad = True
+        tag = '::error::' if annotate else 'expected (self-test): '
         for f in findings[:20]:
-            print(f'::error::{f}')
+            print(f'{tag}{f}')
         if remove:
             shutil.rmtree(p) if os.path.isdir(p) else os.remove(p)
-            print(f'::error::removed {p} so it is not uploaded')
+            print(f'{tag}removed {p} so it is not uploaded')
     return 1 if bad else 0
 
 
@@ -130,10 +131,11 @@ def self_test():
         html = b'<template id="playwrightReportBase64">data:application/zip;base64,' + base64.b64encode(rep.getvalue()) + b'</template>'
         open(os.path.join(report, 'index.html'), 'wb').write(html)
         open(os.path.join(state, 'user.json'), 'w').write(json.dumps({'cookies': [{'name': '__session', 'value': 'x'}], 'origins': []}))
-        code = main(['--env', 'SCAN_SELF_TEST', '--remove', clean, leak, report, state])
+        # Planted fake values: not annotated as errors, so a run's log never looks like a real leak.
+        code = main(['--env', 'SCAN_SELF_TEST', '--remove', clean, leak, report, state], annotate=False)
         assert code == 1, code
         assert os.path.exists(clean) and not any(os.path.exists(p) for p in (leak, report, state)), 'remove'
-        assert main(['--env', 'SCAN_SELF_TEST', clean]) == 0
+        assert main(['--env', 'SCAN_SELF_TEST', clean], annotate=False) == 0
     print('self-test passed')
     return 0
 
