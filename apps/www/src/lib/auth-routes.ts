@@ -22,10 +22,11 @@ import {
   tokenRequestBody,
   type LoginState,
   type Session,
-  type SessionProfile,
 } from './auth';
+// The header's name (one source with the scholar sites): packages/render/src/profile-name.ts
+export { fetchOwnProfile, fetchProfile, mergeProfile, profileNames, resolveDisplayName, type MeProfile } from '../../../../packages/render/src/profile-name';
 import type { Config } from './env';
-import { normalizeImageUrl } from './images';
+import { fetchOwnProfile, fetchProfile, mergeProfile } from '../../../../packages/render/src/profile-name';
 import { isLocale, localeFromPath, readCookie } from './locale';
 import { isValidSecret, seal, unseal } from './session';
 
@@ -129,123 +130,6 @@ export async function readSession(request: Request, secret: string | undefined):
   if (!isValidSecret(secret)) return null;
   const s = await unseal<Session>(secret, readCookie(request.headers.get('Cookie'), SESSION_COOKIE));
   return s && s.v === SESSION_VERSION ? s : null;
-}
-
-/** The public profile fields the header shows (the videos site's profile, same record). */
-export interface MeProfile {
-  displayName: string | null;
-  displayNameLocalized: Partial<Record<'en' | 'ar', string>>;
-  avatarUrl: string | null;
-}
-
-const str = (v: unknown, max: number) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
-
-type Loc = 'en' | 'ar';
-const LOCS: readonly Loc[] = ['en', 'ar'];
-const joinName = (...parts: (string | null)[]) => parts.filter(Boolean).join(' ').trim().slice(0, 120) || null;
-const locOf = (v: unknown, l: Loc) => (v && typeof v === 'object' ? str((v as Record<string, unknown>)[l], 120) : null);
-
-/**
- * The name a user is shown by, the platform's one rule (AlUmmahNow shared-types
- * `resolveDisplayName`, owner rule 2026-11-12): the display name in `locale`, the plain display
- * name, first + last name (in `locale` when localized, else the plain ones), then a name in the
- * other language. Never the email (the caller falls back to it) and never a handle (handles
- * belong to channels). '' when the profile has no name.
- */
-export function resolveDisplayName(p: Record<string, unknown>, locale: Loc): string {
-  const full = (l: Loc | null) =>
-    joinName(l ? locOf(p.firstNameLocalized, l) : str(p.firstName, 60), l ? locOf(p.lastNameLocalized, l) : str(p.lastName, 60));
-  const other: Loc = locale === 'en' ? 'ar' : 'en';
-  return (
-    locOf(p.displayNameLocalized, locale) ??
-    str(p.displayName, 120) ??
-    full(locale) ??
-    full(null) ??
-    locOf(p.displayNameLocalized, other) ??
-    full(other) ??
-    ''
-  );
-}
-
-/** The user's own profile as the session keeps it: the resolved name per language, and the avatar. */
-export function profileNames(p: Record<string, unknown>): SessionProfile {
-  const names: SessionProfile['names'] = {};
-  for (const l of LOCS) {
-    const n = resolveDisplayName(p, l);
-    if (n) names[l] = n;
-  }
-  return { names, name: names.en ?? names.ar ?? null, avatarUrl: normalizeImageUrl(str(p.avatarUrl, 500)) };
-}
-
-/** GET {VIDEOS_API}/api/profile with the user's access token (the full view, incl. first/last name). */
-export async function fetchOwnProfile(accessToken: string, cfg: Config, fetchImpl: typeof fetch = fetch): Promise<SessionProfile | null> {
-  try {
-    const res = await fetchImpl(`${cfg.videosApiUrl}/api/profile`, {
-      headers: { Accept: 'application/json', Authorization: `Bearer ${accessToken}` },
-      signal: AbortSignal.timeout(2500),
-    });
-    if (!res.ok) {
-      console.warn(JSON.stringify({ msg: 'sign-in: own profile unavailable', status: res.status }));
-      return null;
-    }
-    const body = (await res.json()) as { result?: { profile?: unknown } } | null;
-    const p = body?.result?.profile;
-    return p && typeof p === 'object' ? profileNames(p as Record<string, unknown>) : null;
-  } catch (error) {
-    console.warn(JSON.stringify({ msg: 'sign-in: own profile failed', error: String(error) }));
-    return null;
-  }
-}
-
-/**
- * The signed-in user's public profile from the videos API (GET /api/profiles/:id, public; the
- * profile id is the auth user id). Short edge cache and timeout: the header falls back to the
- * session's name/email when the profile is missing or slow.
- */
-export async function fetchProfile(sub: string, cfg: Config, fetchImpl: typeof fetch = fetch): Promise<MeProfile | null> {
-  try {
-    const init: RequestInit & { cf?: Record<string, unknown> } = {
-      headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(1500),
-      cf: { cacheTtl: 60, cacheEverything: true },
-    };
-    const res = await fetchImpl(`${cfg.videosApiUrl}/api/profiles/${encodeURIComponent(sub)}`, init);
-    if (!res.ok) return null;
-    const body = (await res.json()) as { result?: { profile?: Record<string, unknown> } } | null;
-    const p = body?.result?.profile;
-    if (!p || typeof p !== 'object') return null;
-    const loc = (p.displayNameLocalized ?? {}) as Record<string, unknown>;
-    const displayNameLocalized: MeProfile['displayNameLocalized'] = {};
-    for (const l of ['en', 'ar'] as const) {
-      const v = str(loc[l], 120);
-      if (v) displayNameLocalized[l] = v;
-    }
-    return {
-      displayName: str(p.displayName, 120) ?? str(p.resolvedDisplayName, 120),
-      displayNameLocalized,
-      avatarUrl: normalizeImageUrl(str(p.avatarUrl, 500)),
-    };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * The header's profile: the public view is fresh (60 s) but has no first/last name; the session
- * has the names from sign-in. Public values win when set (a display name or avatar changed since).
- */
-export function mergeProfile(own: SessionProfile | null, pub: MeProfile | null): MeProfile | null {
-  if (!own && !pub) return null;
-  const displayNameLocalized: MeProfile['displayNameLocalized'] = {};
-  for (const l of LOCS) {
-    const n = pub?.displayNameLocalized[l] ?? own?.names[l];
-    if (n) displayNameLocalized[l] = n;
-  }
-  return {
-    displayName: pub?.displayName ?? own?.name ?? null,
-    displayNameLocalized,
-    avatarUrl: pub?.avatarUrl ?? own?.avatarUrl ?? null,
-  };
 }
 
 export async function me(request: Request, deps: AuthDeps): Promise<Response> {

@@ -6,6 +6,7 @@
  * docs/design/NAV.md "Account menu"): who, the Al Ummah Now apps, Sign out.
  */
 import { fitToViewport } from '../../../../packages/render/src/menu-fit';
+import { displayLabel, type MeProfileView } from '../../../../packages/render/src/profile-name';
 
 const root = document.documentElement;
 
@@ -110,10 +111,11 @@ accountMenu();
 async function account(): Promise<void> {
   try {
     const res = await fetch('/auth/me', { credentials: 'same-origin', headers: { Accept: 'application/json' } });
-    const body = (await res.json()) as { signedIn?: boolean; name?: string | null; email?: string | null };
+    const body = (await res.json()) as { signedIn?: boolean; sub?: string | null; name?: string | null; email?: string | null; profile?: MeProfileView | null };
     if (body.signedIn) {
       root.setAttribute('data-signed-in', '');
-      fillAccount(body.name ?? '', body.email ?? null);
+      // the name in the page's language, from the videos profile (www's rule: displayLabel)
+      fillAccount(displayLabel(body, root.lang === 'ar' ? 'ar' : 'en'), body.email ?? null);
     } else {
       root.removeAttribute('data-signed-in');
     }

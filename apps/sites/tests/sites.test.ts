@@ -11,6 +11,7 @@ import { cookie, clearCookie, hintCookie, needsRecheck, safeReturnPath, SESSION_
 import { callback, login, me } from '../src/lib/auth-routes';
 import { toSitePost, toSiteVideo } from '../src/lib/data';
 import { seal } from '../../../packages/render/src/session';
+import { displayLabel } from '../../../packages/render/src/profile-name';
 import { fixtureSite } from './fixtures';
 
 const kv = () => {
@@ -220,7 +221,17 @@ describe('sign-in (SS11): top-level redirect, host-only session, 5-minute re-che
       .setExpirationTime('10m')
       .sign(privateKey);
     let tokenBody = '';
-    const fetcher = (async (_u: string, init: RequestInit) => ((tokenBody = String(init.body)), Response.json({ access_token: token, refresh_token: 'rt-1' }))) as typeof fetch;
+    let profileAuth = '';
+    // auth's /token, and the videos API's own-profile view (the names per language, as www reads them)
+    const fetcher = (async (u: string, init: RequestInit) => {
+      if (u.endsWith('/api/profile')) {
+        profileAuth = new Headers(init.headers).get('Authorization') ?? '';
+        return Response.json({ result: { profile: { displayName: 'Viewer', displayNameLocalized: { ar: 'المشاهد' } } } });
+      }
+      if (u.includes('/api/profiles/')) return new Response('', { status: 404 });
+      tokenBody = String(init.body);
+      return Response.json({ access_token: token, refresh_token: 'rt-1' });
+    }) as typeof fetch;
     const done = await callback(
       ctx(`https://mustafa-elbadry.qa.alummahnow.org/auth/callback?code=c1&state=${authorize.searchParams.get('state')}`, { headers: { Cookie: loginCookie ?? '' } }),
       fetcher,
@@ -233,6 +244,13 @@ describe('sign-in (SS11): top-level redirect, host-only session, 5-minute re-che
     const set = done.headers.getSetCookie();
     expect(set.some((c) => c.startsWith('__Host-aun_site=') && !/domain=/i.test(c))).toBe(true);
     expect(set.some((c) => c.startsWith('aun_site_si=1'))).toBe(true);
+    expect(profileAuth).toBe(`Bearer ${token}`);
+    // /auth/me hands the header the profile, so an Arabic page names the user in Arabic (www's source)
+    const session = set.find((c) => c.startsWith('__Host-aun_site='))!.split(';')[0]!;
+    const answer = await (await me(ctx('https://mustafa-elbadry.qa.alummahnow.org/auth/me', { headers: { Cookie: session } }), fetcher)).json();
+    expect(answer).toEqual({ signedIn: true, sub: 'usr_1', name: 'Viewer', email: 'v@example.com', profile: { displayName: 'Viewer', displayNameLocalized: { en: 'Viewer', ar: 'المشاهد' }, avatarUrl: null } });
+    expect(displayLabel(answer, 'ar')).toBe('المشاهد');
+    expect(displayLabel(answer, 'en')).toBe('Viewer');
   });
 
   it('a wrong state signs nobody in', async () => {
@@ -251,15 +269,15 @@ describe('sign-in (SS11): top-level redirect, host-only session, 5-minute re-che
     expect(revoked.headers.getSetCookie().some((c) => c.startsWith('__Host-aun_site=;'))).toBe(true);
 
     const outage = await me(withCookie(), (async () => new Response('', { status: 503 })) as typeof fetch);
-    expect(await outage.json()).toEqual({ signedIn: true, name: 'Viewer', email: null });
+    expect(await outage.json()).toEqual({ signedIn: true, sub: 'usr_1', name: 'Viewer', email: null, profile: null });
 
-    const ok = await me(withCookie(), (async () => Response.json({ access_token: 'a', refresh_token: 'rt-2' })) as typeof fetch);
-    expect(await ok.json()).toEqual({ signedIn: true, name: 'Viewer', email: null });
+    const ok = await me(withCookie(), (async (u: string) => (u.includes('/api/profiles/') ? new Response('', { status: 404 }) : Response.json({ access_token: 'a', refresh_token: 'rt-2' }))) as typeof fetch);
+    expect(await ok.json()).toEqual({ signedIn: true, sub: 'usr_1', name: 'Viewer', email: null, profile: null });
     expect(ok.headers.getSetCookie()[0]).toMatch(/^__Host-aun_site=/);
 
     const fresh = await seal(SECRET, { sub: 'usr_1', name: 'Viewer', email: null, rt: 'rt-1', checked: now, exp: now + 3600 });
     let called = false;
-    await me(ctx('https://mustafa-elbadry.qa.alummahnow.org/auth/me', { headers: { Cookie: `__Host-aun_site=${fresh}` } }), (async () => ((called = true), Response.json({}))) as typeof fetch);
+    await me(ctx('https://mustafa-elbadry.qa.alummahnow.org/auth/me', { headers: { Cookie: `__Host-aun_site=${fresh}` } }), (async (u: string) => ((called ||= u.endsWith('/token')), Response.json({}))) as typeof fetch);
     expect(called).toBe(false);
   });
 });

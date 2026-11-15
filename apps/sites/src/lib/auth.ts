@@ -13,6 +13,7 @@
  */
 import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose';
 import { b64url } from '../../../../packages/render/src/session';
+import type { SessionProfile } from '../../../../packages/render/src/profile-name';
 import type { Config } from './env';
 
 export const SESSION_COOKIE = '__Host-aun_site';
@@ -33,6 +34,8 @@ export interface SiteSession {
   /** Unix seconds of the last successful check. */
   checked: number;
   exp: number;
+  /** The user's own videos profile, read at sign-in: the header's name per language (www's source). */
+  profile?: SessionProfile | null;
 }
 
 export interface LoginState {
