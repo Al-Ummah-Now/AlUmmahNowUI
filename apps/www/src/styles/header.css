@@ -73,6 +73,16 @@
   outline: 2px solid var(--fanous-c-nav-active-text);
   outline-offset: -2px;
 }
+/* 1024–1279px: the app links lose their names and the links sit closer, so a six-link bar (apps/dev)
+   still shows every link at 1024px */
+@media (max-width: 79.99rem) {
+  .primary-nav ul {
+    gap: 0;
+  }
+  .primary-nav a {
+    padding-inline: 0.5rem;
+  }
+}
 /* the header search is a header control: 40px, round, the header's search border */
 .site-header .search-header {
   flex: 1 1 12rem;
