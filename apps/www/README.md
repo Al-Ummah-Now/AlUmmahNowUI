@@ -64,7 +64,11 @@ every QA deploy and every promote.
   requests aborted, grouped, matches marked with the same Arabic normalisation as the CMS), recent
   searches per viewer in localStorage (removable, "Clear recent searches"). No suggestions when the
   CMS doesn't answer; the full search page still works. Inventory: the header box (every page) and
-  the box on the search page.
+  the box on the search page. **Videos** come from the videos API's search index
+  (`src/lib/search/videos.ts`): up to 3 video suggestions in the box (`/api/search/suggestions?types=video`,
+  straight from the browser) and up to 6 videos on page 1 of the search page (`/api/search?type=video`,
+  server-side), each linking to its watch page, plus "All videos for …" on the videos site's own search.
+  No answer from the videos API: no videos, the posts still show.
 - **Scholar sites** (`src/lib/scholar-site.ts`, AUN-SCHOLAR-SITES SS6/SS7): `GET {VIDEOS_API_URL}/api/sites/by-channel/:id`
   (cached 5 min) says whether a scholar's primary channel has a live site. The pages never change for it: the
   scholar page stays the full page (profile, posts, videos) and a post referencing the channel's community post

@@ -211,7 +211,7 @@ export const en = {
     pageLink: 'Page {page}',
   },
   search: {
-    label: 'Search articles',
+    label: 'Search videos and articles',
     placeholder: 'Search',
     submit: 'Search',
     suggestions: 'Suggestions',
@@ -232,7 +232,7 @@ export const en = {
     recentCount: '{count} recent searches',
     title: 'Search',
     titleFor: 'Search: {query}',
-    intro: 'Search the articles and card posts of Al Ummah Now.',
+    intro: 'Search the videos, articles and card posts of Al Ummah Now.',
     resultsFor: 'Results for “{query}”',
     total: '{count} results',
     totalOne: '1 result',
@@ -244,6 +244,9 @@ export const en = {
     prev: 'Previous',
     next: 'Next',
     cardPost: 'Card post',
+    videos: 'Videos',
+    seeAllVideos: 'All videos for “{query}”',
+    short: 'Short',
   },
   footer: {
     contact: 'Contact us',

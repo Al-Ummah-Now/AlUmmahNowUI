@@ -10,6 +10,7 @@ const t = en.search;
 const labels: ComboboxLabels = {
   articles: t.articles,
   scholars: t.scholars,
+  videos: t.videos,
   cards: t.cards,
   recent: t.recent,
   removeRecent: t.removeRecent,
@@ -88,6 +89,41 @@ afterEach(() => {
 });
 
 describe('search combobox', () => {
+  it('lists matching videos after the scholars, linking to the videos site; a bad link is dropped', async () => {
+    destroy();
+    form.dataset.videosWebUrl = 'https://videos.test';
+    form.dataset.videosApiUrl = 'https://api.videos.test';
+    const fetchVideos = vi.fn(async (_url: string, _signal: AbortSignal) => [
+      { id: 'v1', title: 'Ahmad on patience', href: 'https://videos.test/en/video/v1', thumbnailUrl: null, channelName: 'Channel', durationSeconds: 90, isShort: false, publishedAt: '' },
+      { id: 'v2', title: 'Ahmad elsewhere', href: 'https://evil.test/en/video/v2', thumbnailUrl: null, channelName: null, durationSeconds: null, isShort: false, publishedAt: '' },
+    ]);
+    ({ destroy } = initCombobox(form, { store, fetchHits, fetchScholars, fetchVideos, navigate, submit, debounceMs: 200 }));
+    await type('ahmad');
+    expect(fetchVideos.mock.calls[0]![0]).toBe('https://api.videos.test/api/search/suggestions?q=ahmad&types=video&limit=3');
+    const groups = [...listbox().querySelectorAll('[role="group"]')].map((g) => document.getElementById(g.getAttribute('aria-labelledby')!)!.textContent);
+    expect(groups).toEqual([t.videos, t.articles, t.cards]);
+    expect(options()[0]!.textContent).toBe('Ahmad on patience');
+    expect(options()).toHaveLength(HITS.length + 1 + 1); // 1 video + the posts + "See all"
+    key('ArrowDown');
+    key('Enter');
+    expect(navigate).toHaveBeenCalledWith('https://videos.test/en/video/v1');
+    expect(readRecent(store)).toEqual(['ahmad']);
+  });
+
+  it('videos alone still show when the CMS does not answer', async () => {
+    destroy();
+    form.dataset.videosWebUrl = 'https://videos.test';
+    form.dataset.videosApiUrl = 'https://api.videos.test';
+    fetchHits.mockResolvedValue(null);
+    const fetchVideos = vi.fn(async (_url: string, _signal: AbortSignal) => [
+      { id: 'v1', title: 'Ahmad', href: 'https://videos.test/en/video/v1', thumbnailUrl: null, channelName: null, durationSeconds: null, isShort: true, publishedAt: '' },
+    ]);
+    ({ destroy } = initCombobox(form, { store, fetchHits, fetchScholars, fetchVideos, navigate, submit, debounceMs: 200 }));
+    await type('ahmad');
+    expect(options().map((o) => o.textContent)).toEqual(['Ahmad', t.seeAll.replace('{query}', 'ahmad')]);
+    expect(status()).toBe(t.countOne);
+  });
+
   it('lists matching scholars first, in their own group, linking to their pages', async () => {
     fetchScholars.mockResolvedValueOnce([
       { id: -1, type: 'scholar', title: 'Aisha Rahman', slug: 'aisha-rahman', locale: 'en', href: '/en/scholars/aisha-rahman/', thumbnailUrl: null, excerpt: null, publishedAt: '' },

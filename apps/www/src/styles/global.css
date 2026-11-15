@@ -2464,6 +2464,105 @@ html[data-js] .ci-deck .tl-ov {
   object-fit: cover;
   filter: var(--media-filter);
 }
+/* the full search's sections: Videos (page 1, from the videos API) then Articles */
+.search-section + .search-section {
+  margin-block-start: 2.5rem;
+}
+.search-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin-block: 1.25rem 1rem;
+}
+.search-section-head h3 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+.search-section-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--link);
+  font-weight: 600;
+}
+.search-section-more .dir-icon {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+.search-videos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  gap: 1.5rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.search-video {
+  min-inline-size: 0;
+}
+.search-video-link {
+  display: grid;
+  gap: 0.5rem;
+  color: var(--text);
+  text-decoration: none;
+}
+.search-video-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--radius-media);
+  background: var(--color-night) url('/brand/pattern.svg');
+  background-size: 96px 96px;
+}
+.search-video-thumb img {
+  position: absolute;
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  filter: var(--media-filter);
+}
+.search-video-badge {
+  position: absolute;
+  inset-block-end: 0.5rem;
+  inset-inline-end: 0.5rem;
+  padding: 0.0625rem 0.4375rem;
+  border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--color-night-deep) 85%, transparent);
+  color: var(--color-paper);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.search-video-title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.search-video-link:hover .search-video-title {
+  text-decoration: underline;
+}
+.search-video-link:focus-visible {
+  outline: var(--focus);
+  outline-offset: 3px;
+  border-radius: var(--radius-media);
+}
+.search-video-channel {
+  margin: 0.25rem 0 0;
+  color: var(--text-soft);
+  font-size: 0.875rem;
+}
+.search-video mark {
+  background: var(--fanous-color-primary);
+  color: var(--fanous-color-on-primary);
+  border-radius: 2px;
+}
 .search-kind {
   margin-inline-start: 0.75rem;
   color: var(--accent-text);
@@ -2482,6 +2581,14 @@ html[data-js] .ci-deck .tl-ov {
   .search-result-thumb {
     inline-size: 4rem;
     block-size: 4rem;
+  }
+  /* two videos per row on a phone */
+  .search-videos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem 0.75rem;
+  }
+  .search-video-title {
+    font-size: 0.9375rem;
   }
 }
 
