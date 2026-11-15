@@ -1,12 +1,14 @@
 /**
  * The full search for /{l}/search, server-side through the CMS service binding (local dev:
  * CMS_PUBLIC_URL). Not cached here: the CMS caches answers by normalised query, and passes the
- * visitor's IP on (X-Client-IP) so its per-IP limit applies to this page too.
+ * visitor's IP on (X-Client-IP) so its per-IP limit applies to this page too. Videos come from the
+ * videos API's search (searchVideos, page 1 only).
  */
 import { CMS_TIMEOUT_MS } from '../cms';
 import type { Config, WwwEnv } from '../env';
 import type { Locale } from '../locale';
 import { isSearchHit, isSearchPage, QUERY_MAX, SEARCH_PAGE_SIZE, type SearchPage } from './suggest';
+import { videoHitsFromSearch, videoSearchUrl, type VideoHit } from './videos';
 
 export type SearchResult = { status: 'ok'; data: SearchPage } | { status: 'limited' } | { status: 'unavailable' };
 
@@ -43,6 +45,37 @@ export async function searchPosts(deps: SearchDeps, locale: Locale, q: string, p
     deps.log?.('search failed', { status: res.status });
   } catch (error) {
     deps.log?.('search failed', { error: controller.signal.aborted ? 'timeout' : String(error) });
+  } finally {
+    clearTimeout(timer);
+  }
+  return { status: 'unavailable' };
+}
+
+export type VideoSearchResult = { status: 'ok'; items: VideoHit[] } | { status: 'unavailable' };
+
+/**
+ * Videos matching the words (the videos API's search index, public videos only), for page 1 of
+ * /{l}/search. Same timeout as the CMS; a failure leaves the posts on their own.
+ */
+export async function searchVideos(
+  fetchImpl: typeof fetch,
+  cfg: Pick<Config, 'videosApiUrl' | 'videosWebUrl'>,
+  locale: Locale,
+  q: string,
+  opts: { timeoutMs?: number; log?: SearchDeps['log'] } = {},
+): Promise<VideoSearchResult> {
+  const headers = { Accept: 'application/json' };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? CMS_TIMEOUT_MS);
+  try {
+    const res = await fetchImpl(videoSearchUrl(cfg.videosApiUrl, q), { headers, signal: controller.signal });
+    if (res.ok) {
+      const items = videoHitsFromSearch(await res.json().catch(() => undefined), locale, cfg.videosWebUrl);
+      if (items) return { status: 'ok', items };
+    }
+    opts.log?.('video search failed', { status: res.status });
+  } catch (error) {
+    opts.log?.('video search failed', { error: controller.signal.aborted ? 'timeout' : String(error) });
   } finally {
     clearTimeout(timer);
   }

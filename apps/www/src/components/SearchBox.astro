@@ -14,6 +14,7 @@ const t = strings(locale).search;
 const labels = {
   articles: t.articles,
   scholars: t.scholars,
+  videos: t.videos,
   cards: t.cards,
   recent: t.recent,
   removeRecent: t.removeRecent,
@@ -39,6 +40,7 @@ const listId = `${id}-list`;
   data-locale={locale}
   data-cms-url={cfg.cmsPublicUrl}
   data-videos-web-url={cfg.videosWebUrl}
+  data-videos-api-url={cfg.videosApiUrl}
   data-labels={JSON.stringify(labels)}
 >
   <label class="visually-hidden" for={inputId}>{t.label}</label>

@@ -212,7 +212,7 @@ export const ar: Messages = {
     pageLink: 'الصفحة {page}',
   },
   search: {
-    label: 'ابحث في المقالات',
+    label: 'ابحث في المرئيات والمقالات',
     placeholder: 'بحث',
     submit: 'بحث',
     suggestions: 'اقتراحات',
@@ -233,7 +233,7 @@ export const ar: Messages = {
     recentCount: 'عمليات بحث أخيرة: {count}',
     title: 'بحث',
     titleFor: 'بحث: {query}',
-    intro: 'ابحث في مقالات الأمة الآن ومنشورات البطاقات.',
+    intro: 'ابحث في مرئيات الأمة الآن ومقالاتها ومنشورات البطاقات.',
     resultsFor: 'نتائج «{query}»',
     total: 'النتائج: {count}',
     totalOne: 'نتيجة واحدة',
@@ -245,6 +245,9 @@ export const ar: Messages = {
     prev: 'السابق',
     next: 'التالي',
     cardPost: 'منشور بطاقات',
+    videos: 'المرئيات',
+    seeAllVideos: 'كل المرئيات لـ«{query}»',
+    short: 'مقطع قصير',
   },
   footer: {
     contact: 'اتصل بنا',

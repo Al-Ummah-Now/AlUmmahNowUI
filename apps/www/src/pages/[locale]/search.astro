@@ -7,8 +7,10 @@ import { loadChrome, markSource, requestContext, routeLocale } from '../../lib/c
 import { stableImageUrl } from '../../lib/images';
 import { highlightParts } from '../../lib/search/highlight';
 import { normalizeSearchText } from '../../lib/search/normalize';
-import { searchDeps, searchPosts, type SearchResult } from '../../lib/search/server';
+import { searchDeps, searchPosts, searchVideos, type SearchResult, type VideoSearchResult } from '../../lib/search/server';
 import { QUERY_MAX, SEARCH_PAGE_SIZE } from '../../lib/search/suggest';
+import { videosSiteSearchUrl } from '../../lib/search/videos';
+import { clockDuration } from '../../lib/videos';
 
 const locale = routeLocale(Astro);
 if (!locale) return new Response(null, { status: 404 });
@@ -20,14 +22,21 @@ const searchable = normalizeSearchText(q) !== '';
 
 const rc = requestContext(Astro, locale);
 const { cfg, env, t } = rc;
-const [chrome, result] = await Promise.all([
+const deps = searchDeps(env, cfg);
+const [chrome, result, videoResult] = await Promise.all([
   loadChrome(rc),
   searchable
-    ? searchPosts(searchDeps(env, cfg), locale, q, page, Astro.request.headers.get('CF-Connecting-IP'))
+    ? searchPosts(deps, locale, q, page, Astro.request.headers.get('CF-Connecting-IP'))
     : Promise.resolve<SearchResult>({ status: 'ok', data: { items: [], page, limit: SEARCH_PAGE_SIZE, total: 0 } }),
+  // Videos on the first page only; the videos site's search has the rest
+  searchable && page === 1
+    ? searchVideos(fetch, cfg, locale, q, { log: deps.log })
+    : Promise.resolve<VideoSearchResult>({ status: 'ok', items: [] }),
 ]);
 markSource(Astro, rc);
-if (result.status !== 'ok') Astro.response.headers.set('Cache-Control', 'no-store');
+if (result.status !== 'ok' || videoResult.status !== 'ok') Astro.response.headers.set('Cache-Control', 'no-store');
+const videos = videoResult.status === 'ok' ? videoResult.items : [];
+const videoImg = (url: string | null) => stableImageUrl(cfg.videosWebUrl, url);
 const total = result.status === 'ok' ? result.data.total : 0;
 const pages = Math.max(1, Math.ceil(total / SEARCH_PAGE_SIZE));
 const qs = (l: string, p: number) => {
@@ -60,17 +69,41 @@ const title = searchable ? fmt(t.search.titleFor, { query: q }) : t.search.title
     <div class="wrap">
       {!searchable ? (
         <p class="search-prompt" id="search-results-heading">{t.search.prompt}</p>
-      ) : result.status === 'unavailable' ? (
-        <div class="empty" role="alert" id="search-results-heading"><p>{t.search.unavailable}</p></div>
-      ) : result.status === 'limited' ? (
-        <div class="empty" role="alert" id="search-results-heading"><p>{t.search.limited}</p></div>
       ) : (
         <>
-          <h2 class="search-results-heading" id="search-results-heading">
-            <bdi>{fmt(t.search.resultsFor, { query: q })}</bdi>
-            <span class="search-total">{total === 1 ? t.search.totalOne : fmt(t.search.total, { count: total })}</span>
-          </h2>
-          {result.data.items.length === 0 ? (
+          <h2 class="search-results-heading" id="search-results-heading"><bdi>{fmt(t.search.resultsFor, { query: q })}</bdi></h2>
+          {videos.length > 0 && (
+            <section class="search-section" aria-labelledby="search-videos-heading" data-search-videos>
+              <div class="search-section-head">
+                <h3 id="search-videos-heading">{t.search.videos}</h3>
+                <a class="search-section-more" href={videosSiteSearchUrl(cfg.videosWebUrl, locale, q)}><bdi>{fmt(t.search.seeAllVideos, { query: q })}</bdi><Icon name="chevron" /></a>
+              </div>
+              <ul class="search-videos">
+                {videos.map((v) => (
+                  <li class="search-video">
+                    <a class="search-video-link" href={v.href}>
+                      <span class="search-video-thumb">
+                        {videoImg(v.thumbnailUrl) ? <img src={videoImg(v.thumbnailUrl)} alt="" width="320" height="180" loading="lazy" decoding="async" /> : <span class="search-video-blank" aria-hidden="true" />}
+                        {v.isShort ? <span class="search-video-badge">{t.search.short}</span> : clockDuration(v.durationSeconds) && <span class="search-video-badge" dir="ltr">{clockDuration(v.durationSeconds)}</span>}
+                      </span>
+                      <span class="search-video-title" dir="auto">{highlightParts(v.title, q).map((part) => (part.mark ? <mark>{part.text}</mark> : part.text))}</span>
+                    </a>
+                    {v.channelName && <p class="search-video-channel" dir="auto">{v.channelName}</p>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          <section class="search-section" aria-labelledby="search-posts-heading">
+          <div class="search-section-head">
+            <h3 id="search-posts-heading">{t.search.articles}</h3>
+            {result.status === 'ok' && <span class="search-total">{total === 1 ? t.search.totalOne : fmt(t.search.total, { count: total })}</span>}
+          </div>
+          {result.status === 'unavailable' ? (
+            <div class="empty" role="alert"><p>{t.search.unavailable}</p></div>
+          ) : result.status === 'limited' ? (
+            <div class="empty" role="alert"><p>{t.search.limited}</p></div>
+          ) : result.data.items.length === 0 ? (
             <div class="empty">
               <p><bdi>{fmt(t.search.none, { query: q })}</bdi></p>
               <p>{t.search.noneHint}</p>
@@ -97,6 +130,7 @@ const title = searchable ? fmt(t.search.titleFor, { query: q }) : t.search.title
               {page < pages && <a href={qs(locale, page + 1)} rel="next">{t.search.next}<Icon name="chevron" /></a>}
             </nav>
           )}
+          </section>
         </>
       )}
     </div>

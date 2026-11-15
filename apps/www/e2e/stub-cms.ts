@@ -4,7 +4,8 @@
  * card posts, /cards and their images) and the About page; everything else is 503, so the rest of the suite still
  * renders from built-in content exactly as with no CMS at all. It also answers the videos admin's
  * `/public/site-theme` (STUB_SITE_THEME, default zujaj), and stands in for the videos API (www's
- * VIDEOS_API_URL in local E2E): `/api/sites/by-channel/:id` from e2e/stub-scholar-sites.ts, every
+ * VIDEOS_API_URL in local E2E): `/api/sites/by-channel/:id` from e2e/stub-scholar-sites.ts, video
+ * search from e2e/stub-video-search.ts, every
  * other `/api/` path proxied to the QA videos API (VIDEOS_UPSTREAM), as when www read it directly.
  *
  * Tokens are `v1.<base64url {k,id,exp}>.<sig>`: sig `good` is valid, `expired` is what the CMS says
@@ -15,6 +16,7 @@ import { createServer } from 'node:http';
 import { Buffer } from 'node:buffer';
 import { PREVIEW_ROWS, publicFixture, stubImage } from './stub-blocks.ts';
 import { scholarSitesFixture, siteByChannel } from './stub-scholar-sites.ts';
+import { videoSearchFixture } from './stub-video-search.ts';
 import { en as builtinEn } from '../src/content/fallback/en.ts';
 import { ar as builtinAr } from '../src/content/fallback/ar.ts';
 
@@ -72,6 +74,12 @@ createServer((req, res) => {
   if (site) {
     res.writeHead(site.status, { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' });
     return res.end(JSON.stringify(site.body));
+  }
+  // The videos API's search (e2e/stub-video-search.ts), with CORS for the browser's suggestions
+  const videoSearch = videoSearchFixture(url);
+  if (videoSearch) {
+    res.writeHead(videoSearch.status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' });
+    return res.end(JSON.stringify(videoSearch.body));
   }
   // The rest of the videos API: passed through to QA unchanged (method, body, Origin, and its CORS
   // answer), as when www and the browser read it directly

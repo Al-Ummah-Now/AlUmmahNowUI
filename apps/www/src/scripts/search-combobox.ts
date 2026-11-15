@@ -2,7 +2,8 @@
  * Search-as-you-type for every search box on the site (src/components/SearchBox.astro): an ARIA 1.2
  * combobox (input role=combobox + a listbox popup with grouped options and aria-activedescendant).
  *
- *  - typing: suggestions from the CMS (debounced, the previous request aborted), grouped by kind,
+ *  - typing: suggestions from the CMS (scholars, articles, card posts) and the videos API (videos,
+ *    linking to the videos site), debounced, the previous request aborted, grouped by kind,
  *    the matched text marked (normalisation-aware), a polite live region says how many
  *  - empty box on focus: the viewer's recent searches (localStorage), each removable (Delete key,
  *    or the × with a pointer), plus "Clear recent searches"
@@ -15,6 +16,7 @@ import { normalizeSearchText } from '../lib/search/normalize';
 import { highlightParts } from '../lib/search/highlight';
 import { addRecent, clearRecent, localStore, readRecent, removeRecent, type StorageLike } from '../lib/search/recent';
 import { fetchScholarSuggestions, fetchSuggestions, isSafeHref, scholarSuggestUrl, suggestUrl, type SearchHit } from '../lib/search/suggest';
+import { fetchVideoSuggestions, isVideoHref, videoSuggestUrl, type VideoHit } from '../lib/search/videos';
 import type { Locale } from '../lib/locale';
 import { stableImageUrl } from '../lib/images';
 import { fitToViewport } from './menu-fit';
@@ -23,6 +25,8 @@ export interface ComboboxLabels {
   articles: string;
   /** Scholars' pages (shown before the articles). Older pages may not send it. */
   scholars?: string;
+  /** Videos from the videos API (after the scholars). Older pages may not send it. */
+  videos?: string;
   cards: string;
   recent: string;
   removeRecent: string;
@@ -41,13 +45,15 @@ export interface ComboboxOptions {
   fetchHits?: (url: string, signal: AbortSignal) => Promise<SearchHit[] | null>;
   /** Scholar suggestions (the CMS /search/scholars); null = none. */
   fetchScholars?: (url: string, signal: AbortSignal) => Promise<SearchHit[] | null>;
+  /** Video suggestions (the videos API /api/search/suggestions); null = none. */
+  fetchVideos?: (url: string, signal: AbortSignal) => Promise<VideoHit[] | null>;
   store?: StorageLike | null;
   debounceMs?: number;
   navigate?: (href: string) => void;
   submit?: (form: HTMLFormElement) => void;
 }
 
-type Item = { kind: 'hit'; hit: SearchHit } | { kind: 'recent'; text: string } | { kind: 'all'; q: string };
+type Item = { kind: 'hit'; hit: SearchHit } | { kind: 'video'; video: VideoHit } | { kind: 'recent'; text: string } | { kind: 'all'; q: string };
 
 export const DEBOUNCE_MS = 200;
 
@@ -87,9 +93,12 @@ export function initCombobox(form: HTMLFormElement, opts: ComboboxOptions = {}):
   const locale = (form.dataset.locale === 'ar' ? 'ar' : 'en') as Locale;
   const cmsUrl = form.dataset.cmsUrl ?? '';
   const videosWebUrl = form.dataset.videosWebUrl ?? '';
+  const videosApiUrl = form.dataset.videosApiUrl ?? '';
   const store = opts.store === undefined ? localStore() : opts.store;
   const fetchHits = opts.fetchHits ?? ((url: string, signal: AbortSignal) => fetchSuggestions(url, signal));
   const fetchScholars = opts.fetchScholars ?? ((url: string, signal: AbortSignal) => fetchScholarSuggestions(url, locale, signal));
+  const fetchVideos =
+    opts.fetchVideos ?? ((url: string, signal: AbortSignal) => (videosApiUrl ? fetchVideoSuggestions(url, locale, videosWebUrl, signal) : Promise.resolve(null)));
   const navigate = opts.navigate ?? ((href: string) => location.assign(href));
   const submit = opts.submit ?? ((f: HTMLFormElement) => (typeof f.requestSubmit === 'function' ? f.requestSubmit() : f.submit()));
   const debounceMs = opts.debounceMs ?? DEBOUNCE_MS;
@@ -167,6 +176,26 @@ export function initCombobox(form: HTMLFormElement, opts: ComboboxOptions = {}):
     return li;
   }
 
+  /** A 48px thumbnail (a signed, expiring one shown as the videos web app's stable one), or a blank tile. */
+  function thumbnail(url: string | null, className: string): HTMLElement {
+    const src = videosWebUrl ? stableImageUrl(videosWebUrl, url) : url;
+    if (src) {
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = '';
+      img.width = 48;
+      img.height = 48;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.className = className;
+      return img;
+    }
+    const blank = document.createElement('span');
+    blank.className = `${className} search-thumb-blank`;
+    blank.setAttribute('aria-hidden', 'true');
+    return blank;
+  }
+
   function render(next: Item[], query: string) {
     items = next;
     active = -1;
@@ -195,27 +224,19 @@ export function initCombobox(form: HTMLFormElement, opts: ComboboxOptions = {}):
         remove.title = fill(labels.removeRecent, { query: it.text });
         remove.textContent = '×';
         li.append(text, remove);
+      } else if (it.kind === 'video') {
+        const li = option(target('video', labels.videos ?? 'Videos'), i);
+        li.classList.add('search-option-video');
+        li.append(thumbnail(it.video.thumbnailUrl, 'search-thumb search-thumb-video'));
+        const text = document.createElement('span');
+        text.className = 'search-option-title';
+        text.dir = 'auto';
+        textWithMarks(text, it.video.title, query);
+        li.append(text);
       } else if (it.kind === 'hit') {
         const groupLabel = it.hit.type === 'scholar' ? (labels.scholars ?? labels.articles) : it.hit.type === 'cards' ? labels.cards : labels.articles;
         const li = option(target(it.hit.type, groupLabel), i);
-        // a signed (expiring) thumbnail is shown as the videos web app's stable one
-        const thumb = videosWebUrl ? stableImageUrl(videosWebUrl, it.hit.thumbnailUrl) : it.hit.thumbnailUrl;
-        if (thumb) {
-          const img = document.createElement('img');
-          img.src = thumb;
-          img.alt = '';
-          img.width = 48;
-          img.height = 48;
-          img.loading = 'lazy';
-          img.decoding = 'async';
-          img.className = 'search-thumb';
-          li.append(img);
-        } else {
-          const blank = document.createElement('span');
-          blank.className = 'search-thumb search-thumb-blank';
-          blank.setAttribute('aria-hidden', 'true');
-          li.append(blank);
-        }
+        li.append(thumbnail(it.hit.thumbnailUrl, 'search-thumb'));
         const text = document.createElement('span');
         text.className = 'search-option-title';
         text.dir = 'auto';
@@ -256,16 +277,25 @@ export function initCombobox(form: HTMLFormElement, opts: ComboboxOptions = {}):
     const mine = new AbortController();
     controller = mine;
     const n = ++seq;
-    const [posts, scholars] = await Promise.all([fetchHits(suggestUrl(cmsUrl, locale, q), mine.signal), fetchScholars(scholarSuggestUrl(cmsUrl, locale, q), mine.signal)]);
+    const [posts, scholars, videos] = await Promise.all([
+      fetchHits(suggestUrl(cmsUrl, locale, q), mine.signal),
+      fetchScholars(scholarSuggestUrl(cmsUrl, locale, q), mine.signal),
+      fetchVideos(videoSuggestUrl(videosApiUrl, q), mine.signal),
+    ]);
     if (n !== seq || mine.signal.aborted || input.value !== q) return;
-    const hits = posts === null && !scholars?.length ? null : [...(scholars ?? []), ...(posts ?? [])];
-    if (hits === null) {
+    const vids = (videos ?? []).filter((v) => isVideoHref(v.href, videosWebUrl));
+    if (posts === null && !scholars?.length && !vids.length) {
       // No answer: no suggestions, the form still submits to the full search.
       render([], q);
       return;
     }
-    render([...hits.map((hit) => ({ kind: 'hit' as const, hit })), { kind: 'all' as const, q: q.trim() }], q);
-    announce(countLabel(labels, hits.length));
+    const found: Item[] = [
+      ...(scholars ?? []).map((hit) => ({ kind: 'hit' as const, hit })),
+      ...vids.map((video) => ({ kind: 'video' as const, video })),
+      ...(posts ?? []).map((hit) => ({ kind: 'hit' as const, hit })),
+    ];
+    render([...found, { kind: 'all' as const, q: q.trim() }], q);
+    announce(countLabel(labels, found.length));
   }
 
   function onInput() {
@@ -289,6 +319,10 @@ export function initCombobox(form: HTMLFormElement, opts: ComboboxOptions = {}):
       remember(input.value);
       close();
       if (isSafeHref(it.hit.href)) navigate(it.hit.href);
+    } else if (it.kind === 'video') {
+      remember(input.value);
+      close();
+      if (isVideoHref(it.video.href, videosWebUrl)) navigate(it.video.href);
     } else if (it.kind === 'recent') {
       input.value = it.text;
       remember(it.text);
