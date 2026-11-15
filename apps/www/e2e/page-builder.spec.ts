@@ -34,7 +34,8 @@ async function axeAndShot(page: Page, name: string, project: string) {
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
   const dir = `e2e-artifacts/${project}`;
   mkdirSync(dir, { recursive: true });
-  await page.screenshot({ path: `${dir}/${name}.png`, fullPage: true });
+  // CSS pixels: the whole sample page at a phone's 3x density would pass Chromium's 32767px limit
+  await page.screenshot({ path: `${dir}/${name}.png`, fullPage: true, scale: 'css' });
   expect(results.violations.map((v) => `${v.id}: ${v.help} (${v.nodes.map((n) => n.target.join(' ')).join(', ')})`)).toEqual([]);
 }
 
