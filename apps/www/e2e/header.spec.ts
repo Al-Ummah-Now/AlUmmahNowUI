@@ -6,6 +6,10 @@
  * scoped to the header, signed out and signed in with the account menu open.
  */
 import AxeBuilder from '@axe-core/playwright';
+
+// Off by default even with the WCAG tags (experimental in axe): the language button's name must contain
+// its visible label (WCAG 2.5.3), the bug the status page had in Arabic.
+const LABEL_IN_NAME = { rules: { 'label-content-name-mismatch': { enabled: true } } };
 import { expect, test, type Page } from '@playwright/test';
 import { AUTH_URL, LOCALES, WWW_URL } from './env';
 import { appLinksHtml, brandHtml, HEADER_LABELS, langButtonHtml, signInHtml } from '../../../packages/render/src/nav/header.js';
@@ -99,14 +103,14 @@ for (const scheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme: scheme });
       await page.goto(`/${l}/`);
       await page.evaluate(() => document.fonts.ready);
-      const out = await new AxeBuilder({ page }).include('.site-header').withTags(tags).analyze();
+      const out = await new AxeBuilder({ page }).include('.site-header').withTags(tags).options(LABEL_IN_NAME).analyze();
       expect(out.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
 
       await signedIn(page);
       await page.reload();
       await page.locator('#account .aun-acct-btn').click();
       await expect(page.locator('#account-menu')).toBeVisible();
-      const open = await new AxeBuilder({ page }).include('.site-header').withTags(tags).analyze();
+      const open = await new AxeBuilder({ page }).include('.site-header').withTags(tags).options(LABEL_IN_NAME).analyze();
       expect(open.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
     });
   }
