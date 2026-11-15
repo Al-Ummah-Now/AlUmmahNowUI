@@ -71,7 +71,10 @@ const STEPS: Step[] = [
       await p.route('**/api/public/v1/search/suggest**', (route) =>
         route.fulfill({ contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify(SUGGESTIONS) }),
       );
-      const input = p.locator('.site-header input[type=search]').first();
+      // below 1024px the header search sits in the menu panel
+      const menu = p.locator('.site-header .aun-menu-collapse');
+      if (await menu.isVisible()) await menu.click();
+      const input = p.locator('.site-header input[type=search]:visible');
       await input.click();
       await input.fill('sa');
       await p.waitForTimeout(600);

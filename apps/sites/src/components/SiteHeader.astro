@@ -3,8 +3,10 @@
  * The scholar site header: the Al Ummah Now header contract (AlUmmahNow docs/design/NAV.md "Header";
  * markup from the vendored packages/render/src/nav/header.js, styled by www's vendored
  * aun-nav.generated.css; `npm run check:fanous` keeps both byte-identical). Order, mirrored in Arabic:
- * the site's lockup · env badge · the site's own menu · Website, Videos · language · light/dark ·
- * account (or Sign in). The account button and menu are drawn here and filled from /auth/me by
+ * menu (below 1024px) · the site's lockup · env badge · the site's own links · Website, Videos ·
+ * language · light/dark · account (or Sign in). Below 1024px the site's links leave the bar
+ * (`aun-collapse`) and the menu button opens them in the `.aun-header-panel` popover (no script
+ * needed), so the bar is one 64px (56px) line on every screen. The account button and menu are drawn here and filled from /auth/me by
  * src/scripts/site.ts (the HTML is cached and the same for everyone).
  */
 import { fmt } from '../lib/i18n';
@@ -12,7 +14,7 @@ import { siteName } from '../lib/seo';
 import type { PageContext } from '../lib/context';
 import type { SiteNavItem } from '../lib/site-types';
 import { libraryUrl } from '../../../../packages/render/src/embeds';
-import { HEADER_LABELS, appLinksHtml, envBadgeHtml, langButtonHtml, signInHtml } from '../../../../packages/render/src/nav/header.js';
+import { HEADER_LABELS, appLinksHtml, envBadgeHtml, langButtonHtml, menuButtonHtml, signInHtml } from '../../../../packages/render/src/nav/header.js';
 import { modeIconSvg, modeToggleLabel } from '../../../../packages/render/src/nav/mode-toggle.js';
 import { siteBrandHtml } from '../../../../packages/render/src/site-brand';
 
@@ -49,9 +51,10 @@ const icon = (id: string) => `<img class="aun-app-icon" data-app="${id}" src="/a
 ---
 <header class="site-header aun-header">
   <div class="aun-header-row">
+    {items.length > 0 && <Fragment set:html={menuButtonHtml({ lang: locale, panel: 'site-menu' })} />}
     <Fragment set:html={siteBrandHtml({ lang: locale, href: `/${locale}/`, name, logoSrc: logo })} />
     <Fragment set:html={envBadgeHtml(cfg.appEnv, locale)} />
-    <div class="aun-header-primary">
+    <div class="aun-header-primary aun-collapse">
       <nav aria-label={t.mainNav} class="site-nav">
         <ul>
           {items.map((i) => (
@@ -110,4 +113,17 @@ const icon = (id: string) => `<img class="aun-app-icon" data-app="${id}" src="/a
       </div>
     </div>
   </div>
+  {items.length > 0 && (
+    <div id="site-menu" class="aun-header-panel" popover>
+      <nav aria-label={t.mainNav} class="panel-nav">
+        <ul>
+          {items.map((i) => (
+            <li>
+              <a href={i.href} aria-current={active === i.kind ? 'page' : undefined} rel={i.external ? 'noopener' : undefined}>{i.label}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </div>
+  )}
 </header>

@@ -1,6 +1,6 @@
 {
   "repo": "Al-Ummah-Now/AlUmmahNow",
-  "ref": "0f304fc53905c208aa5bf63a2418f077b75178a4",
+  "ref": "e2b7da3dac30e014c55a223eac795f09caa0d625",
   "source": "apps/web/src/theme/site-themes.css",
   "sourceSha256": "600d369f9ab157c3c1c7a5ed99095394e2d57c6dc1313742221c8eff00ce9eb9",
   "street": {
@@ -9,15 +9,15 @@
     "packages/fanous-tokens/street/fanous-street.css": "21745d4e1ab480765ab95d0d60d94b7edde2c305d943891763ae9e9d62276216"
   },
   "nav": {
-    "packages/fanous-tokens/nav/header.js": "9b788b238d4ccefbf3078312bbd7190db0dd708487fe495aeb08ec909d32b52e",
-    "packages/fanous-tokens/nav/header.d.ts": "c6a8786b29faf26f00f8235fa8fda0baf9d0768db37cc5cedd8b8462f1cc35db",
+    "packages/fanous-tokens/nav/header.js": "a3f37dbdcca0cea3d2e0f93758c18105388dc471cad8f6bb3b8e04790b71068d",
+    "packages/fanous-tokens/nav/header.d.ts": "2c9deda1ee5ae996a7efa0c95cbc5c2efb69416b55a2652db38c205830a7bf08",
     "packages/fanous-tokens/nav/mode-toggle.js": "a05f5544599c1364710427baf455213cbd5a2655a38e791e9cc055580db55a7b",
     "packages/fanous-tokens/nav/mode-toggle.d.ts": "c57c9674622027069eb1fa5b05b4268a187c557b0bd714c6698a39efce3c682e"
   },
   "outputs": {
-    "../../packages/render/src/styles/fanous-themes.generated.css": "cf3f9ca954d44834919b0ff4531e041d5e701d65611082d32381396f9bebef91",
-    "../../packages/render/src/themes/site-themes.generated.ts": "569f91f18f64c15a9bdb84ce8225d3d8a71b34457ebe0ef7fa8c2040fc335766",
-    "src/styles/aun-nav.generated.css": "38b3424ddabf7eca0060d425df3ef963ace3fa3dfd7794f5cba105b194cc2fb5",
+    "../../packages/render/src/styles/fanous-themes.generated.css": "6f37eca39aa1c79cff3af856b3e4c7b0c7607968823494ee8e26e2306385b6fb",
+    "../../packages/render/src/themes/site-themes.generated.ts": "f747fdce248c9f57e5d7d414776f259d4957272f63f93a0e662e31fd3c346502",
+    "src/styles/aun-nav.generated.css": "55efe9b5095a1375f8c1cbd219e9fcf3eaecfc55e74e19efed2a75abc0700d94",
     "public/aun-nav/icons/www.webp": "b0feb2c79ff71890862210489b49db96fb0d90f58d7818279f6bec53ae032b56",
     "public/aun-nav/icons/videos.webp": "856d631b870c5805002379271469e1dd475a23f3b07d61f5141b7f8149fd3366",
     "public/aun-nav/icons/profile.webp": "736e4650c588af4d08e9a5e065265026bd0332e8d5700f630eaf033b9147a2db",
@@ -27,11 +27,11 @@
     "../sites/public/aun-nav/icons/www.webp": "b0feb2c79ff71890862210489b49db96fb0d90f58d7818279f6bec53ae032b56",
     "../sites/public/aun-nav/icons/videos.webp": "856d631b870c5805002379271469e1dd475a23f3b07d61f5141b7f8149fd3366",
     "../sites/public/aun-nav/icons/profile.webp": "736e4650c588af4d08e9a5e065265026bd0332e8d5700f630eaf033b9147a2db",
-    "../../packages/render/src/themes/fanous-street.generated.js": "72ef5eb91240fbcfb8ab948211905ccf74d2c4b23f568909ea23e799a6271ead",
-    "../../packages/render/src/themes/fanous-street.generated.d.ts": "173f0a720bd62769159e8db4b4de59519edf9d4c9dd10cf50f433b9f20afeea6",
-    "../../packages/render/src/styles/fanous-street.generated.css": "6d275b43e76aac194015802c47d8f72de5c57d41efbfe52b4618a1e26d6536b9",
-    "../../packages/render/src/nav/header.js": "9b788b238d4ccefbf3078312bbd7190db0dd708487fe495aeb08ec909d32b52e",
-    "../../packages/render/src/nav/header.d.ts": "c6a8786b29faf26f00f8235fa8fda0baf9d0768db37cc5cedd8b8462f1cc35db",
+    "../../packages/render/src/themes/fanous-street.generated.js": "9ca28cfe21772f1ac8fa0b6a0bcb7e186aa51e175f45631e0a7b3e6e8419c640",
+    "../../packages/render/src/themes/fanous-street.generated.d.ts": "37bf07feb32f532a1f3ec4107d3dfb75b529a0fcc37ece0b8b9cb267ada9f48e",
+    "../../packages/render/src/styles/fanous-street.generated.css": "cded3fa3d695847954066a81834de8662c86efec27b5a023047a8862ceff4996",
+    "../../packages/render/src/nav/header.js": "a3f37dbdcca0cea3d2e0f93758c18105388dc471cad8f6bb3b8e04790b71068d",
+    "../../packages/render/src/nav/header.d.ts": "2c9deda1ee5ae996a7efa0c95cbc5c2efb69416b55a2652db38c205830a7bf08",
     "../../packages/render/src/nav/mode-toggle.js": "a05f5544599c1364710427baf455213cbd5a2655a38e791e9cc055580db55a7b",
     "../../packages/render/src/nav/mode-toggle.d.ts": "c57c9674622027069eb1fa5b05b4268a187c557b0bd714c6698a39efce3c682e"
   }

@@ -97,9 +97,12 @@ test.describe('menus stay inside the viewport', () => {
           }),
         );
         await page.goto(`/${l}/`);
-        const box = page.locator('.site-header [role="combobox"]').first();
+        // below 1024px the header search sits in the menu panel
+        const menu = page.locator('.site-header .aun-menu-collapse');
+        if (await menu.isVisible()) await menu.click();
+        const box = page.locator('.site-header [role="combobox"]:visible');
         await box.fill(l === 'ar' ? 'مقالة' : 'article');
-        await expectInViewport(page, page.locator('.site-header .search-popup').first(), 'search suggestions');
+        await expectInViewport(page, page.locator('.site-header .search-popup:visible'), 'search suggestions');
       });
 
       test(`${vp.width}×${vp.height} ${l}: account menu`, async ({ page, context }) => {

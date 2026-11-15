@@ -119,18 +119,9 @@ img {
   font-weight: 600;
 }
 
-/* Header: the shared bar (.aun-header, aun-nav.generated.css), dark in every theme; the row lines
-   up with the page's content column. Only the site's own menu and the account states are styled here. */
-.site-header {
-  --aun-header-max: calc(var(--wide) - 2 * var(--gutter));
-}
-/* the first line keeps the bar's height when the site's menu wraps to a row of its own */
-.site-header .aun-header-tools {
-  min-height: var(--aun-header-height);
-}
-.site-header .aun-brand-name:lang(ar) {
-  font-family: var(--font-ar);
-}
+/* Header: the shared bar (.aun-header, aun-nav.generated.css), dark in every theme, full width, one
+   typeface. Only the site's own links (in the bar, and in the menu panel below 1024px) and the account
+   states are styled here. */
 /* a site with no logo and no channel avatar: the name's first letter in the round slot */
 .aun-brand-letter {
   display: grid;
@@ -172,16 +163,24 @@ img {
   outline: 2px solid var(--header-active);
   outline-offset: -2px;
 }
-/* below 1024px the site's menu takes a scrolling row of its own under the bar */
-@media (max-width: 63.99rem) {
-  .site-header .aun-header-primary {
-    order: 3;
-    flex: 0 0 100%;
-    padding-block-end: 0.5rem;
-  }
-  .site-nav {
-    margin-inline-start: -0.75rem;
-  }
+/* the bar is one line: the links take what the lockup and tools leave and scroll in place; below
+   1024px they leave the bar (.aun-collapse) for the menu panel (.aun-header-panel popover) */
+.site-header .aun-header-primary {
+  flex: 1 1 0;
+}
+.panel-nav ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.panel-nav a[aria-current='page'] {
+  box-shadow: inset 3px 0 0 var(--header-active);
+}
+.panel-nav a[aria-current='page']:dir(rtl) {
+  box-shadow: inset -3px 0 0 var(--header-active);
 }
 /* Light / Dark needs JS (shown once the head script ran); the Moon while light, the Sun while dark */
 html:not([data-js]) .site-header .aun-mode {
