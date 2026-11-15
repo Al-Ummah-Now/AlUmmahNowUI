@@ -57,7 +57,9 @@ test.describe('home timeline', () => {
       await expect(page.locator('[data-days] .tl-date').first()).toHaveText(await newestDayHeading(page, 'en'));
       // Every item has a machine-readable time and a visible relative + absolute time.
       const first = items(page).first();
-      await expect(first.locator('time[datetime]')).toHaveText(/ago|now/);
+      // The seed's newest item is about 23-25 h old depending on the hour the run starts (SEED_NOW is
+      // the last 06:30 UTC), so it reads "23 hours ago" or "yesterday"; both are relative times.
+      await expect(first.locator('time[datetime]')).toHaveText(/ago|now|yesterday/);
       await expect(first.locator('[data-abs]')).not.toBeEmpty();
       // Images reserve their box (no layout shift); only one image may load eagerly.
       const imgs = await page.locator('.tl img').evaluateAll((els) => els.map((e) => [e.getAttribute('width'), e.getAttribute('height'), e.getAttribute('loading')]));
