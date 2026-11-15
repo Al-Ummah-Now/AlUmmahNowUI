@@ -48,7 +48,8 @@ test('a click on a timeline video gives the embed sound (Chromium); WebKit falls
   const iframe = entry.locator('iframe.facade-iframe');
   await expect(iframe).toHaveAttribute('src', /autoplay=1&gesture=1$/);
   await expect(iframe).toHaveAttribute('allow', /\bautoplay\b/);
-  expect(seen.some((u) => /gesture=1/.test(u))).toBe(true);
+  // The frame's request reaches the route a moment after src is set (slow WebKit workers, #119): wait for it.
+  await expect.poll(() => seen.some((u) => /gesture=1/.test(u))).toBe(true);
 
   const result = await page.waitForFunction(() => (window as unknown as { __aunTest: string | null }).__aunTest, null, { timeout: 15000 }).then((h) => h.jsonValue());
   if (browserName === 'chromium') expect(result, 'the click should let the embed play with sound').toBe('played-unmuted');
