@@ -10,7 +10,7 @@ import AxeBuilder from '@axe-core/playwright';
 // Set before withTags(): AxeBuilder.options() replaces the whole options object, tags included.
 const LABEL_IN_NAME = { rules: { 'label-content-name-mismatch': { enabled: true } } };
 import { expect, test } from '@playwright/test';
-import { HOSTS, SITES_PORT } from './stub-data.ts';
+import { HOSTS, LONG_NAME, SITES_PORT } from './stub-data.ts';
 import { appLinksHtml, langButtonHtml, menuButtonHtml, signInHtml } from '../../../packages/render/src/nav/header.js';
 import { siteBrandHtml } from '../../../packages/render/src/site-brand.ts';
 
@@ -234,9 +234,10 @@ test('the header is the Al Ummah Now header contract: builders, order, sizes, ph
 for (const l of ['en', 'ar'] as const) {
   test(`${l}: one line on every screen, full width, one typeface; below 1024px the menu panel holds the links`, async ({ page }) => {
     const rtl = l === 'ar';
-    for (const [w, bar] of [[1440, 64], [1024, 64], [1023, 64], [800, 64], [390, 56]] as const) {
+    for (const [w, bar] of [[1440, 64], [1024, 64], [1023, 64], [800, 64], [430, 56], [412, 56], [390, 56]] as const) {
       await page.setViewportSize({ width: w, height: 844 });
       await page.goto(at(HOSTS.both, `/${l}/videos/`));
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${w} no sideways scroll`).toBe(true);
       const header = page.locator('.site-header');
       expect((await header.boundingBox())!.height, `${w}`).toBe(bar);
       // full width: the lockup 16px from the edge (12px on phones), mirrored in Arabic
@@ -262,6 +263,18 @@ for (const l of ['en', 'ar'] as const) {
       await expect(panel.locator('a[aria-current="page"]')).toHaveCount(1);
       await page.keyboard.press('Escape');
       await expect(panel).toBeHidden();
+    }
+    // a long site name: still one line at every width, the wordmark truncates (ellipsis) and the tools stay whole
+    for (const [w, bar] of [[1440, 64], [1100, 64], [800, 64], [480, 56], [412, 56], [390, 56]] as const) {
+      await page.setViewportSize({ width: w, height: 844 });
+      await page.goto(at(HOSTS.custom, `/${l}/`));
+      await expect(page.locator('.aun-brand-name')).toHaveText(LONG_NAME[l]);
+      expect((await page.locator('.site-header').boundingBox())!.height, `long name ${w}`).toBe(bar);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `long name ${w} no sideways scroll`).toBe(true);
+      const mode = (await page.locator('.aun-mode').boundingBox())!;
+      expect(mode.width, `long name ${w}`).toBe(40);
+      expect(mode.x >= 0 && mode.x + mode.width <= w, `long name ${w} tools inside`).toBe(true);
+      if (w >= 400) expect(await page.locator('.aun-brand-name').evaluate((e) => getComputedStyle(e).textOverflow)).toBe('ellipsis');
     }
     // one typeface: every text in the bar uses the header's font
     const fonts = await page.locator('.site-header :is(.aun-brand-name, .site-nav a, .aun-lang, .aun-signin)').evaluateAll((els) => [...new Set(els.map((e) => getComputedStyle(e).fontFamily))]);
