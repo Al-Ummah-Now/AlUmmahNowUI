@@ -21,6 +21,8 @@ export interface WwwEnv extends WellKnownEnv {
   CMS_PUBLIC_URL?: string;
   /** The videos admin API: its public /public/site-theme is the site theme (src/lib/site-theme.ts). Empty: the default theme. */
   ADMIN_API_URL?: string;
+  /** The videos admin API's internal key (Secrets Store): the newsletter form and pages (src/lib/newsletter.ts). */
+  INTERNAL_API_KEY?: string | { get(): Promise<string> };
   /** Service binding to the env's CMS Worker (absent in local dev). */
   CMS?: ServiceBinding;
   /** Last-known-good CMS JSON. */

@@ -40,6 +40,8 @@
     "ANDROID_APP_CERTS": "{}"
   },
   "services": [{ "binding": "CMS", "service": "al-ummah-now-cms" }],
+  // The videos admin API's internal key: the newsletter form and pages (src/lib/newsletter.ts). Not inherited: each env repeats it.
+  "secrets_store_secrets": [{ "binding": "INTERNAL_API_KEY", "store_id": "f8eddc9944d041919ed8dc7d08d32308", "secret_name": "internal-api-key" }],
   "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "bb7463036880446abdc652a56f0b6509" }, { "binding": "FEED", "id": "5f27cddf86c84bbdbb59445ad867253c" }],
   // FEED: the home timeline, written only by the CMS feed job (docs/CMS_PUBLIC_API.md "Home timeline feed"); www only reads it.
   // The single writer of the CONTENT_SNAPSHOT keys (src/lib/snapshot-writer.ts). Not inherited: each env repeats it.
@@ -71,6 +73,7 @@
         "ANDROID_APP_CERTS": "{\"net.alummahnow.studio.qa\": [\"5A:1B:3D:2B:57:6E:9A:2D:F0:BF:1B:E3:F1:8C:40:20:13:F9:5C:09:EA:EE:7C:F7:31:10:C4:2F:B5:69:DD:C0\"]}"
       },
       "services": [{ "binding": "CMS", "service": "al-ummah-now-cms-qa" }],
+      "secrets_store_secrets": [{ "binding": "INTERNAL_API_KEY", "store_id": "f8eddc9944d041919ed8dc7d08d32308", "secret_name": "internal-api-key-qa" }],
       "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "2784164e06164e99bb5e837733dd38a2" }, { "binding": "FEED", "id": "6e459b34fb954cf4a199cfef57036a8c" }],
       "triggers": { "crons": ["*/5 * * * *"] },
       "version_metadata": { "binding": "CF_VERSION_METADATA" }
@@ -101,6 +104,7 @@
         "ANDROID_APP_CERTS": "{\"net.alummahnow.studio\": [\"5A:1B:3D:2B:57:6E:9A:2D:F0:BF:1B:E3:F1:8C:40:20:13:F9:5C:09:EA:EE:7C:F7:31:10:C4:2F:B5:69:DD:C0\"]}"
       },
       "services": [{ "binding": "CMS", "service": "al-ummah-now-cms-stage" }],
+      "secrets_store_secrets": [{ "binding": "INTERNAL_API_KEY", "store_id": "f8eddc9944d041919ed8dc7d08d32308", "secret_name": "internal-api-key-stage" }],
       "kv_namespaces": [{ "binding": "CONTENT_SNAPSHOT", "id": "9a4d7ee84d43427dad2e73e5904a21c7" }, { "binding": "FEED", "id": "33ddf8bb7eae439c91fcc4af22797f42" }],
       "triggers": { "crons": ["*/5 * * * *"] },
       "version_metadata": { "binding": "CF_VERSION_METADATA" }

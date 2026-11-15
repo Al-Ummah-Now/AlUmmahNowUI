@@ -52,7 +52,9 @@ describe('security headers', () => {
     const csp = contentSecurityPolicy(prod);
     expect(csp).toContain("script-src 'self'");
     expect(csp).not.toContain('unsafe-inline');
-    expect(csp).toContain('frame-src https://videos.alummahnow.net');
+    expect(csp).toContain('frame-src https://videos.alummahnow.net https://challenges.cloudflare.com;');
+    // Turnstile for the newsletter sign-up (loaded only when the admin API asks for a check)
+    expect(csp).toContain('https://static.cloudflareinsights.com https://challenges.cloudflare.com;');
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("img-src 'self' data: https://cms.alummahnow.net https://videos.alummahnow.net https://images.alummahnow.net https://*.b-cdn.net https://media.alummahnow.net https://media.stage.alummahnow.net https://media.qa.alummahnow.net;");
     expect(csp).toContain("form-action 'self' https://auth.alummahnow.net https://*.alummahnow.net;");

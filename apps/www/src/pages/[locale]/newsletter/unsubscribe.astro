@@ -1,0 +1,63 @@
+---
+/**
+ * /{l}/newsletter/unsubscribe?token=: the unsubscribe link in every issue (admin-api
+ * lib/newsletter.ts). GET only shows a button (mail scanners open links); its POST unsubscribes.
+ * The same URL takes the RFC 8058 one-click POST from mail clients (List-Unsubscribe-Post), which
+ * gets a plain 200. Never cached.
+ */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { loadChrome, markSource, requestContext, routeLocale } from '../../../lib/context';
+import { isOneClick, newsletterDeps, TOKEN, unsubscribe, type UnsubscribeOutcome } from '../../../lib/newsletter';
+
+const locale = routeLocale(Astro);
+if (!locale) return new Response(null, { status: 404 });
+const rc = requestContext(Astro, locale);
+const { cfg, env, t } = rc;
+const deps = newsletterDeps(env, cfg);
+Astro.response.headers.set('Cache-Control', 'no-store');
+Astro.response.headers.set('Referrer-Policy', 'no-referrer');
+
+let token = Astro.url.searchParams.get('token') ?? '';
+let outcome: UnsubscribeOutcome | null = null;
+if (Astro.request.method === 'POST') {
+  if (await isOneClick(Astro.request)) {
+    const r = await unsubscribe(deps, token);
+    return new Response(r === 'unavailable' ? 'Try again later' : 'OK', { status: r === 'unavailable' ? 503 : 200, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' } });
+  }
+  const form = await Astro.request.formData().catch(() => null);
+  token = typeof form?.get('token') === 'string' ? String(form!.get('token')) : token;
+  outcome = await unsubscribe(deps, token);
+} else if (Astro.request.method !== 'GET' && Astro.request.method !== 'HEAD') {
+  return new Response(null, { status: 405, headers: { Allow: 'GET, POST' } });
+}
+if (!outcome && !TOKEN.test(token)) outcome = 'invalid';
+if (outcome === 'unavailable') Astro.response.status = 503;
+const chrome = await loadChrome(rc);
+markSource(Astro, rc);
+const n = t.newsletter;
+const view =
+  outcome === 'unsubscribed' ? { title: n.unsubscribedTitle, body: n.unsubscribedBody }
+  : outcome === 'invalid' ? { title: n.invalidTitle, body: n.invalidBody }
+  : outcome === 'unavailable' ? { title: n.unavailableTitle, body: n.unavailableBody }
+  : { title: n.unsubscribeTitle, body: n.unsubscribeIntro };
+---
+<BaseLayout cfg={cfg} locale={locale} title={view.title} alternates={{ en: '/en/newsletter/', ar: '/ar/newsletter/' }} nav={chrome.nav} settings={chrome.settings} noindex>
+  <div class="page-head" data-newsletter-result={outcome ?? 'ask'}>
+    <div class="wrap">
+      <h1>{view.title}</h1>
+      <p class="lede">{view.body}</p>
+    </div>
+  </div>
+  <section class="section nl-result">
+    <div class="wrap nl-actions">
+      {(!outcome || outcome === 'unavailable') && (
+        <form method="post" action={`/${locale}/newsletter/unsubscribe`}>
+          <input type="hidden" name="token" value={token} />
+          <button class="button button-primary" type="submit">{n.unsubscribeButton}</button>
+        </form>
+      )}
+      {(outcome === 'unsubscribed' || outcome === 'invalid') && <a class="button button-primary" href={`/${locale}/newsletter/`}>{n.signUp}</a>}
+      <a class="nl-home" href={`/${locale}/`}>{n.home}</a>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,67 @@
+---
+/**
+ * The newsletter sign-up form (src/lib/newsletter.ts): in the footer of every page and on
+ * /{l}/newsletter/. Works without JavaScript (POST → 303 back with ?s=); with it, the script posts
+ * JSON, shows the answer in the live region, and renders Cloudflare Turnstile only when the admin
+ * API asks for it (403 human_check_required). The same answer for every address (no lookup).
+ */
+import { strings } from '../i18n';
+import type { Locale } from '../lib/locale';
+import type { SignupState } from '../lib/newsletter';
+
+interface Props { locale: Locale; id: string; variant: 'footer' | 'page'; state?: SignupState | null; siteKey?: string | null }
+const { locale, id, variant, state = null, siteKey = null } = Astro.props;
+const t = strings(locale).newsletter;
+const message: Record<SignupState, string> = {
+  check_email: t.checkEmail,
+  invalid: t.invalid,
+  rate_limited: t.rateLimited,
+  human_check: t.humanNoScript,
+  unavailable: t.unavailable,
+};
+const ok = state === 'check_email';
+---
+<form
+  class={`nl-form nl-${variant}`}
+  method="post"
+  action={`/${locale}/newsletter/`}
+  data-newsletter
+  data-locale={locale}
+  data-msg-sending={t.sending}
+  data-msg-check_email={t.checkEmail}
+  data-msg-invalid={t.invalid}
+  data-msg-rate_limited={t.rateLimited}
+  data-msg-human_check={t.human}
+  data-msg-unavailable={t.unavailable}
+  data-site-key={siteKey ?? ''}
+  novalidate
+>
+  <label class="nl-label" for={`${id}-email`}>{t.emailLabel}</label>
+  <div class="nl-row">
+    <input
+      class="nl-input"
+      id={`${id}-email`}
+      name="email"
+      type="email"
+      inputmode="email"
+      autocomplete="email"
+      dir="ltr"
+      required
+      maxlength="254"
+      aria-describedby={`${id}-status`}
+      aria-invalid={state === 'invalid' ? 'true' : undefined}
+    />
+    <button class="button button-primary nl-submit" type="submit">{t.submit}</button>
+  </div>
+  <!-- People never see or fill this; bots do -->
+  <div class="nl-trap" aria-hidden="true">
+    <label for={`${id}-website`}>Website</label>
+    <input id={`${id}-website`} name="website" type="text" tabindex="-1" autocomplete="off" />
+  </div>
+  <div class="nl-turnstile" data-turnstile hidden></div>
+  <p class={`nl-status${state && !ok ? ' nl-status-error' : ''}`} id={`${id}-status`} role="status" aria-live="polite" aria-atomic="true" data-nl-status>{state ? message[state] : ''}</p>
+</form>
+<script>
+  import { initNewsletterForms } from '../scripts/newsletter-form';
+  initNewsletterForms();
+</script>

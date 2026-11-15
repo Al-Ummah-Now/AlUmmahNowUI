@@ -15,6 +15,7 @@ import { createServer } from 'node:http';
 import { Buffer } from 'node:buffer';
 import { PREVIEW_ROWS, publicFixture, stubImage } from './stub-blocks.ts';
 import { scholarSitesFixture, siteByChannel } from './stub-scholar-sites.ts';
+import { newsletterFixture } from './stub-newsletter.ts';
 import { en as builtinEn } from '../src/content/fallback/en.ts';
 import { ar as builtinAr } from '../src/content/fallback/ar.ts';
 
@@ -62,6 +63,23 @@ createServer((req, res) => {
   if (url.pathname === '/public/site-theme') {
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30' });
     return res.end(JSON.stringify({ theme: STUB_SITE_THEME }));
+  }
+  // The videos admin's newsletter endpoints (www's sign-up form, confirm and unsubscribe pages)
+  if (url.pathname.startsWith('/internal/newsletter/')) {
+    const chunks: Buffer[] = [];
+    req.on('data', (c: Buffer) => chunks.push(c));
+    req.on('end', () => {
+      let body: Record<string, unknown> = {};
+      try {
+        body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+      } catch {
+        body = {};
+      }
+      const key = req.headers['x-api-key'];
+      const out = newsletterFixture(url.pathname, req.method ?? 'GET', typeof key === 'string' ? key : undefined, body)!;
+      send(out.status, out.body);
+    });
+    return;
   }
   const sites = scholarSitesFixture(url.pathname.replace(/^\/api\/public\/v1/, ''), url.searchParams.get('locale') ?? 'en');
   if (sites && url.pathname.startsWith('/api/public/v1/')) return send(sites.status, sites.body);

@@ -1,0 +1,57 @@
+---
+/**
+ * /{l}/newsletter/: the sign-up page, and where every sign-up form posts (src/lib/newsletter.ts).
+ * The script posts JSON and gets JSON back; a form without JavaScript gets a 303 back here with
+ * ?s=<state>, shown above the form. The plain page is the same for everyone (edge-cached); with
+ * ?s= it is not cached.
+ */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import NewsletterForm from '../../../components/NewsletterForm.astro';
+import { loadChrome, markSource, requestContext, routeLocale } from '../../../lib/context';
+import { isSignupState, newsletterDeps, readSignup, subscribe } from '../../../lib/newsletter';
+
+const locale = routeLocale(Astro);
+if (!locale) return new Response(null, { status: 404 });
+const rc = requestContext(Astro, locale);
+const { cfg, env, t } = rc;
+
+if (Astro.request.method === 'POST') {
+  const json = (Astro.request.headers.get('Accept') ?? '').includes('application/json');
+  const deps = newsletterDeps(env, cfg);
+  const input = await readSignup(Astro.request, locale);
+  const result = await subscribe(deps, input, Astro.request.headers.get('CF-Connecting-IP'));
+  if (json) {
+    return new Response(JSON.stringify(result), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  }
+  return new Response(null, { status: 303, headers: { Location: `/${locale}/newsletter/?s=${result.status}`, 'Cache-Control': 'no-store' } });
+}
+if (Astro.request.method !== 'GET' && Astro.request.method !== 'HEAD') return new Response(null, { status: 405, headers: { Allow: 'GET, POST' } });
+
+const raw = Astro.url.searchParams.get('s');
+const state = isSignupState(raw) ? raw : null;
+if (state) Astro.response.headers.set('Cache-Control', 'no-store');
+const chrome = await loadChrome(rc);
+markSource(Astro, rc);
+---
+<BaseLayout
+  cfg={cfg}
+  locale={locale}
+  title={t.newsletter.title}
+  description={t.newsletter.intro}
+  alternates={{ en: '/en/newsletter/', ar: '/ar/newsletter/' }}
+  nav={chrome.nav}
+  settings={chrome.settings}
+  noindex={!!state}
+>
+  <div class="page-head">
+    <div class="wrap">
+      <h1>{t.newsletter.title}</h1>
+      <p class="lede">{t.newsletter.intro}</p>
+    </div>
+  </div>
+  <section class="section nl-page" aria-label={t.newsletter.signUp}>
+    <div class="wrap">
+      <NewsletterForm locale={locale} id="newsletter-page" variant="page" state={state} />
+    </div>
+  </section>
+</BaseLayout>
