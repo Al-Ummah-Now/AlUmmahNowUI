@@ -11,7 +11,7 @@ import AxeBuilder from '@axe-core/playwright';
 const LABEL_IN_NAME = { rules: { 'label-content-name-mismatch': { enabled: true } } };
 import { expect, test } from '@playwright/test';
 import { HOSTS, LONG_NAME, SITES_PORT } from './stub-data.ts';
-import { appLinksHtml, langButtonHtml, menuButtonHtml, signInHtml } from '../../../packages/render/src/nav/header.js';
+import { langButtonHtml, menuButtonHtml, signInHtml } from '../../../packages/render/src/nav/header.js';
 import { siteBrandHtml } from '../../../packages/render/src/site-brand.ts';
 
 const at = (host: string, path = '/') => `http://${host}:${SITES_PORT}${path}`;
@@ -202,7 +202,8 @@ test('Light / Dark is the videos site\'s icon toggle: Moon in light, Sun in dark
 test('the header is the Al Ummah Now header contract: builders, order, sizes, phone collapse', async ({ page, request }) => {
   const html = await (await request.get(at(HOSTS.both, '/en/videos/'))).text();
   expect(html).toContain(siteBrandHtml({ lang: 'en', href: '/en/', name: 'Sh. Mustafa Elbadry', logoSrc: 'https://images.alummahnow.net/e2e/logo.png' }));
-  expect(html).toContain(appLinksHtml({ lang: 'en', links: [{ id: 'www', href: 'https://www.qa.alummahnow.net/en/' }, { id: 'videos', href: 'https://videos.qa.alummahnow.net/en' }] }));
+  // no links to other sites in the header (owner, 2026-11-15): Website and Videos stay in the account menu
+  expect(html).not.toMatch(/class="aun-apps?[" ]/);
   expect(html).toContain(langButtonHtml({ lang: 'en', href: '/ar/videos/' }));
   expect(html).toContain(signInHtml({ lang: 'en', href: `/auth/login?return=${encodeURIComponent('/en/videos/')}&lang=en` }));
   expect(html).toContain(menuButtonHtml({ lang: 'en', panel: 'site-menu' }));
@@ -215,15 +216,13 @@ test('the header is the Al Ummah Now header contract: builders, order, sizes, ph
   expect(row).toEqual(['aun-icon-btn', 'aun-brand', 'aun-header-primary', 'aun-header-tools']);
   const tools = await page.locator('.aun-header-tools > *').evaluateAll((els) => els.map((e) => e.id || e.className.split(' ')[0]));
   // language first, then light/dark, then the account (Sign in signed out)
-  expect(tools).toEqual(['aun-apps', 'aun-lang', 'mode-toggle', 'aun-signin', 'account']);
+  expect(tools).toEqual(['aun-lang', 'mode-toggle', 'aun-signin', 'account']);
   await expect(page.locator('.aun-lang')).toHaveAccessibleName('Switch to Arabic: العربية');
   const phone = (page.viewportSize()?.width ?? 1366) < 640;
   const h = async (sel: string) => (await page.locator(sel).first().boundingBox())!.height;
   expect(await h('.site-header')).toBe(phone ? 56 : 64);
   for (const sel of ['.aun-lang', '.aun-mode', '.aun-signin']) expect(await h(sel), sel).toBe(40);
   expect((await page.locator('.aun-brand-mark').boundingBox())!.width).toBe(phone ? 32 : 36);
-  if (phone) await expect(page.locator('.aun-apps')).toBeHidden();
-  else await expect(page.locator('.aun-app')).toHaveCount(2);
   // sticky
   await page.evaluate(() => (document.body.style.minHeight = '300vh'));
   await page.evaluate(() => scrollTo(0, 900));
@@ -234,7 +233,7 @@ test('the header is the Al Ummah Now header contract: builders, order, sizes, ph
 for (const l of ['en', 'ar'] as const) {
   test(`${l}: one line on every screen, full width, one typeface; below 1024px the menu panel holds the links`, async ({ page }) => {
     const rtl = l === 'ar';
-    for (const [w, bar] of [[1440, 64], [1024, 64], [1023, 64], [800, 64], [430, 56], [412, 56], [390, 56]] as const) {
+    for (const [w, bar] of [[1440, 64], [1280, 64], [1024, 64], [1023, 64], [800, 64], [640, 64], [639, 56], [480, 56], [430, 56], [412, 56], [390, 56], [360, 56], [320, 56]] as const) {
       await page.setViewportSize({ width: w, height: 844 });
       await page.goto(at(HOSTS.both, `/${l}/videos/`));
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${w} no sideways scroll`).toBe(true);
@@ -264,8 +263,19 @@ for (const l of ['en', 'ar'] as const) {
       await page.keyboard.press('Escape');
       await expect(panel).toBeHidden();
     }
+    // signed in: the account button in place of Sign in, still one line
+    const isMe = (u: URL) => u.pathname === '/auth/me';
+    await page.route(isMe, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ signedIn: true, sub: 'u1', name: 'Test Viewer', email: 'viewer@example.com', profile: { displayName: 'Test Viewer', displayNameLocalized: { ar: 'مشاهد التجربة' } } }) }));
+    for (const [w, bar] of [[1440, 64], [1280, 64], [1024, 64], [1023, 64], [800, 64], [640, 64], [639, 56], [480, 56], [430, 56], [412, 56], [390, 56], [360, 56], [320, 56]] as const) {
+      await page.setViewportSize({ width: w, height: 844 });
+      await page.goto(at(HOSTS.both, `/${l}/videos/`));
+      await expect(page.getByTestId('site-account-button')).toBeVisible();
+      expect((await page.locator('.site-header').boundingBox())!.height, `signed in ${w}`).toBe(bar);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `signed in ${w} no sideways scroll`).toBe(true);
+    }
+    await page.unroute(isMe);
     // a long site name: still one line at every width, the wordmark truncates (ellipsis) and the tools stay whole
-    for (const [w, bar] of [[1440, 64], [1100, 64], [800, 64], [480, 56], [412, 56], [390, 56]] as const) {
+    for (const [w, bar] of [[1440, 64], [1100, 64], [800, 64], [480, 56], [412, 56], [390, 56], [320, 56]] as const) {
       await page.setViewportSize({ width: w, height: 844 });
       await page.goto(at(HOSTS.custom, `/${l}/`));
       await expect(page.locator('.aun-brand-name')).toHaveText(LONG_NAME[l]);

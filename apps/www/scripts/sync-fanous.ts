@@ -29,7 +29,7 @@
  * The header's markup builders (`nav/header.js`, which imports `nav/mode-toggle.js`, and their .d.ts)
  * are vendored byte for byte into NAV_JS_OUT (packages/render/src/nav), so www, the scholar sites and
  * the developer site render the exact markup of AlUmmahNow docs/design/NAV.md "Header". The scholar
- * sites also serve the app icons their header links show (SITES_ICON_OUT). `--check` fails when any
+ * sites also serve the app icons their account menu shows (SITES_ICON_OUT). `--check` fails when any
  * vendored file differs from the lock, and when a byte-for-byte copy differs from its upstream hash.
  */
 import { createHash } from 'node:crypto';
@@ -50,7 +50,7 @@ export const NAV_OUT = 'src/styles/aun-nav.generated.css';
 export const NAV_ICON_IDS = ['www', 'videos', 'profile', 'cms', 'admin', 'auth-admin'] as const;
 const NAV_ICON_SOURCE = 'packages/fanous-tokens/nav/icons';
 export const NAV_ICON_OUT = 'public/aun-nav/icons';
-/** The scholar sites' header links (Website, Videos: nav/header.js appLinksHtml) and account menu apps (+ Your profile): their icons, same-origin. */
+/** The scholar sites' account menu apps (Website, Videos, Your profile): their icons, same-origin. */
 export const SITES_ICON_IDS = ['www', 'videos', 'profile'] as const;
 export const SITES_ICON_OUT = '../sites/public/aun-nav/icons';
 /** The header builders, vendored byte for byte (header.js imports ./mode-toggle.js, so they sit together). */

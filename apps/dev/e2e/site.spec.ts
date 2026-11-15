@@ -83,18 +83,35 @@ test('Contact links to the platform form with the right topic and language', asy
   expect(hrefs).toEqual(['https://videos.alummahnow.net/ar/contact?topic=partnership', 'https://videos.alummahnow.net/ar/contact?topic=general']);
 });
 
-test('phone: www’s collapse, the links on their own row that scrolls, tools beside the brand', async ({ page, isMobile }) => {
-  test.skip(!isMobile, 'phone only');
+test('one line on every screen, as www: below 1024px the links leave the bar for the menu panel', async ({ page }) => {
   for (const locale of LOCALES) {
-    await page.goto(pagePath(locale, ''));
-    const brand = await page.locator('.aun-brand').boundingBox();
-    const tools = await page.locator('.aun-header-tools').boundingBox();
-    const nav = await page.locator('.primary-nav').boundingBox();
-    expect(Math.abs(brand!.y + brand!.height / 2 - (tools!.y + tools!.height / 2))).toBeLessThan(4);
-    expect(nav!.y).toBeGreaterThanOrEqual(brand!.y + brand!.height);
-    await expect(page.locator('.primary-nav a')).toHaveCount(PAGES.length - 1);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    expect(await page.locator('.primary-nav').evaluate((n) => getComputedStyle(n).overflowX)).toBe('auto');
+    const rtl = locale === 'ar';
+    for (const [w, bar] of [[1440, 64], [1280, 64], [1024, 64], [1023, 64], [800, 64], [640, 64], [639, 56], [480, 56], [430, 56], [412, 56], [390, 56], [360, 56], [320, 56]] as const) {
+      await page.setViewportSize({ width: w, height: 844 });
+      await page.goto(pagePath(locale, 'infrastructure'));
+      expect((await page.locator('.site-header').boundingBox())!.height, `${locale} ${w}`).toBe(bar);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      const menu = page.getByRole('button', { name: rtl ? 'القائمة' : 'Menu' });
+      if (w >= 1024) {
+        // full width: the brand 16px from the edge, mirrored in Arabic
+        const mark = (await page.locator('.aun-brand-mark').boundingBox())!;
+        expect(rtl ? w - (mark.x + mark.width) : mark.x).toBe(16);
+        await expect(menu).toBeHidden();
+        await expect(page.locator('.primary-nav')).toBeVisible();
+        continue;
+      }
+      await expect(page.locator('.primary-nav')).toBeHidden();
+      await menu.click();
+      const panel = page.locator('#site-menu');
+      await expect(panel).toBeVisible();
+      expect((await panel.boundingBox())!.y).toBe(bar);
+      await expect(panel.getByRole('link')).toHaveCount(PAGES.length - 1);
+      await expect(panel.locator('a[aria-current="page"]')).toHaveAttribute('href', pagePath(locale, 'infrastructure'));
+      const axe = await new AxeBuilder({ page }).include('.site-header').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
+      expect(axe.violations.map((v) => v.id), `${locale} menu panel`).toEqual([]);
+      await page.keyboard.press('Escape');
+      await expect(panel).toBeHidden();
+    }
   }
 });
 

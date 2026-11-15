@@ -1,7 +1,8 @@
 /**
  * The header is the Al Ummah Now header contract (AlUmmahNow docs/design/NAV.md "Header"; owner
  * 2026-11-14: "UNIFY"): the markup of the vendored builders (packages/render/src/nav/header.js),
- * their order (brand · env · links + search · app links · language · light/dark · account), the
+ * their order (menu · brand · env · links + search · language · light/dark · account; no links to
+ * other sites: owner, 2026-11-15), the
  * sizes (40px controls, a 64px bar, 56px on phones: one line on every screen, full width, one typeface),
  * sticky, the menu panel below 1024px, and WCAG 2.2 AA
  * scoped to the header, signed out and signed in with the account menu open.
@@ -14,7 +15,7 @@ import AxeBuilder from '@axe-core/playwright';
 const LABEL_IN_NAME = { rules: { 'label-content-name-mismatch': { enabled: true } } };
 import { expect, test, type Page } from '@playwright/test';
 import { AUTH_URL, LOCALES, WWW_URL } from './env';
-import { appLinksHtml, brandHtml, HEADER_LABELS, langButtonHtml, menuButtonHtml, signInHtml } from '../../../packages/render/src/nav/header.js';
+import { brandHtml, HEADER_LABELS, langButtonHtml, menuButtonHtml, signInHtml } from '../../../packages/render/src/nav/header.js';
 
 const box = async (page: Page, sel: string) => (await page.locator(sel).first().boundingBox())!;
 
@@ -32,10 +33,8 @@ for (const l of LOCALES) {
   test(`${l}: the header is the contract's markup (nav/header.js), in the contract's order`, async ({ page }) => {
     const html = await (await page.request.get(`/${l}/articles/`)).text();
     expect(html).toContain(brandHtml({ lang: l, href: `/${l}/`, logoSrc: '/brand/logo-192.webp' }));
-    // the videos site of this environment (VIDEOS_WEB_URL), its library in the page's language
-    const videos = /<a class="aun-app" href="([^"]+)">/.exec(html)?.[1] ?? '';
-    expect(videos).toMatch(new RegExp(`^https://videos\\.[a-z.]*alummahnow\\.net/${l}$`));
-    expect(html).toContain(appLinksHtml({ lang: l, links: [{ id: 'videos', href: videos }] }));
+    // no links to other sites in the header (owner, 2026-11-15)
+    expect(html).not.toMatch(/class="aun-apps?[" ]/);
     expect(html).toContain(langButtonHtml({ lang: l, href: `/${other}/articles/` }));
     expect(html).toContain(signInHtml({ lang: l, href: `/auth/login?return=${encodeURIComponent(`/${l}/articles/`)}` }));
     expect(html).toContain(menuButtonHtml({ lang: l, panel: 'site-menu' }));
@@ -47,12 +46,12 @@ for (const l of LOCALES) {
     expect(row.filter((c) => c !== 'aun-env')).toEqual(['aun-icon-btn', 'aun-brand', 'aun-header-primary', 'aun-header-tools']);
     const tools = await page.locator('.aun-header-tools > *').evaluateAll((els) => els.map((e) => e.id || e.className.split(' ')[0]));
     // language first, then light/dark (settled 2026-11-14), then the account
-    expect(tools).toEqual(['aun-apps', 'aun-lang', 'mode-toggle', 'account']);
+    expect(tools).toEqual(['aun-lang', 'mode-toggle', 'account']);
   });
 
   test(`${l}: one line on every screen, full width, one typeface; below 1024px the menu panel holds the links and search`, async ({ page }) => {
     const rtl = l === 'ar';
-    for (const [w, bar] of [[1440, 64], [1024, 64], [1023, 64], [800, 64], [430, 56], [412, 56], [390, 56]] as const) {
+    for (const [w, bar] of [[1440, 64], [1280, 64], [1024, 64], [1023, 64], [800, 64], [640, 64], [639, 56], [480, 56], [430, 56], [412, 56], [390, 56], [360, 56], [320, 56]] as const) {
       await page.setViewportSize({ width: w, height: 844 });
       await page.goto(`/${l}/articles/`);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${w} no sideways scroll`).toBe(true);
@@ -87,11 +86,22 @@ for (const l of LOCALES) {
     // one typeface: every text in the bar uses the header's font
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`/${l}/articles/`);
-    const fonts = await page.locator('.site-header :is(.aun-brand-name, .primary-nav a, .aun-lang, .aun-signin, .aun-app-name)').evaluateAll((els) => [...new Set(els.map((e) => getComputedStyle(e).fontFamily))]);
+    const fonts = await page.locator('.site-header :is(.aun-brand-name, .primary-nav a, .aun-lang, .aun-signin)').evaluateAll((els) => [...new Set(els.map((e) => getComputedStyle(e).fontFamily))]);
     expect(fonts).toHaveLength(1);
     expect(fonts[0]).toContain(rtl ? 'Noto Naskh Arabic' : 'system-ui');
     // Latin inside the Arabic header falls to system-ui, as in English
     if (rtl) expect(fonts[0]).toMatch(/"?Geeza Pro"?, system-ui/);
+  });
+
+  test(`${l}: signed in, still one line from 320px to 1440px`, async ({ page }) => {
+    await signedIn(page);
+    for (const [w, bar] of [[1440, 64], [1280, 64], [1024, 64], [1023, 64], [800, 64], [640, 64], [639, 56], [480, 56], [430, 56], [412, 56], [390, 56], [360, 56], [320, 56]] as const) {
+      await page.setViewportSize({ width: w, height: 844 });
+      await page.goto(`/${l}/articles/`);
+      await expect(page.locator('#account .aun-acct-btn')).toBeVisible();
+      expect((await box(page, '.site-header')).height, `${w}`).toBe(bar);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${w} no sideways scroll`).toBe(true);
+    }
   });
 
   test(`${l}: one language button, named for its action, keeping the page`, async ({ page }) => {
@@ -118,13 +128,7 @@ test('sizes: 40px controls, the bar 64px (56px on phones), sticky; Sign in is th
   const signin = page.locator('.aun-signin');
   await expect(signin).toHaveText('Sign in');
   expect(await signin.evaluate((e) => getComputedStyle(e).borderRadius)).toBe('999px');
-  // app links: icon and name at 1280px and up, icon only below, gone on phones
-  const app = page.locator('.aun-apps .aun-app');
-  if (phone) await expect(app).toBeHidden();
-  else {
-    await expect(app).toHaveAccessibleName('Videos');
-    expect(await app.locator('.aun-app-name').isVisible()).toBe((page.viewportSize()?.width ?? 0) >= 1280);
-  }
+  await expect(page.locator('.site-header :is(.aun-apps, .aun-app)')).toHaveCount(0);
   // sticky: the bar stays at the top while the page scrolls
   await page.evaluate(() => (document.body.style.minHeight = '300vh'));
   await page.evaluate(() => scrollTo(0, 900));
