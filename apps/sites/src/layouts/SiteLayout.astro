@@ -7,6 +7,7 @@ import { MODE_SCRIPT } from '../lib/theme-mode';
 import { renderTheme, THEME_CHROME } from '../lib/theme';
 import { hreflangLinks, jsonLdText, siteJsonLd, siteName } from '../lib/seo';
 import type { PageContext } from '../lib/context';
+import { channelCardUrl, SHARE_CARD, shareCardUrl } from '../../../../packages/render/src/share-card';
 
 interface Props {
   ctx: PageContext;
@@ -17,6 +18,8 @@ interface Props {
   canonical: string;
   ogType?: 'website' | 'article' | 'video.other';
   ogImage?: string | null;
+  /** A watch page's video: its share card is that video's (`/og/v/<id>.jpg`) */
+  ogVideoId?: string | null;
   jsonLd?: unknown[];
   noindex?: boolean;
   active?: string;
@@ -24,7 +27,7 @@ interface Props {
   hreflang?: boolean;
 }
 
-const { ctx, title, description, alternates, canonical, ogType = 'website', ogImage, jsonLd = [], noindex, active, hreflang = true } = Astro.props;
+const { ctx, title, description, alternates, canonical, ogType = 'website', ogImage, ogVideoId, jsonLd = [], noindex, active, hreflang = true } = Astro.props;
 const { site, locale, t, cfg, scheme } = ctx;
 const name = siteName(site, locale);
 // Studio → Site → Search engines (SS16): the owner's title template (`%s` = this page's title)
@@ -38,7 +41,9 @@ const theme = renderTheme(site.site.themeRef).id;
 const chrome = THEME_CHROME[theme];
 // Never indexed: test environments, previews, sites still in setup
 const robots = noindex || !cfg.isProduction || site.preview || site.site.status !== 'live' ? 'noindex, nofollow' : 'index, follow';
-const image = ogImage || site.site.logoUrl || site.channel.avatarUrl;
+// Always a 1200x630 card (large link previews): the page's picture, else the site's logo or the
+// channel's avatar, framed by the videos app; else the channel's own card (its banner or avatar)
+const image = shareCardUrl(cfg.videosWebUrl, ogImage || site.site.logoUrl || site.channel.avatarUrl, ogVideoId) || channelCardUrl(cfg.videosWebUrl, site.channel.id);
 const favicon = site.site.faviconUrl || site.site.logoUrl || site.channel.avatarUrl;
 const ld = [...siteJsonLd(site, locale, ctx.channelHref, scheme), ...jsonLd];
 ---
@@ -59,9 +64,17 @@ const ld = [...siteJsonLd(site, locale, ctx.channelHref, scheme), ...jsonLd];
     <meta property="og:title" content={title} />
     <meta property="og:description" content={desc} />
     <meta property="og:url" content={canonical} />
-    {image && <meta property="og:image" content={image} />}
+    <meta property="og:image" content={image} />
+    <meta property="og:image:secure_url" content={image} />
+    <meta property="og:image:type" content={SHARE_CARD.type} />
+    <meta property="og:image:width" content={String(SHARE_CARD.width)} />
+    <meta property="og:image:height" content={String(SHARE_CARD.height)} />
+    <meta property="og:image:alt" content={title} />
     <meta property="og:locale" content={locale === 'ar' ? 'ar_AR' : 'en_GB'} />
-    <meta name="twitter:card" content={image ? 'summary' : 'summary'} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={desc} />
+    <meta name="twitter:image" content={image} />
     <meta name="color-scheme" content="light dark" />
     <script is:inline set:html={MODE_SCRIPT} />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content={chrome.light} />

@@ -7,6 +7,7 @@ import type { NavItem, SiteSettings } from '../lib/cms-types';
 import type { Config } from '../lib/env';
 import { dir, otherLocale, type Locale } from '../lib/locale';
 import { headLinks, jsonLdText, ogImageUrl, type Alternates } from '../lib/seo';
+import { SHARE_CARD } from '../lib/share-card';
 import { MODE_SCRIPT } from '../lib/theme-mode';
 import { THEME_CHROME, themeFromRequest } from '../lib/site-theme';
 import { tabIconLinks } from '../lib/favicon';
@@ -73,12 +74,18 @@ const robots = noindex || !cfg.isProduction ? 'noindex, nofollow' : 'index, foll
     <meta property="og:description" content={desc} />
     {canonical && <meta property="og:url" content={canonical} />}
     <meta property="og:image" content={image} />
+    <meta property="og:image:secure_url" content={image} />
+    <meta property="og:image:type" content={SHARE_CARD.type} />
+    <meta property="og:image:width" content={String(SHARE_CARD.width)} />
+    <meta property="og:image:height" content={String(SHARE_CARD.height)} />
+    <meta property="og:image:alt" content={title} />
     <meta property="og:locale" content={locale === 'ar' ? 'ar_AR' : 'en_GB'} />
     {alternates[other] && <meta property="og:locale:alternate" content={other === 'ar' ? 'ar_AR' : 'en_GB'} />}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={desc} />
     <meta name="twitter:image" content={image} />
+    <meta name="twitter:image:alt" content={title} />
     <meta name="color-scheme" content="light dark" />
     {/* In <head>, before the body paints: the saved Light/Dark choice is on <html> before first paint (CSP: by hash) */}
     <script is:inline set:html={MODE_SCRIPT} />
