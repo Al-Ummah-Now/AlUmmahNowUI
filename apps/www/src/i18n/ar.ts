@@ -66,6 +66,11 @@ export const ar: Messages = {
     profileCta: 'أنشئ حسابك',
     libraryCta: 'تابع المشاهدة',
   },
+  continueWatching: {
+    title: 'تابع المشاهدة',
+    seeAll: 'سجل المشاهدة',
+    watched: '، شوهد {percent}٪',
+  },
   apps: {
     videosTitle: 'المرئيات',
     videosBody: 'شاهد المرئيات والمقاطع القصيرة، واشترك في القنوات، واحفظ قوائم التشغيل.',

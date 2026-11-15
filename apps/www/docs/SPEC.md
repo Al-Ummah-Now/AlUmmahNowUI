@@ -11,7 +11,7 @@ The public front door of Al Ummah Now: what the platform is, where to go next (v
 sign-in), and editorial content (pages, articles, curated videos) written by staff in the CMS.
 
 Non-goals for v1: comments/discussions (epic 26), "continue watching", search across videos,
-newsletter sign-up. Each becomes a `queue` issue.
+newsletter sign-up. (Continue watching and video search were built later, WWW-1.) Each becomes a `queue` issue.
 
 ## 2. Hosts and environments
 
@@ -125,8 +125,10 @@ show signed-in state. Epic 26 (embedded discussions) and "continue watching" wil
   relative path (open-redirect guard).
 - `/auth/callback` → exchange the code at `${AUTH_URL}/token` → verify the access token (JWKS at
   `${AUTH_URL}/.well-known/jwks.json`, `iss`, `exp`) → a session cookie `__Host-aun_www`, AES-GCM
-  encrypted with `SESSION_SECRET`, holding `{ sub, name, email, roles, exp }`, 8 h. Tokens are not
-  stored.
+  encrypted with `SESSION_SECRET`, holding `{ sub, name, email, roles, exp }`, 8 h, plus the user's
+  access and refresh tokens (`tok`, sealed in the same HttpOnly cookie, never readable by the page)
+  so the Worker can read their own data from the videos API (Continue watching). Sign-out revokes the
+  refresh token at auth (`POST /token/revoke`).
 - `/auth/login` forwards `prompt=none` (silent) and `prompt=login` (add account) only; the normal
   sign-in sends no prompt, so auth signs the browser's active account in silently or shows its form.
   A `prompt=none` callback that fails (`error=login_required`, bad state, token error) returns to
@@ -142,8 +144,13 @@ show signed-in state. Epic 26 (embedded discussions) and "continue watching" wil
   account, sign out of one (`DELETE /session/accounts/:id`; the last one is the normal sign-out).
   If auth's active account differs from www's (switched in another app), www follows once per tab.
   CORS/401/network failures keep the plain "Sign in" link (or the single-account menu).
-- Session lifetime: www keeps no tokens, so the 15-minute access token does not limit it; when the
-  8 h session ends while auth still has the browser, the probe signs in again silently.
+- Session lifetime: 8 h, not limited by the 15-minute access token: `/auth/continue-watching` refreshes
+  it with the refresh token (rotated each time; auth allows a 120 s reuse window for parallel tabs) and
+  re-seals the cookie. When the 8 h session ends while auth still has the browser, the probe signs in
+  again silently.
+- `/auth/continue-watching?locale=` → `{ signedIn, items }` (`private, no-store`): the viewer's started,
+  unfinished videos (videos API `/api/continue-watching`, 10), none while their watch history is paused.
+  The home page fills its Continue watching row from it client-side (UI#4); 401/5xx/empty: no row.
 
 ## 8. SEO
 

@@ -26,10 +26,25 @@ export interface SessionProfile {
 }
 
 /**
- * Sessions sealed by older code lack fields the header needs (v2: `profile`). readSession treats
- * any other version as no session; the header's silent sign-in then renews it without a click.
+ * Sessions sealed by older code lack fields the page needs (v2: `profile`, v3: `tok` for Continue
+ * watching). readSession treats any other version as no session; the header's silent sign-in then
+ * renews it without a click.
  */
-export const SESSION_VERSION = 2;
+export const SESSION_VERSION = 3;
+
+/**
+ * The user's tokens, kept only inside the sealed (AES-GCM, HttpOnly, `__Host-`) session cookie so
+ * the Worker can read their own data from the videos API (Continue watching, src/lib/continue-watching.ts).
+ * Never sent to the browser in readable form, never logged. The access token lives 15 minutes; the
+ * Worker refreshes it with the refresh token (rotated each time) and re-seals the cookie. Sign-out
+ * revokes the refresh token at auth.
+ */
+export interface SessionTokens {
+  access: string;
+  /** Unix seconds. */
+  accessExp: number;
+  refresh: string | null;
+}
 
 export interface Session {
   sub: string;
@@ -39,6 +54,7 @@ export interface Session {
   exp: number;
   v?: number;
   profile?: SessionProfile | null;
+  tok?: SessionTokens | null;
 }
 
 export interface LoginState {
@@ -129,6 +145,23 @@ export function tokenRequestBody(cfg: Config, code: string, verifier: string): U
     client_id: cfg.clientId,
     code_verifier: verifier,
   });
+}
+
+export function refreshRequestBody(cfg: Config, refreshToken: string): URLSearchParams {
+  return new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refreshToken, client_id: cfg.clientId });
+}
+
+/** An access token's lifetime from the token answer: `expires_in`, else the JWT's own `exp`, else 15 minutes. */
+export function accessExpiry(access: string, expiresIn: unknown, nowSec: number): number {
+  if (typeof expiresIn === 'number' && Number.isFinite(expiresIn) && expiresIn > 0) return nowSec + Math.floor(expiresIn);
+  try {
+    const part = access.split('.')[1] ?? '';
+    const json = JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/'))) as { exp?: unknown };
+    if (typeof json.exp === 'number') return json.exp;
+  } catch {
+    // not a JWT
+  }
+  return nowSec + 900;
 }
 
 export function logoutUrl(cfg: Config, returnTo: string): string {

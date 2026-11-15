@@ -65,6 +65,12 @@ export const en = {
     profileCta: 'Create your account',
     libraryCta: 'Continue watching',
   },
+  continueWatching: {
+    title: 'Continue watching',
+    seeAll: 'Watch history',
+    /** After the title in the link's accessible name */
+    watched: ', {percent}% watched',
+  },
   apps: {
     videosTitle: 'Videos',
     videosBody: 'Watch videos and Shorts, subscribe to channels and save playlists.',

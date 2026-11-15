@@ -23,6 +23,8 @@ import {
   type LoginState,
   type Session,
   type SessionProfile,
+  type SessionTokens,
+  accessExpiry,
 } from './auth';
 import type { Config } from './env';
 import { normalizeImageUrl } from './images';
@@ -92,7 +94,7 @@ export async function callback(request: Request, deps: AuthDeps): Promise<Respon
   const failed = (transient: boolean) =>
     login.silent ? redirect(fallback, 302, {}, transient ? [clearLogin, probeRetryCookie] : [clearLogin]) : text('Sign-in failed. Please try again.', 502);
 
-  let tokenJson: { access_token?: string };
+  let tokenJson: { access_token?: string; refresh_token?: string; expires_in?: number };
   let tokenStatus = 0;
   try {
     const res = await (deps.fetchImpl ?? fetch)(`${deps.cfg.authUrl}/token`, {
@@ -102,7 +104,7 @@ export async function callback(request: Request, deps: AuthDeps): Promise<Respon
     });
     tokenStatus = res.status;
     if (!res.ok) throw new Error(`token endpoint ${res.status}`);
-    tokenJson = (await res.json()) as { access_token?: string };
+    tokenJson = (await res.json()) as typeof tokenJson;
   } catch (error) {
     console.warn(JSON.stringify({ msg: 'sign-in: token exchange failed', error: String(error) }));
     // No answer (network) or auth's trouble (5xx, 429): ask again; a 4xx (bad or used code) is an answer
@@ -120,8 +122,14 @@ export async function callback(request: Request, deps: AuthDeps): Promise<Respon
   }
   // The user's own profile (names are not in the public profile view): best effort, never blocks sign-in
   const profile = await fetchOwnProfile(tokenJson.access_token, deps.cfg, deps.fetchImpl);
-  const exp = Math.floor((deps.now?.() ?? Date.now()) / 1000) + SESSION_TTL_SEC;
-  const session = await seal(deps.secret, { ...fields, exp, v: SESSION_VERSION, profile } satisfies Session);
+  const nowSec = Math.floor((deps.now?.() ?? Date.now()) / 1000);
+  const exp = nowSec + SESSION_TTL_SEC;
+  const tok: SessionTokens = {
+    access: tokenJson.access_token,
+    accessExp: accessExpiry(tokenJson.access_token, tokenJson.expires_in, nowSec),
+    refresh: typeof tokenJson.refresh_token === 'string' && tokenJson.refresh_token ? tokenJson.refresh_token : null,
+  };
+  const session = await seal(deps.secret, { ...fields, exp, v: SESSION_VERSION, profile, tok } satisfies Session);
   return redirect(login.returnTo, 302, {}, [clearLogin, cookie(SESSION_COOKIE, session, SESSION_TTL_SEC), hintCookie(true)]);
 }
 
@@ -273,9 +281,28 @@ export async function me(request: Request, deps: AuthDeps): Promise<Response> {
  * GET without a valid `next` (a link to /auth/logout): single sign-out, like every other app.
  * Signing out of www alone would leave the other apps signed in.
  */
+/** Sign-out: auth forgets www's refresh token (POST /token/revoke, RFC 7009). Best effort, short timeout. */
+export async function revokeSessionTokens(request: Request, deps: AuthDeps): Promise<void> {
+  const s = await readSession(request, deps.secret);
+  const refresh = s?.tok?.refresh;
+  if (!refresh) return;
+  try {
+    await (deps.fetchImpl ?? fetch)(`${deps.cfg.authUrl}/token/revoke`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+      body: new URLSearchParams({ token: refresh, token_type_hint: 'refresh_token', client_id: deps.cfg.clientId }).toString(),
+      signal: AbortSignal.timeout(1500),
+    });
+  } catch (error) {
+    console.warn(JSON.stringify({ msg: 'sign-out: token revoke failed', error: String(error) }));
+  }
+}
+
 export async function logout(request: Request, deps: AuthDeps): Promise<Response> {
   const clear = [clearCookie(SESSION_COOKIE), hintCookie(false)];
   if (request.method === 'GET') {
+    // A GET sign-out (auth's front-channel walk, or a link) already ends the SSO session for every app
+    await revokeSessionTokens(request, deps);
     const url = new URL(request.url);
     const next = url.searchParams.get('next');
     if (next) {
@@ -294,6 +321,7 @@ export async function logout(request: Request, deps: AuthDeps): Promise<Response
   const origin = request.headers.get('Origin');
   const site = new URL(deps.cfg.siteUrl).origin;
   if (origin !== site && origin !== new URL(request.url).origin) return text('Forbidden', 403);
+  await revokeSessionTokens(request, deps);
   let locale = 'en';
   try {
     const form = await request.formData();

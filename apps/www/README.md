@@ -77,7 +77,13 @@ every QA deploy and every promote.
   a video with `::video[VIDEO_ID]` on its own line. Raw HTML in markdown is never rendered.
 - **Sign-in**: public OAuth client with PKCE (S256). `/auth/login` → auth `/authorize` →
   `/auth/callback` (token exchange, JWKS verification) → an encrypted `__Host-aun_www` cookie
-  holding `{ sub, name, email, roles, exp }` for 8 h; no tokens are stored. The header menu shows
+  holding `{ sub, name, email, roles, exp }` for 8 h, and the user's access + refresh tokens sealed
+  inside it (never readable by the page; sign-out revokes the refresh token).
+- **Continue watching** (`src/components/ContinueWatching.astro`, `src/lib/continue-watching.ts`, UI#4):
+  a row between the hero and the timeline for a signed-in browser. The HTML ships it hidden (same
+  for everyone, edge-cached); the browser fills it from `/auth/continue-watching`, which refreshes the
+  15-minute access token when needed and reads the videos API's `/api/continue-watching` (hidden while
+  watch history is paused). Each card opens the watch page on the videos site, where the player resumes. The header menu shows
   Profile, Videos, CMS (Super Admin, Admin, Moderator only) and Sign out.
 - **Draft preview** (`src/lib/preview.ts`, `src/pages/preview/`): the CMS editor's "Preview on
   site" lands on `/preview?token=…`, which moves the token into an HttpOnly cookie for that one row
