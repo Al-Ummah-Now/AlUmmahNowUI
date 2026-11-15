@@ -280,6 +280,8 @@ for (const l of ['en', 'ar'] as const) {
     const fonts = await page.locator('.site-header :is(.aun-brand-name, .site-nav a, .aun-lang, .aun-signin)').evaluateAll((els) => [...new Set(els.map((e) => getComputedStyle(e).fontFamily))]);
     expect(fonts).toHaveLength(1);
     expect(fonts[0]).toContain(rtl ? 'Noto Naskh Arabic' : 'system-ui');
+    // Latin inside the Arabic header falls to system-ui, as in English
+    if (rtl) expect(fonts[0]).toMatch(/"?Geeza Pro"?, system-ui/);
   });
 }
 
