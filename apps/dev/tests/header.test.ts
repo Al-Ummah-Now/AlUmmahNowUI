@@ -52,26 +52,35 @@ describe('dev header = www header', () => {
   });
 
   it('uses www’s frame, builders and Light / Dark button', () => {
-    // the dev site's six links: the full-width bar of www's header.css (.site-header--wide)
-    expect(DEV_HEADER).toContain('<header class="site-header site-header--wide aun-header" data-env-badges={badges}>');
-    for (const cls of ['aun-header-row', 'aun-header-primary', 'primary-nav', 'aun-header-tools', 'aun-icon-btn aun-mode']) {
+    // the same full-width bar as www (the contract has no centring and no wide variant)
+    expect(DEV_HEADER).toContain('<header class="site-header aun-header" data-env-badges={badges}>');
+    for (const cls of ['aun-header-row', 'aun-header-primary aun-collapse', 'primary-nav', 'aun-header-tools', 'aun-icon-btn aun-mode', 'aun-header-panel', 'panel-nav']) {
       expect(tag(DEV_HEADER, cls), cls).toBe(tag(WWW_HEADER, cls));
     }
-    for (const call of ['brandHtml(', 'appLinksHtml(', 'langButtonHtml(', 'envBadgeHtml(']) expect(DEV_HEADER, call).toContain(call);
+    for (const call of ['brandHtml(', 'langButtonHtml(', 'envBadgeHtml(']) expect(DEV_HEADER, call).toContain(call);
+    // the menu button and its panel, as www's: below 1024px the links leave the bar for the panel
+    const menu = "menuButtonHtml({ lang: locale, panel: 'site-menu' })";
+    expect(DEV_HEADER).toContain(menu);
+    expect(WWW_HEADER).toContain(menu);
+    for (const src of [DEV_HEADER, WWW_HEADER]) {
+      const panel = src.indexOf('<div id="site-menu" class="aun-header-panel" popover>');
+      expect(panel).toBeGreaterThan(0);
+      expect(panel).toBeLessThan(src.indexOf('</header>'));
+    }
     const icons = (src: string) => [...src.matchAll(/modeIconSvg\('(sun|moon)', '([^']+)'\)/g)].map((m) => m.slice(1).join(' '));
     expect(icons(DEV_HEADER)).toEqual(icons(WWW_HEADER));
   });
 
-  it('keeps the contract order: brand, env, links, app links, language, then light/dark', () => {
+  it('keeps the contract order: menu, brand, env, links, language, then light/dark', () => {
     // www renders the badge in place; this static site inserts the same markup from the host, right after the brand
-    for (const src of [DEV_HEADER.slice(DEV_HEADER.indexOf('<header')).replace('data-env-badges={badges}>', '>').replace('<div class="aun-header-primary"', 'envBadgeHtml(<div class="aun-header-primary"'), WWW_HEADER.slice(WWW_HEADER.indexOf('<header'))]) {
-      const order = ['brandHtml(', 'envBadgeHtml(', 'class="aun-header-primary"', 'appLinksHtml(', 'langButtonHtml(', 'class="aun-icon-btn aun-mode"'].map((s) => at(src, s));
+    for (const src of [DEV_HEADER.slice(DEV_HEADER.indexOf('<header')).replace('data-env-badges={badges}>', '>').replace('<div class="aun-header-primary aun-collapse"', 'envBadgeHtml(<div class="aun-header-primary aun-collapse"'), WWW_HEADER.slice(WWW_HEADER.indexOf('<header'))]) {
+      const order = ['menuButtonHtml(', 'brandHtml(', 'envBadgeHtml(', 'class="aun-header-primary aun-collapse"', 'langButtonHtml(', 'class="aun-icon-btn aun-mode"'].map((s) => at(src, s));
       expect(order).toEqual([...order].sort((a, b) => a - b));
     }
   });
 
   it('defines the page tokens header.css reads with www’s values, in both modes', () => {
-    const names = ['--header-bg', '--header-shadow', '--color-lantern', '--wide', '--gutter', '--font-arabic'];
+    const names = ['--header-bg', '--header-shadow', '--color-lantern'];
     // www spreads them over @theme (fonts), :root (layout) and html[data-theme] (colour roles)
     const wwwRoot = { ...tokens(WWW_CSS, '@theme'), ...tokens(WWW_CSS, ':root'), ...tokens(WWW_CSS, 'html[data-theme]') };
     const devRoot = tokens(DEV_CSS, ':root');

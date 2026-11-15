@@ -64,8 +64,6 @@
   --radius-tile: 14px;
   --radius-chip: 999px;
   --wrap: 1180px;
-  /* www's content width: the header row lines up with it (www header.css) */
-  --wide: 74rem;
   --gutter: clamp(1rem, 4vw, 2.5rem);
 
   /* The header (www's header.css) reads these; www's values, checked by tests/header.test.ts */

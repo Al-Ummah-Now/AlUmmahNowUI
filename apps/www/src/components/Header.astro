@@ -4,7 +4,7 @@
  * controls of every app. Markup from the vendored builders (packages/render/src/nav/header.js, kept
  * byte-identical by `npm run check:fanous`), styled by aun-nav.generated.css; www adds only its own
  * links and search in the primary slot (src/styles/header.css). Order, mirrored in Arabic:
- * menu (below 1024px) · brand · env badge · links + search · app links · language · light/dark ·
+ * menu (below 1024px) · brand · env badge · links + search · language · light/dark ·
  * account (or Sign in). Below 1024px the links and search leave the bar (`aun-collapse`) and the menu
  * button opens them again in the `.aun-header-panel` popover (no script needed), so the bar is one
  * 64px (56px) line on every screen.
@@ -18,7 +18,7 @@ import type { NavItem } from '../lib/cms-types';
 import { libraryUrl } from '../lib/embeds';
 import type { Config } from '../lib/env';
 import type { Locale } from '../lib/locale';
-import { appLinksHtml, brandHtml, envBadgeHtml, langButtonHtml, menuButtonHtml, signInHtml } from '../../../../packages/render/src/nav/header.js';
+import { brandHtml, envBadgeHtml, langButtonHtml, menuButtonHtml, signInHtml } from '../../../../packages/render/src/nav/header.js';
 import { modeIconSvg, modeToggleLabel } from '../../../../packages/render/src/nav/mode-toggle.js';
 
 interface Props { cfg: Config; locale: Locale; nav: NavItem[]; switchHref: string }
@@ -51,7 +51,6 @@ const videosUrl = libraryUrl(cfg.videosWebUrl, locale);
       <SearchBox cfg={cfg} locale={locale} id="site-search" />
     </div>
     <div class="aun-header-tools">
-      <Fragment set:html={appLinksHtml({ lang: locale, links: [{ id: 'videos', href: videosUrl }] })} />
       <Fragment set:html={langButtonHtml({ lang: locale, href: switchHref })} />
       <!-- Light / Dark (src/scripts/theme.ts): nav/header.js modeButtonHtml's button with both icons, so the
            cached page can show the device's mode before any choice (CSS picks the icon from data-current) -->

@@ -30,9 +30,9 @@ describe('site header = the header contract', () => {
   });
 
   it('takes every shared piece from the builders, in the contract order', () => {
-    for (const call of ['siteBrandHtml(', 'envBadgeHtml(cfg.appEnv', 'appLinksHtml(', 'langButtonHtml(', 'signInHtml(']) expect(markup, call).toContain(call);
+    for (const call of ['siteBrandHtml(', 'envBadgeHtml(cfg.appEnv', 'langButtonHtml(', 'signInHtml(']) expect(markup, call).toContain(call);
     for (const cls of ['aun-brand', 'aun-env', 'aun-apps', 'aun-lang', 'aun-signin']) expect(markup, cls).not.toContain(`class="${cls}"`);
-    const order = ['menuButtonHtml(', 'siteBrandHtml(', 'envBadgeHtml(', 'class="aun-header-primary aun-collapse"', 'appLinksHtml(', 'langButtonHtml(', 'class="aun-icon-btn aun-mode"', 'signInHtml(', 'class="aun-acct-btn"'].map((s) => markup.indexOf(s));
+    const order = ['menuButtonHtml(', 'siteBrandHtml(', 'envBadgeHtml(', 'class="aun-header-primary aun-collapse"', 'langButtonHtml(', 'class="aun-icon-btn aun-mode"', 'signInHtml(', 'class="aun-acct-btn"'].map((s) => markup.indexOf(s));
     expect(order.every((i) => i >= 0)).toBe(true);
     expect(order).toEqual([...order].sort((a, b) => a - b));
   });

@@ -3,8 +3,7 @@
  * The scholar site header: the Al Ummah Now header contract (AlUmmahNow docs/design/NAV.md "Header";
  * markup from the vendored packages/render/src/nav/header.js, styled by www's vendored
  * aun-nav.generated.css; `npm run check:fanous` keeps both byte-identical). Order, mirrored in Arabic:
- * menu (below 1024px) · the site's lockup · env badge · the site's own links · Website, Videos ·
- * language · light/dark · account (or Sign in). Below 1024px the site's links leave the bar
+ * menu (below 1024px) · the site's lockup · env badge · the site's own links · language · light/dark · account (or Sign in). Below 1024px the site's links leave the bar
  * (`aun-collapse`) and the menu button opens them in the `.aun-header-panel` popover (no script
  * needed), so the bar is one 64px (56px) line on every screen. The account button and menu are drawn here and filled from /auth/me by
  * src/scripts/site.ts (the HTML is cached and the same for everyone).
@@ -14,7 +13,7 @@ import { siteName } from '../lib/seo';
 import type { PageContext } from '../lib/context';
 import type { SiteNavItem } from '../lib/site-types';
 import { libraryUrl } from '../../../../packages/render/src/embeds';
-import { HEADER_LABELS, appLinksHtml, envBadgeHtml, langButtonHtml, menuButtonHtml, signInHtml } from '../../../../packages/render/src/nav/header.js';
+import { envBadgeHtml, langButtonHtml, menuButtonHtml, signInHtml } from '../../../../packages/render/src/nav/header.js';
 import { modeIconSvg, modeToggleLabel } from '../../../../packages/render/src/nav/mode-toggle.js';
 import { siteBrandHtml } from '../../../../packages/render/src/site-brand';
 
@@ -42,7 +41,6 @@ const items: Item[] = site.site.navigation.flatMap((item): Item[] => {
 const other = locale === 'ar' ? 'en' : 'ar';
 const switchHref = site.site.locales.includes(other) ? alternates[other] ?? `/${other}/` : null;
 const returnTo = Astro.url.pathname + Astro.url.search;
-const L = HEADER_LABELS[locale];
 const wwwHref = `${cfg.wwwUrl}/${locale}/`;
 const videosHref = libraryUrl(cfg.videosWebUrl, locale);
 const toDark = modeToggleLabel(locale, false);
@@ -66,7 +64,6 @@ const icon = (id: string) => `<img class="aun-app-icon" data-app="${id}" src="/a
       </nav>
     </div>
     <div class="aun-header-tools">
-      <Fragment set:html={appLinksHtml({ lang: locale, links: [{ id: 'www', href: wwwHref }, { id: 'videos', href: videosHref }] })} />
       {switchHref && <Fragment set:html={langButtonHtml({ lang: locale, href: switchHref })} />}
       {/* Light / Dark: nav/header.js modeButtonHtml's button with both icons (CSS shows the mode on screen) */}
       <button type="button" class="aun-icon-btn aun-mode" id="mode-toggle" data-testid="theme-toggle" data-mode-toggle data-label-light={toLight} data-label-dark={toDark} aria-label={toDark} title={toDark}>
@@ -92,10 +89,10 @@ const icon = (id: string) => `<img class="aun-app-icon" data-app="${id}" src="/a
           </li>
           <li class="aun-menu-sep" aria-hidden="true"></li>
           <li>
-            <span class="aun-menu-label" id="account-apps-label">{L.apps}</span>
+            <span class="aun-menu-label" id="account-apps-label">{t.apps}</span>
             <ul aria-labelledby="account-apps-label">
-              <li><a class="aun-menu-item" href={wwwHref}><Fragment set:html={icon('www')} /><span class="aun-menu-text">{L.www}</span></a></li>
-              <li><a class="aun-menu-item" href={videosHref}><Fragment set:html={icon('videos')} /><span class="aun-menu-text">{L.videos}</span></a></li>
+              <li><a class="aun-menu-item" href={wwwHref}><Fragment set:html={icon('www')} /><span class="aun-menu-text">{t.www}</span></a></li>
+              <li><a class="aun-menu-item" href={videosHref}><Fragment set:html={icon('videos')} /><span class="aun-menu-text">{t.videos}</span></a></li>
               <li><a class="aun-menu-item" href={cfg.profileUrl}><Fragment set:html={icon('profile')} /><span class="aun-menu-text">{t.profile}</span></a></li>
             </ul>
           </li>

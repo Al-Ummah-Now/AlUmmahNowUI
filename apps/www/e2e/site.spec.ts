@@ -15,8 +15,8 @@ test.describe('rendering', () => {
       await expect(page.locator('html')).toHaveAttribute('dir', l === 'ar' ? 'rtl' : 'ltr');
       await expect(page.locator('h1')).toHaveCount(1);
       await expect(page.getByText('الأمة الآن').first()).toBeVisible();
-      // www's own links, the Al Ummah Now app links (Website / Videos: here Videos), and the menu panel's copy of www's links
-      await expect(page.locator('header nav[aria-label]')).toHaveCount(3);
+      // www's own links and the menu panel's copy of them (no links to other sites in the header)
+      await expect(page.locator('header nav[aria-label]')).toHaveCount(2);
       await expect(page.locator('header .aun-header-panel nav.panel-nav[aria-label]')).toHaveCount(1);
       await expect(page.locator('header nav.primary-nav[aria-label]')).toHaveCount(1);
       await expect(page.locator('main#main')).toHaveCount(1);

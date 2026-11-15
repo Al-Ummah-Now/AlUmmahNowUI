@@ -1,11 +1,11 @@
 /*
  * The site header of the Astro apps in this repo that show the Al Ummah Now header (www, and apps/dev
- * imports this file as it is). The bar, brand, environment badge, app links, language, light/dark
+ * imports this file as it is). The bar, brand, environment badge, language, light/dark
  * and Sign in / account controls are the shared contract (AlUmmahNow docs/design/NAV.md "Header":
  * aun-nav.generated.css, markup from packages/render/src/nav/header.js); this file holds only what
  * www adds: its header tokens, its own links and search in the primary slot and in the menu panel.
  * Page tokens it reads: --header-bg, --header-shadow, --color-lantern.
- * Breakpoints are the contract's only: 1280, 1024, 768, 640 and 400px.
+ * Breakpoints are the contract's only: 1024, 768, 640 and 400px.
  */
 
 /*
@@ -77,16 +77,6 @@
 .primary-nav a:focus-visible {
   outline: 2px solid var(--fanous-c-nav-active-text);
   outline-offset: -2px;
-}
-/* 1024–1279px: the app links lose their names and the links sit closer, so a six-link bar (apps/dev)
-   still shows every link at 1024px */
-@media (max-width: 79.99rem) {
-  .primary-nav ul {
-    gap: 0;
-  }
-  .primary-nav a {
-    padding-inline: 0.5rem;
-  }
 }
 /* the header search is a header control: 40px, round, the header's search border */
 .site-header .search-header {

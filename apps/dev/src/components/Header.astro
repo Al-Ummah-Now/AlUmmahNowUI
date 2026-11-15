@@ -4,13 +4,14 @@
  * (AlUmmahNow docs/design/NAV.md "Header"), markup from the vendored builders
  * (packages/render/src/nav/header.js, check:fanous), styled by www's aun-nav.generated.css and
  * header.css (imported in Base.astro) and driven by www's own toggle script, so it cannot drift.
- * This static site has no search and no account, so those two are left out. The HTML is the same
- * in every environment, so the QA / STAGE badge is added from the host by the header's script.
+ * This static site has no search and no account, so those two are left out. As on www, below 1024px
+ * the links leave the bar (`aun-collapse`) and the menu button, first in the bar, opens them in the
+ * `.aun-header-panel` popover. The HTML is the same in every environment, so the QA / STAGE badge is
+ * added from the host by the header's script.
  */
-import { appLinksHtml, brandHtml, envBadgeHtml, langButtonHtml } from '../../../../packages/render/src/nav/header.js';
+import { brandHtml, envBadgeHtml, langButtonHtml, menuButtonHtml } from '../../../../packages/render/src/nav/header.js';
 import { modeIconSvg, modeToggleLabel } from '../../../../packages/render/src/nav/mode-toggle.js';
 import type { Strings } from '../i18n';
-import { VIDEOS, WWW } from '../lib/links';
 import { PAGES, otherLocale, pagePath, type Locale, type PageSlug } from '../lib/pages';
 interface Props {
   locale: Locale;
@@ -24,10 +25,11 @@ const toDark = modeToggleLabel(locale, false);
 const toLight = modeToggleLabel(locale, true);
 const badges = JSON.stringify({ qa: envBadgeHtml('qa', locale), stage: envBadgeHtml('stage', locale) });
 ---
-<header class="site-header site-header--wide aun-header" data-env-badges={badges}>
+<header class="site-header aun-header" data-env-badges={badges}>
   <div class="aun-header-row">
+    <Fragment set:html={menuButtonHtml({ lang: locale, panel: 'site-menu' })} />
     <Fragment set:html={brandHtml({ lang: locale, href: pagePath(locale, ''), app: t.nav.appName, logoSrc: '/brand/logo-192.webp' })} />
-    <div class="aun-header-primary">
+    <div class="aun-header-primary aun-collapse">
       <nav class="primary-nav" aria-label={t.nav.primary}>
         <ul>
           {PAGES.filter((p) => p !== '').map((p) => (
@@ -37,13 +39,22 @@ const badges = JSON.stringify({ qa: envBadgeHtml('qa', locale), stage: envBadgeH
       </nav>
     </div>
     <div class="aun-header-tools">
-      <Fragment set:html={appLinksHtml({ lang: locale, links: [{ id: 'www', href: `${WWW}/${locale}/` }, { id: 'videos', href: `${VIDEOS}/${locale}` }] })} />
       <Fragment set:html={langButtonHtml({ lang: locale, href: pagePath(other, slug) })} />
       <button type="button" class="aun-icon-btn aun-mode" id="mode-toggle" data-testid="theme-toggle" aria-label={toDark} title={toDark} data-label-dark={toDark} data-label-light={toLight} data-current="light">
         <Fragment set:html={modeIconSvg('moon', 'mode-moon')} />
         <Fragment set:html={modeIconSvg('sun', 'mode-sun')} />
       </button>
     </div>
+  </div>
+  <!-- below 1024px: the same links, opened by the menu button (first in the bar) -->
+  <div id="site-menu" class="aun-header-panel" popover>
+    <nav class="panel-nav" aria-label={t.nav.primary}>
+      <ul>
+        {PAGES.filter((p) => p !== '').map((p) => (
+          <li><a href={pagePath(locale, p)} aria-current={p === slug ? 'page' : undefined}>{label(p)}</a></li>
+        ))}
+      </ul>
+    </nav>
   </div>
 </header>
 <script>
