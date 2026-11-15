@@ -1,6 +1,6 @@
 /**
  * Local E2E stand-in for api-videos (the site registry, videos, community posts) and the auth
- * server (authorize, token, jwks, logout) on one port. It behaves like the real ones where the
+ * server (authorize, token, jwks, logout) on one port, and the viewer's profile (own and public view). It behaves like the real ones where the
  * tests look: /authorize only returns to an exact /auth/callback of a site it knows (as auth's
  * registry check does), refresh tokens are revoked by /logout.
  *   node --experimental-strip-types e2e/stub-api.ts
@@ -73,6 +73,13 @@ createServer(async (req, res) => {
       const rows = POSTS.slice((page - 1) * limit, page * limit);
       return send(res, 200, { posts: rows, pagination: { page, limit, total: POSTS.length, hasNext: page * limit < POSTS.length } });
     }
+    // The viewer's videos profile, as api-videos answers it: the own view (bearer, first/last name per
+    // language) and the public view. Auth's token names them in Latin only ('Test Viewer').
+    if (p === '/api/profile') {
+      if (!/^Bearer \S+/.test(req.headers.authorization ?? '')) return send(res, 401, { error: 'unauthorized' });
+      return send(res, 200, { result: { profile: { id: 'usr_viewer', displayName: 'Test Viewer', displayNameLocalized: { en: 'Test Viewer', ar: 'مشاهد التجربة' }, firstName: 'Test', lastName: 'Viewer' } } });
+    }
+    if (p === '/api/profiles/usr_viewer') return send(res, 200, { result: { profile: { id: 'usr_viewer', displayName: 'Test Viewer', displayNameLocalized: { en: 'Test Viewer', ar: 'مشاهد التجربة' } } } });
     // ---- auth ----
     if (p === '/.well-known/jwks.json') return send(res, 200, { keys: [jwk] });
     if (p === '/authorize') {

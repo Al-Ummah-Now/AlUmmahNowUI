@@ -27,7 +27,8 @@ import {
   type LoginState,
   type SiteSession,
 } from './auth';
-import { config, type SitesEnv } from './env';
+import { fetchOwnProfile, fetchProfile, mergeProfile } from '../../../../packages/render/src/profile-name';
+import { config, type Config, type SitesEnv } from './env';
 import { siteFromRequest } from './site';
 
 type Ctx = Pick<APIContext, 'request' | 'locals' | 'url'>;
@@ -89,9 +90,21 @@ export async function callback(ctx: Ctx, fetcher: typeof fetch = fetch, getKey?:
   } catch {
     return redirect(state.returnTo, [clearLogin]);
   }
+  // The user's own profile (names per language, as on www): best effort, never blocks sign-in
+  const profile = await fetchOwnProfile(tokens.access_token, cfg, fetcher);
   const now = Math.floor(Date.now() / 1000);
-  const session: SiteSession = { ...account, rt: tokens.refresh_token, checked: now, exp: now + SESSION_TTL_SEC };
+  const session: SiteSession = { ...account, profile, rt: tokens.refresh_token, checked: now, exp: now + SESSION_TTL_SEC };
   return redirect(state.returnTo, [clearLogin, cookie(SESSION_COOKIE, await seal(env.SESSION_SECRET, session as never), SESSION_TTL_SEC), hintCookie(true)], 303);
+}
+
+/**
+ * What the header shows for a session: auth's name and email, and the videos profile (the session's
+ * names from sign-in merged with the fresh public profile), so the page names the user in its own
+ * language exactly as www does (packages/render/src/profile-name.ts displayLabel).
+ */
+async function account(session: SiteSession, cfg: Config, fetcher: typeof fetch) {
+  const profile = mergeProfile(session.profile ?? null, await fetchProfile(session.sub, cfg, fetcher));
+  return { signedIn: true, sub: session.sub, name: session.name, email: session.email, profile };
 }
 
 /**
@@ -102,15 +115,15 @@ export async function me(ctx: Ctx, fetcher: typeof fetch = fetch): Promise<Respo
   const env = envOf(ctx);
   const session = await readSession(ctx);
   if (!session) return json({ signedIn: false }, readCookie(ctx.request.headers.get('Cookie'), SESSION_COOKIE) ? [clearCookie(SESSION_COOKIE), hintCookie(false)] : []);
-  if (!needsRecheck(session)) return json({ signedIn: true, name: session.name, email: session.email });
   const cfg = config(env);
+  if (!needsRecheck(session)) return json(await account(session, cfg, fetcher));
   const tokens = await refreshTokens(cfg, session.rt, fetcher).catch(() => undefined);
-  if (tokens === undefined) return json({ signedIn: true, name: session.name, email: session.email }); // auth unreachable: keep it, try next time
+  if (tokens === undefined) return json(await account(session, cfg, fetcher)); // auth unreachable: keep it, try next time
   if (!tokens) return json({ signedIn: false }, [clearCookie(SESSION_COOKIE), hintCookie(false)]); // signed out elsewhere
   const now = Math.floor(Date.now() / 1000);
   const renewed: SiteSession = { ...session, rt: tokens.refresh_token, checked: now };
   const left = Math.max(1, session.exp - now);
-  return json({ signedIn: true, name: session.name, email: session.email }, [cookie(SESSION_COOKIE, await seal(env.SESSION_SECRET as string, renewed as never), left)]);
+  return json(await account(session, cfg, fetcher), [cookie(SESSION_COOKIE, await seal(env.SESSION_SECRET as string, renewed as never), left)]);
 }
 
 /** POST from the header's form (same origin only): ends the site session, then auth's. */

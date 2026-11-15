@@ -10,6 +10,7 @@
  *    → silent sign-in once, to follow auth
  * Each silent sign-in is guarded in sessionStorage so a failure can never loop.
  */
+import { displayLabel } from '../../../../packages/render/src/profile-name';
 
 export interface AuthAccount {
   userId: string;
@@ -157,28 +158,8 @@ export function menuAccounts(
   };
 }
 
-export interface MeProfileView {
-  displayName?: string | null;
-  displayNameLocalized?: Partial<Record<string, string>> | null;
-}
-
-/**
- * The header's name for the signed-in account (owner's order, 2026-11-12): the profile's display
- * name in the page language, its plain display name (already first + last when that is all the
- * profile has), a name in the other language, auth's name for the user, and only then the email. Handles belong to channels, never to the user's name.
- */
-export function displayLabel(
-  me: { name?: string | null; email?: string | null; sub?: string | null; profile?: MeProfileView | null },
-  locale: string,
-): string {
-  const p = me.profile ?? {};
-  const other = locale === 'ar' ? 'en' : 'ar';
-  // auth's own name for the user (a name, never a handle); /auth/me sends the email in `name` when there is none
-  const authName = me.name && me.name !== me.email ? me.name : null;
-  const pick = [p.displayNameLocalized?.[locale], p.displayName, p.displayNameLocalized?.[other], authName, me.email, me.sub];
-  for (const v of pick) if (typeof v === 'string' && v.trim()) return v.trim();
-  return '';
-}
+// The header's name (one source with the scholar sites): packages/render/src/profile-name.ts
+export { displayLabel, type MeProfileView } from '../../../../packages/render/src/profile-name';
 
 /**
  * Names of the accounts this browser signed in to www with, so the switcher can name the other

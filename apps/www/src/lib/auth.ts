@@ -8,22 +8,17 @@
  * again silently (prompt=none), so a live auth session never shows "Sign in" on www.
  */
 import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose';
+import type { SessionProfile } from '../../../../packages/render/src/profile-name';
 import type { Config } from './env';
 import { b64url } from './session';
+
+/** The user's own videos profile, read once at sign-in with their access token (packages/render/src/profile-name.ts). */
+export type { SessionProfile };
 
 export const SESSION_COOKIE = '__Host-aun_www';
 export const LOGIN_COOKIE = '__Host-aun_www_login';
 export const SESSION_TTL_SEC = 8 * 60 * 60;
 export const LOGIN_TTL_SEC = 10 * 60;
-
-/** The user's own videos profile, read once at sign-in with their access token (auth-routes.ts). */
-export interface SessionProfile {
-  /** The resolved name per language (auth-routes.ts resolveDisplayName). */
-  names: Partial<Record<'en' | 'ar', string>>;
-  /** Any resolved name (English first). */
-  name: string | null;
-  avatarUrl: string | null;
-}
 
 /**
  * Sessions sealed by older code lack fields the header needs (v2: `profile`). readSession treats
