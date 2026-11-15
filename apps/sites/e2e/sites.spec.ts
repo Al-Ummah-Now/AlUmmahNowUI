@@ -4,6 +4,10 @@
  * subdomain redirects, and sign-in is a one-click redirect round trip with a host-only session.
  */
 import AxeBuilder from '@axe-core/playwright';
+
+// Off by default even with the WCAG tags (experimental in axe): the language button's name must contain
+// its visible label (WCAG 2.5.3), the bug the status page had in Arabic.
+const LABEL_IN_NAME = { rules: { 'label-content-name-mismatch': { enabled: true } } };
 import { expect, test } from '@playwright/test';
 import { HOSTS, SITES_PORT } from './stub-data.ts';
 import { appLinksHtml, langButtonHtml, signInHtml } from '../../../packages/render/src/nav/header.js';
@@ -222,7 +226,7 @@ test('a11y (WCAG 2.2 AA), header only: en and ar, light and dark, signed out', a
     await page.emulateMedia({ colorScheme: scheme });
     for (const path of ['/en/', '/ar/']) {
       await page.goto(at(HOSTS.both, path));
-      const out = await new AxeBuilder({ page }).include('.site-header').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
+      const out = await new AxeBuilder({ page }).include('.site-header').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).options(LABEL_IN_NAME).analyze();
       expect(out.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`), `${scheme} ${path}`).toEqual([]);
     }
   }
@@ -236,7 +240,7 @@ test('a11y (WCAG 2.2 AA), header only: signed in with the account menu open', as
       await page.goto(at(HOSTS.both, path));
       await page.getByTestId('site-account-button').click();
       await expect(page.locator('#account-menu')).toBeVisible();
-      const out = await new AxeBuilder({ page }).include('.site-header').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
+      const out = await new AxeBuilder({ page }).include('.site-header').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).options(LABEL_IN_NAME).analyze();
       expect(out.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`), `${scheme} ${path}`).toEqual([]);
     }
   }
