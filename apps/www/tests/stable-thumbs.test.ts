@@ -4,7 +4,7 @@ import { contentSecurityPolicy } from '../src/lib/edge';
 import { config } from '../src/lib/env';
 import { facadeHtml } from '../src/lib/facade';
 import { imgSrcSources, isSignedImageUrl, itemThumb, normalizeImageUrl, stableImageUrl } from '../src/lib/images';
-import { articleLd, jsonLdText, ogImageUrl, scholarLd, videoObjectLd } from '../src/lib/seo';
+import { articleLd, jsonLdText, ogImage, ogImageUrl, scholarLd, videoObjectLd } from '../src/lib/seo';
 import { channelCard, feedVideoItem } from '../src/lib/timeline';
 import { fetchChannelVideos, fetchVideoItem, liveThumb, resolveCurated, snapshotItem, toVideoItem, type VideosDeps } from '../src/lib/videos';
 
@@ -170,6 +170,10 @@ describe('rendered markup and JSON-LD never carry signed thumbnails', () => {
     // any other picture on our hosts: framed by /og/i/ (base64url of the picture)
     expect(ogImageUrl(prod, 'https://cms.alummahnow.net/media/a.jpg')).toBe(`${WEB}/og/i/${Buffer.from('https://cms.alummahnow.net/media/a.jpg').toString('base64url')}.jpg`);
     expect(ogImageUrl(prod, null)).toBe('https://www.alummahnow.net/brand/og-default.jpg');
+    // a picture the videos app can't frame (another host, plain http) is used as it is
+    expect(ogImageUrl(prod, 'http://localhost:4400/media/10.png')).toBe('http://localhost:4400/media/10.png');
+    expect(ogImage(prod, 'https://example.org/a.jpg')).toEqual({ url: 'https://example.org/a.jpg', card: false });
+    expect(ogImage(prod, null)).toEqual({ url: 'https://www.alummahnow.net/brand/og-default.jpg', card: true });
     for (const u of [PATH_FORM, QUERY_FORM, PRIV]) expectUnsigned(ogImageUrl(prod, u));
   });
 

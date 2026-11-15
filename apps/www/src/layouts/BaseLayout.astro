@@ -6,7 +6,7 @@ import { strings } from '../i18n';
 import type { NavItem, SiteSettings } from '../lib/cms-types';
 import type { Config } from '../lib/env';
 import { dir, otherLocale, type Locale } from '../lib/locale';
-import { headLinks, jsonLdText, ogImageUrl, type Alternates } from '../lib/seo';
+import { headLinks, jsonLdText, ogImage as ogImageFor, type Alternates } from '../lib/seo';
 import { SHARE_CARD } from '../lib/share-card';
 import { MODE_SCRIPT } from '../lib/theme-mode';
 import { THEME_CHROME, themeFromRequest } from '../lib/site-theme';
@@ -50,7 +50,7 @@ const desc = (description || settings?.tagline || t.meta.defaultDescription).sli
 const { canonical, hreflang } = seoLinks && !errorPage ? seoLinks : headLinks(cfg, alternates, { locale, contentLocale, pathname: Astro.url.pathname, errorPage });
 const other = otherLocale(locale);
 const switchHref = alternates[other] ?? `/${other}/`;
-const image = ogImageUrl(cfg, ogImage);
+const { url: image, card: isCard } = ogImageFor(cfg, ogImage);
 // The admin's site theme, resolved by the Worker (src/worker.ts); rendered here so the first paint is right
 const theme = themeFromRequest(Astro.request).id;
 const chrome = THEME_CHROME[theme];
@@ -75,9 +75,9 @@ const robots = noindex || !cfg.isProduction ? 'noindex, nofollow' : 'index, foll
     {canonical && <meta property="og:url" content={canonical} />}
     <meta property="og:image" content={image} />
     <meta property="og:image:secure_url" content={image} />
-    <meta property="og:image:type" content={SHARE_CARD.type} />
-    <meta property="og:image:width" content={String(SHARE_CARD.width)} />
-    <meta property="og:image:height" content={String(SHARE_CARD.height)} />
+    {isCard && <meta property="og:image:type" content={SHARE_CARD.type} />}
+    {isCard && <meta property="og:image:width" content={String(SHARE_CARD.width)} />}
+    {isCard && <meta property="og:image:height" content={String(SHARE_CARD.height)} />}
     <meta property="og:image:alt" content={title} />
     <meta property="og:locale" content={locale === 'ar' ? 'ar_AR' : 'en_GB'} />
     {alternates[other] && <meta property="og:locale:alternate" content={other === 'ar' ? 'ar_AR' : 'en_GB'} />}
