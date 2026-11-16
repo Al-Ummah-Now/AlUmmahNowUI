@@ -23,8 +23,8 @@ const SECTIONS = '[data-testid=page-sections] .pb-glass';
 const PAGES = [
   { locale: 'en', path: '/en/every-block/', what: 'page-builder panels', sel: PANELS, min: 2, lines: 20 },
   { locale: 'ar', path: '/ar/kull-al-kutal/', what: 'page-builder panels', sel: PANELS, min: 2, lines: 20 },
-  { locale: 'en', path: '/en/about/', what: 'text page sections', sel: SECTIONS, min: 1, lines: 3 },
-  { locale: 'ar', path: '/ar/about/', what: 'text page sections', sel: SECTIONS, min: 1, lines: 3 },
+  { locale: 'en', path: '/en/about/', what: 'text page sections', sel: SECTIONS, min: 2, lines: 8 },
+  { locale: 'ar', path: '/ar/about/', what: 'text page sections', sel: SECTIONS, min: 2, lines: 8 },
 ] as const;
 
 interface TextBox { x: number; y: number; w: number; h: number; rgb: [number, number, number]; large: boolean; text: string }
