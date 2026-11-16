@@ -2,6 +2,7 @@
 import SiteLayout from '../../layouts/SiteLayout.astro';
 import { pageContext } from '../../lib/context';
 import { renderMarkdown } from '../../../../../packages/render/src/markdown';
+import { glassSectionParts } from '../../../../../packages/render/src/glass-sections';
 import { alternates, canonicalUrl, siteName } from '../../lib/seo';
 
 const ctx = pageContext(Astro);
@@ -17,13 +18,16 @@ const logo = site.site.logoUrl || site.channel.avatarUrl;
   <section class="wrap section narrow" data-testid="site-about">
     <h1>{siteName(site, locale)}</h1>
     {logo && <img src={logo} alt="" width="120" height="120" class="about-logo" />}
-    <div class="prose" set:html={html} />
-    {links.length > 0 && (
-      <>
-        <h2>{t.links}</h2>
-        <ul class="links">{links.map((l) => <li><a href={l.url} rel="noopener me">{l.title || l.url}</a></li>)}</ul>
-      </>
-    )}
+    <!-- One frosted-glass box per section (shared pb-glass), the links in a box of their own -->
+    <div class="pb-glass-stack">
+      {glassSectionParts(html).map((part) => <section class="pb-glass pb-glass-box prose" set:html={part} />)}
+      {links.length > 0 && (
+        <section class="pb-glass pb-glass-box">
+          <h2>{t.links}</h2>
+          <ul class="links">{links.map((l) => <li><a href={l.url} rel="noopener me">{l.title || l.url}</a></li>)}</ul>
+        </section>
+      )}
+    </div>
     <p><a href={ctx.channelHref}>{t.channel}</a></p>
   </section>
 </SiteLayout>
