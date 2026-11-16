@@ -16,7 +16,12 @@ describe('glassSectionsHtml: one frosted-glass box per section', () => {
     expect(glassSectionsHtml('<p>Only</p>', 'p2')).toBe('<div class="pb-glass-stack"><section class="pb-glass pb-glass-box p2"><p>Only</p></section></div>');
     expect(glassSectionsHtml('  ')).toBe('');
   });
-  it('h3 and words that start with h2 do not split', () => {
-    expect(glassSectionsHtml('<h2x>no</h2x><h3>a</h3>').match(/<section/g)).toHaveLength(1);
+  it('splits at the highest-ranking heading used: a page\'s ## sections render as <h3>', () => {
+    const html = '<p>Intro</p><h3>One</h3><p>1</p><h4>Sub</h4><h3>Two</h3><p>2</p>';
+    expect(glassSectionsHtml(html).match(/<section/g)).toHaveLength(3);
+    expect(glassSectionsHtml(html)).toContain('<section class="pb-glass pb-glass-box prose"><h3>One</h3><p>1</p><h4>Sub</h4></section>');
+  });
+  it('tags that only start like a heading do not split', () => {
+    expect(glassSectionsHtml('<h2x>no</h2x><p>a</p>').match(/<section/g)).toHaveLength(1);
   });
 });
