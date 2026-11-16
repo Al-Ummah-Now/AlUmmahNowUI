@@ -54,7 +54,10 @@ const listAlternates = list
 
 const body = page && !list ? await renderBody(rc, page.body, page.locale, page.images) : null;
 // A page built from blocks renders them; `body` stays as the text fallback (and the description).
-const built = page?.blocks?.length && !list ? await prepareBlocks(rc, page, { pathname: Astro.url.pathname, search: Astro.url.searchParams }) : null;
+// A page that is only text (markdown blocks: Privacy, Terms, Cookie policy, About as the CMS migrated it)
+// renders its body as frosted-glass sections, as the videos site does (lib/about isBuiltPage).
+const textOnly = !page?.blocks?.some((b) => b.type !== 'markdown');
+const built = page?.blocks?.length && !list && !textOnly ? await prepareBlocks(rc, page, { pathname: Astro.url.pathname, search: Astro.url.searchParams }) : null;
 const alternates = page ? documentAlternates(page, page.alternates, (l, s) => `/${l}/${encodeURIComponent(s)}/`) : {};
 const translated = page && page.locale !== locale;
 const description = page ? page.seo_description || page.summary || plainText(page.body, 180) : '';

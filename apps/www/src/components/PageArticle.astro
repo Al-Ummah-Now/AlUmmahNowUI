@@ -6,6 +6,7 @@ import type { Page } from '../lib/cms-types';
 import type { Config } from '../lib/env';
 import { dir, type Locale } from '../lib/locale';
 import { pictureHtml, SIZES } from '../lib/picture';
+import { glassSectionsHtml } from '../../../../packages/render/src/glass-sections';
 
 /**
  * `built`: the page built from blocks (src/lib/blocks.ts); without it, the markdown body (`html`).
@@ -36,7 +37,8 @@ const coverHtml = showHead && page.cover ? pictureHtml(page.cover, cmsOrigin, { 
   ) : (
     <div class="section reading">
       <div class="wrap">
-        <div class="prose" lang={page.locale} dir={dir(page.locale)} set:html={html} />
+        <!-- A text-only page: one frosted-glass box per section (shared pb-glass) -->
+        <div class="prose-sections" lang={page.locale} dir={dir(page.locale)} data-testid="page-sections" set:html={glassSectionsHtml(html)} />
       </div>
     </div>
   )}
