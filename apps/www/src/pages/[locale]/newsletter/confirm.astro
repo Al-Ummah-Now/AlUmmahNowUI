@@ -2,15 +2,19 @@
 /**
  * /{l}/newsletter/confirm?token=: the link in the confirmation email (admin-api lib/newsletter.ts).
  * GET only shows a button (mail scanners open links); its POST confirms. Never cached.
+ * Newsletter off (src/lib/features.ts, or the admin API answers feature_off): 404.
  */
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { loadChrome, markSource, requestContext, routeLocale } from '../../../lib/context';
+import { featuresFromRequest } from '../../../lib/features';
 import { confirmSubscription, newsletterDeps, TOKEN, type ConfirmOutcome } from '../../../lib/newsletter';
 
 const locale = routeLocale(Astro);
 if (!locale) return new Response(null, { status: 404 });
 const rc = requestContext(Astro, locale);
 const { cfg, env, t } = rc;
+const notFound = () => new Response(null, { status: 404, headers: { 'Cache-Control': 'no-store' } });
+if (!featuresFromRequest(Astro.request).newsletter) return notFound();
 Astro.response.headers.set('Cache-Control', 'no-store');
 Astro.response.headers.set('Referrer-Policy', 'no-referrer');
 
@@ -20,6 +24,7 @@ if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData().catch(() => null);
   token = typeof form?.get('token') === 'string' ? String(form!.get('token')) : token;
   outcome = await confirmSubscription(newsletterDeps(env, cfg), token);
+  if (outcome === 'off') return notFound();
 } else if (Astro.request.method !== 'GET' && Astro.request.method !== 'HEAD') {
   return new Response(null, { status: 405, headers: { Allow: 'GET, POST' } });
 }

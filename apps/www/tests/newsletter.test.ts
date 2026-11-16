@@ -9,6 +9,7 @@ import {
   isSignupState,
   LOCAL_KEY,
   newsletterDeps,
+  newsletterReachable,
   readSignup,
   subscribe,
   unsubscribe,
@@ -89,6 +90,27 @@ describe('newsletter server calls', () => {
     const u = fakeApi(200, { result: { status: 'unsubscribed' } });
     expect(await unsubscribe(u.deps, TOKEN)).toBe('unsubscribed');
     expect(JSON.parse(String(u.calls[0]!.init.body))).toEqual({ token: TOKEN });
+  });
+});
+
+describe('newsletter switched off in the admin API (404 feature_off)', () => {
+  const off = () => fakeApi(404, { success: false, code: 'feature_off' });
+  it('sign-up, confirm and unsubscribe answer `off` (the pages turn it into a 404)', async () => {
+    expect(await subscribe(off().deps, input('a@example.com'), null)).toEqual({ status: 'off' });
+    expect(await confirmSubscription(off().deps, TOKEN)).toBe('off');
+    expect(await unsubscribe(off().deps, TOKEN)).toBe('off');
+  });
+  it('any other 404 is still `unavailable`, not off', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(await subscribe(fakeApi(404, { error: 'not_found' }).deps, input('a@example.com'), null)).toEqual({ status: 'unavailable' });
+    expect(await confirmSubscription(fakeApi(404, { error: 'feature_off' }).deps, TOKEN)).toBe('unavailable');
+    warn.mockRestore();
+  });
+  it('newsletterReachable: URL and key both needed', async () => {
+    expect(await newsletterReachable({ adminApiUrl: 'https://admin.example', key: 'k' })).toBe(true);
+    expect(await newsletterReachable({ adminApiUrl: '', key: 'k' })).toBe(false);
+    expect(await newsletterReachable({ adminApiUrl: 'https://admin.example', key: undefined })).toBe(false);
+    expect(await newsletterReachable({ adminApiUrl: 'https://admin.example', key: { get: async () => '' } })).toBe(false);
   });
 });
 
@@ -174,6 +196,20 @@ describe('newsletter form script', () => {
     await vi.waitFor(() => expect(form.querySelector('[data-nl-status]')!.textContent).toBe('Slow'));
     expect(form.querySelector('[data-nl-status]')!.classList.contains('nl-status-error')).toBe(true);
     expect(await postSignup('/x', {}, (async () => new Response('<html>', { status: 500 })) as unknown as typeof fetch)).toEqual({ status: 'unavailable' });
+  });
+
+  it('switched off since the page was rendered (404): the form section hides, no "not working" text', async () => {
+    const form = mount();
+    const section = document.createElement('section');
+    section.setAttribute('data-newsletter-section', '');
+    form.before(section);
+    section.append(form);
+    initNewsletterForm(form, (async () => new Response(JSON.stringify({ status: 'off' }), { status: 404 })) as unknown as typeof fetch);
+    form.querySelector<HTMLInputElement>('input[name="email"]')!.value = 'a@example.com';
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+    await vi.waitFor(() => expect(section.hidden).toBe(true));
+    expect(form.querySelector('[data-nl-status]')!.textContent).not.toBe('Down');
+    expect(await postSignup('/x', {}, (async () => new Response('', { status: 404 })) as unknown as typeof fetch)).toEqual({ status: 'off' });
   });
 
   it('renders Turnstile when asked and sends again with its token', async () => {

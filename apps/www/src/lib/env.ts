@@ -4,6 +4,7 @@
  */
 import type { KVNamespace } from './cf';
 import type { WellKnownEnv } from './well-known';
+import { isValidSecret } from './session';
 
 /** Service binding (only fetch is used; typed with the DOM Request/Response). */
 export interface ServiceBinding {
@@ -51,6 +52,8 @@ export interface Config {
   adminApiUrl: string;
   isProduction: boolean;
   version: string;
+  /** SESSION_SECRET is valid: sign-in works. Otherwise Sign in, the account probe and /auth/login|callback don't exist. */
+  signIn: boolean;
 }
 
 const trim = (url: string) => url.replace(/\/+$/, '');
@@ -69,5 +72,6 @@ export function config(env: WwwEnv): Config {
     adminApiUrl: trim(env.ADMIN_API_URL || ''),
     isProduction: appEnv === 'production',
     version: env.CF_VERSION_METADATA?.id || 'dev',
+    signIn: isValidSecret(env.SESSION_SECRET),
   };
 }

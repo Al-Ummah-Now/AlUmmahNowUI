@@ -15,7 +15,7 @@ import { createServer } from 'node:http';
 import { Buffer } from 'node:buffer';
 import { PREVIEW_ROWS, publicFixture, stubImage } from './stub-blocks.ts';
 import { scholarSitesFixture, siteByChannel } from './stub-scholar-sites.ts';
-import { newsletterFixture } from './stub-newsletter.ts';
+import { newsletterFixture, publicFeatures } from './stub-newsletter.ts';
 import { en as builtinEn } from '../src/content/fallback/en.ts';
 import { ar as builtinAr } from '../src/content/fallback/ar.ts';
 
@@ -63,6 +63,11 @@ createServer((req, res) => {
   if (url.pathname === '/public/site-theme') {
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30' });
     return res.end(JSON.stringify({ theme: STUB_SITE_THEME }));
+  }
+  // Which optional features can work (www src/lib/features.ts): STUB_NEWSLETTER=off switches the newsletter off
+  if (url.pathname === '/public/features') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=30' });
+    return res.end(JSON.stringify(publicFeatures()));
   }
   // The videos admin's newsletter endpoints (www's sign-up form, confirm and unsubscribe pages)
   if (url.pathname.startsWith('/internal/newsletter/')) {

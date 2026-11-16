@@ -94,7 +94,6 @@ export const ar: Messages = {
     noArticlesHere: 'لا توجد مقالات بالعربية بعد.',
     otherHas: 'مقالات {name} منشورة باللغة {language}.',
     noVideos: 'لا توجد مرئيات عامة بعد.',
-    videosUnavailable: 'تعذّر عرض المرئيات الآن.',
     moreVideos: 'مزيد من المرئيات',
     firstVideos: 'أحدث المرئيات',
     onVideos: 'القناة على مرئيات الأمة الآن',

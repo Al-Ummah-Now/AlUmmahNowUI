@@ -192,11 +192,12 @@ export function isCacheableResponse(response: Response): boolean {
  *
  * The site theme is in the key too: the page's <html data-theme> is rendered by the server, so when
  * the admin switches the theme every page starts afresh (a MISS) instead of serving the old theme
- * until its entry expires.
+ * until its entry expires. So are the optional features (src/lib/features.ts): a page rendered with
+ * the newsletter footer and one without it are different entries.
  */
-export function htmlCacheKey(url: string, version: string, theme = ''): string {
-  if (!version && !theme) return url;
-  return cacheKeyUrl(url, { __v: version, __t: theme });
+export function htmlCacheKey(url: string, version: string, theme = '', features = ''): string {
+  if (!version && !theme && !features) return url;
+  return cacheKeyUrl(url, features ? { __v: version, __t: theme, __f: features } : { __v: version, __t: theme });
 }
 
 export async function withHtmlCache(
@@ -208,9 +209,10 @@ export async function withHtmlCache(
   inflight?: Map<string, Promise<unknown>>,
   version = '',
   theme = '',
+  features = '',
 ): Promise<Response> {
   return cachedHtml(request, cache, waitUntil, render, {
-    key: htmlCacheKey(request.url, version, theme),
+    key: htmlCacheKey(request.url, version, theme, features),
     cacheableRequest: isCacheableRequest,
     cacheableResponse: isCacheableResponse,
     now,

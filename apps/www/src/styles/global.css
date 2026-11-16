@@ -1128,6 +1128,11 @@ main {
     grid-row: 1 / span 2;
   }
 }
+/* switched off since the page was rendered (scripts/newsletter-form.ts) */
+.footer-newsletter[hidden],
+.nl-form[hidden] {
+  display: none;
+}
 .footer-newsletter-title {
   margin: 0;
   font-size: 1.25rem;

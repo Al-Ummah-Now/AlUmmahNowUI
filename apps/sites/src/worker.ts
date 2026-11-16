@@ -16,7 +16,7 @@ import type { SSRManifest } from 'astro';
 import { App } from 'astro/app';
 import { cachedHtml } from '../../../packages/render/src/html-cache';
 import { config, type SitesEnv } from './lib/env';
-import { applySecurityHeaders, isCacheableRequest, isCacheableResponse, localeRedirect, pathRedirect, RENDER_STATE_HEADER, siteCacheKey, zoneRedirect } from './lib/edge';
+import { applySecurityHeaders, isCacheableRequest, isCacheableResponse, localeRedirect, pathRedirect, RENDER_STATE_HEADER, siteCacheKey, suspendedRedirect, zoneRedirect } from './lib/edge';
 import { isPreviewToken, lookupSite, normalizeHost, withSiteHeader } from './lib/site';
 import { renderTheme } from './lib/theme';
 import { strings } from './lib/i18n';
@@ -75,7 +75,8 @@ export function createExports(manifest: SSRManifest) {
 
         const site = found.site;
         const isPreview = site.preview;
-        if (site.site.status === 'suspended') return secure(unavailablePage(site.site.locales[0] ?? 'en'), isPreview, true);
+        // Suspended by an admin: like a revoked site, visitors go to the channel (lib/edge.ts suspendedRedirect)
+        if (site.site.status === 'suspended') return secure(suspendedRedirect(site, cfg) ?? bare(404, 'Not found'), false, true);
         const redirected = pathRedirect(url, site);
         if (redirected) return secure(redirected, isPreview, isPreview);
         const moved = localeRedirect(url, site);

@@ -3,23 +3,28 @@
  * /{l}/newsletter/: the sign-up page, and where every sign-up form posts (src/lib/newsletter.ts).
  * The script posts JSON and gets JSON back; a form without JavaScript gets a 303 back here with
  * ?s=<state>, shown above the form. The plain page is the same for everyone (edge-cached); with
- * ?s= it is not cached.
+ * ?s= it is not cached. Newsletter off (src/lib/features.ts, or the admin API answers feature_off): 404.
  */
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import NewsletterForm from '../../../components/NewsletterForm.astro';
 import { loadChrome, markSource, requestContext, routeLocale } from '../../../lib/context';
+import { featuresFromRequest } from '../../../lib/features';
 import { isSignupState, newsletterDeps, readSignup, subscribe } from '../../../lib/newsletter';
 
 const locale = routeLocale(Astro);
 if (!locale) return new Response(null, { status: 404 });
 const rc = requestContext(Astro, locale);
 const { cfg, env, t } = rc;
+const notFound = () => new Response(null, { status: 404, headers: { 'Cache-Control': 'no-store' } });
+if (!featuresFromRequest(Astro.request).newsletter) return notFound();
 
 if (Astro.request.method === 'POST') {
   const json = (Astro.request.headers.get('Accept') ?? '').includes('application/json');
   const deps = newsletterDeps(env, cfg);
   const input = await readSignup(Astro.request, locale);
   const result = await subscribe(deps, input, Astro.request.headers.get('CF-Connecting-IP'));
+  // Switched off in the admin API since the flag was read (30 s cache): no page, the form hides itself
+  if (result.status === 'off') return json ? new Response(JSON.stringify(result), { status: 404, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }) : notFound();
   if (json) {
     return new Response(JSON.stringify(result), { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
   }

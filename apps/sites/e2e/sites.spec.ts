@@ -91,6 +91,16 @@ test('unknown hosts and sites in setup are a bare 404; an old subdomain redirect
   expect(old.headers()['location']).toBe(`http://${HOSTS.both}:${SITES_PORT}/en/posts/?page=2`);
 });
 
+test('a suspended site sends visitors to the channel (like a revoked one): no "not available" page', async ({ request }) => {
+  for (const path of ['/', '/en/', '/ar/videos/']) {
+    const res = await request.get(at(HOSTS.suspended, path), { maxRedirects: 0 });
+    expect(res.status(), path).toBe(302);
+    expect(res.headers()['location']).toBe('https://videos.qa.alummahnow.net/en/@mustafa-e2e');
+    expect(res.headers()['cache-control']).toBe('no-store');
+    expect(await res.text()).not.toMatch(/not available|try again/i);
+  }
+});
+
 test('robots and sitemap are per host and complete; own-domain sitemaps list watch pages', async ({ request }) => {
   expect(await (await request.get(at(HOSTS.both, '/robots.txt'))).text()).toContain('Disallow: /');
   const subRes = await request.get(at(HOSTS.both, '/sitemap.xml'));

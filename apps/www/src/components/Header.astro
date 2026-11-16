@@ -5,7 +5,8 @@
  * byte-identical by `npm run check:fanous`), styled by aun-nav.generated.css; www adds only its own
  * links and search in the primary slot (src/styles/header.css). Order, mirrored in Arabic:
  * menu (below 1024px) · brand · env badge · links + search · language · light/dark ·
- * account (or Sign in). Below 1024px the links and search leave the bar (`aun-collapse`) and the menu
+ * account (or Sign in; neither, nor the silent sign-in probe, when sign-in isn't configured: cfg.signIn).
+ * Below 1024px the links and search leave the bar (`aun-collapse`) and the menu
  * button opens them again in the `.aun-header-panel` popover (no script needed), so the bar is one
  * 64px (56px) line on every screen.
  * apps/dev renders the same header (its tests compare its markup with this file).
@@ -58,36 +59,39 @@ const videosUrl = libraryUrl(cfg.videosWebUrl, locale);
         <Fragment set:html={modeIconSvg('moon', 'mode-moon')} />
         <Fragment set:html={modeIconSvg('sun', 'mode-sun')} />
       </button>
-      <div
-        class="account"
-        id="account"
-        data-me="/auth/me"
-        data-auth-url={cfg.authUrl}
-        data-label-accounts={t.auth.accounts}
-        data-label-current={t.auth.current}
-        data-label-switch-to={t.auth.switchTo}
-        data-label-add-account={t.auth.addAccount}
-        data-label-sign-out-of={t.auth.signOutOf}
-        data-label-sign-out-all={t.auth.signOutAll}
-        data-label-menu={t.a11y.accountMenu}
-        data-label-signed-in-as={t.auth.signedInAs}
-        data-label-profile={t.auth.profile}
-        data-label-videos={t.auth.videos}
-        data-label-cms={t.auth.cms}
-        data-label-apps={t.auth.apps}
-        data-label-more-accounts={t.auth.moreAccounts}
-        data-label-sign-out={t.auth.signOut}
-        data-label-confirm-sign-out-of-title={t.auth.confirmSignOutOfTitle}
-        data-label-confirm-sign-out-of-body={t.auth.confirmSignOutOfBody}
-        data-label-confirm-sign-out-all-title={t.auth.confirmSignOutAllTitle}
-        data-label-confirm-sign-out-all-body={t.auth.confirmSignOutAllBody}
-        data-profile-url={cfg.profileUrl}
-        data-videos-url={videosUrl}
-        data-cms-url={`${cfg.cmsPublicUrl}/`}
-        data-locale={locale}
-      >
-        <Fragment set:html={signInHtml({ lang: locale, href: loginHref })} />
-      </div>
+      {/* Sign-in not configured (no valid SESSION_SECRET): no Sign in, no account menu, no /auth/me probe (scripts/site.ts needs #account) */}
+      {cfg.signIn && (
+        <div
+          class="account"
+          id="account"
+          data-me="/auth/me"
+          data-auth-url={cfg.authUrl}
+          data-label-accounts={t.auth.accounts}
+          data-label-current={t.auth.current}
+          data-label-switch-to={t.auth.switchTo}
+          data-label-add-account={t.auth.addAccount}
+          data-label-sign-out-of={t.auth.signOutOf}
+          data-label-sign-out-all={t.auth.signOutAll}
+          data-label-menu={t.a11y.accountMenu}
+          data-label-signed-in-as={t.auth.signedInAs}
+          data-label-profile={t.auth.profile}
+          data-label-videos={t.auth.videos}
+          data-label-cms={t.auth.cms}
+          data-label-apps={t.auth.apps}
+          data-label-more-accounts={t.auth.moreAccounts}
+          data-label-sign-out={t.auth.signOut}
+          data-label-confirm-sign-out-of-title={t.auth.confirmSignOutOfTitle}
+          data-label-confirm-sign-out-of-body={t.auth.confirmSignOutOfBody}
+          data-label-confirm-sign-out-all-title={t.auth.confirmSignOutAllTitle}
+          data-label-confirm-sign-out-all-body={t.auth.confirmSignOutAllBody}
+          data-profile-url={cfg.profileUrl}
+          data-videos-url={videosUrl}
+          data-cms-url={`${cfg.cmsPublicUrl}/`}
+          data-locale={locale}
+        >
+          <Fragment set:html={signInHtml({ lang: locale, href: loginHref })} />
+        </div>
+      )}
     </div>
   </div>
   <!-- below 1024px: the same links and search, opened by the menu button (first in the bar) -->

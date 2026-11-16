@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { generateKeyPair, SignJWT, exportJWK, createLocalJWKSet } from 'jose';
 import { isPreviewToken, lookupSite, normalizeHost, resetSiteMemo, siteFromRequest, SITE_HEADER, withSiteHeader } from '../src/lib/site';
-import { applySecurityHeaders, contentSecurityPolicy, isCacheableRequest, localeRedirect, siteCacheKey, zoneRedirect } from '../src/lib/edge';
+import { applySecurityHeaders, contentSecurityPolicy, isCacheableRequest, localeRedirect, siteCacheKey, suspendedRedirect, zoneRedirect } from '../src/lib/edge';
 import { config } from '../src/lib/env';
 import { alternates, canonicalUrl, hreflangLinks, siteName, watchCanonical, watchPagesInSitemap } from '../src/lib/seo';
 import { renderTheme, themeIdOf } from '../src/lib/theme';
@@ -182,6 +182,23 @@ describe('content', () => {
   });
 });
 
+describe('a suspended site: like a revoked one, visitors go to the channel', () => {
+  const cfg = config({ APP_ENV: 'qa', VIDEOS_WEB_URL: 'https://videos.qa.alummahnow.net' });
+  it('302 to the channel in the site\'s first language (handle, else id), never cached, no "not available" page', async () => {
+    const site = fixtureSite();
+    site.site.status = 'suspended';
+    site.site.locales = ['ar', 'en'];
+    const res = suspendedRedirect(site, cfg)!;
+    expect(res.status).toBe(302);
+    expect(res.headers.get('Cache-Control')).toBe('no-store');
+    expect(res.headers.get('Location')).toBe(site.channel.handle ? `https://videos.qa.alummahnow.net/ar/@${site.channel.handle}` : `https://videos.qa.alummahnow.net/ar/channels/${site.channel.id}`);
+    expect(await res.text()).toBe('');
+    const noHandle = fixtureSite();
+    noHandle.channel.handle = null;
+    expect(suspendedRedirect(noHandle, cfg)!.headers.get('Location')).toBe(`https://videos.qa.alummahnow.net/en/channels/${noHandle.channel.id}`);
+  });
+});
+
 describe('sign-in (SS11): top-level redirect, host-only session, 5-minute re-check', () => {
   const SECRET = 'a'.repeat(64);
   const site = fixtureSite();
@@ -251,6 +268,19 @@ describe('sign-in (SS11): top-level redirect, host-only session, 5-minute re-che
     expect(answer).toEqual({ signedIn: true, sub: 'usr_1', name: 'Viewer', email: 'v@example.com', profile: { displayName: 'Viewer', displayNameLocalized: { en: 'Viewer', ar: 'المشاهد' }, avatarUrl: null } });
     expect(displayLabel(answer, 'ar')).toBe('المشاهد');
     expect(displayLabel(answer, 'en')).toBe('Viewer');
+  });
+
+  it('without a valid SESSION_SECRET, /auth/login and /auth/callback are 404 (no "not available" text)', async () => {
+    for (const secret of [undefined, '', 'short']) {
+      const off = { ...env, SESSION_SECRET: secret };
+      const offCtx = (url: string) => ({ request: withSiteHeader(new Request(url), site), url: new URL(url), locals: { runtime: { env: off } } }) as never;
+      const start = await login(offCtx('https://mustafa-elbadry.qa.alummahnow.org/auth/login?return=%2Fen%2F'));
+      expect(start.status).toBe(404);
+      expect(await start.text()).not.toMatch(/not available|configured/i);
+      expect((await callback(offCtx('https://mustafa-elbadry.qa.alummahnow.org/auth/callback?code=c&state=s'))).status).toBe(404);
+    }
+    expect(config({ SESSION_SECRET: SECRET }).signIn).toBe(true);
+    expect(config({}).signIn).toBe(false);
   });
 
   it('a wrong state signs nobody in', async () => {

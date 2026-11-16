@@ -3,7 +3,8 @@
  * The scholar site header: the Al Ummah Now header contract (AlUmmahNow docs/design/NAV.md "Header";
  * markup from the vendored packages/render/src/nav/header.js, styled by www's vendored
  * aun-nav.generated.css; `npm run check:fanous` keeps both byte-identical). Order, mirrored in Arabic:
- * menu (below 1024px) · the site's lockup · env badge · the site's own links · language · light/dark · account (or Sign in). Below 1024px the site's links leave the bar
+ * menu (below 1024px) · the site's lockup · env badge · the site's own links · language · light/dark · account (or Sign in;
+ * neither when sign-in isn't configured, cfg.signIn). Below 1024px the site's links leave the bar
  * (`aun-collapse`) and the menu button opens them in the `.aun-header-panel` popover (no script
  * needed), so the bar is one 64px (56px) line on every screen. The account button and menu are drawn here and filled from /auth/me by
  * src/scripts/site.ts (the HTML is cached and the same for everyone).
@@ -70,44 +71,49 @@ const icon = (id: string) => `<img class="aun-app-icon" data-app="${id}" src="/a
         <Fragment set:html={modeIconSvg('moon', 'mode-moon')} />
         <Fragment set:html={modeIconSvg('sun', 'mode-sun')} />
       </button>
-      <Fragment set:html={signInHtml({ lang: locale, href: `/auth/login?return=${encodeURIComponent(returnTo)}&lang=${locale}` })} />
-      <div class="account" id="account" data-testid="site-account">
-        <button type="button" class="aun-acct-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="account-menu" data-testid="site-account-button">
-          <span class="aun-avatar" aria-hidden="true" data-account-initial></span>
-          <span class="aun-visually-hidden">{t.account}: </span>
-          <span class="aun-acct-name" dir="auto" data-account-name></span>
-          <svg class="aun-caret" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 6 8 10.5 12.5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
-        </button>
-        <ul class="aun-menu" id="account-menu" hidden>
-          <li class="aun-menu-who">
-            <span class="aun-avatar aun-avatar--lg" aria-hidden="true" data-account-initial></span>
-            <span class="aun-menu-who-text">
-              <span class="aun-menu-who-name" dir="auto" data-account-name></span>
-              <span class="aun-visually-hidden" data-account-signed-in-as data-template={t.signedInAs}>{fmt(t.signedInAs, { name: '' })}</span>
-              <span class="aun-menu-who-sub aun-email" dir="ltr" data-account-email hidden><span class="aun-email-local"></span><span class="aun-email-domain"></span></span>
-            </span>
-          </li>
-          <li class="aun-menu-sep" aria-hidden="true"></li>
-          <li>
-            <span class="aun-menu-label" id="account-apps-label">{t.apps}</span>
-            <ul aria-labelledby="account-apps-label">
-              <li><a class="aun-menu-item" href={wwwHref}><Fragment set:html={icon('www')} /><span class="aun-menu-text">{t.www}</span></a></li>
-              <li><a class="aun-menu-item" href={videosHref}><Fragment set:html={icon('videos')} /><span class="aun-menu-text">{t.videos}</span></a></li>
-              <li><a class="aun-menu-item" href={cfg.profileUrl}><Fragment set:html={icon('profile')} /><span class="aun-menu-text">{t.profile}</span></a></li>
+      {/* Sign-in not configured (no valid SESSION_SECRET): no Sign in and no account menu (cfg.signIn) */}
+      {cfg.signIn && (
+        <>
+          <Fragment set:html={signInHtml({ lang: locale, href: `/auth/login?return=${encodeURIComponent(returnTo)}&lang=${locale}` })} />
+          <div class="account" id="account" data-testid="site-account">
+            <button type="button" class="aun-acct-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="account-menu" data-testid="site-account-button">
+              <span class="aun-avatar" aria-hidden="true" data-account-initial></span>
+              <span class="aun-visually-hidden">{t.account}: </span>
+              <span class="aun-acct-name" dir="auto" data-account-name></span>
+              <svg class="aun-caret" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 6 8 10.5 12.5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+            </button>
+            <ul class="aun-menu" id="account-menu" hidden>
+              <li class="aun-menu-who">
+                <span class="aun-avatar aun-avatar--lg" aria-hidden="true" data-account-initial></span>
+                <span class="aun-menu-who-text">
+                  <span class="aun-menu-who-name" dir="auto" data-account-name></span>
+                  <span class="aun-visually-hidden" data-account-signed-in-as data-template={t.signedInAs}>{fmt(t.signedInAs, { name: '' })}</span>
+                  <span class="aun-menu-who-sub aun-email" dir="ltr" data-account-email hidden><span class="aun-email-local"></span><span class="aun-email-domain"></span></span>
+                </span>
+              </li>
+              <li class="aun-menu-sep" aria-hidden="true"></li>
+              <li>
+                <span class="aun-menu-label" id="account-apps-label">{t.apps}</span>
+                <ul aria-labelledby="account-apps-label">
+                  <li><a class="aun-menu-item" href={wwwHref}><Fragment set:html={icon('www')} /><span class="aun-menu-text">{t.www}</span></a></li>
+                  <li><a class="aun-menu-item" href={videosHref}><Fragment set:html={icon('videos')} /><span class="aun-menu-text">{t.videos}</span></a></li>
+                  <li><a class="aun-menu-item" href={cfg.profileUrl}><Fragment set:html={icon('profile')} /><span class="aun-menu-text">{t.profile}</span></a></li>
+                </ul>
+              </li>
+              <li class="aun-menu-sep" aria-hidden="true"></li>
+              <li>
+                <form method="post" action="/auth/logout">
+                  <input type="hidden" name="return" value={`/${locale}/`} />
+                  <button type="submit" class="aun-menu-item" data-testid="site-sign-out">
+                    <svg class="aun-menu-icon aun-flip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4H5v16h4M14 8l4 4-4 4M18 12H8" /></svg>
+                    <span class="aun-menu-text">{t.signOut}</span>
+                  </button>
+                </form>
+              </li>
             </ul>
-          </li>
-          <li class="aun-menu-sep" aria-hidden="true"></li>
-          <li>
-            <form method="post" action="/auth/logout">
-              <input type="hidden" name="return" value={`/${locale}/`} />
-              <button type="submit" class="aun-menu-item" data-testid="site-sign-out">
-                <svg class="aun-menu-icon aun-flip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4H5v16h4M14 8l4 4-4 4M18 12H8" /></svg>
-                <span class="aun-menu-text">{t.signOut}</span>
-              </button>
-            </form>
-          </li>
-        </ul>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   </div>
   {items.length > 0 && (
