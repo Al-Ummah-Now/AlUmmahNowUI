@@ -591,6 +591,29 @@ html[lang='ar'] .hero-wordmark {
   color: var(--muted);
   font-size: 0.97rem;
 }
+/* Shipped, nothing in production uses it yet: a lighter edge than the live items, and a Ready chip */
+.ready-title {
+  margin-block: 2rem 0.35rem;
+  font-size: 1.15rem;
+}
+.ready-lead {
+  margin-block: 0 0.9rem;
+  color: var(--muted);
+}
+.live-item-ready {
+  border-inline-start: 4px dashed var(--accent);
+  box-shadow: none;
+}
+.live-item-ready:hover {
+  border-inline-start-color: var(--accent);
+}
+.live-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
 
 /* ---------- System layers (home) ---------- */
 .layers {
@@ -889,6 +912,9 @@ html[lang='ar'] .hero-wordmark {
 .chip-live .chip-dot {
   background: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 30%, transparent);
+}
+.chip-ready .chip-dot {
+  border: 2px solid var(--accent);
 }
 .chip-rolling .chip-dot {
   border: 2px solid var(--accent);

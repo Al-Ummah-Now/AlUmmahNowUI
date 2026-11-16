@@ -27,6 +27,7 @@ export const ar: Strings = {
   },
   status: {
     live: 'يعمل الآن',
+    ready: 'جاهز، لم يُستخدم بعد',
     rolling: 'مكتمل، قيد الإطلاق',
     building: 'قيد التطوير',
     planned: 'مخطط له',
@@ -68,10 +69,12 @@ export const ar: Strings = {
     ],
     pillarsMore: 'المزيد عن المجتمع',
     liveTitle: 'يعمل اليوم',
+    readyTitle: 'جاهز، لم يُستخدم بعد',
+    readyLead: 'وصل إلى بيئة الإنتاج وجاهز للاستخدام، لكن لا شيء هناك يستخدمه بعد.',
     live: [
-      { title: 'www.alummahnow.net', body: 'الموقع العام: الخط الزمني للرئيسية، والمقالات، وصفحات العلماء، وصفوف المرئيات.', href: WWW },
-      { title: 'videos.alummahnow.net', body: 'شاهد وارفع وعلّق واشترك.', href: VIDEOS },
-      { title: 'مواقع العلماء', body: 'مواقع بهوية مستقلة للعلماء على alummahnow.org، تعمل من المنصة نفسها.', href: 'https://www.alummahnow.net/ar/scholars/' },
+      { title: 'www.alummahnow.net', body: 'الموقع العام: الخط الزمني للرئيسية، والمقالات، وصفوف المرئيات.', href: WWW, feature: 'www-and-sites' },
+      { title: 'videos.alummahnow.net', body: 'شاهد وارفع وعلّق واشترك.', href: VIDEOS, feature: 'videos-site' },
+      { title: 'مواقع العلماء', body: 'مواقع بهوية مستقلة للعلماء على alummahnow.org، تعمل من المنصة نفسها.', href: '/ar/technology/#feature-scholar-sites', feature: 'scholar-sites' },
     ],
     systemTitle: 'المنظومة في لمحة',
     systemLead: 'كل ما يعمل على الخادم يعمل على Cloudflare Workers، وخدمة دخول واحدة تخدم كل التطبيقات.',
@@ -194,7 +197,7 @@ export const ar: Strings = {
         title: 'الهوية',
         items: [
           { title: 'الدخول الموحّد', body: 'نسختنا من OpenAuth: OAuth 2.0 وOpenID Connect مع PKCE. سجّل الدخول مرة تكن مسجّلًا في كل التطبيقات، وتسجيل الخروج ينهيه في كل مكان.', feature: 'sso', sources: [{ label: 'المصادقة', href: `${WIKI}/guides/authentication.md` }] },
-          { title: 'رموز قصيرة العمر', body: 'رمز الوصول صالح 15 دقيقة. ورموز التحديث تتجدد، وإعادة استخدام رمز قديم تُلغي العائلة كلها.', feature: 'short-lived-tokens', sources: [{ label: 'الرموز', href: `${WIKI}/guides/authentication.md#tokens` }] },
+          { title: 'رموز قصيرة العمر', body: 'رمز الوصول صالح ١٥ دقيقة. ورموز التحديث تتجدد، وإعادة استخدام رمز قديم تُلغي العائلة كلها.', feature: 'short-lived-tokens', sources: [{ label: 'الرموز', href: `${WIKI}/guides/authentication.md#tokens` }] },
           { title: 'مفاتيح المرور', body: 'الدخول بمفاتيح المرور متاح على الويب وفي التطبيقات الأصلية. واشتراطها على فريق العمل مكتمل، ويبقى معطّلًا حتى يفعّله المشرف العام.', feature: 'passkeys', sources: [{ label: 'AUTH-PASSKEYS', href: `${WIKI}/epics/AUTH-PASSKEYS-passkeys-everywhere.md` }] },
         ] as Item[],
       },
@@ -216,7 +219,7 @@ export const ar: Strings = {
     ],
     features: {
       title: 'كل الميزات وأين وصلت',
-      lead: 'مبنية من سجل الميزات في الويكي، المرجع المعتمد للمشروع. كل حالة هنا هي حالتها في السجل، وكل ميزة تعمل الآن تذكر الإصدار الذي وصلت فيه إلى المستخدمين.',
+      lead: 'مبنية من سجل الميزات في الويكي، المرجع المعتمد للمشروع. كل حالة هنا هي حالتها في السجل. «يعمل الآن» يعني أنه في بيئة الإنتاج ومستخدم فيها، و«جاهز» يعني أنه وصل إلى الإنتاج ولا شيء يستخدمه بعد. وكلاهما يذكر إصدار الإنتاج الذي وصل فيه.',
       source: 'سجل الميزات، إيداع الويكي {sha}',
       before: 'قبل {tag}',
       wiki: 'الويكي',
@@ -225,7 +228,7 @@ export const ar: Strings = {
     principles: [
       { title: 'غير متزامن دائمًا', body: 'الأعمال الثقيلة تمر عبر طوابير مع إعادة المحاولة وطوابير للرسائل المتعذّرة. وإذا فشل شيء ظهر في صفحة الأخطاء في لوحة الإدارة مع زر إعادة المحاولة.', sources: [{ label: 'O26', href: `${WIKI}/epics/decisions.md#o26-always-async-with-admin-visible-errors` }] },
       { title: 'مواصفة، ثم خطة، ثم شيفرة', body: 'تبدأ الميزات مواصفةً في الويكي، ثم خطة، ثم طلبات دمج مع اختباراتها.', sources: [{ label: 'المساهمة', href: `${WIKI}/guides/contributing.md` }] },
-      { title: 'الخصوصية افتراضيًا', body: 'يمكن التراجع عن الحذف خلال 30 يومًا ثم يُمحى نهائيًا. ويمكن محو الحسابات. وتُحصى الزيارات دون ملفات تعريف الارتباط أو معرّفات.', sources: [{ label: 'دورة حياة البيانات', href: `${WIKI}/guides/data-lifecycle.md` }] },
+      { title: 'الخصوصية افتراضيًا', body: 'يمكن التراجع عن الحذف خلال ٣٠ يومًا ثم يُمحى نهائيًا. ويمكن محو الحسابات. وتُحصى الزيارات دون ملفات تعريف الارتباط أو معرّفات.', sources: [{ label: 'دورة حياة البيانات', href: `${WIKI}/guides/data-lifecycle.md` }] },
       { title: 'سهولة الوصول في الاتجاهين', body: 'استخدام بلوحة المفاتيح وقارئات الشاشة، وتباين بمستوى AA في كل سمة، وقوائم لا تخرج من الشاشة، من اليسار إلى اليمين ومن اليمين إلى اليسار.', sources: [{ label: 'السمات', href: `${WIKI}/guides/theming.md#menus-never-leave-the-screen` }] },
     ] as Item[],
   },
@@ -244,7 +247,7 @@ export const ar: Strings = {
       { title: 'نسختان', body: 'يذهب المرئي إلى Bunny Stream، ونحتفظ بنسختنا الأصلية في تخزين R2 خاص.' },
       { title: 'التحويل', body: 'يبدأ طابور تشغيل FFmpeg على Cloudflare Containers، فيكتب نسخ HLS إلى R2.' },
       { title: 'الاختيار', body: 'تُعيد الواجهة البرمجية رابط تشغيل واحدًا: Bunny أو R2 أو نسبة بينهما، تُضبط في صفحة التوصيل في لوحة الإدارة.' },
-      { title: 'التشغيل', body: 'يشغّل المشغّل ذلك الرابط. وبعد خطأ قاتل أو توقف 15 ثانية على R2 يعود إلى Bunny مرة واحدة.' },
+      { title: 'التشغيل', body: 'يشغّل المشغّل ذلك الرابط. وبعد خطأ قاتل أو توقف ١٥ ثانية على R2 يعود إلى Bunny مرة واحدة.' },
     ],
     pipelineSources: [
       { label: 'توصيل المرئيات', href: `${WIKI}/guides/video-delivery.md` },
@@ -272,8 +275,8 @@ export const ar: Strings = {
       { title: 'الوسم', body: 'وسم مؤرّخ على التزام في الفرع الرئيسي يبدأ الإصدار.' },
       { title: 'بناء واحد', body: 'البناء نفسه يذهب إلى stage وإلى الإنتاج.' },
       { title: 'Stage', body: 'النشر على stage وتشغيل الاختبارات الشاملة هناك.' },
-      { title: 'الإنتاج بنسبة 0%', body: 'تُرفع النسخة الجديدة دون حركة ويُجرى عليها فحص سريع.' },
-      { title: '100% أو التراجع', body: 'تنتقل الحركة إليها، ويُعاد الفحص، وأي فشل يُرجعها تلقائيًا.' },
+      { title: 'الإنتاج بنسبة ٠٪', body: 'تُرفع النسخة الجديدة دون حركة ويُجرى عليها فحص سريع.' },
+      { title: '١٠٠٪ أو التراجع', body: 'تنتقل الحركة إليها، ويُعاد الفحص، وأي فشل يُرجعها تلقائيًا.' },
     ],
     releaseSources: [{ label: 'عملية الإصدار', href: `${WIKI}/guides/release-process.md` }],
     costTitle: 'مبنية ضمن سقف للتكلفة',
@@ -325,7 +328,7 @@ export const ar: Strings = {
     wikiLink: { label: 'افتح الويكي', href: `${GH}/AlUmmahNowWiki` },
     securityTitle: 'وجدت مشكلة أمنية؟',
     securityBody:
-      'من فضلك لا تفتح مسألة عامة. استخدم Security ← Report a vulnerability في المستودع المعني. نسعى إلى الرد على البلاغات خلال 3 أيام عمل.',
+      'من فضلك لا تفتح مسألة عامة. استخدم Security ← Report a vulnerability في المستودع المعني. نسعى إلى الرد على البلاغات خلال ٣ أيام عمل.',
     securityLink: { label: 'أبلغ عن ثغرة', href: `${GH}/AlUmmahNow/security/advisories/new` },
   },
 

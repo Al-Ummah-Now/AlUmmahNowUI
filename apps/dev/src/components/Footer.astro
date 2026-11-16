@@ -1,5 +1,5 @@
 ---
-import type { Strings } from '../i18n';
+import { formatNumber, type Strings } from '../i18n';
 import { PAGES, pagePath, type Locale, type PageSlug } from '../lib/pages';
 import { GH, STATUS_PAGE, VIDEOS, WWW } from '../lib/links';
 interface Props {
@@ -33,7 +33,7 @@ const year = new Date().getUTCFullYear();
       </ul>
     </nav>
     <div class="footer-base">
-      <p>{t.footer.rights.replace('{year}', String(year))}</p>
+      <p>{t.footer.rights.replace('{year}', formatNumber(locale, year))}</p>
       <p lang={locale === 'ar' ? 'en' : 'ar'}>{locale === 'ar' ? 'Al Ummah Now' : 'الأمة الآن'}</p>
     </div>
   </div>

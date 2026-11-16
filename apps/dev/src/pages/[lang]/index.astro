@@ -4,12 +4,15 @@ import Icon from '../../../../www/src/components/Icon.astro';
 import { strings } from '../../i18n';
 import { pagePath, type Locale, type PageSlug } from '../../lib/pages';
 import { localePaths } from '../../lib/static-paths';
+import { byUse } from '../../lib/registry';
+import StatusChip from '../../components/StatusChip.astro';
 
 export const getStaticPaths = localePaths;
 const locale = Astro.params.lang as Locale;
 const t = strings(locale);
 const h = t.home;
 const go = (slug: string) => pagePath(locale, slug as PageSlug);
+const inUse = byUse(h.live);
 ---
 <Base locale={locale} slug="" title={h.title} description={h.description}>
   <section class="hero night" aria-labelledby="page-title">
@@ -54,16 +57,36 @@ const go = (slug: string) => pagePath(locale, slug as PageSlug);
     <div class="wrap split">
       <div>
         <h2 id="live" class="h2">{h.liveTitle}</h2>
-        <ul class="live-list" role="list">
-          {h.live.map((s) => (
+        <ul class="live-list" role="list" aria-labelledby="live">
+          {inUse.live.map((s) => (
             <li>
-              <a class="live-item" href={s.href} rel="external">
+              <a class="live-item" data-feature={s.feature} href={s.href} rel={s.href.startsWith('/') ? undefined : 'external'}>
                 <span class="live-title" dir="auto">{s.title}</span>
                 <span class="live-body">{s.body}</span>
               </a>
             </li>
           ))}
         </ul>
+        {/* Shipped but nothing in production uses it yet (registry status `ready`): never under "Live today" */}
+        {inUse.ready.length > 0 && (
+          <>
+            <h3 id="ready" class="ready-title">{h.readyTitle}</h3>
+            <p class="ready-lead">{h.readyLead}</p>
+            <ul class="live-list" role="list" aria-labelledby="ready">
+              {inUse.ready.map((s) => (
+                <li>
+                  <a class="live-item live-item-ready" data-feature={s.feature} href={s.href} rel={s.href.startsWith('/') ? undefined : 'external'}>
+                    <span class="live-head">
+                      <span class="live-title" dir="auto">{s.title}</span>
+                      <StatusChip status="ready" label={t.status.ready} />
+                    </span>
+                    <span class="live-body">{s.body}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
       <div>
         <h2 class="h2" id="system">{h.systemTitle}</h2>
