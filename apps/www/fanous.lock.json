@@ -1,6 +1,6 @@
 {
   "repo": "Al-Ummah-Now/AlUmmahNow",
-  "ref": "7f925e81d804c7108fc3884562bd33b3bb1a259c",
+  "ref": "d84abceadedfc42717169da512824744fcf6e8c3",
   "source": "apps/web/src/theme/site-themes.css",
   "sourceSha256": "600d369f9ab157c3c1c7a5ed99095394e2d57c6dc1313742221c8eff00ce9eb9",
   "street": {
@@ -15,10 +15,10 @@
     "packages/fanous-tokens/nav/mode-toggle.d.ts": "c57c9674622027069eb1fa5b05b4268a187c557b0bd714c6698a39efce3c682e"
   },
   "outputs": {
-    "../../packages/render/src/styles/fanous-themes.generated.css": "ac1ac669b3d64d13de8db08f4173ddb8bc10a265310a8df872bdbfdee85d1183",
-    "../../packages/render/src/themes/site-themes.generated.ts": "dc4ade9c7ad8984fc4fa02a3afb0aa286c21501b2140805ab0a2eb3c03aa65cd",
-    "src/styles/aun-nav.generated.css": "2656fcc69ce5eeb3f56d2e3166c22790a6d0f41669693f1807b0cb10927e9e6d",
-    "../../packages/render/src/styles/aun-surfaces.generated.css": "22fd115dd1fe3ac76079feed63607de24dfe74bb5fa327cfac1402580d036fb7",
+    "../../packages/render/src/styles/fanous-themes.generated.css": "4c4f00b8ce16a974039a162dbf53ea16b467ff3c2db5eb38a9bc4885631c0ad1",
+    "../../packages/render/src/themes/site-themes.generated.ts": "2accb92656b30d9963cf0e9cc20186a9197d39a4dd26ffa21d999ec9f502cd5e",
+    "src/styles/aun-nav.generated.css": "c503aecec6b47661bba23f5ec42921d99492623c2ea536281fe55bd86c8ea31f",
+    "../../packages/render/src/styles/aun-surfaces.generated.css": "6f37ac34be5ba9a71a560f89e2e0f2211f53527e5821eee2e1ad7803dbe6ad9e",
     "public/aun-nav/icons/www.webp": "b0feb2c79ff71890862210489b49db96fb0d90f58d7818279f6bec53ae032b56",
     "public/aun-nav/icons/videos.webp": "856d631b870c5805002379271469e1dd475a23f3b07d61f5141b7f8149fd3366",
     "public/aun-nav/icons/profile.webp": "736e4650c588af4d08e9a5e065265026bd0332e8d5700f630eaf033b9147a2db",
@@ -28,9 +28,9 @@
     "../sites/public/aun-nav/icons/www.webp": "b0feb2c79ff71890862210489b49db96fb0d90f58d7818279f6bec53ae032b56",
     "../sites/public/aun-nav/icons/videos.webp": "856d631b870c5805002379271469e1dd475a23f3b07d61f5141b7f8149fd3366",
     "../sites/public/aun-nav/icons/profile.webp": "736e4650c588af4d08e9a5e065265026bd0332e8d5700f630eaf033b9147a2db",
-    "../../packages/render/src/themes/fanous-street.generated.js": "7a959c2766c223d555ff77d37d42857e3a3649bfac354137b4e3f5486b538654",
-    "../../packages/render/src/themes/fanous-street.generated.d.ts": "54df0c8e4b34e5f8af490c454bfb0b1a60c5829456846cffa4fe557b0202595d",
-    "../../packages/render/src/styles/fanous-street.generated.css": "c320d78092a3b0416064c2cf1c34a1938c51ba685a9f5dd46d86a6c650384226",
+    "../../packages/render/src/themes/fanous-street.generated.js": "a6fcd7a6281ab4919f2bc9f3269d2391ee83e75f095efec1540a90cb76f6b3cf",
+    "../../packages/render/src/themes/fanous-street.generated.d.ts": "52eb2c98ed9462cd85b706315ad53df592d17820949610eb521ce0b8d0efa125",
+    "../../packages/render/src/styles/fanous-street.generated.css": "934bd9e7becdf73b66cc989fea18d9beb811a2926d3b020ca32e3bbe6edf0303",
     "../../packages/render/src/nav/header.js": "c9725d5c5cf087536cc8e4aa8ef3218fb462f0cb49626d301d2ef718139f3ee7",
     "../../packages/render/src/nav/header.d.ts": "8110c2c9c8912254a5a17af8c0a1763b2116950f122b3451eb24e9bffbf3669d",
     "../../packages/render/src/nav/mode-toggle.js": "a05f5544599c1364710427baf455213cbd5a2655a38e791e9cc055580db55a7b",
