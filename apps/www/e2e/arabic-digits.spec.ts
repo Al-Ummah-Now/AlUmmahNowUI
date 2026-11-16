@@ -19,10 +19,14 @@ test.describe('Arabic numerals', () => {
   test('home timeline in Arabic: times, days, durations, counts and the footer use ٠–٩', async ({ page }) => {
     test.skip(!local, 'needs the seeded local FEED KV');
     const errors: string[] = [];
-    page.on('pageerror', (e) => errors.push(String(e)));
+    // Network refusals from the stub services (CORS, failed loads) are not script errors; WebKit
+    // reports some of them as page errors
+    const network = /Failed to load resource|CORS policy|access control checks|Access-Control-Allow-Origin|net::/;
+    page.on('pageerror', (e) => {
+      if (!network.test(String(e))) errors.push(String(e));
+    });
     page.on('console', (m) => {
-      // Network refusals from the stub services (CORS, failed loads) are not script errors
-      if (m.type() === 'error' && !/Failed to load resource|CORS policy|access control checks|Access-Control-Allow-Origin|net::/.test(m.text())) errors.push(m.text());
+      if (m.type() === 'error' && !network.test(m.text())) errors.push(m.text());
     });
     await page.goto('/ar/');
     // The script has run once the absolute times carry the reader's zone (it rewrites every [data-abs]).
