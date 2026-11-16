@@ -13,6 +13,7 @@
  * Only these answer; every other public path stays 503 (the rest of the suite uses built-in content).
  */
 import { deflateSync } from 'node:zlib';
+import { formatNumber } from '../../../packages/render/src/format.ts';
 import { normalizePageBlocks, servePageBlocks } from '../../../packages/render/src/page-blocks/page-blocks.generated.ts';
 import { samplePageBlocks, sampleServeRefs } from '../../../packages/render/src/page-blocks/page-blocks.sample.generated.ts';
 
@@ -230,7 +231,7 @@ const feedVideo = (id: number, kind: 'video' | 'channel', refId: string, title: 
 const CHANNEL = (ar: boolean) =>
   feedVideo(1, 'channel', 'stub-channel', ar ? 'قناة العلم' : 'Knowledge channel', 1, {
     handle: 'knowledge',
-    latest: [1, 2, 3].map((n) => ({ id: `stub-latest-${n}`, title: ar ? `الدرس ${n}` : `Lesson ${n}`, thumbnail_url: null, duration_seconds: 600 + n * 65 })),
+    latest: [1, 2, 3].map((n) => ({ id: `stub-latest-${n}`, title: ar ? `الدرس ${formatNumber(n, 'ar')}` : `Lesson ${n}`, thumbnail_url: null, duration_seconds: 600 + n * 65 })),
   });
 const listHead = (slug: string, locale: string, title: string, summary: string, kind: 'curated' | 'filter', alternates: { locale: string; slug: string }[]) => ({
   slug, locale, title, summary, seo_title: null, seo_description: null, list_kind: kind,

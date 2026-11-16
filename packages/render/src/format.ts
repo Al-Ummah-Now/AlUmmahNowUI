@@ -123,3 +123,15 @@ export const toAsciiNumber = (s: string): string => toAsciiDigits(s).replace(/٫
 /** The page language in a browser (`<html lang>`): "ar" or "en" ("en" outside a browser). */
 export const pageLang = (): Lang =>
   (globalThis as { document?: { documentElement?: { lang?: string } } }).document?.documentElement?.lang?.startsWith('ar') ? 'ar' : 'en';
+
+/** A count's text in each plural form the language has (Arabic: zero, one, two, few, many, other). */
+export type PluralForms = Partial<Record<'zero' | 'one' | 'two' | 'few' | 'many', string>> & { other: string };
+
+/**
+ * "3 likes" / «٣ إعجابات», «١١ إعجابًا», «إعجاب واحد»: picks the language's plural form for `n`
+ * (Intl.PluralRules) and fills `{count}` with the formatted number.
+ */
+export function plural(n: number, forms: PluralForms, lang: Lang | string): string {
+  const cat = new Intl.PluralRules(isAr(lang) ? 'ar' : 'en').select(n) as keyof PluralForms;
+  return fill(forms[cat] ?? forms.other, { count: n }, lang);
+}

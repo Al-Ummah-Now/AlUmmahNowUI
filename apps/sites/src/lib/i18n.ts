@@ -3,7 +3,7 @@
  * the scholar's. Arabic uses «مرئي / مرئيات» for video and «المقاطع القصيرة» for Shorts (glossary).
  */
 import type { Locale } from '../../../../packages/render/src/locale';
-import { num } from '../../../../packages/render/src/format';
+import { num, type PluralForms } from '../../../../packages/render/src/format';
 
 const en = {
   skip: 'Skip to content',
@@ -23,7 +23,7 @@ const en = {
   allVideos: 'All videos',
   allPosts: 'All posts',
   more: 'More',
-  moreCards: '{n} more cards',
+  moreCards: { one: '{count} more card', other: '{count} more cards' } as PluralForms,
   noVideos: 'No videos yet.',
   noPosts: 'No posts yet.',
   watchOn: 'Watch on Al Ummah Now',
@@ -73,7 +73,7 @@ const ar: DeepString<Strings> = {
   allVideos: 'كل المرئيات',
   allPosts: 'كل المنشورات',
   more: 'المزيد',
-  moreCards: 'بطاقات أخرى: {n}',
+  moreCards: { one: 'بطاقة أخرى', two: 'بطاقتان أخريان', few: '{count} بطاقات أخرى', many: '{count} بطاقة أخرى', other: '{count} بطاقة أخرى' },
   noVideos: 'لا توجد مرئيات بعد.',
   noPosts: 'لا توجد منشورات بعد.',
   watchOn: 'شاهده على الأمة الآن',
