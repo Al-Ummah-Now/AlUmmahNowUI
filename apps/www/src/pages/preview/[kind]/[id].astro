@@ -38,7 +38,8 @@ const chrome = data ? await loadChrome(rc) : { settings: builtinContent(locale).
 const body = data ? await renderBody(rc, data.content.body, data.content.locale, data.content.images) : null;
 const here = Astro.url.pathname;
 // Drafts render like the published page: blocks for pages, the card viewer for card posts.
-const built = data?.kind === 'page' && data.content.blocks?.length ? await prepareBlocks(rc, data.content, { pathname: here, search: Astro.url.searchParams }) : null;
+// Text-only pages preview as frosted-glass sections, as they publish ([slug].astro)
+const built = data?.kind === 'page' && data.content.blocks?.some((b) => b.type !== 'markdown') ? await prepareBlocks(rc, data.content, { pathname: here, search: Astro.url.searchParams }) : null;
 const cardSeo = data?.kind === 'post' ? cardPostSeo(data.content) : null;
 const slide = data?.kind === 'post' && data.content.slides?.length ? slideFromLink(Astro.url.search, '', data.content.slides.length) : 0;
 // The switcher and hreflang point at published translations; this locale stays on the preview.

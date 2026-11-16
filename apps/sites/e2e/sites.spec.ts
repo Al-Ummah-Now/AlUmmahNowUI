@@ -485,3 +485,24 @@ test('post counts agree with their nouns and Arabic uses ٠–٩: dates, duratio
   await page.goto(at(HOSTS.both, '/ar/'));
   for (const d of await page.locator('.video-card .duration').allInnerTexts()) expect(d).toMatch(/^[٠-٩:]+$/);
 });
+
+test('the About page shows its text and links in frosted-glass boxes with a golden glow, en and ar', async ({ page }) => {
+  for (const scheme of ['dark', 'light'] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    for (const path of ['/en/about/', '/ar/about/']) {
+      await page.goto(at(HOSTS.both, path));
+      const boxes = page.locator('[data-testid=site-about] .pb-glass-stack > .pb-glass');
+      // the text and the channel's links: one box each
+      await expect(boxes).toHaveCount(2);
+      await expect(boxes.first()).toContainText(path.startsWith('/ar') ? 'الشيخ مصطفى' : 'Sh. Mustafa');
+      const style = await boxes.first().evaluate((e) => {
+        const cs = getComputedStyle(e);
+        return { blur: cs.backdropFilter || (cs as unknown as Record<string, string>).webkitBackdropFilter || '', shadow: cs.boxShadow };
+      });
+      expect(style.blur, `${scheme} ${path}`).toMatch(/blur\(16px\)/);
+      expect(style.shadow, `${scheme} ${path}`).toMatch(/\) 0px 0px 32px/);
+      const out = await new AxeBuilder({ page }).include('[data-testid=site-about]').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+      expect(out.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`), `${scheme} ${path}`).toEqual([]);
+    }
+  }
+});
