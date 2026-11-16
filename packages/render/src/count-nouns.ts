@@ -8,6 +8,8 @@
  * ٠–٩ through the explicit numbering system (ar-u-nu-arab), never the implicit 'ar' default.
  * Keep the tables in step with shared-types; add a noun here rather than writing another helper.
  */
+import { formatNumber } from './format';
+
 export type CountNoun = 'view' | 'like' | 'comment';
 
 type ArabicForms = { zero: string; one: string; two: string; few: string; many: string; other: string };
@@ -28,7 +30,7 @@ const isArabic = (locale: string) => String(locale).toLowerCase().startsWith('ar
 
 /** A whole number in the locale's digits: ٠–٩ with Arabic grouping in Arabic, 0–9 in English. */
 export function formatInteger(locale: string, n: number): string {
-  return new Intl.NumberFormat(isArabic(locale) ? 'ar-u-nu-arab' : 'en', { maximumFractionDigits: 0 }).format(n);
+  return formatNumber(n, isArabic(locale) ? 'ar' : 'en', { maximumFractionDigits: 0 });
 }
 
 /** Any 0–9 in a formatted string (a duration "2:05") as ٠–٩ in Arabic; English unchanged. */

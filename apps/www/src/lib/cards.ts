@@ -2,6 +2,8 @@
  * Card post viewer rules, shared by the server render (src/components/CardViewer.astro) and the
  * script (src/scripts/cards.ts). Pure, so they are unit-tested.
  */
+import { fill } from '../../../../packages/render/src/format';
+import type { Locale } from './locale';
 
 /** 0-based slide from a deep link: `?slide=3` or `#3` (1-based, as readers count). Out of range → 0. */
 export function slideFromLink(search: string, hash: string, count: number): number {
@@ -35,10 +37,8 @@ export function swipeStep(dx: number, dy: number, dir: 'ltr' | 'rtl', threshold 
 }
 
 /** "8 cards" with the plural forms Arabic needs (1, 2, 3–10, 11+). */
-export function slideCountLabel(t: { oneSlide: string; twoSlides: string; slideCount: string; manySlides: string }, n: number): string {
-  if (n === 1) return t.oneSlide;
-  if (n === 2) return t.twoSlides;
-  return (n >= 3 && n <= 10 ? t.slideCount : t.manySlides).replace('{count}', String(n));
+export function slideCountLabel(t: { oneSlide: string; twoSlides: string; slideCount: string; manySlides: string }, n: number, locale: Locale): string {
+  return fill(n === 1 ? t.oneSlide : n === 2 ? t.twoSlides : n >= 3 && n <= 10 ? t.slideCount : t.manySlides, { count: n }, locale);
 }
 
 /** Clamp to the slides (no wrap: the end is an end, and "3 / 8" stays honest). */

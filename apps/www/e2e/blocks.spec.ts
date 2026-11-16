@@ -112,7 +112,7 @@ test.describe('pages built from blocks', () => {
     await expect(page.locator('.pb')).toHaveAttribute('lang', 'ar');
     await expect(page.getByRole('heading', { name: 'قصص بالبطاقات' })).toBeVisible();
     await expect(page.locator('.card-tile')).toHaveCount(1);
-    await expect(page.locator('.card-tile')).toContainText('4 بطاقات');
+    await expect(page.locator('.card-tile')).toContainText('٤ بطاقات');
     await expect(page.getByRole('link', { name: 'راسل الفريق' })).toHaveAttribute('href', '/ar/contact');
     await axeAndShot(page, 'blocks-ar', info.project.name);
   });
@@ -233,7 +233,7 @@ test.describe('card posts', () => {
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.goto('/ar/articles/rihla-ila-al-quds/');
     await expect(viewer(page)).toHaveAttribute('data-ready', '');
-    await expect(page.locator('.cv-pos [data-pos]')).toHaveText('1 من 4');
+    await expect(page.locator('.cv-pos [data-pos]')).toHaveText('١ من ٤');
     const next = page.getByRole('link', { name: 'البطاقة التالية' });
     const back = page.getByRole('link', { name: 'البطاقة السابقة' });
     // In RTL the Next arrow sits on the left.
@@ -241,18 +241,18 @@ test.describe('card posts', () => {
     expect(nb!.x).toBeLessThan(bb!.x);
     await current(page).locator('.cv-frame').click({ position: { x: 200, y: 200 } });
     await page.keyboard.press('ArrowLeft');
-    await expect(page.locator('.cv-pos [data-pos]')).toHaveText('2 من 4');
+    await expect(page.locator('.cv-pos [data-pos]')).toHaveText('٢ من ٤');
     await page.keyboard.press('ArrowRight');
-    await expect(page.locator('.cv-pos [data-pos]')).toHaveText('1 من 4');
+    await expect(page.locator('.cv-pos [data-pos]')).toHaveText('١ من ٤');
     // Swipe left-to-right is forward in Arabic.
     await swipe(page, '.cv-stage', 120);
-    await expect(page.locator('.cv-pos [data-pos]')).toHaveText('2 من 4');
+    await expect(page.locator('.cv-pos [data-pos]')).toHaveText('٢ من ٤');
     await current(page).getByRole('button', { name: /كبّر/ }).click();
     const dlg = page.getByRole('dialog');
     await page.keyboard.press('ArrowLeft');
-    await expect(dlg.locator('.lb-pos')).toHaveText('3 من 4');
+    await expect(dlg.locator('.lb-pos')).toHaveText('٣ من ٤');
     await page.keyboard.press('Escape');
-    await expect(page.locator('.cv-pos [data-pos]')).toHaveText('3 من 4');
+    await expect(page.locator('.cv-pos [data-pos]')).toHaveText('٣ من ٤');
     await axeAndShot(page, 'card-post-ar-dark', info.project.name);
   });
 

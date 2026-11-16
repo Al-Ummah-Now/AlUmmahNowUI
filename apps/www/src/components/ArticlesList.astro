@@ -27,7 +27,7 @@ const href = (p: PostSummary) => `/${locale}/articles/${encodeURIComponent(p.slu
         <time datetime={p.published_at}>{formatDate(p.published_at, locale)}</time>
         <H><a href={href(p)}>{p.title}</a></H>
         {byline && p.author && (
-          <p class="articles-by"><a href={`/${locale}/scholars/${encodeURIComponent(p.author.slug)}/`}>{fmt(t.scholars.byScholar, { name: p.author.name })}</a></p>
+          <p class="articles-by"><a href={`/${locale}/scholars/${encodeURIComponent(p.author.slug)}/`}>{fmt(t.scholars.byScholar, { name: p.author.name }, locale)}</a></p>
         )}
         {cards ? (
           <CardViewer

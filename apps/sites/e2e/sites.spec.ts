@@ -52,6 +52,21 @@ test('the same site in Arabic: right to left, Arabic name and video titles', asy
   await expect(page.locator('.site-header .aun-lang')).toHaveAttribute('href', '/en/');
 });
 
+test('Arabic: dates, durations, counts and the footer year in Eastern Arabic (Hindi) numerals ٠–٩', async ({ page }) => {
+  await page.goto(at(HOSTS.both, '/ar/'));
+  const values = [
+    ...(await page.locator('.video-card .duration').allTextContents()),
+    ...(await page.locator('.post-date time').allTextContents()),
+    ...(await page.locator('.post-card span:has-text("إعجاب"), .post-card span:has-text("تعليق")').allTextContents()),
+    ...(await page.locator('.footer-base').allTextContents()),
+  ].map((s) => s.trim());
+  expect(values.length).toBeGreaterThan(4);
+  expect(values.filter((v) => /[0-9]/.test(v)), 'formatted values with Arabic numerals 0–9').toEqual([]);
+  expect(values).toContain('٢:٠٥');
+  await page.goto(at(HOSTS.both, '/en/'));
+  expect(await page.locator('.video-card .duration').allTextContents()).toContain('2:05');
+});
+
 test('a single-language Arabic site: its own theme, / and /en/ go to Arabic, footer band', async ({ page }) => {
   await page.goto(at(HOSTS.arOnly, '/'));
   await expect(page).toHaveURL(at(HOSTS.arOnly, '/ar/'));

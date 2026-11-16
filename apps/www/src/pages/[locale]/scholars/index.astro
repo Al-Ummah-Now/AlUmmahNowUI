@@ -22,7 +22,7 @@ if (page > 1 && list.items.length === 0 && res.source === 'cms') return new Resp
 markSource(Astro, rc);
 const cmsOrigin = new URL(cfg.cmsPublicUrl).origin;
 const qs = (p: number) => (p === 1 ? '' : `?page=${p}`);
-const title = page > 1 ? `${t.scholars.title}: ${fmt(t.articles.pageOf, { page, pages })}` : t.scholars.title;
+const title = page > 1 ? `${t.scholars.title}: ${fmt(t.articles.pageOf, { page, pages }, locale)}` : t.scholars.title;
 ---
 <BaseLayout
   cfg={cfg}
@@ -63,7 +63,7 @@ const title = page > 1 ? `${t.scholars.title}: ${fmt(t.articles.pageOf, { page, 
           {pages > 1 && (
             <nav class="pagination" aria-label={t.a11y.pagination}>
               {page > 1 && <a href={`/${locale}/scholars/${qs(page - 1)}`} rel="prev"><Icon name="chevron" class="flip" />{t.articles.newer}</a>}
-              <p aria-current="page">{fmt(t.articles.pageOf, { page, pages })}</p>
+              <p aria-current="page">{fmt(t.articles.pageOf, { page, pages }, locale)}</p>
               {page < pages && <a href={`/${locale}/scholars/${qs(page + 1)}`} rel="next">{t.articles.older}<Icon name="chevron" /></a>}
             </nav>
           )}

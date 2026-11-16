@@ -23,7 +23,12 @@ describe('i18n', () => {
   it('placeholders match between locales', () => {
     const enMap = Object.fromEntries(keys(en).map((k, i) => [k, leaves(en)[i]!]));
     const arMap = Object.fromEntries(keys(ar).map((k, i) => [k, leaves(ar)[i]!]));
-    for (const k of Object.keys(enMap)) expect(placeholders(arMap[k]!), k).toEqual(placeholders(enMap[k]!));
+    // Arabic's singular and dual forms carry no number («بطاقة واحدة», «بطاقتان»); English keeps {count}
+    const arabicWordsOnly = new Set(['scholars.articleCountOne', 'cards.oneSlide', 'cards.twoSlides', 'timeline.addedOne', 'search.countOne', 'search.countTwo', 'search.totalOne']);
+    for (const k of Object.keys(enMap)) {
+      const want = placeholders(enMap[k]!).filter((p) => !(arabicWordsOnly.has(k) && p === 'count'));
+      expect(placeholders(arMap[k]!), k).toEqual(want);
+    }
   });
 
   it('Arabic strings are actually Arabic (except the Latin wordmark)', () => {
@@ -34,8 +39,9 @@ describe('i18n', () => {
   });
 
   it('fmt fills placeholders and leaves unknown ones', () => {
-    expect(fmt('Page {page} of {pages}', { page: 2, pages: 5 })).toBe('Page 2 of 5');
-    expect(fmt('Hi {name}', {})).toBe('Hi {name}');
+    expect(fmt('Page {page} of {pages}', { page: 2, pages: 5 }, 'en')).toBe('Page 2 of 5');
+    expect(fmt('الصفحة {page} من {pages}', { page: 2, pages: 15 }, 'ar')).toBe('الصفحة ٢ من ١٥');
+    expect(fmt('Hi {name}', {}, 'en')).toBe('Hi {name}');
   });
 
   it('built-in content has the same shape in both locales', () => {

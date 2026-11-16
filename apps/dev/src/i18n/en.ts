@@ -214,7 +214,7 @@ export const en = {
         title: 'Identity',
         items: [
           { title: 'Single sign-on', body: 'Our fork of OpenAuth: OAuth 2.0 and OpenID Connect with PKCE. Sign in once and you are signed in on every app; sign out ends it everywhere.', feature: 'sso', sources: [{ label: 'Authentication', href: `${WIKI}/guides/authentication.md` }] },
-          { title: 'Short-lived tokens', body: 'Access tokens last 15 minutes. Refresh tokens rotate, and reusing an old one revokes the whole family.', feature: 'short-lived-tokens', sources: [{ label: 'Tokens', href: `${WIKI}/guides/authentication.md#tokens` }] },
+          { title: 'Short-lived tokens', body: 'Access tokens last {accessTokenMinutes} minutes. Refresh tokens rotate, and reusing an old one revokes the whole family.', feature: 'short-lived-tokens', sources: [{ label: 'Tokens', href: `${WIKI}/guides/authentication.md#tokens` }] },
           { title: 'Passkeys', body: 'Passkey sign-in is live on the web and in the native apps. Requiring passkeys for staff is built and stays off until a super admin switches it on.', feature: 'passkeys', sources: [{ label: 'AUTH-PASSKEYS', href: `${WIKI}/epics/AUTH-PASSKEYS-passkeys-everywhere.md` }] },
         ] as Item[],
       },
@@ -245,7 +245,7 @@ export const en = {
     principles: [
       { title: 'Always asynchronous', body: 'Heavy work goes through queues with retries and dead-letter queues. When something fails, it shows up on the admin Errors page with a Retry button.', sources: [{ label: 'O26', href: `${WIKI}/epics/decisions.md#o26-always-async-with-admin-visible-errors` }] },
       { title: 'Spec, then plan, then code', body: 'Features start as a spec in the wiki, then a plan, then pull requests with tests.', sources: [{ label: 'Contributing', href: `${WIKI}/guides/contributing.md` }] },
-      { title: 'Privacy by default', body: 'Deletes can be undone for 30 days and are then purged. Accounts can be erased. Site visits are counted without cookies or IDs.', sources: [{ label: 'Data lifecycle', href: `${WIKI}/guides/data-lifecycle.md` }] },
+      { title: 'Privacy by default', body: 'Deletes can be undone for {undoDays} days and are then purged. Accounts can be erased. Site visits are counted without cookies or IDs.', sources: [{ label: 'Data lifecycle', href: `${WIKI}/guides/data-lifecycle.md` }] },
       { title: 'Accessible in both directions', body: 'Keyboard and screen-reader use, AA contrast in every theme, and menus that never leave the screen, in left-to-right and right-to-left.', sources: [{ label: 'Theming', href: `${WIKI}/guides/theming.md#menus-never-leave-the-screen` }] },
     ] as Item[],
   },
@@ -264,7 +264,7 @@ export const en = {
       { title: 'Two copies', body: 'The upload goes to Bunny Stream, and our own original is kept in private R2 storage.' },
       { title: 'Transcode', body: 'A queue starts FFmpeg on Cloudflare Containers, which writes HLS renditions to R2.' },
       { title: 'Choose', body: 'The API returns one play URL: Bunny, R2 or a split by percentage, set on the admin Delivery page.' },
-      { title: 'Play', body: 'Players play that URL. After a fatal error or a 15-second stall on R2, they fall back to Bunny once.' },
+      { title: 'Play', body: 'Players play that URL. After a fatal error or a {stallSeconds}-second stall on R2, they fall back to Bunny once.' },
     ],
     pipelineSources: [
       { label: 'Video delivery', href: `${WIKI}/guides/video-delivery.md` },
@@ -292,8 +292,8 @@ export const en = {
       { title: 'Tag', body: 'A dated tag on a commit on main starts the release.' },
       { title: 'Build once', body: 'The same build goes to stage and to production.' },
       { title: 'Stage', body: 'Deploy to stage and run the end-to-end tests there.' },
-      { title: 'Production at 0%', body: 'The new version is uploaded with no traffic and smoke-tested.' },
-      { title: '100% or roll back', body: 'Traffic moves over, the smoke runs again, and a failure rolls back automatically.' },
+      { title: 'Production at {rolloutStart}', body: 'The new version is uploaded with no traffic and smoke-tested.' },
+      { title: '{rolloutFull} or roll back', body: 'Traffic moves over, the smoke runs again, and a failure rolls back automatically.' },
     ],
     releaseSources: [{ label: 'Release process', href: `${WIKI}/guides/release-process.md` }],
     costTitle: 'Built to a cost cap',
@@ -345,7 +345,7 @@ export const en = {
     wikiLink: { label: 'Open the wiki', href: `${GH}/AlUmmahNowWiki` },
     securityTitle: 'Found a security problem?',
     securityBody:
-      'Please don’t open a public issue. Use Security → Report a vulnerability in the repository concerned. We aim to acknowledge reports within 3 working days.',
+      'Please don’t open a public issue. Use Security → Report a vulnerability in the repository concerned. We aim to acknowledge reports within {reportDays} working days.',
     securityLink: { label: 'Report a vulnerability', href: `${GH}/AlUmmahNow/security/advisories/new` },
   },
 

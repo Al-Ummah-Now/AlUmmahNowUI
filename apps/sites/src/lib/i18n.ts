@@ -3,6 +3,7 @@
  * the scholar's. Arabic uses «مرئي / مرئيات» for video and «المقاطع القصيرة» for Shorts (glossary).
  */
 import type { Locale } from '../../../../packages/render/src/locale';
+import { num } from '../../../../packages/render/src/format';
 
 const en = {
   skip: 'Skip to content',
@@ -106,8 +107,9 @@ export function strings(locale: Locale): Strings {
   return locale === 'ar' ? (ar as Strings) : en;
 }
 
-export function fmt(template: string, values: Record<string, string | number>): string {
-  return template.replace(/\{(\w+)\}/g, (_, k: string) => String(values[k] ?? ''));
+/** Fills {placeholders}; numbers in the page language's numerals (Eastern Arabic (Hindi) ٠–٩ in Arabic). */
+export function fmt(template: string, values: Record<string, string | number>, locale: Locale): string {
+  return template.replace(/\{(\w+)\}/g, (_, k: string) => (values[k] === undefined ? '' : num(values[k], locale)));
 }
 
 export const STRINGS = { en, ar };

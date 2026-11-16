@@ -7,6 +7,7 @@
  *    date); a day that continues from the previous page keeps a single heading.
  *  - Times: relative ("3 hours ago") and absolute in the reader's zone, kept current.
  */
+import { browserTimeZone, fill } from '../../../../packages/render/src/format';
 import { dayKey, dayLabel, relativeTime } from '../lib/feed';
 import type { Locale } from '../lib/locale';
 import { absoluteTime } from '../lib/timeline';
@@ -15,7 +16,7 @@ import { initFacades } from './facade';
 
 const zone = (() => {
   try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    return browserTimeZone();
   } catch {
     return 'UTC';
   }
@@ -99,7 +100,7 @@ async function loadMore(root: HTMLElement, link: HTMLAnchorElement, locale: Loca
       initCards(li);
     }
     const next = incoming.querySelector<HTMLAnchorElement>('[data-more]');
-    const msg = adopted.length === 1 ? (root.dataset.tAddedOne ?? '') : (root.dataset.tAdded ?? '').replace('{count}', String(adopted.length));
+    const msg = fill((adopted.length === 1 ? root.dataset.tAddedOne : root.dataset.tAdded) ?? '', { count: adopted.length }, locale);
     if (next) {
       link.href = next.href;
       link.textContent = label;

@@ -151,13 +151,13 @@ test.describe('Articles list: card posts inline', () => {
     await page.goto('/ar/articles/');
     const v = strip(page, 'رحلة إلى القدس');
     await expect(v).toHaveAttribute('data-ready', '');
-    await expect(v.locator('.ci-count')).toHaveText('4 بطاقات');
+    await expect(v.locator('.ci-count')).toHaveText('٤ بطاقات');
     const next = v.getByRole('button', { name: 'البطاقة التالية' });
     const back = v.getByRole('button', { name: 'البطاقة السابقة' });
     expect((await next.boundingBox())!.x).toBeLessThan((await back.boundingBox())!.x);
     await next.click();
-    await expect(pos(v)).toHaveText('2 من 4');
-    await expect(live(v)).toHaveText('البطاقة 2 من 4');
+    await expect(pos(v)).toHaveText('٢ من ٤');
+    await expect(live(v)).toHaveText('البطاقة ٢ من ٤');
     await expect.poll(() => shown(v)).toBe(2);
     expect(await v.evaluate((el) => getComputedStyle(el).getPropertyValue('--deck-dir').trim())).toBe('-1');
     // The first card is off the deck (reduced motion here: it fades, it is not thrown).
@@ -165,9 +165,9 @@ test.describe('Articles list: card posts inline', () => {
     expect(await v.locator('.ci-slide').nth(0).evaluate((e) => getComputedStyle(e).transform)).toBe('none');
     await v.locator('[data-track]').focus();
     await page.keyboard.press('ArrowLeft');
-    await expect(pos(v)).toHaveText('3 من 4');
+    await expect(pos(v)).toHaveText('٣ من ٤');
     await page.keyboard.press('ArrowRight');
-    await expect(pos(v)).toHaveText('2 من 4');
+    await expect(pos(v)).toHaveText('٢ من ٤');
     await expect.poll(() => shown(v)).toBe(2);
     await axeAndShot(page, 'articles-inline-ar', info.project.name);
   });
@@ -219,7 +219,7 @@ test.describe('Articles list: card posts inline', () => {
     const ar = strip(page, 'رحلة إلى القدس');
     await expect(ar).toHaveAttribute('data-ready', '');
     await gesture(ar, 1); // finger left → right: forward in Arabic
-    await expect(pos(ar)).toHaveText('2 من 4');
+    await expect(pos(ar)).toHaveText('٢ من ٤');
     await expect.poll(() => shown(ar)).toBe(2);
   });
 
@@ -286,11 +286,11 @@ test.describe('home timeline: card posts as a deck', () => {
     await page.goto('/ar/');
     const v = strip(page, 'خمس فوائد من سورة الكهف');
     await expect(v).toHaveAttribute('data-ready', '');
-    await expect(v.locator('.ci-count')).toHaveText('5 بطاقات');
+    await expect(v.locator('.ci-count')).toHaveText('٥ بطاقات');
     expect(await v.evaluate((el) => getComputedStyle(el).getPropertyValue('--deck-dir').trim())).toBe('-1');
     await v.getByRole('button', { name: 'البطاقة التالية' }).click();
-    await expect(pos(v)).toHaveText('2 من 5');
-    await expect(live(v)).toHaveText('البطاقة 2 من 5');
+    await expect(pos(v)).toHaveText('٢ من ٥');
+    await expect(live(v)).toHaveText('البطاقة ٢ من ٥');
     await v.locator('[data-track]').focus();
     await page.keyboard.press('ArrowLeft');
     await expect.poll(() => top(v)).toBe(3);

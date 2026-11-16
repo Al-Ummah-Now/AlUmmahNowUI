@@ -85,8 +85,8 @@ const jsonLd = post
   ogImage={cardSeo?.image ?? undefined}
   jsonLd={jsonLd}
   noindex={!post || !!translated}
-  notice={post && translated ? fmt(t.lang.onlyIn, { language: t.lang.names[post.locale] }) : null}
-  noticeLink={post && translated ? { href: alternates[post.locale]!, label: fmt(t.lang.readIn, { language: t.lang.names[post.locale] }), lang: post.locale } : null}
+  notice={post && translated ? fmt(t.lang.onlyIn, { language: t.lang.names[post.locale] }, locale) : null}
+  noticeLink={post && translated ? { href: alternates[post.locale]!, label: fmt(t.lang.readIn, { language: t.lang.names[post.locale] }, locale), lang: post.locale } : null}
   contentLocale={post?.locale}
   seoLinks={siteSeo}
 >

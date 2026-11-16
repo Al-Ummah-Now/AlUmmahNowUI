@@ -82,7 +82,7 @@ const siteName = t.meta.siteName;
       </div>
     </div>
     {channel.latest.length > 0 && (
-      <ul class="tl-channel-latest" aria-label={fmt(tl.channelLatest, { name: channel.name })}>
+      <ul class="tl-channel-latest" aria-label={fmt(tl.channelLatest, { name: channel.name }, locale)}>
         {channel.latest.map((v) => (
           <li>
             <a href={v.href}>

@@ -60,7 +60,7 @@ const qs = (p: number) => (p === 1 ? '' : `?page=${p}`);
 const paged = page > 1 || after !== null;
 const channelHref = channelId ? channelUrl(cfg.videosWebUrl, { id: channelId, lang: locale }) : null;
 const siteSeo = site.kind === 'live' ? siteHome(site.link) : null;
-const title = s ? fmt(t.scholars.pageTitle, { name: s.name }) : t.errors.unavailableTitle;
+const title = s ? fmt(t.scholars.pageTitle, { name: s.name }, locale) : t.errors.unavailableTitle;
 const jsonLd = s
   ? [
       scholarLd(cfg, { name: s.name, url: base, description: s.bio, image: s.avatar?.url ?? null, locale, sameAs: [...(siteSeo ? [siteSeo.canonical] : []), ...(channelHref ? [channelHref] : [])] }),
@@ -80,7 +80,7 @@ const jsonLd = s
   ogImage={s?.avatar?.url ?? undefined}
   jsonLd={jsonLd}
   noindex={!s || paged}
-  feed={s ? { title: fmt(t.scholars.rss, { name: s.name }), href: `${base}rss.xml` } : null}
+  feed={s ? { title: fmt(t.scholars.rss, { name: s.name }, locale), href: `${base}rss.xml` } : null}
   seoLinks={s ? siteSeo : null}
 >
   {s ? (
@@ -99,7 +99,7 @@ const jsonLd = s
               {s.bio && <p class="lede scholar-bio-full" dir="auto">{s.bio}</p>}
               <p class="scholar-links">
                 {channelHref && <a class="button button-quiet" href={channelHref}>{t.scholars.onVideos}</a>}
-                <a class="more-link" href={`${base}rss.xml`}>{fmt(t.scholars.rss, { name: s.name })}</a>
+                <a class="more-link" href={`${base}rss.xml`}>{fmt(t.scholars.rss, { name: s.name }, locale)}</a>
               </p>
             </div>
           </div>
@@ -118,15 +118,15 @@ const jsonLd = s
               {pages > 1 && (
                 <nav class="pagination" aria-label={t.a11y.pagination}>
                   {page > 1 && <a href={`${base}${qs(page - 1)}#articles`} rel="prev"><Icon name="chevron" class="flip" />{t.articles.newer}</a>}
-                  <p aria-current="page">{fmt(t.articles.pageOf, { page, pages })}</p>
+                  <p aria-current="page">{fmt(t.articles.pageOf, { page, pages }, locale)}</p>
                   {page < pages && <a href={`${base}${qs(page + 1)}#articles`} rel="next">{t.articles.older}<Icon name="chevron" /></a>}
                 </nav>
               )}
             </>
           ) : otherHas ? (
             <div class="empty">
-              <p>{fmt(t.scholars.otherHas, { name: s.name, language: t.lang.names[other] })}</p>
-              <a class="button button-quiet" href={`/${other}/scholars/${encodeURIComponent(slug)}/#articles`} hreflang={other}>{fmt(t.lang.listIn, { language: t.lang.names[other] })}</a>
+              <p>{fmt(t.scholars.otherHas, { name: s.name, language: t.lang.names[other] }, locale)}</p>
+              <a class="button button-quiet" href={`/${other}/scholars/${encodeURIComponent(slug)}/#articles`} hreflang={other}>{fmt(t.lang.listIn, { language: t.lang.names[other] }, locale)}</a>
             </div>
           ) : (
             <div class="empty"><p>{t.scholars.noArticles}</p></div>

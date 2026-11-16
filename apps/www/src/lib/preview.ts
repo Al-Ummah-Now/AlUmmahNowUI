@@ -24,6 +24,8 @@ export interface PreviewClaims {
 
 export const PREVIEW_PREFIX = '/preview';
 export const PREVIEW_TIMEOUT_MS = 5_000;
+/** How long the CMS keeps a preview link working (the expired page quotes it). */
+export const PREVIEW_LINK_MINUTES = 30;
 const MAX_TOKEN = 512;
 
 export const isPreviewPath = (pathname: string) => pathname === PREVIEW_PREFIX || pathname.startsWith(`${PREVIEW_PREFIX}/`);

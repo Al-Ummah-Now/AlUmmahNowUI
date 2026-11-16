@@ -1,4 +1,5 @@
 ---
+import { formatNumber } from '../../../../packages/render/src/format';
 /**
  * A list page (docs/specs/WWW-PAGES.md §6): the page head, then the items with the home timeline's
  * cards (mixed kinds, pinned first on page 1), then numbered pages (?page=N, rel prev/next). Used by
@@ -40,7 +41,7 @@ const t = strings(locale);
 const now = new Date();
 const all = [...view.pinned, ...view.items];
 const empty = all.length === 0;
-const pageOf = (page: number, pages: number) => fmt(t.articles.pageOf, { page, pages });
+const pageOf = (page: number, pages: number) => fmt(t.articles.pageOf, { page, pages }, locale);
 const description = view.seoDescription || view.summary || (cfg.signIn ? t.meta.defaultDescription : t.meta.watchDescription);
 // An ItemList of the listed videos (their watch pages carry the VideoObject)
 const jsonLd = [
@@ -67,8 +68,8 @@ const other = otherLocale(locale);
       {empty ? (
         otherHref ? (
           <div class="empty">
-            <p>{fmt(t.lang.otherHas, { language: t.lang.names[other] })}</p>
-            <a class="button button-quiet" href={otherHref} hreflang={other}>{fmt(t.lang.listIn, { language: t.lang.names[other] })}</a>
+            <p>{fmt(t.lang.otherHas, { language: t.lang.names[other] }, locale)}</p>
+            <a class="button button-quiet" href={otherHref} hreflang={other}>{fmt(t.lang.listIn, { language: t.lang.names[other] }, locale)}</a>
           </div>
         ) : Astro.slots.has('empty') ? (
           <slot name="empty" />
@@ -98,9 +99,9 @@ const other = otherLocale(locale);
               n === 'gap' ? (
                 <li class="pagination-gap" aria-hidden="true">…</li>
               ) : n === view.page ? (
-                <li><span aria-current="page" aria-label={fmt(t.list.pageLink, { page: n })}>{n}</span></li>
+                <li><span aria-current="page" aria-label={fmt(t.list.pageLink, { page: n }, locale)}>{formatNumber(n, locale)}</span></li>
               ) : (
-                <li><a href={href(n)} aria-label={fmt(t.list.pageLink, { page: n })}>{n}</a></li>
+                <li><a href={href(n)} aria-label={fmt(t.list.pageLink, { page: n }, locale)}>{formatNumber(n, locale)}</a></li>
               ),
             )}
           </ol>

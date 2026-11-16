@@ -5,9 +5,10 @@
  * Newsletter off (src/lib/features.ts, or the admin API answers feature_off): 404.
  */
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { fmt } from '../../../i18n';
 import { loadChrome, markSource, requestContext, routeLocale } from '../../../lib/context';
 import { featuresFromRequest } from '../../../lib/features';
-import { confirmSubscription, newsletterDeps, TOKEN, type ConfirmOutcome } from '../../../lib/newsletter';
+import { CONFIRM_LINK_DAYS, confirmSubscription, newsletterDeps, TOKEN, type ConfirmOutcome } from '../../../lib/newsletter';
 
 const locale = routeLocale(Astro);
 if (!locale) return new Response(null, { status: 404 });
@@ -35,7 +36,7 @@ markSource(Astro, rc);
 const n = t.newsletter;
 const view =
   outcome === 'confirmed' ? { title: n.confirmedTitle, body: n.confirmedBody }
-  : outcome === 'expired' ? { title: n.expiredTitle, body: n.expiredBody }
+  : outcome === 'expired' ? { title: n.expiredTitle, body: fmt(n.expiredBody, { days: CONFIRM_LINK_DAYS }, locale) }
   : outcome === 'invalid' ? { title: n.invalidTitle, body: n.invalidBody }
   : outcome === 'unavailable' ? { title: n.unavailableTitle, body: n.unavailableBody }
   : { title: n.confirmTitle, body: n.confirmIntro };

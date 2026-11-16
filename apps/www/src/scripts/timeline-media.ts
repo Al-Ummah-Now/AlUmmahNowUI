@@ -18,6 +18,8 @@
  * Everything is delegated from the timeline root, so posts appended by "Load more" work too.
  */
 
+import { fill as fillFor, pageLang } from '../../../../packages/render/src/format';
+
 /** The channel's name in the page's language, else its default name, else any language's. */
 export function channelNameFor(info: Pick<PlayInfo, 'channelName' | 'channelNameLocalized'>, lang: string): string {
   const names = info.channelNameLocalized ?? {};
@@ -58,7 +60,7 @@ const ICON = {
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const canHover = () => matchMedia('(hover: hover)').matches;
 const saveData = () => !!(navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
-const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
+const fill = (s: string, v: Record<string, string | number>) => fillFor(s, v, pageLang());
 
 /** A play answer we can use: an https MP4 (Chrome cannot play HLS in a plain <video>). */
 export function playable(info: unknown): info is PlayInfo & { mp4: { url: string } } {

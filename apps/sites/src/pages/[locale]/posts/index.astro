@@ -13,7 +13,7 @@ const page = Math.min(Math.max(Number(Astro.url.searchParams.get('page')) || 1, 
 const posts = await channelPosts(ctx.data, site.channel.id, page, 10);
 const path = page > 1 ? `posts/?page=${page}` : 'posts/';
 ---
-<SiteLayout ctx={ctx} title={page > 1 ? `${t.nav.posts} · ${fmt(t.page, { n: page })}` : t.nav.posts} alternates={alternates(site, path)} canonical={canonicalUrl(site, locale, path, ctx.scheme)} active="posts">
+<SiteLayout ctx={ctx} title={page > 1 ? `${t.nav.posts} · ${fmt(t.page, { n: page }, locale)}` : t.nav.posts} alternates={alternates(site, path)} canonical={canonicalUrl(site, locale, path, ctx.scheme)} active="posts">
   <section class="wrap section narrow">
     <h1>{t.nav.posts}</h1>
     {posts.items.length ? posts.items.map((p) => <PostCard ctx={ctx} post={p} />) : <p class="empty">{t.noPosts}</p>}

@@ -19,9 +19,9 @@ export const GET: APIRoute = async (ctx) => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 <channel>
-<title>${x(fmt(t.scholars.rss, { name: scholar.name }))}</title>
+<title>${x(fmt(t.scholars.rss, { name: scholar.name }, locale))}</title>
 <link>${x(link)}</link>
-<description>${x(scholar.bio_excerpt ?? fmt(t.scholars.pageTitle, { name: scholar.name }))}</description>
+<description>${x(scholar.bio_excerpt ?? fmt(t.scholars.pageTitle, { name: scholar.name }, locale))}</description>
 <language>${locale}</language>
 <atom:link href="${x(`${link}rss.xml`)}" rel="self" type="application/rss+xml"/>
 ${posts.items

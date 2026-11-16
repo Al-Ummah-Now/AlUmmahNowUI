@@ -132,7 +132,7 @@ test.describe('home timeline', () => {
       await page.goto('/ar/');
       await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
       await expect(page.locator('[data-days] .tl-date').first()).toHaveText(await newestDayHeading(page, 'ar'));
-      await expect(page.locator('.tl-card .ci-count')).toHaveText('5 بطاقات');
+      await expect(page.locator('.tl-card .ci-count')).toHaveText('٥ بطاقات');
       // pinned posts sit under their own "Pinned" heading (posts have no boxes or edges)
       await expect(page.locator('.tl-pinned .tl-date')).toHaveText('مثبّت');
       await expect(page.locator('.tl-pinned .tl-card-pinned')).toHaveCount(1);

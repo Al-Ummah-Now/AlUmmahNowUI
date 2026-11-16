@@ -1,14 +1,14 @@
 ---
 import { siteName } from '../lib/seo';
 import type { PageContext } from '../lib/context';
+import { formatYear } from '../../../../packages/render/src/format';
 
 interface Props { ctx: PageContext }
 const { ctx } = Astro.props;
 const { site, locale, t, cfg } = ctx;
 const mark = site.site.platformMark;
 const name = siteName(site, locale);
-// ٠–٩ in Arabic through the explicit numbering system (never the implicit 'ar' default), no grouping
-const year = new Intl.NumberFormat(locale === 'ar' ? 'ar-u-nu-arab' : 'en', { useGrouping: false }).format(new Date().getUTCFullYear());
+const year = formatYear(new Date().getUTCFullYear(), locale);
 // Every site keeps the guidelines and a report link: the platform hosts and moderates it (§5.4)
 const guidelines = `${cfg.videosWebUrl}/${locale}/community-guidelines`;
 const report = `${cfg.videosWebUrl}/${locale}/contact`;

@@ -87,7 +87,7 @@ const icon = (id: string) => `<img class="aun-app-icon" data-app="${id}" src="/a
                 <span class="aun-avatar aun-avatar--lg" aria-hidden="true" data-account-initial></span>
                 <span class="aun-menu-who-text">
                   <span class="aun-menu-who-name" dir="auto" data-account-name></span>
-                  <span class="aun-visually-hidden" data-account-signed-in-as data-template={t.signedInAs}>{fmt(t.signedInAs, { name: '' })}</span>
+                  <span class="aun-visually-hidden" data-account-signed-in-as data-template={t.signedInAs}>{fmt(t.signedInAs, { name: '' }, locale)}</span>
                   <span class="aun-menu-who-sub aun-email" dir="ltr" data-account-email hidden><span class="aun-email-local"></span><span class="aun-email-domain"></span></span>
                 </span>
               </li>
