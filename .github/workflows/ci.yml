@@ -71,6 +71,11 @@ jobs:
       # playwright.config.ts starts `wrangler dev` (scripts/dev-vars.ts writes a throwaway .dev.vars)
       - name: E2E against local wrangler dev
         run: npx playwright test
+      # Owner rule (off or unconfigured = invisible): newsletter off in the stub admin API, no valid SESSION_SECRET
+      - name: E2E with the optional features off
+        env:
+          E2E_FEATURES_OFF: '1'
+        run: npx playwright test --project=desktop --project=iphone
 
       # Public repo: artifacts are downloadable by anyone. Never upload a secret
       # (Playwright puts typed values in traces and report step titles) or a storage state.
@@ -142,6 +147,11 @@ jobs:
           browsers: chromium
       - name: E2E against local wrangler dev
         run: npx playwright test
+      # Sign-in not configured (no valid SESSION_SECRET): no Sign in, /auth/login|callback 404
+      - name: E2E with sign-in off
+        env:
+          SITES_FEATURES_OFF: '1'
+        run: npx playwright test --project=desktop
 
       - name: Keep secrets out of the uploaded E2E output
         if: always()

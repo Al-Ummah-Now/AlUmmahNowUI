@@ -34,6 +34,8 @@ import { siteFromRequest } from './site';
 type Ctx = Pick<APIContext, 'request' | 'locals' | 'url'>;
 
 const noStore = { 'Cache-Control': 'private, no-store' };
+// Sign-in not configured (no valid SESSION_SECRET) or no such site: /auth/login and /auth/callback are 404
+// (owner rule: off = invisible; the header has no Sign in then, env.ts signIn).
 
 function envOf(ctx: Ctx): SitesEnv {
   return (ctx.locals as { runtime?: { env?: SitesEnv } }).runtime?.env ?? {};
@@ -60,7 +62,7 @@ export async function readSession(ctx: Ctx): Promise<SiteSession | null> {
 export async function login(ctx: Ctx): Promise<Response> {
   const env = envOf(ctx);
   const site = siteFromRequest(ctx.request);
-  if (!site || !isValidSecret(env.SESSION_SECRET)) return new Response('Sign-in is not available', { status: 503, headers: noStore });
+  if (!site || !isValidSecret(env.SESSION_SECRET)) return new Response('Not found', { status: 404, headers: { 'Content-Type': 'text/plain; charset=utf-8', ...noStore } });
   const cfg = config(env);
   const lang = ctx.url.searchParams.get('lang');
   const locale = isLocale(lang) && site.site.locales.includes(lang) ? lang : site.site.locales[0] ?? 'en';
@@ -76,7 +78,7 @@ export async function callback(ctx: Ctx, fetcher: typeof fetch = fetch, getKey?:
   const env = envOf(ctx);
   const site = siteFromRequest(ctx.request);
   const home = `/${site?.site.locales[0] ?? 'en'}/`;
-  if (!site || !isValidSecret(env.SESSION_SECRET)) return new Response('Sign-in is not available', { status: 503, headers: noStore });
+  if (!site || !isValidSecret(env.SESSION_SECRET)) return new Response('Not found', { status: 404, headers: { 'Content-Type': 'text/plain; charset=utf-8', ...noStore } });
   const cfg = config(env);
   const state = await unseal<LoginState>(env.SESSION_SECRET, readCookie(ctx.request.headers.get('Cookie'), LOGIN_COOKIE));
   const clearLogin = clearCookie(LOGIN_COOKIE);

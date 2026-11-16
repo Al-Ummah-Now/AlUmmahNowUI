@@ -7,9 +7,12 @@ import { defineConfig, devices } from '@playwright/test';
  */
 const PORT = process.env.SITES_PORT || '4322';
 const STUB = process.env.SITES_STUB_PORT || '8686';
+/** SITES_FEATURES_OFF=1: sign-in not configured (no valid SESSION_SECRET), e2e/off-features.spec.ts only; servers never reused. */
+const OFF = process.env.SITES_FEATURES_OFF === '1';
 
 export default defineConfig({
   testDir: './e2e',
+  ...(OFF ? { testMatch: 'off-features.spec.ts' } : { testIgnore: 'off-features.spec.ts' }),
   timeout: 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: true,
@@ -30,13 +33,13 @@ export default defineConfig({
       command: 'node --experimental-strip-types --no-warnings e2e/stub-api.ts',
       url: `http://localhost:${STUB}/healthz`,
       timeout: 30_000,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: !process.env.CI && !OFF,
     },
     {
-      command: `npm run build && node --experimental-strip-types --no-warnings scripts/dev-vars.ts && npx wrangler dev -c wrangler.local.jsonc --ip 127.0.0.1 --port ${PORT}`,
+      command: `npm run build && node --experimental-strip-types --no-warnings scripts/dev-vars.ts && npx wrangler dev -c wrangler.local.jsonc --ip 127.0.0.1 --port ${PORT}${OFF ? ' --var SESSION_SECRET:off' : ''}`,
       url: `http://127.0.0.1:${PORT}/healthz`,
       timeout: 180_000,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: !process.env.CI && !OFF,
       stdout: 'ignore',
       stderr: 'pipe',
     },

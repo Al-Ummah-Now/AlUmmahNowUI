@@ -42,6 +42,8 @@ const redirect = (location: string, status = 302, extra: Record<string, string> 
   for (const c of cookies) h.append('Set-Cookie', c);
   return new Response(null, { status, headers: h });
 };
+/** Sign-in isn't configured (no valid SESSION_SECRET): its routes don't exist (owner rule: off = invisible). */
+const notFound = () => new Response('Not found', { status: 404, headers: { 'Content-Type': 'text/plain; charset=utf-8', ...noStore } });
 const text = (body: string, status: number) => new Response(body, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8', ...noStore } });
 
 export interface AuthDeps {
@@ -54,7 +56,7 @@ export interface AuthDeps {
 }
 
 export async function login(request: Request, deps: AuthDeps): Promise<Response> {
-  if (!isValidSecret(deps.secret)) return text('Sign-in is not configured (SESSION_SECRET).', 503);
+  if (!isValidSecret(deps.secret)) return notFound();
   const url = new URL(request.url);
   const returnTo = safeReturnPath(url.searchParams.get('return'), '/');
   const prompt = parsePrompt(url.searchParams.get('prompt'));
@@ -69,7 +71,7 @@ export async function login(request: Request, deps: AuthDeps): Promise<Response>
 }
 
 export async function callback(request: Request, deps: AuthDeps): Promise<Response> {
-  if (!isValidSecret(deps.secret)) return text('Sign-in is not configured (SESSION_SECRET).', 503);
+  if (!isValidSecret(deps.secret)) return notFound();
   const url = new URL(request.url);
   const login = await unseal<LoginState>(deps.secret, readCookie(request.headers.get('Cookie'), LOGIN_COOKIE));
   const fallback = login?.returnTo ?? '/';

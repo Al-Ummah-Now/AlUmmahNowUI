@@ -126,8 +126,13 @@ describe('PKCE login', () => {
     expect(parsePrompt('select_account')).toBeUndefined();
     expect(parsePrompt(null)).toBeUndefined();
   });
-  it('is 503 without a valid SESSION_SECRET', async () => {
-    expect((await login(new Request('https://www.qa.alummahnow.net/auth/login'), { cfg, secret: undefined })).status).toBe(503);
+  it('is 404 without a valid SESSION_SECRET (sign-in off = no route, no "not configured" text)', async () => {
+    for (const secret of [undefined, '', 'short']) {
+      const res = await login(new Request('https://www.qa.alummahnow.net/auth/login'), { cfg, secret });
+      expect(res.status).toBe(404);
+      expect(await res.text()).not.toMatch(/configured|SESSION_SECRET/);
+      expect((await callback(new Request('https://www.qa.alummahnow.net/auth/callback?code=c&state=s'), { cfg, secret })).status).toBe(404);
+    }
   });
 });
 

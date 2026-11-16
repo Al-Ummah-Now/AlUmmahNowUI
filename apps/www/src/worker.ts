@@ -4,8 +4,9 @@
  *      host, apex included, never redirected (src/lib/well-known.ts)
  *   1. apex → www (301, path and query kept)
  *   2. `/` served as /en/ or /ar/ (no redirect: rootRewrite); old News urls `/{l}/news/…` → `/{l}/articles/…` (301)
- *   3. the site theme the admin chose (src/lib/site-theme.ts), handed to Astro in a request header
- *   4. HTML edge cache for locale pages (Cache API, s-maxage 60, SWR 600), keyed by version and theme
+ *   3. the site theme the admin chose (src/lib/site-theme.ts) and the optional features that can work
+ *      (src/lib/features.ts), handed to Astro in request headers
+ *   4. HTML edge cache for locale pages (Cache API, s-maxage 60, SWR 600), keyed by version, theme and features
  *   5. security headers on every response, static assets included (run_worker_first)
  * and the cron (wrangler.jsonc triggers): the single writer of the KV content snapshots.
  */
@@ -16,15 +17,17 @@ import { apexRedirect, applySecurityHeaders, legacyArticlesRedirect, rootRespons
 import type { ExecutionContext } from './lib/cf';
 import { createCmsDeps } from './lib/cms';
 import { THEME_HEADER, THEME_SOURCE_HEADER, resolveTheme, withThemeHeader } from './lib/site-theme';
+import { FEATURES_HEADER, featuresToken, resolveFeatures, withFeaturesHeader } from './lib/features';
 import { config, type WwwEnv } from './lib/env';
 import { writeSnapshots } from './lib/snapshot-writer';
 import { passkeyFilesResponse } from './lib/well-known';
 
-/** A client never chooses the theme header Astro reads. */
+/** A client never chooses the theme or features header Astro reads. */
 function stripThemeHeader(request: Request): Request {
-  if (!request.headers.has(THEME_HEADER)) return request;
+  if (!request.headers.has(THEME_HEADER) && !request.headers.has(FEATURES_HEADER)) return request;
   const headers = new Headers(request.headers);
   headers.delete(THEME_HEADER);
+  headers.delete(FEATURES_HEADER);
   return new Request(request, { headers });
 }
 
@@ -48,8 +51,8 @@ export function createExports(manifest: SSRManifest) {
         const waitUntil = (p: Promise<unknown>) => ctx.waitUntil(p);
         // Pages need the theme; files (hashed assets, fonts, images, feeds) never wait for it
         const page = !/\.[a-z0-9]{1,8}$/i.test(new URL(request.url).pathname);
-        const theme = page ? await resolveTheme(request, cfg, waitUntil) : null;
-        const forAstro = theme ? withThemeHeader(request, theme) : stripThemeHeader(request);
+        const [theme, features] = page ? await Promise.all([resolveTheme(request, cfg, waitUntil), resolveFeatures(env, cfg, waitUntil)]) : [null, null];
+        const forAstro = theme && features ? withFeaturesHeader(withThemeHeader(request, theme), features) : stripThemeHeader(request);
         const render = async () => {
           const res = (await handle(manifest, app, forAstro as never, env as never, ctx as never)) as Response;
           if (!theme) return res;
@@ -57,7 +60,7 @@ export function createExports(manifest: SSRManifest) {
           out.headers.set(THEME_SOURCE_HEADER, theme.source);
           return out;
         };
-        const served = await withHtmlCache(request, cache, waitUntil, render, Date.now, undefined, cfg.version, theme?.id ?? '');
+        const served = await withHtmlCache(request, cache, waitUntil, render, Date.now, undefined, cfg.version, theme?.id ?? '', features ? featuresToken(features) : '');
         const response = root ? rootResponse(served, new URL(request.url).pathname.split('/')[1] ?? 'en') : served;
         return applySecurityHeaders(response, cfg, new URL(request.url).pathname);
       },

@@ -11,9 +11,16 @@ const WWW_URL = (process.env.WWW_URL || `http://localhost:${PORT}`).replace(/\/+
 const local = !process.env.WWW_URL;
 /** The stub CMS's port (STUB_CMS_PORT) when another checkout's stub already holds 8585. */
 const STUB = `http://localhost:${process.env.STUB_CMS_PORT || '8585'}`;
+/**
+ * E2E_FEATURES_OFF=1: the "switched off / not configured" run (e2e/off-features.spec.ts only): the
+ * stub admin API says the newsletter is off (STUB_NEWSLETTER=off) and wrangler dev runs without a
+ * valid SESSION_SECRET. Its servers are never reused: they must be started in that state.
+ */
+const OFF = process.env.E2E_FEATURES_OFF === '1';
 
 export default defineConfig({
   testDir: './e2e',
+  ...(OFF ? { testMatch: 'off-features.spec.ts' } : { testIgnore: 'off-features.spec.ts' }),
   timeout: 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: true,
@@ -34,21 +41,22 @@ export default defineConfig({
   webServer: local
     ? [
         {
-          command: 'npm run build && node --experimental-strip-types --no-warnings e2e/seed-feed.ts && npm run preview',
+          command: `npm run build && node --experimental-strip-types --no-warnings e2e/seed-feed.ts && npm run preview${OFF ? ' -- --var SESSION_SECRET:off' : ''}`,
           // The videos API through the stub CMS, which answers /api/sites/by-channel (scholar sites) and proxies the rest to QA
           env: { VIDEOS_API_URL: STUB, CMS_PUBLIC_URL: STUB, ADMIN_API_URL: STUB },
           url: `${WWW_URL}/healthz`,
           timeout: 180_000,
-          reuseExistingServer: !process.env.CI,
+          reuseExistingServer: !process.env.CI && !OFF,
           stdout: 'ignore',
           stderr: 'ignore',
         },
         {
           // The CMS preview API stand-in (e2e/stub-cms.ts); everything else it answers 503.
           command: 'node --experimental-strip-types --no-warnings e2e/stub-cms.ts',
+          env: OFF ? { STUB_NEWSLETTER: 'off' } : {},
           url: `${STUB}/api/preview/v1/pages/0`,
           timeout: 30_000,
-          reuseExistingServer: !process.env.CI,
+          reuseExistingServer: !process.env.CI && !OFF,
         },
       ]
     : undefined,

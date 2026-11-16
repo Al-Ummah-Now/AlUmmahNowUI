@@ -1,4 +1,5 @@
 /** Worker bindings and vars (wrangler.jsonc), typed and with local defaults. */
+import { isValidSecret } from '../../../../packages/render/src/session';
 
 export interface KVNamespace {
   get(key: string, type: 'json'): Promise<unknown>;
@@ -39,6 +40,8 @@ export interface Config {
   profileUrl: string;
   isProduction: boolean;
   version: string;
+  /** SESSION_SECRET is valid: sign-in works. Otherwise no Sign in, no account menu, /auth/login|callback 404. */
+  signIn: boolean;
 }
 
 const trim = (url: string) => url.replace(/\/+$/, '');
@@ -55,6 +58,7 @@ export function config(env: SitesEnv): Config {
     profileUrl: trim(env.PROFILE_URL || 'https://profile.auth.qa.alummahnow.net'),
     isProduction: appEnv === 'production',
     version: env.CF_VERSION_METADATA?.id || 'dev',
+    signIn: isValidSecret(env.SESSION_SECRET),
   };
 }
 

@@ -9,6 +9,7 @@ export const HOSTS = {
   custom: 'scholar-example.localhost',
   old: 'old-name.sites.localhost',
   setup: 'not-yet.sites.localhost',
+  suspended: 'paused.sites.localhost',
 };
 
 const channel = {
@@ -65,6 +66,8 @@ export function stubSites(): Record<string, StubEntry | undefined> {
     [HOSTS.custom]: site(HOSTS.custom, { themeRef: 'lantern@1.0.0', primaryKind: 'custom', platformMark: 'none', name: LONG_NAME }),
     [HOSTS.old]: { redirectTo: `http://${HOSTS.both}:${SITES_PORT}` },
     [HOSTS.setup]: undefined,
+    // suspended by an admin: visitors go to the channel, like a revoked site
+    [HOSTS.suspended]: site(HOSTS.suspended, { status: 'suspended' }),
   };
 }
 

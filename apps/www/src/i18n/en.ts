@@ -92,7 +92,6 @@ export const en = {
     noArticlesHere: 'No articles in English yet.',
     otherHas: 'Articles by {name} are published in {language}.',
     noVideos: 'No public videos yet.',
-    videosUnavailable: 'Videos can’t be shown right now.',
     moreVideos: 'More videos',
     firstVideos: 'Latest videos',
     onVideos: 'Channel on Al Ummah Now Videos',

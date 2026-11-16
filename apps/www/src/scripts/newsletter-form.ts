@@ -3,8 +3,10 @@
  * shows the answer in the form's live region. When the admin API enforces Turnstile and asks for a
  * check, the widget is loaded (challenges.cloudflare.com, explicit render) into the form and the
  * sign-up is sent again with its token. Without this script the form still works (POST → 303).
+ * If the newsletter was switched off since the page was rendered (404), the form's section is hidden:
+ * no "not working" text (owner rule: off = invisible).
  */
-type State = 'check_email' | 'invalid' | 'rate_limited' | 'human_check' | 'unavailable';
+type State = 'check_email' | 'invalid' | 'rate_limited' | 'human_check' | 'unavailable' | 'off';
 
 interface Turnstile {
   render(el: HTMLElement, opts: { sitekey: string; callback: (token: string) => void; 'error-callback'?: () => void; language?: string; theme?: string }): string;
@@ -38,6 +40,7 @@ function loadTurnstile(): Promise<Turnstile | null> {
 export async function postSignup(action: string, body: Record<string, string | null>, fetchImpl: typeof fetch = fetch): Promise<{ status: State; siteKey?: string | null }> {
   try {
     const res = await fetchImpl(action, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) });
+    if (res.status === 404) return { status: 'off' };
     const data = (await res.json().catch(() => null)) as { status?: State; siteKey?: string | null } | null;
     return data?.status ? { status: data.status, siteKey: data.siteKey } : { status: 'unavailable' };
   } catch {
@@ -68,6 +71,11 @@ export function initNewsletterForm(form: HTMLFormElement, fetchImpl: typeof fetc
     show('sending');
     const result = await postSignup(form.action, { email: input.value.trim(), website: trap?.value ?? '', turnstileToken: token }, fetchImpl);
     button.disabled = false;
+    if (result.status === 'off') {
+      const section = form.closest<HTMLElement>('[data-newsletter-section]') ?? form;
+      section.hidden = true;
+      return;
+    }
     if (result.status === 'human_check') {
       const key = result.siteKey || form.dataset.siteKey;
       const ts = key ? await loadTurnstile() : null;
@@ -88,7 +96,7 @@ export function initNewsletterForm(form: HTMLFormElement, fetchImpl: typeof fetc
       return;
     }
     token = null;
-    show(result.status);
+    show(result.status as Exclude<State, 'off'>);
     if (result.status === 'check_email') {
       widget.hidden = true;
       form.reset();

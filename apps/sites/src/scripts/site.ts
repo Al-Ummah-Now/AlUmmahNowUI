@@ -109,6 +109,8 @@ function accountMenu(): void {
 accountMenu();
 
 async function account(): Promise<void> {
+  // No account box: sign-in isn't configured on this deployment (SiteHeader.astro), nothing to ask
+  if (!document.getElementById('account')) return;
   try {
     const res = await fetch('/auth/me', { credentials: 'same-origin', headers: { Accept: 'application/json' } });
     const body = (await res.json()) as { signedIn?: boolean; sub?: string | null; name?: string | null; email?: string | null; profile?: MeProfileView | null };

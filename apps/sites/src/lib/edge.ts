@@ -3,7 +3,7 @@
  * `/` → the site's default language, a language the site doesn't serve → its default, security
  * headers, and what the HTML edge cache may keep (packages/render/src/html-cache.ts).
  */
-import { embedOrigin } from '../../../../packages/render/src/embeds';
+import { channelUrl, embedOrigin } from '../../../../packages/render/src/embeds';
 import { VIDEO_IMAGE_HOSTS } from '../../../../packages/render/src/images';
 import { isLocale } from '../../../../packages/render/src/locale';
 import { cacheKeyUrl } from '../../../../packages/render/src/html-cache';
@@ -123,4 +123,18 @@ export function isCacheableResponse(response: Response): boolean {
 /** The URL (with its host) + build + the site's config version and theme (§5.2 step 4). */
 export function siteCacheKey(url: string, version: string, site: PublicSite): string {
   return cacheKeyUrl(url, { __v: version, __c: String(site.site.configVersion), __t: site.site.themeRef });
+}
+
+/**
+ * A site an admin suspended: visitors go to the channel on the videos site, as for a revoked site
+ * (api-videos answers those with a redirect) — no "not available" page. 302, not 301: a suspension
+ * can be lifted and browsers keep a 301. null when the channel link can't be built (→ 404).
+ */
+export function suspendedRedirect(site: PublicSite, cfg: Config): Response | null {
+  try {
+    const location = channelUrl(cfg.videosWebUrl, { id: site.channel.id, handle: site.channel.handle, lang: site.site.locales[0] ?? 'en' });
+    return new Response(null, { status: 302, headers: { Location: location, 'Cache-Control': 'no-store' } });
+  } catch {
+    return null;
+  }
 }
