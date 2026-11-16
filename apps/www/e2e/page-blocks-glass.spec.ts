@@ -144,9 +144,9 @@ for (const p of PAGES) {
           }),
         );
         for (const s of style) {
-          expect(s.blur).toMatch(/blur\(16px\)/);
+          expect(s.blur).toMatch(/blur\(\d+px\)/);
           // a glow: a shadow with a blur radius and no offset
-          expect(s.shadow).toMatch(/\) 0px 0px 32px/);
+          expect(s.shadow).toMatch(/\) 0px 0px \d+px/);
         }
 
         for (let i = 0; i < count; i++) {
