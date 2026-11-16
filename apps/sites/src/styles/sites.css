@@ -7,6 +7,8 @@
 @import '../../../../packages/render/src/styles/fanous-themes.generated.css';
 /* The header contract (AlUmmahNow docs/design/NAV.md "Header"), vendored by www's sync-fanous (check:fanous) */
 @import '../../../www/src/styles/aun-nav.generated.css';
+/* Cards, panels, menus and buttons: frosted glass with the golden edge, flat Material everything else */
+@import '../../../../packages/render/src/styles/aun-surfaces.generated.css';
 @import '../../../../packages/render/src/styles/fanous-street.generated.css';
 @import '../../../../packages/render/src/posts/posts.css';
 @import '../../../../packages/render/src/page-blocks/page-blocks.generated.css';
@@ -260,6 +262,14 @@ html[data-signed-in] .site-header .aun-signin {
   padding: 0;
   list-style: none;
 }
+.video-card {
+  /* the shared lite glass (no blur: a grid of them), golden edge and glow */
+  background: var(--aun-glass-lite-surface);
+  border: 1px solid var(--aun-glass-edge);
+  border-radius: var(--aun-radius-card);
+  box-shadow: var(--aun-glass-glow-lite);
+  padding: 8px;
+}
 .video-card a {
   color: var(--text);
   text-decoration: none;
@@ -412,11 +422,12 @@ html[data-signed-in] .site-header .aun-signin {
   margin-inline: auto;
 }
 .button {
+  /* flat Material filled (packages/render/src/styles/aun-surfaces.generated.css) */
   display: inline-flex;
   align-items: center;
   min-height: 44px;
   padding-inline: 1.25rem;
-  border-radius: var(--fanous-radius-md);
+  border-radius: var(--aun-radius-button, 999px);
   background: var(--button-bg);
   color: var(--button-text);
   font-weight: 600;
@@ -424,5 +435,5 @@ html[data-signed-in] .site-header .aun-signin {
 }
 .button:hover,
 .button:focus-visible {
-  filter: brightness(1.08);
+  background: color-mix(in srgb, var(--button-text) 8%, var(--button-bg));
 }
