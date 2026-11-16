@@ -8,6 +8,7 @@ import { FeedMissing, kvGetter, postItem, readPage, PAGE_SIZE, type FeedItem, ty
 import type { KVNamespace } from './cf';
 import type { Locale } from './locale';
 import { channelUrl, VIDEO_ID, watchUrl } from './embeds';
+import { formatDate } from '../../../../packages/render/src/format';
 import { clockDuration, liveThumb, snapshotItem, localizeItem, type VideoItem } from './videos';
 
 export interface TimelinePage {
@@ -112,7 +113,7 @@ export function channelCard(
       id: x.id,
       title: x.title.trim().replace(/\.(mp4|mov|mkv|webm)$/i, ''),
       thumbnailUrl: liveThumb(x.thumbnail_url, now, videosWebUrl, x.id),
-      duration: clockDuration(typeof x.duration_seconds === 'number' && x.duration_seconds > 0 ? x.duration_seconds : null),
+      duration: clockDuration(typeof x.duration_seconds === 'number' && x.duration_seconds > 0 ? x.duration_seconds : null, locale),
       href: watchUrl(videosWebUrl, { kind: 'video', id: x.id, lang: locale }),
     }));
   return {
@@ -129,14 +130,14 @@ export function channelCard(
 export function absoluteTime(iso: string, locale: Locale, timeZone = 'UTC'): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return new Intl.DateTimeFormat(locale === 'ar' ? 'ar' : 'en-GB', {
+  return formatDate(d, locale, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
     timeZone,
-  }).format(d);
+  });
 }
 
 /**

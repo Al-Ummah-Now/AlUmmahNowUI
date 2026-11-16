@@ -50,6 +50,8 @@ export const EMAIL_MAX = 254;
 /** Same shape the admin API checks; it validates again. */
 const EMAIL = /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[^\s@<>()[\]\\,;:"]{2,}$/;
 export const TOKEN = /^[A-Za-z0-9_-]{20,128}$/;
+/** How long a confirmation link works (the CMS newsletter service; the expired page quotes it). */
+export const CONFIRM_LINK_DAYS = 7;
 
 export const isEmail = (v: string) => v.length <= EMAIL_MAX && EMAIL.test(v);
 

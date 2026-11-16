@@ -2,13 +2,14 @@
 import { formatNumber, type Strings } from '../i18n';
 import { PAGES, pagePath, type Locale, type PageSlug } from '../lib/pages';
 import { GH, STATUS_PAGE, VIDEOS, WWW } from '../lib/links';
+import { formatYear } from '../../../../packages/render/src/format.ts';
 interface Props {
   locale: Locale;
   t: Strings;
 }
 const { locale, t } = Astro.props;
 const label = (p: PageSlug) => (p === '' ? t.nav.home : t.nav[p]);
-const year = new Date().getUTCFullYear();
+const year = formatYear(new Date().getUTCFullYear(), locale);
 ---
 <footer class="site-footer night">
   <div class="wrap footer-grid">

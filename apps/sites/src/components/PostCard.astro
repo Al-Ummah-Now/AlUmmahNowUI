@@ -3,6 +3,7 @@ import type { SitePost } from '../lib/data';
 import type { PageContext } from '../lib/context';
 import { fmt } from '../lib/i18n';
 import { formatCountNoun } from '../../../../packages/render/src/count-nouns';
+import { formatDate } from '../../../../packages/render/src/format';
 import PostLinkCard from '../../../../packages/render/src/posts/PostLinkCard.astro';
 
 interface Props { ctx: PageContext; post: SitePost; full?: boolean }
@@ -15,7 +16,7 @@ const shown = full ? paragraphs : paragraphs.slice(0, 2);
 const discussion = `${ctx.channelHref}/community`;
 ---
 <article class="post-card" data-testid="site-post" data-kind={post.kind}>
-  {date && <p class="post-date"><a href={href}><time datetime={post.createdAt}>{date.toLocaleDateString(locale === 'ar' ? 'ar-u-nu-arab' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' })}</time></a></p>}
+  {date && <p class="post-date"><a href={href}><time datetime={post.createdAt}>{formatDate(date, locale, { year: 'numeric', month: 'long', day: 'numeric' })}</time></a></p>}
   {post.article && (
     <div class="post-article">
       {post.article.coverUrl && <img src={post.article.coverUrl} alt="" loading="lazy" width="640" height="360" />}
@@ -48,7 +49,7 @@ const discussion = `${ctx.channelHref}/community`;
       ))}
     </ol>
   )}
-  {!full && post.slides.length > 3 && <p><a href={href}>{fmt(t.moreCards, { n: post.slides.length - 3 })}</a></p>}
+  {!full && post.slides.length > 3 && <p><a href={href}>{fmt(t.moreCards, { n: post.slides.length - 3 }, locale)}</a></p>}
   {post.link && <PostLinkCard link={post.link} locale={locale} compact={!full} />}
   {post.videoId && (
     <p><a href={`/${locale}/watch/${post.videoId}/`} class="post-video-link">{t.watchOn}</a></p>

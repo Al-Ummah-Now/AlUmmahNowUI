@@ -1,5 +1,6 @@
 ---
 import { fmt, strings } from '../i18n';
+import { formatYear } from '../../../../packages/render/src/format';
 import { navHref } from '../lib/context';
 import { helpUrl } from '../lib/contact';
 import type { NavItem, SiteSettings } from '../lib/cms-types';
@@ -16,8 +17,7 @@ const items = nav.flatMap((n) => {
 });
 const social = (settings?.social ?? []).filter((s) => /^https:\/\//.test(s.url)).slice(0, 8);
 const socialLabel = (kind: string) => kind.charAt(0).toUpperCase() + kind.slice(1);
-// Eastern Arabic (Hindi) numerals ٠–٩ in Arabic: an explicit numbering system, never the implicit 'ar' default
-const year = new Intl.NumberFormat(locale === 'ar' ? 'ar-u-nu-arab' : 'en', { useGrouping: false }).format(new Date().getUTCFullYear());
+const year = formatYear(new Date().getUTCFullYear(), locale);
 // Off or unconfigured: no newsletter section at all (src/lib/features.ts)
 const newsletter = featuresFromRequest(Astro.request).newsletter;
 ---
@@ -53,7 +53,7 @@ const newsletter = featuresFromRequest(Astro.request).newsletter;
       </section>
     )}
     <div class="footer-base">
-      <p>{fmt(t.footer.rights, { year })}</p>
+      <p>{fmt(t.footer.rights, { year }, locale)}</p>
       <p lang={locale === 'ar' ? 'en' : 'ar'}>{locale === 'ar' ? 'Al Ummah Now' : 'الأمة الآن'}</p>
     </div>
   </div>

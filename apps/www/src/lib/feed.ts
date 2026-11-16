@@ -18,6 +18,7 @@
  */
 import type { KVNamespace } from './cf';
 import type { CuratedSnapshot, MediaRef, PostAuthor, PostKind, PostRef, PostV2Summary } from './cms-types';
+import { dayKey as dayKeyIn, formatDate, formatRelative } from '../../../../packages/render/src/format.ts';
 import type { Locale } from './locale';
 
 export const PAGE_SIZE = 20;
@@ -315,11 +316,9 @@ export async function feedHealth(kv: KVNamespace | undefined, locale: Locale = '
 
 /* Day grouping */
 
-/** The calendar day (YYYY-MM-DD) of an instant in a time zone. */
+/** The calendar day (YYYY-MM-DD) of an instant in a time zone: a key, never shown (Arabic numerals 0–9). */
 export function dayKey(iso: string, timeZone = 'UTC'): string {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(iso));
-  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
-  return `${get('year')}-${get('month')}-${get('day')}`;
+  return dayKeyIn(iso, timeZone);
 }
 
 const dayDiff = (a: string, b: string) => Math.round((Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 86_400_000);
@@ -334,10 +333,9 @@ export function dayLabel(day: string, now: Date, locale: Locale, words: { today:
   if (diff === 0) return words.today;
   if (diff === 1) return words.yesterday;
   const date = new Date(`${day}T12:00:00Z`);
-  const tag = locale === 'ar' ? 'ar' : 'en-GB';
-  if (diff > 1 && diff < 7) return new Intl.DateTimeFormat(tag, { weekday: 'long', timeZone: 'UTC' }).format(date);
+  if (diff > 1 && diff < 7) return formatDate(date, locale, { weekday: 'long', timeZone: 'UTC' });
   const sameYear = day.slice(0, 4) === today.slice(0, 4);
-  return new Intl.DateTimeFormat(tag, { weekday: 'long', day: 'numeric', month: 'long', ...(sameYear ? {} : { year: 'numeric' }), timeZone: 'UTC' }).format(date);
+  return formatDate(date, locale, { weekday: 'long', day: 'numeric', month: 'long', ...(sameYear ? {} : { year: 'numeric' }), timeZone: 'UTC' });
 }
 
 export interface DayGroup { day: string; items: FeedItem[] }
@@ -354,17 +352,9 @@ export function groupByDay(list: FeedItem[], timeZone = 'UTC'): DayGroup[] {
   return out;
 }
 
-/** "5 minutes ago" / "منذ ٥ دقائق" style relative time (Intl.RelativeTimeFormat). */
+/** "5 minutes ago" / «قبل ٥ دقائق» (packages/render/src/format.ts). */
 export function relativeTime(iso: string, now: Date, locale: Locale): string {
-  const sec = Math.round((Date.parse(iso) - now.getTime()) / 1000);
-  const rtf = new Intl.RelativeTimeFormat(locale === 'ar' ? 'ar' : 'en', { numeric: 'auto' });
-  const abs = Math.abs(sec);
-  if (abs < 60) return rtf.format(0, 'second');
-  if (abs < 3600) return rtf.format(Math.round(sec / 60), 'minute');
-  if (abs < 86_400) return rtf.format(Math.round(sec / 3600), 'hour');
-  if (abs < 30 * 86_400) return rtf.format(Math.round(sec / 86_400), 'day');
-  if (abs < 365 * 86_400) return rtf.format(Math.round(sec / (30 * 86_400)), 'month');
-  return rtf.format(Math.round(sec / (365 * 86_400)), 'year');
+  return formatRelative(iso, locale, now);
 }
 
 /* Fallback: the CMS posts list (cache → CMS → KV snapshot → built-in) as feed items */

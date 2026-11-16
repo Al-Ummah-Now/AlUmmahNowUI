@@ -39,7 +39,7 @@ export function facadeHtml(item: VideoItem, opts: { videosWebUrl: string; lang: 
   // The iframe is inserted only on the viewer's click (scripts/facade.ts): a gesture start, with sound
   const src = embedUrl(opts.videosWebUrl, { kind: item.kind, id: item.id, lang: opts.lang, autoplay: true, gesture: true });
   const watch = watchUrl(opts.videosWebUrl, { kind: item.kind, id: item.id, lang: opts.lang });
-  const duration = clockDuration(item.durationSeconds);
+  const duration = clockDuration(item.durationSeconds, opts.lang);
   const h = `h${opts.headingLevel ?? 3}`;
   const thumbUrl = itemThumb(opts.videosWebUrl, item);
   const thumb = thumbUrl
@@ -54,7 +54,7 @@ export function facadeHtml(item: VideoItem, opts: { videosWebUrl: string; lang: 
   return [
     `<figure class="facade${opts.className ? ` ${e(opts.className)}` : ''}" data-embed-src="${e(src)}" data-embed-title="${e(item.title)}">`,
     `<div class="facade-frame ${frameShape(item.width, item.height)}">${thumb}${badge}`,
-    `<button type="button" class="facade-play" aria-label="${e(fmt(t.videos.play, { title: item.title }))}">`,
+    `<button type="button" class="facade-play" aria-label="${e(fmt(t.videos.play, { title: item.title }, opts.lang))}">`,
     `<svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><circle cx="32" cy="32" r="31"/><path d="M26 20v24l19-12z"/></svg>`,
     `</button></div>`,
     opts.caption === false ? '' : `<figcaption class="facade-caption"><${h} class="facade-title">${e(item.title)}</${h}>`,

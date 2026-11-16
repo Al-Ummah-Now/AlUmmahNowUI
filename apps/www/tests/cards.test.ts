@@ -34,11 +34,11 @@ describe('card viewer rules', () => {
   });
 
   it('labels counts with Arabic plural forms', () => {
-    expect(slideCountLabel(en.cards, 1)).toBe(en.cards.oneSlide);
-    expect(slideCountLabel(en.cards, 8)).toBe('8 cards');
-    expect(slideCountLabel(ar.cards, 2)).toBe(ar.cards.twoSlides);
-    expect(slideCountLabel(ar.cards, 5)).toBe(ar.cards.slideCount.replace('{count}', '5'));
-    expect(slideCountLabel(ar.cards, 11)).toBe(ar.cards.manySlides.replace('{count}', '11'));
+    expect(slideCountLabel(en.cards, 1, 'en')).toBe('1 card');
+    expect(slideCountLabel(en.cards, 8, 'en')).toBe('8 cards');
+    expect(slideCountLabel(ar.cards, 2, 'ar')).toBe(ar.cards.twoSlides);
+    expect(slideCountLabel(ar.cards, 5, 'ar')).toBe(ar.cards.slideCount.replace('{count}', '٥'));
+    expect(slideCountLabel(ar.cards, 11, 'ar')).toBe(ar.cards.manySlides.replace('{count}', '١١'));
   });
 
   it('clamps without wrapping and preloads the next two and the previous card', () => {

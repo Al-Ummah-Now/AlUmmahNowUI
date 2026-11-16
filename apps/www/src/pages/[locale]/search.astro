@@ -37,7 +37,7 @@ const qs = (l: string, p: number) => {
   const s = params.toString();
   return `/${l}/search${s ? `?${s}` : ''}`;
 };
-const title = searchable ? fmt(t.search.titleFor, { query: q }) : t.search.title;
+const title = searchable ? fmt(t.search.titleFor, { query: q }, locale) : t.search.title;
 ---
 <BaseLayout
   cfg={cfg}
@@ -67,12 +67,12 @@ const title = searchable ? fmt(t.search.titleFor, { query: q }) : t.search.title
       ) : (
         <>
           <h2 class="search-results-heading" id="search-results-heading">
-            <bdi>{fmt(t.search.resultsFor, { query: q })}</bdi>
-            <span class="search-total">{total === 1 ? t.search.totalOne : fmt(t.search.total, { count: total })}</span>
+            <bdi>{fmt(t.search.resultsFor, { query: q }, locale)}</bdi>
+            <span class="search-total">{fmt(total === 1 ? t.search.totalOne : t.search.total, { count: total }, locale)}</span>
           </h2>
           {result.data.items.length === 0 ? (
             <div class="empty">
-              <p><bdi>{fmt(t.search.none, { query: q })}</bdi></p>
+              <p><bdi>{fmt(t.search.none, { query: q }, locale)}</bdi></p>
               <p>{t.search.noneHint}</p>
             </div>
           ) : (
@@ -93,7 +93,7 @@ const title = searchable ? fmt(t.search.titleFor, { query: q }) : t.search.title
           {pages > 1 && (
             <nav class="pagination" aria-label={t.a11y.pagination}>
               {page > 1 && <a href={qs(locale, page - 1)} rel="prev"><Icon name="chevron" class="flip" />{t.search.prev}</a>}
-              <p aria-current="page">{fmt(t.articles.pageOf, { page, pages })}</p>
+              <p aria-current="page">{fmt(t.articles.pageOf, { page, pages }, locale)}</p>
               {page < pages && <a href={qs(locale, page + 1)} rel="next">{t.search.next}<Icon name="chevron" /></a>}
             </nav>
           )}

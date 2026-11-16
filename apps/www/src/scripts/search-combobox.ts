@@ -11,6 +11,7 @@
  *    clears
  *  - no answer from the CMS (error, 404, offline): no suggestions; the form still works
  */
+import { fill as fillFor, pageLang } from '../../../../packages/render/src/format';
 import { normalizeSearchText } from '../lib/search/normalize';
 import { highlightParts } from '../lib/search/highlight';
 import { addRecent, clearRecent, localStore, readRecent, removeRecent, type StorageLike } from '../lib/search/recent';
@@ -51,15 +52,13 @@ type Item = { kind: 'hit'; hit: SearchHit } | { kind: 'recent'; text: string } |
 
 export const DEBOUNCE_MS = 200;
 
-const fill = (template: string, vars: Record<string, string | number>) =>
-  template.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m));
+/** Counts in the page language's numerals (Eastern Arabic (Hindi) ٠–٩ in Arabic). */
+const fill = (template: string, vars: Record<string, string | number>) => fillFor(template, vars, pageLang());
 
 /** "No suggestions" / "1 suggestion" / … (Arabic has two, few and many forms). */
 export function countLabel(labels: ComboboxLabels, n: number): string {
   if (n === 0) return labels.countNone;
-  if (n === 1) return labels.countOne;
-  if (n === 2) return labels.countTwo;
-  return fill(n >= 3 && n <= 10 ? labels.countFew : labels.countMany, { count: n });
+  return fill(n === 1 ? labels.countOne : n === 2 ? labels.countTwo : n >= 3 && n <= 10 ? labels.countFew : labels.countMany, { count: n });
 }
 
 export function initCombobox(form: HTMLFormElement, opts: ComboboxOptions = {}): { destroy: () => void } {

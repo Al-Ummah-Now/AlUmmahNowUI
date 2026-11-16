@@ -59,18 +59,18 @@ const showDots = total > 1 && total <= 16;
   data-cards-inline
   data-count={frames}
   data-total={shown}
-  data-t-more={inline.more > 0 ? fmt(t.seeAll, { count: inline.total }) : undefined}
+  data-t-more={inline.more > 0 ? fmt(t.seeAll, { count: inline.total }, locale) : undefined}
   role="region"
   aria-roledescription="carousel"
-  aria-label={fmt(t.viewer, { title })}
+  aria-label={fmt(t.viewer, { title }, locale)}
   data-t-position={t.position}
   data-t-position-long={t.positionLong}
 >
-  <p class:list={['cv-count ci-count', bare && 'visually-hidden']}>{!bare && <Icon name="cards" class="cv-count-icon" />}{slideCountLabel(t, shown)}</p>
+  <p class:list={['cv-count ci-count', bare && 'visually-hidden']}>{!bare && <Icon name="cards" class="cv-count-icon" />}{slideCountLabel(t, shown, locale)}</p>
   <div class="ci-stage">
   <div class="ci-track" tabindex="0" aria-label={t.swipeHint} data-track>
     {slides.map((s, i) => (
-      <div class="ci-slide" id={`${inline.uid}-${i + 1}`} role="group" aria-roledescription="slide" aria-label={fmt(t.positionLong, { n: i + 1, total: shown })} data-slide={i}>
+      <div class="ci-slide" id={`${inline.uid}-${i + 1}`} role="group" aria-roledescription="slide" aria-label={fmt(t.positionLong, { n: i + 1, total: shown }, locale)} data-slide={i}>
         <figure class="cv-card">
           <div class="cv-frame">
             <Fragment set:html={inlinePic(s, i)} />
@@ -85,10 +85,10 @@ const showDots = total > 1 && total <= 16;
       </div>
     ))}
     {inline.more > 0 && (
-      <div class="ci-slide" id={`${inline.uid}-${slides.length + 1}`} role="group" aria-roledescription="slide" aria-label={fmt(t.seeAll, { count: inline.total })} data-slide={slides.length}>
+      <div class="ci-slide" id={`${inline.uid}-${slides.length + 1}`} role="group" aria-roledescription="slide" aria-label={fmt(t.seeAll, { count: inline.total }, locale)} data-slide={slides.length}>
         <a class="cv-frame ci-more" href={inline.href}>
           <Icon name="cards" />
-          <span>{fmt(t.seeAll, { count: inline.total })}</span>
+          <span>{fmt(t.seeAll, { count: inline.total }, locale)}</span>
         </a>
       </div>
     )}
@@ -97,7 +97,7 @@ const showDots = total > 1 && total <= 16;
   {frames > 1 && (
     <div class="ci-nav">
       <button type="button" class="cv-step ci-back" data-step="-1" aria-label={t.back} disabled><Icon name="chevron" class="flip" /></button>
-      <p class="cv-pos"><span data-ci-pos aria-hidden="true">{fmt(t.position, { n: 1, total: shown })}</span><span class="visually-hidden" data-ci-live aria-live="polite"></span></p>
+      <p class="cv-pos"><span data-ci-pos aria-hidden="true">{fmt(t.position, { n: 1, total: shown }, locale)}</span><span class="visually-hidden" data-ci-live aria-live="polite"></span></p>
       <button type="button" class="cv-step ci-next" data-step="1" aria-label={t.next}><Icon name="chevron" /></button>
     </div>
   )}
@@ -115,7 +115,7 @@ const showDots = total > 1 && total <= 16;
   data-count={total}
   data-initial={initial}
   aria-roledescription="carousel"
-  aria-label={fmt(t.viewer, { title })}
+  aria-label={fmt(t.viewer, { title }, locale)}
   data-t-position={t.position}
   data-t-position-long={t.positionLong}
   data-t-enlarge={t.enlarge}
@@ -124,11 +124,11 @@ const showDots = total > 1 && total <= 16;
   data-t-back={t.back}
   data-t-lightbox={t.lightbox}
 >
-  <p class="cv-count"><Icon name="cards" class="cv-count-icon" />{slideCountLabel(t, total)}</p>
+  <p class="cv-count"><Icon name="cards" class="cv-count-icon" />{slideCountLabel(t, total, locale)}</p>
   <div class="cv-stage" lang={contentLocale} dir={dir(contentLocale)}>
     <div class="cv-track">
       {slides.map((s, i) => (
-        <div class="cv-slide" id={`card-${i + 1}`} role="group" aria-roledescription="slide" aria-label={fmt(t.positionLong, { n: i + 1, total })} hidden={i !== initial} data-slide={i}>
+        <div class="cv-slide" id={`card-${i + 1}`} role="group" aria-roledescription="slide" aria-label={fmt(t.positionLong, { n: i + 1, total }, locale)} hidden={i !== initial} data-slide={i}>
           <figure class="cv-card">
             <div class="cv-frame">
               <Fragment set:html={pic(s, i)} />
@@ -138,7 +138,7 @@ const showDots = total > 1 && total <= 16;
                   {s.body && <p class="cv-body">{s.body}</p>}
                 </figcaption>
               )}
-              <button type="button" class="cv-enlarge" data-enlarge aria-label={fmt(t.enlarge, { n: i + 1 })} hidden>
+              <button type="button" class="cv-enlarge" data-enlarge aria-label={fmt(t.enlarge, { n: i + 1 }, locale)} hidden>
                 <Icon name="expand" />
               </button>
             </div>
@@ -148,11 +148,11 @@ const showDots = total > 1 && total <= 16;
     </div>
   </div>
   {total > 1 && (
-    <nav class="cv-nav" aria-label={fmt(t.viewer, { title })}>
+    <nav class="cv-nav" aria-label={fmt(t.viewer, { title }, locale)}>
       <a class="cv-step cv-back" href={href(initial - 1)} rel="prev" data-step="-1" aria-label={t.back} aria-disabled={initial === 0 ? 'true' : undefined} tabindex={initial === 0 ? -1 : undefined}>
         <Icon name="chevron" class="flip" />
       </a>
-      <p class="cv-pos"><span data-pos aria-hidden="true">{fmt(t.position, { n: initial + 1, total })}</span><span class="visually-hidden" data-live aria-live="polite">{fmt(t.positionLong, { n: initial + 1, total })}</span></p>
+      <p class="cv-pos"><span data-pos aria-hidden="true">{fmt(t.position, { n: initial + 1, total }, locale)}</span><span class="visually-hidden" data-live aria-live="polite">{fmt(t.positionLong, { n: initial + 1, total }, locale)}</span></p>
       <a class="cv-step cv-next" href={href(initial + 1)} rel="next" data-step="1" aria-label={t.next} aria-disabled={initial === total - 1 ? 'true' : undefined} tabindex={initial === total - 1 ? -1 : undefined}>
         <Icon name="chevron" />
       </a>
@@ -161,7 +161,7 @@ const showDots = total > 1 && total <= 16;
   {showDots && (
     <ol class="cv-dots">
       {slides.map((_, i) => (
-        <li><a href={href(i)} data-go={i} aria-label={fmt(t.goTo, { n: i + 1 })} aria-current={i === initial ? 'step' : undefined}></a></li>
+        <li><a href={href(i)} data-go={i} aria-label={fmt(t.goTo, { n: i + 1 }, locale)} aria-current={i === initial ? 'step' : undefined}></a></li>
       ))}
     </ol>
   )}

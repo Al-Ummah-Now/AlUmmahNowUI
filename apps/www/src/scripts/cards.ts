@@ -8,9 +8,11 @@
  *    closing lands on the slide the reader got to, with focus back on its Enlarge button;
  *  - a live region that says "Card 3 of 8" on every move; no animation under reduced motion.
  */
+import { fill as fillFor, pageLang } from '../../../../packages/render/src/format';
 import { clampSlide, keyStep, neighbours, slideFromLink, stripIndex, stripOffset, swipeStep } from '../lib/cards';
 
-const fill = (s: string, v: Record<string, number>) => s.replace(/\{(\w+)\}/g, (m, k: string) => (k in v ? String(v[k]) : m));
+/** Positions in the page language's numerals (Eastern Arabic (Hindi) ٠–٩ in Arabic). */
+const fill = (s: string, v: Record<string, number>) => fillFor(s, v, pageLang());
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function viewerDir(el: Element): 'ltr' | 'rtl' {

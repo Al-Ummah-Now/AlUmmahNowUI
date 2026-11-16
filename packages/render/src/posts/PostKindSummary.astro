@@ -28,7 +28,7 @@ const more = v2 ? v2.image_count - images.length : 0;
     {withImages && kind === 'image' && images.length > 0 && (
       <ul class:list={['post-kind-images', images.length > 1 && 'post-kind-images-many']}>
         {images.map((m) => <li><img src={m.url} alt={m.alt} loading="lazy" decoding="async" /></li>)}
-        {more > 0 && <li class="post-kind-more">{fmt(t.moreImages, { count: more })}</li>}
+        {more > 0 && <li class="post-kind-more">{fmt(t.moreImages, { count: more }, locale)}</li>}
       </ul>
     )}
     {choices && choices.options.length > 0 && (

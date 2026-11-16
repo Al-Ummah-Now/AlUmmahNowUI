@@ -41,7 +41,7 @@ const hid = `cards-${id}-h`;
                   {post.first_slide.heading && <span class="cv-heading">{post.first_slide.heading}</span>}
                 </span>
               )}
-              <span class="card-count"><Icon name="cards" />{slideCountLabel(t.cards, post.slide_count ?? 0)}</span>
+              <span class="card-count"><Icon name="cards" />{slideCountLabel(t.cards, post.slide_count ?? 0, locale)}</span>
             </span>
             <span class="card-title">{post.title}</span>
             <time class="card-date" datetime={post.published_at}>{formatDate(post.published_at, locale)}</time>
@@ -51,9 +51,9 @@ const hid = `cards-${id}-h`;
     </ul>
   )}
   {grid.pages > 1 && (
-    <nav class="pagination" aria-label={fmt(t.articles.pageOf, { page: grid.page, pages: grid.pages })}>
+    <nav class="pagination" aria-label={fmt(t.articles.pageOf, { page: grid.page, pages: grid.pages }, locale)}>
       {grid.page > 1 && <a href={grid.href({ page: grid.page - 1 })} rel="prev"><Icon name="chevron" class="flip" />{t.articles.newer}</a>}
-      <p>{fmt(t.articles.pageOf, { page: grid.page, pages: grid.pages })}</p>
+      <p>{fmt(t.articles.pageOf, { page: grid.page, pages: grid.pages }, locale)}</p>
       {grid.page < grid.pages && <a href={grid.href({ page: grid.page + 1 })} rel="next">{t.articles.older}<Icon name="chevron" /></a>}
     </nav>
   )}

@@ -9,8 +9,8 @@
  */
 import { VIDEO_ID } from '../../../../packages/render/src/embeds';
 import { normalizeImageUrl } from '../../../../packages/render/src/images';
-import { localDigits } from '../../../../packages/render/src/count-nouns';
 import type { Locale } from '../../../../packages/render/src/locale';
+import { formatDuration as formatDurationIn } from '../../../../packages/render/src/format';
 import { safeOutsideUrl } from '../../../../packages/render/src/posts/post-kinds';
 import type { PostLinkData } from '../../../../packages/render/src/posts/types';
 import type { SitePage } from './site-types';
@@ -243,18 +243,9 @@ export function localizedTitle(v: SiteVideo, locale: Locale): string {
   return v.titles[locale] ?? v.title;
 }
 
-/** "2:05", "1:00:00"; in Arabic «٢:٠٥» (٠–٩, owner rule). */
+/** 3725 → "1:02:05" / «١:٠٢:٠٥» (packages/render/src/format.ts). */
 export function formatDuration(seconds: number | null, locale: Locale = 'en'): string {
-  if (!seconds) return '';
-  return localDigits(locale, clock(seconds));
-}
-
-function clock(seconds: number): string {
-  const s = Math.round(seconds);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const r = s % 60;
-  return h ? `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}` : `${m}:${String(r).padStart(2, '0')}`;
+  return formatDurationIn(seconds, locale);
 }
 
 // ---------------------------------------------------------------------------------------------

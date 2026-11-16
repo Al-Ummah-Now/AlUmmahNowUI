@@ -10,6 +10,7 @@
 import type { CuratedSnapshot, CuratedVideo } from './cms-types';
 import { VIDEO_ID } from './embeds';
 import { normalizeImageUrl, stableImageUrl, videosWebOrigin } from './images';
+import { formatDuration } from '../../../../packages/render/src/format';
 import type { Locale } from './locale';
 
 export type VideoKind = 'video' | 'playlist' | 'channel';
@@ -253,14 +254,9 @@ export function isoDuration(seconds: number | null): string | undefined {
   return `PT${h ? `${h}H` : ''}${m ? `${m}M` : ''}${r || (!h && !m) ? `${r}S` : ''}`;
 }
 
-/** 3725 → "1:02:05", 65 → "1:05" */
-export function clockDuration(seconds: number | null): string | null {
-  if (!seconds) return null;
-  const s = Math.round(seconds);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const r = String(s % 60).padStart(2, '0');
-  return h ? `${h}:${String(m).padStart(2, '0')}:${r}` : `${m}:${r}`;
+/** 3725 → "1:02:05" / «١:٠٢:٠٥», 65 → "1:05" (packages/render/src/format.ts). */
+export function clockDuration(seconds: number | null, locale: Locale): string | null {
+  return formatDuration(seconds, locale) || null;
 }
 
 export interface ChannelVideosPage {

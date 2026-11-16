@@ -1,6 +1,7 @@
 ---
 /** Friendly page for a preview link that can't be shown (never a raw error). */
-import { strings } from '../i18n';
+import { fmt, strings } from '../i18n';
+import { PREVIEW_LINK_MINUTES } from '../lib/preview';
 import type { Locale } from '../lib/locale';
 
 export type PreviewProblem = 'invalid' | 'expired' | 'gone' | 'unavailable';
@@ -9,7 +10,7 @@ const { locale, problem, cmsUrl } = Astro.props;
 const t = strings(locale);
 const [title, body] = {
   invalid: [t.preview.invalidTitle, t.preview.invalidBody],
-  expired: [t.preview.expiredTitle, t.preview.expiredBody],
+  expired: [t.preview.expiredTitle, fmt(t.preview.expiredBody, { minutes: PREVIEW_LINK_MINUTES }, locale)],
   gone: [t.preview.goneTitle, t.preview.goneBody],
   unavailable: [t.preview.unavailableTitle, t.preview.unavailableBody],
 }[problem];

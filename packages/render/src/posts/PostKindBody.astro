@@ -7,6 +7,7 @@
  *
  * Shared by www and the scholar sites Worker (packages/render, wiki AUN-SCHOLAR-SITES §5.2).
  */
+import { formatPercent } from '../format';
 import { postStrings } from './strings';
 import type { PostPageLike } from './types';
 import { normalizeImageUrl } from '../images';
@@ -59,7 +60,7 @@ const totalVotes = typeof c?.poll?.totalVotes === 'number' ? c.poll.totalVotes :
       <ul>
         {poll.options.map((o) => {
           const pct = 'percentage' in o && typeof o.percentage === 'number' && totalVotes ? Math.round(o.percentage) : null;
-          return <li><span>{o.text}</span>{pct !== null && <span class="post-kind-pct" dir="ltr">{pct}%</span>}</li>;
+          return <li><span>{o.text}</span>{pct !== null && <span class="post-kind-pct" dir="ltr">{formatPercent(pct / 100, locale)}</span>}</li>;
         })}
       </ul>
       <a class="button" href={post.ref?.videos_url}>{t.voteOnChannel}</a>

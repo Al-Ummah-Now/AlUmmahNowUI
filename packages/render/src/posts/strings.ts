@@ -1,4 +1,5 @@
 /** The shared post renderers' strings (en/ar; same keys, checked by apps/www/tests/post-kinds.test.ts). */
+import { num } from '../format';
 import type { Locale } from '../locale';
 
 const en = {
@@ -46,4 +47,6 @@ export const postStrings = (l: Locale): PostStrings => (l === 'ar' ? ar : en);
 export const POST_STRINGS = { en, ar };
 
 /** "{count} likes" etc. */
-export const fill = (template: string, vars: Record<string, string | number>) => template.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ''));
+/** Fills {placeholders}; numbers in the page language's numerals (Eastern Arabic (Hindi) ٠–٩ in Arabic). */
+export const fill = (template: string, vars: Record<string, string | number>, locale: Locale) =>
+  template.replace(/\{(\w+)\}/g, (_, k: string) => (vars[k] === undefined ? '' : num(vars[k], locale)));

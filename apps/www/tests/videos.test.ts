@@ -26,8 +26,9 @@ describe('videos API mapping', () => {
     expect(isoDuration(3725)).toBe('PT1H2M5S');
     expect(isoDuration(60)).toBe('PT1M');
     expect(isoDuration(null)).toBeUndefined();
-    expect(clockDuration(3725)).toBe('1:02:05');
-    expect(clockDuration(65)).toBe('1:05');
+    expect(clockDuration(3725, 'en')).toBe('1:02:05');
+    expect(clockDuration(3725, 'ar')).toBe('١:٠٢:٠٥');
+    expect(clockDuration(65, 'en')).toBe('1:05');
   });
 });
 
