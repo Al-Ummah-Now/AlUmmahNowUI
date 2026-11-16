@@ -38,3 +38,20 @@ export const registrySourceHref = () =>
   REGISTRY.source.sha === 'local'
     ? `https://github.com/${REGISTRY.source.repo}/blob/main/${REGISTRY.source.path}`
     : `https://github.com/${REGISTRY.source.repo}/blob/${REGISTRY.source.sha}/${REGISTRY.source.path}`;
+
+/**
+ * Splits items that name a registry feature into those in use in production (`live`) and those shipped
+ * but not in use yet (`ready`), so a page never says "live today" for a ready feature. Any other status
+ * fails the build: such an item has no place in a list of what runs in production.
+ */
+export function byUse<T extends { feature: string }>(items: readonly T[]): { live: T[]; ready: T[] } {
+  const live: T[] = [];
+  const ready: T[] = [];
+  for (const item of items) {
+    const { status } = feature(item.feature);
+    if (status === 'live') live.push(item);
+    else if (status === 'ready') ready.push(item);
+    else throw new Error(`"${item.feature}" is ${status} in the feature registry (${REGISTRY.source.sha.slice(0, 7)}), so it cannot be listed as running in production`);
+  }
+  return { live, ready };
+}

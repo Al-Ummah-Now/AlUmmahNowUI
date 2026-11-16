@@ -20,7 +20,10 @@ import { fileURLToPath } from 'node:url';
 
 export const WIKI_REPO = 'Al-Ummah-Now/AlUmmahNowWiki';
 export const REGISTRY_PATH = 'features/registry.json';
-export const STATUSES = ['live', 'rolling', 'building', 'planned'] as const;
+/** live: in production and in use; ready: in production, nothing uses it yet (wiki features/README.md). */
+export const STATUSES = ['live', 'ready', 'rolling', 'building', 'planned'] as const;
+/** Statuses that are in a production release, so they name it. */
+export const RELEASED: readonly FeatureStatus[] = ['live', 'ready'];
 export type FeatureStatus = (typeof STATUSES)[number];
 
 export type Release = { repo: string; tag: string } | { repo: string; run: number; sha: string } | { repo: string; before: string };
@@ -60,10 +63,11 @@ export function validateRegistry(reg: unknown): string[] {
     if (!Array.isArray(f?.apps) || !f.apps.length) errs.push(`${at}: apps`);
     if (typeof f?.wiki !== 'string' || !/^(epics|guides|repos)\/[\w./#-]+$/.test(f.wiki)) errs.push(`${at}: wiki`);
     const rel = f?.release as Record<string, unknown> | undefined;
-    if (f?.status === 'live') {
+    if (RELEASED.includes(f?.status)) {
       const ok = rel && typeof rel.repo === 'string' && ((typeof rel.tag === 'string' && TAG.test(rel.tag)) || (Number.isInteger(rel.run) && typeof rel.sha === 'string') || (typeof rel.before === 'string' && TAG.test(rel.before)));
-      if (!ok) errs.push(`${at}: live needs its release`);
-    } else if (rel) errs.push(`${at}: only live features have a release`);
+      if (!ok) errs.push(`${at}: ${f.status} needs its release`);
+    } else if (rel) errs.push(`${at}: only live and ready features have a release`);
+    if (f?.status === 'ready' && !f.note?.trim()) errs.push(`${at}: ready needs a note`);
   }
   return errs;
 }

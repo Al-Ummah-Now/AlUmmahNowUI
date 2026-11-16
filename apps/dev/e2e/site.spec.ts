@@ -148,11 +148,24 @@ test('every status comes from the wiki’s feature registry the site was built f
     await expect(page.locator('.registry-source')).toContainText(sha);
   }
   // the chips on the other pages show the same status as the registry
-  const label = { en: { live: 'Live', rolling: 'Built, rolling out', building: 'In development', planned: 'Planned' } };
+  const label = { en: { live: 'Live', ready: 'Ready, not in use yet', rolling: 'Built, rolling out', building: 'In development', planned: 'Planned' } };
   await page.goto(pagePath('en', 'community'));
   const chips = await page.locator('.tile .chip').allTextContents();
   expect(chips.length).toBeGreaterThan(0);
   for (const c of chips) expect(Object.values(label.en)).toContain(c.trim());
+});
+
+test('the home page lists as live today only what the registry says is live; ready features sit apart', async ({ page, request }) => {
+  const reg = (await (await request.get('/feature-registry.json')).json()) as { features: { id: string; status: string }[] };
+  const status = (id: string) => reg.features.find((f) => f.id === id)?.status;
+  for (const locale of LOCALES) {
+    await page.goto(pagePath(locale, ''));
+    const live = await page.locator('ul[aria-labelledby="live"] [data-feature]').evaluateAll((els) => els.map((e) => e.getAttribute('data-feature')!));
+    expect(live.length).toBeGreaterThan(0);
+    for (const id of live) expect(status(id), id).toBe('live');
+    const ready = await page.locator('ul[aria-labelledby="ready"] [data-feature]').evaluateAll((els) => els.map((e) => e.getAttribute('data-feature')!));
+    for (const id of ready) expect(status(id), id).toBe('ready');
+  }
 });
 
 test.describe('light and dark: the hero, page heads, waqf panel and footer change with the mode', () => {

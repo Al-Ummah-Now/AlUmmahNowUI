@@ -7,7 +7,7 @@
  */
 import { WIKI, GH, VIDEOS, WWW, STATUS_PAGE } from '../lib/links.ts';
 
-export type Status = 'live' | 'rolling' | 'building' | 'planned';
+export type Status = 'live' | 'ready' | 'rolling' | 'building' | 'planned';
 /** A feature's status is never written here: `feature` is its id in the wiki's feature registry (src/lib/registry.ts). */
 export interface Link {
   label: string;
@@ -42,6 +42,7 @@ export const en = {
   },
   status: {
     live: 'Live',
+    ready: 'Ready, not in use yet',
     rolling: 'Built, rolling out',
     building: 'In development',
     planned: 'Planned',
@@ -83,11 +84,14 @@ export const en = {
       { title: 'Get educated', body: 'Channels share Quran recitation, Tafsir, Fiqh and talks, and scholars can have their own sites.' },
     ],
     pillarsMore: 'More about the community',
+    /** Each item names its registry feature: only `live` ones are listed as live today, `ready` ones under readyTitle. */
     liveTitle: 'Live today',
+    readyTitle: 'Ready, not in use yet',
+    readyLead: 'Shipped to production and ready to use, but nothing there uses it yet.',
     live: [
-      { title: 'www.alummahnow.net', body: 'The public site: the home timeline, articles, scholar pages and video rails.', href: WWW },
-      { title: 'videos.alummahnow.net', body: 'Watch, upload, comment and subscribe.', href: VIDEOS },
-      { title: 'Scholar sites', body: 'White-label sites for scholars on alummahnow.org, run from the same platform.', href: 'https://www.alummahnow.net/en/scholars/' },
+      { title: 'www.alummahnow.net', body: 'The public site: the home timeline, articles and video rails.', href: WWW, feature: 'www-and-sites' },
+      { title: 'videos.alummahnow.net', body: 'Watch, upload, comment and subscribe.', href: VIDEOS, feature: 'videos-site' },
+      { title: 'Scholar sites', body: 'White-label sites for scholars on alummahnow.org, run from the same platform.', href: '/en/technology/#feature-scholar-sites', feature: 'scholar-sites' },
     ],
     systemTitle: 'The system at a glance',
     systemLead: 'Every server-side part runs on Cloudflare Workers. One sign-in service serves every app.',
@@ -232,7 +236,7 @@ export const en = {
     ],
     features: {
       title: 'Every feature and where it stands',
-      lead: 'Built from the feature registry in the wiki, the project’s source of record. Each status is the registry’s own, and a live feature names the production release it shipped in.',
+      lead: 'Built from the feature registry in the wiki, the project’s source of record. Each status is the registry’s own. Live means in production and in use; ready means shipped to production with nothing using it yet. Both name the production release they shipped in.',
       source: 'Feature registry, wiki commit {sha}',
       before: 'before {tag}',
       wiki: 'Wiki',
