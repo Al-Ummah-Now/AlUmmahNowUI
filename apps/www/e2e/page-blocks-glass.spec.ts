@@ -103,7 +103,7 @@ async function extremes(page: Page, png: Buffer, boxes: TextBox[]): Promise<{ mi
       const d = ctx.getImageData(x, y, w, h).data;
       let min = 1, max = 0;
       for (let i = 0; i < d.length; i += 4) {
-        const L = 0.2126 * lin(d[i]) + 0.7152 * lin(d[i + 1]) + 0.0722 * lin(d[i + 2]);
+        const L = 0.2126 * lin(d[i]!) + 0.7152 * lin(d[i + 1]!) + 0.0722 * lin(d[i + 2]!);
         if (L < min) min = L;
         if (L > max) max = L;
       }
@@ -185,7 +185,7 @@ for (const p of PAGES) {
             measured[theme] = (measured[theme] ?? 0) + boxes.length;
             boxes.forEach((b, k) => {
               const L = lum(b.rgb);
-              const worst = Math.min(ratio(L, ext[k].min), ratio(L, ext[k].max));
+              const worst = Math.min(ratio(L, ext[k]!.min), ratio(L, ext[k]!.max));
               const need = b.large ? 3 : 4.5;
               if (worst < need) failures.push(`${theme} panel ${i} (${block}) "${b.text}": ${worst.toFixed(2)} < ${need}`);
             });
