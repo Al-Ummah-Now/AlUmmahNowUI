@@ -20,12 +20,12 @@ const discussion = `${ctx.channelHref}/community`;
   {post.article && (
     <div class="post-article">
       {post.article.coverUrl && <img src={post.article.coverUrl} alt="" loading="lazy" width="640" height="360" />}
-      <h2 class="post-title">{post.article.title}</h2>
-      {post.article.excerpt && <p>{post.article.excerpt}</p>}
+      <h2 class="post-title" dir="auto">{post.article.title}</h2>
+      {post.article.excerpt && <p dir="auto">{post.article.excerpt}</p>}
       {post.article.url && /^https:\/\//.test(post.article.url) && <p><a href={post.article.url}>{t.readArticle}</a></p>}
     </div>
   )}
-  {shown.map((p) => <p class="post-text">{p}</p>)}
+  {shown.map((p) => <p class="post-text" dir="auto">{p}</p>)}
   {post.images.length > 0 && (
     <div class="post-images">
       {post.images.slice(0, full ? 10 : 4).map((img) => <img src={img.url} alt={img.alt} loading="lazy" width={img.width ?? undefined} height={img.height ?? undefined} />)}
@@ -49,14 +49,14 @@ const discussion = `${ctx.channelHref}/community`;
       ))}
     </ol>
   )}
-  {!full && post.slides.length > 3 && <p><a href={href}>{fmt(t.moreCards, { n: post.slides.length - 3 }, locale)}</a></p>}
+  {!full && post.slides.length > 3 && <p><a href={href}>{plural(post.slides.length - 3, t.moreCards, locale)}</a></p>}
   {post.link && <PostLinkCard link={post.link} locale={locale} compact={!full} />}
   {post.videoId && (
     <p><a href={`/${locale}/watch/${post.videoId}/`} class="post-video-link">{t.watchOn}</a></p>
   )}
   {post.options.length > 0 && (
     <div class="post-options">
-      <ul>{post.options.map((o) => <li>{o}</li>)}</ul>
+      <ul>{post.options.map((o) => <li dir="auto">{o}</li>)}</ul>
       <p><a href={discussion}>{post.kind === 'quiz' ? t.quizOnPlatform : t.pollOnPlatform}</a></p>
     </div>
   )}

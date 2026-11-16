@@ -1,5 +1,5 @@
 /** The shared post renderers' strings (en/ar; same keys, checked by apps/www/tests/post-kinds.test.ts). */
-import { num } from '../format';
+import { num, type PluralForms } from '../format';
 import type { Locale } from '../locale';
 
 const en = {

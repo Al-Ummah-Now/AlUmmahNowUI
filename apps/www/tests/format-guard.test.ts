@@ -75,6 +75,12 @@ describe('Arabic formatted values use Eastern Arabic (Hindi) numerals ٠–٩', 
     expect(f.formatYear(2026, 'ar')).toBe('٢٠٢٦');
   });
 
+  it('plural forms: Arabic counts read naturally, with ٠–٩', () => {
+    const likes = SITE_STRINGS.ar.likes;
+    expect([0, 1, 2, 3, 11, 100].map((n) => f.plural(n, likes, 'ar'))).toEqual(['لا إعجابات', 'إعجاب واحد', 'إعجابان', '٣ إعجابات', '١١ إعجابًا', '١٠٠ إعجاب']);
+    expect([1, 3].map((n) => f.plural(n, SITE_STRINGS.en.comments, 'en'))).toEqual(['1 comment', '3 comments']);
+  });
+
   it('day keys stay machine keys in Arabic numerals 0–9', () => {
     expect(f.dayKey(when, 'UTC')).toBe('2026-11-15');
   });

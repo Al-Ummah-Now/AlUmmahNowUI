@@ -15,6 +15,8 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { FeedItem } from '../src/lib/feed.ts';
 import { layoutFeed, post, video } from '../tests/feed-fixture.ts';
+// Arabic seed text writes its numbers in Eastern Arabic (Hindi) numerals ٠–٩, as an Arabic editor would
+import { formatNumber } from '../../../packages/render/src/format.ts';
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -47,7 +49,7 @@ const kahf = (ar: boolean) =>
 export function seedItems(locale: 'en' | 'ar'): FeedItem[] {
   const ar = locale === 'ar';
   const items: FeedItem[] = [
-    post(900, at(400), { title: ar ? 'مرحبًا بكم في الأمة الآن' : 'Welcome to Al Ummah Now', excerpt: ar ? 'ما الذي ستجده هنا.' : 'What you will find here.', locale }, true),
+    post(900, at(400), { title: ar ? 'مرحبًا بكم في الأمة الآن' : 'Welcome to Al Ummah Now', excerpt: ar ? 'ما الذي ستجده هنا.' : 'What you will find here.', author_name: ar ? 'فريق التحرير' : 'The editors', locale }, true),
     // As production stores it (CMS FEED_FORMAT 3): the video's plain channel name is English, the
     // channel's names per language and the video's size travel in the snapshot
     {
@@ -81,7 +83,7 @@ export function seedItems(locale: 'en' | 'ar'): FeedItem[] {
           thumbnail_url: null,
           channel_name: null,
           handle: 'knowledge',
-          latest: [1, 2, 3].map((n) => ({ id: `feed-latest-${n}`, title: ar ? `الدرس ${n}` : `Lesson ${n}`, thumbnail_url: null, duration_seconds: 600 + n * 65 })),
+          latest: [1, 2, 3].map((n) => ({ id: `feed-latest-${n}`, title: ar ? `الدرس ${formatNumber(n, 'ar')}` : `Lesson ${n}`, thumbnail_url: null, duration_seconds: 600 + n * 65 })),
         },
       },
     },
@@ -107,7 +109,7 @@ export function seedItems(locale: 'en' | 'ar'): FeedItem[] {
     }),
   ];
   for (let i = 0; i < 50; i++) {
-    items.push(post(100 + i, at(30 + i * 37), { title: ar ? `خبر رقم ${i + 1}` : `News item ${i + 1}`, excerpt: ar ? 'تحديث من الفريق.' : 'An update from the team.', author_name: ar ? 'فريق التحرير' : 'The editors', locale }));
+    items.push(post(100 + i, at(30 + i * 37), { title: ar ? `خبر رقم ${formatNumber(i + 1, 'ar')}` : `News item ${i + 1}`, excerpt: ar ? 'تحديث من الفريق.' : 'An update from the team.', author_name: ar ? 'فريق التحرير' : 'The editors', locale }));
   }
   return items;
 }
