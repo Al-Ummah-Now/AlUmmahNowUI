@@ -6,8 +6,8 @@ const settings: SiteSettings = {
   site_title: 'Al Ummah Now',
   tagline: 'Share what matters to the Ummah',
   hero_title: 'Share what matters to the Ummah',
-  hero_body:
-    'Upload videos, go live and post to your channel, and see what the community is sharing, in Arabic and English.',
+  // null: the home page's own copy (i18n home.heroBody / heroBodyWatch), which follows whether sign-in is configured
+  hero_body: null,
   social: [],
 };
 
