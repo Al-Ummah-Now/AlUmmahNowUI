@@ -17,11 +17,14 @@ import { NL_TOKENS } from './stub-newsletter';
 const local = !process.env.WWW_URL;
 const T = { en: en.newsletter, ar: ar.newsletter };
 
-async function expectAxeClean(page: Page) {
+/** `within`: only that part of the page, when the test scrolls and the sticky header would cover
+ * whatever sits behind it (axe's target-size then measures the visible strip: AlUmmahNowUI#129) */
+async function expectAxeClean(page: Page, within?: string) {
   // after a form POST the new page must be fully loaded (fonts and styles) before colours are measured
   await page.waitForLoadState('load');
   await page.evaluate(() => document.fonts.ready);
-  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
+  const axe = new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']);
+  const results = await (within ? axe.include(within) : axe).analyze();
   expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => `${n.target.join(' ')} ${n.failureSummary ?? ''}`).slice(0, 3).join(', ')}`)).toEqual([]);
 }
 
@@ -63,7 +66,8 @@ for (const l of LOCALES) {
       await expect(footer.getByLabel(t.emailLabel)).toHaveValue('');
       await expect(page).toHaveURL(new RegExp(`/${l}/$`));
       await footer.scrollIntoViewIfNeeded();
-      await expectAxeClean(page);
+      // the form itself: the whole page is checked unscrolled in a11y.spec.ts and header.spec.ts
+      await expectAxeClean(page, '[data-testid="footer-newsletter"]');
     });
 
     test(`${l}: too many sign-ups say so`, async ({ page }) => {
