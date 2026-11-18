@@ -6,8 +6,8 @@ const settings: SiteSettings = {
   site_title: 'الأمة الآن',
   tagline: 'شارك ما يهمّ الأمة',
   hero_title: 'شارك ما يهمّ الأمة',
-  // null: the home page's own copy (i18n home.heroBody / heroBodyWatch), which follows whether sign-in is configured
-  hero_body: null,
+  hero_body:
+    'ارفع المرئيات وابدأ البث المباشر وانشر في قناتك، وتابع ما يشاركه المجتمع، بالعربية والإنجليزية.',
   social: [],
 };
 

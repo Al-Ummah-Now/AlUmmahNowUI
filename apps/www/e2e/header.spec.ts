@@ -176,3 +176,23 @@ for (const scheme of ['light', 'dark'] as const) {
     });
   }
 }
+
+// Owner rule: no truncated words. Beside Sign in on a phone the wordmark doesn't fit whole: the bar
+// shows the logo alone (packages/render/src/brand-fit.ts) rather than «الأمة…»; where it fits it's whole.
+for (const l of LOCALES) {
+  test(`${l}: the wordmark in the bar is whole or not shown, never cut`, async ({ page }) => {
+    const name = HEADER_LABELS[l].siteName;
+    for (const w of [1366, 800, 412, 390, 360]) {
+      await page.setViewportSize({ width: w, height: 844 });
+      await page.goto(`${WWW_URL}/${l}/`);
+      await expect(page.locator('.site-header .aun-brand')).toHaveAccessibleName(name);
+      const state = () =>
+        page.locator('.site-header .aun-brand-name').evaluate((e) => {
+          const r = e.getBoundingClientRect();
+          return r.width <= 1 ? 'hidden' : e.scrollWidth <= e.clientWidth + 1 ? 'whole' : 'cut';
+        });
+      await expect.poll(state, `${l} ${w}`).not.toBe('cut');
+      if (w >= 800) expect(await state(), `${l} ${w} room for the name`).toBe('whole');
+    }
+  });
+}

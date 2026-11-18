@@ -286,7 +286,7 @@ for (const l of ['en', 'ar'] as const) {
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `signed in ${w} no sideways scroll`).toBe(true);
     }
     await page.unroute(isMe);
-    // a long site name: still one line at every width, the wordmark truncates (ellipsis) and the tools stay whole
+    // a long site name: still one line at every width, the wordmark is whole or gives way to the logo alone (never cut), and the tools stay whole
     for (const [w, bar] of [[1440, 64], [1100, 64], [800, 64], [480, 56], [412, 56], [390, 56], [320, 56]] as const) {
       await page.setViewportSize({ width: w, height: 844 });
       await page.goto(at(HOSTS.custom, `/${l}/`));

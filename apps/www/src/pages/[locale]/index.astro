@@ -38,8 +38,9 @@ markSource(Astro, rc);
 Astro.response.headers.set('X-Feed-Source', timeline.source);
 
 const heroTitle = settings?.hero_title || t.home.heroTitle;
-// Sign-in not configured: the built-in copy doesn't promise uploading or posting (cfg.signIn)
-const heroBody = settings?.hero_body || (cfg.signIn ? t.home.heroBody : t.home.heroBodyWatch);
+// Sign-in not configured (cfg.signIn): the hero promises only what a visitor can do, watching, so the
+// editors' copy (which describes uploading and posting) gives way to the watch-only text
+const heroBody = cfg.signIn ? settings?.hero_body || t.home.heroBody : t.home.heroBodyWatch;
 const siteDescription = cfg.signIn ? t.meta.defaultDescription : t.meta.watchDescription;
 const siteName = settings?.site_title || t.meta.siteName;
 const sameAs = (settings?.social ?? []).map((s) => s.url).filter((u) => u.startsWith('https://'));
