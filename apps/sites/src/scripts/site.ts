@@ -5,6 +5,7 @@
  * button (avatar, name, caret) opens the account menu, a disclosure like www's (AlUmmahNow
  * docs/design/NAV.md "Account menu"): who, the Al Ummah Now apps, Sign out.
  */
+import { fitBrand } from '../../../../packages/render/src/brand-fit';
 import { fitToViewport } from '../../../../packages/render/src/menu-fit';
 import { displayLabel, type MeProfileView } from '../../../../packages/render/src/profile-name';
 
@@ -38,27 +39,7 @@ document.querySelector('[data-mode-toggle]')?.addEventListener('click', () => {
 });
 syncToggle();
 
-/**
- * The site's name is never shown cut ("الشي…"): when the wordmark doesn't fit whole beside the tools
- * (a phone with Sign in, or a long name), the bar shows the logo alone, as the shared header does
- * below 400px, and the name stays the link's accessible name. Re-checked when the bar or its tools
- * change size (the account button replacing Sign in, a rotation) and once the fonts are in.
- */
-function fitBrand(): void {
-  const brand = document.querySelector<HTMLElement>('.site-header .aun-brand');
-  const name = brand?.querySelector<HTMLElement>('.aun-brand-name');
-  if (!brand || !name) return;
-  const check = () => {
-    brand.classList.remove('site-brand-mark-only');
-    brand.classList.toggle('site-brand-mark-only', name.scrollWidth > name.clientWidth + 1);
-  };
-  check();
-  if (typeof ResizeObserver !== 'undefined') {
-    const ro = new ResizeObserver(check);
-    for (const el of document.querySelectorAll<HTMLElement>('.site-header .aun-header-row, .site-header .aun-header-tools')) ro.observe(el);
-  }
-  void document.fonts?.ready.then(check);
-}
+// the site's name whole or not at all (logo alone), never cut
 fitBrand();
 
 /** Name and email of this browser's session, on the button and in the menu's "who" row. */

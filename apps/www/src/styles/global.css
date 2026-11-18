@@ -2332,6 +2332,16 @@ html[data-js] .ci-deck .tl-ov {
   color: var(--text-soft);
   opacity: 1;
 }
+/* the wordmark doesn't fit whole (packages/render/src/brand-fit.ts): the logo alone, the name stays
+   the link's accessible name, as the shared header's own rule below 400px */
+.aun-brand-mark-only .aun-brand-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 /* dir=auto resolves an empty field to LTR, which pushed the Arabic placeholder to the far (left) end,
    away from the icon at the inline start: while the placeholder shows, it follows the page's direction */
 [dir='rtl'] .search-field input:placeholder-shown {

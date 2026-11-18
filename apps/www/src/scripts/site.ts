@@ -17,6 +17,7 @@
 import { confirmDialog, type ConfirmOptions } from './confirm';
 import { initFacades } from './facade';
 import { initSearchBoxes } from './search-combobox';
+import { fitBrand } from '../../../../packages/render/src/brand-fit';
 import { fitToViewport } from '../../../../packages/render/src/menu-fit';
 import { initTheme } from './theme';
 import { startStreet } from '../../../../packages/render/src/themes/fanous-street.generated.js';
@@ -504,3 +505,6 @@ initFacades();
 initSearchBoxes();
 startStreet();
 void initAccount();
+
+// the header's wordmark whole or not at all (logo alone), never cut ("الأمة…" beside Sign in on a phone)
+fitBrand();
