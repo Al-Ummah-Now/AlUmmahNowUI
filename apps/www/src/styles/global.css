@@ -1140,6 +1140,8 @@ main {
 .nl-form {
   position: relative;
   display: grid;
+  /* one column no wider than the box: WebKit sizes an auto track to the email input's intrinsic width */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.5rem;
   min-width: 0;
 }
@@ -1188,12 +1190,20 @@ main {
   color: var(--fanous-color-error-text);
   font-weight: 600;
 }
+/* the honeypot: visually hidden in place (no off-screen offset, which scrolls an RTL page sideways) */
 .nl-trap {
   position: absolute;
-  inset-inline-start: -10000px;
+  inset-block-start: 0;
+  inset-inline-start: 0;
   width: 1px;
   height: 1px;
+  border: 0;
   overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.nl-trap input {
+  width: 1px;
 }
 /* in the footer the form sits on the night colours in every mode */
 .nl-footer .nl-label {
@@ -3214,3 +3224,31 @@ html.fanous-street .reading :is(.prose :is(h1, h2, h3, h4), .pb-b.pb-t-none .pb-
 
 
 
+
+/* below 400px: no sideways scroll on a 320px phone in Arabic, logo whole. The QA / STAGE badge (never in
+   production) leaves the row and sits centred on the logo's lower edge (12px padding + 40px menu
+   button + 4px gap + half the 32px logo); it never takes a tap */
+@media (max-width: 24.99rem) {
+  /* the Arabic labels ("English", the sign-in) are wider: tighter padding keeps the whole 32px logo */
+  .site-header .aun-signin {
+    padding-inline: var(--fanous-spacing-sm, 8px);
+    font-size: 0.875rem;
+  }
+  .site-header .aun-lang {
+    padding-inline: var(--fanous-spacing-xs, 4px);
+  }
+  .site-header .aun-brand {
+    padding-inline-end: var(--fanous-spacing-xs, 4px);
+  }
+  .site-header .aun-env {
+    position: absolute;
+    inset-inline-start: calc(var(--aun-header-pad) + 2.5rem + var(--aun-header-gap) + 1rem);
+    inset-block-end: 0.25rem;
+    margin: 0;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+  [dir='rtl'] .site-header .aun-env {
+    transform: translateX(50%);
+  }
+}
