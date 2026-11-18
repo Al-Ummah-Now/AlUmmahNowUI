@@ -3225,9 +3225,7 @@ html.fanous-street .reading :is(.prose :is(h1, h2, h3, h4), .pb-b.pb-t-none .pb-
 
 
 
-/* below 400px: no sideways scroll on a 320px phone in Arabic, logo whole. The QA / STAGE badge (never in
-   production) leaves the row and sits centred on the logo's lower edge (12px padding + 40px menu
-   button + 4px gap + half the 32px logo); it never takes a tap */
+/* below 400px: no sideways scroll on a 320px phone in Arabic, logo whole */
 @media (max-width: 24.99rem) {
   /* the Arabic labels ("English", the sign-in) are wider: tighter padding keeps the whole 32px logo */
   .site-header .aun-signin {
@@ -3240,6 +3238,11 @@ html.fanous-street .reading :is(.prose :is(h1, h2, h3, h4), .pb-b.pb-t-none .pb-
   .site-header .aun-brand {
     padding-inline-end: 4px;
   }
+}
+/* on phones the QA / STAGE badge (never in production) leaves the row, so it never takes the brand's
+   room (in Arabic at 400-639px it collapsed the wordmark): centred on the logo's lower edge (padding
+   + 40px menu button + gap + half the 32px logo), and it never takes a tap */
+@media (max-width: 39.99rem) {
   .site-header .aun-env {
     position: absolute;
     inset-inline-start: calc(var(--aun-header-pad) + 2.5rem + var(--aun-header-gap) + 1rem);
