@@ -38,7 +38,9 @@ markSource(Astro, rc);
 Astro.response.headers.set('X-Feed-Source', timeline.source);
 
 const heroTitle = settings?.hero_title || t.home.heroTitle;
-const heroBody = settings?.hero_body || t.home.heroBody;
+// Sign-in not configured: the built-in copy doesn't promise uploading or posting (cfg.signIn)
+const heroBody = settings?.hero_body || (cfg.signIn ? t.home.heroBody : t.home.heroBodyWatch);
+const siteDescription = cfg.signIn ? t.meta.defaultDescription : t.meta.watchDescription;
 const siteName = settings?.site_title || t.meta.siteName;
 const sameAs = (settings?.social ?? []).map((s) => s.url).filter((u) => u.startsWith('https://'));
 const videosHref = libraryUrl(cfg.videosWebUrl, locale);
@@ -49,7 +51,7 @@ const empty = timeline.pinned.length === 0 && timeline.items.length === 0;
   cfg={cfg}
   locale={locale}
   title={later ? t.timeline.olderTitle : siteName}
-  description={settings?.tagline ? `${settings.tagline}. ${t.meta.defaultDescription}` : t.meta.defaultDescription}
+  description={settings?.tagline ? `${settings.tagline}. ${siteDescription}` : siteDescription}
   alternates={{ en: '/en/', ar: '/ar/' }}
   nav={chrome.nav}
   settings={settings}

@@ -11,7 +11,7 @@ import AxeBuilder from '@axe-core/playwright';
 const LABEL_IN_NAME = { rules: { 'label-content-name-mismatch': { enabled: true } } };
 import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
-import { HOSTS, LONG_NAME, SITES_PORT } from './stub-data.ts';
+import { HOSTS, LOGO_URL, LONG_NAME, SITES_PORT } from './stub-data.ts';
 import { langButtonHtml, menuButtonHtml, signInHtml } from '../../../packages/render/src/nav/header.js';
 import { siteBrandHtml } from '../../../packages/render/src/site-brand.ts';
 import { stubImage } from '../../www/e2e/stub-blocks.ts';
@@ -27,7 +27,7 @@ test('a site renders in English with its own theme, name, logo and menu', async 
   await expect(html).toHaveAttribute('dir', 'ltr');
   await expect(page.getByTestId('site-name')).toHaveText('Sh. Mustafa Elbadry');
   // the header lockup: the site's own logo in the round mark slot, its name as the wordmark
-  await expect(page.locator('.site-header .aun-brand .aun-brand-mark')).toHaveAttribute('src', 'https://images.alummahnow.net/e2e/logo.png');
+  await expect(page.locator('.site-header .aun-brand .aun-brand-mark')).toHaveAttribute('src', LOGO_URL);
   await expect(page.locator('.site-header .aun-brand .aun-brand-name')).toHaveText('Sh. Mustafa Elbadry');
   await expect(page.getByTestId('site-nav-books')).toHaveAttribute('href', 'https://example.com/books');
   await expect(page.getByTestId('site-video-card')).toHaveCount(2);
@@ -213,7 +213,7 @@ test('Light / Dark is the videos site\'s icon toggle: Moon in light, Sun in dark
 
 test('the header is the Al Ummah Now header contract: builders, order, sizes, phone collapse', async ({ page, request }) => {
   const html = await (await request.get(at(HOSTS.both, '/en/videos/'))).text();
-  expect(html).toContain(siteBrandHtml({ lang: 'en', href: '/en/', name: 'Sh. Mustafa Elbadry', logoSrc: 'https://images.alummahnow.net/e2e/logo.png' }));
+  expect(html).toContain(siteBrandHtml({ lang: 'en', href: '/en/', name: 'Sh. Mustafa Elbadry', logoSrc: LOGO_URL }));
   // no links to other sites in the header (owner, 2026-11-15): Website and Videos stay in the account menu
   expect(html).not.toMatch(/class="aun-apps?[" ]/);
   expect(html).toContain(langButtonHtml({ lang: 'en', href: '/ar/videos/' }));
@@ -296,7 +296,9 @@ for (const l of ['en', 'ar'] as const) {
       const mode = (await page.locator('.aun-mode').boundingBox())!;
       expect(mode.width, `long name ${w}`).toBe(40);
       expect(mode.x >= 0 && mode.x + mode.width <= w, `long name ${w} tools inside`).toBe(true);
-      if (w >= 400) expect(await page.locator('.aun-brand-name').evaluate((e) => getComputedStyle(e).textOverflow)).toBe('ellipsis');
+      // never a cut name: when it doesn't fit whole the bar shows the logo alone (fitBrand), the name stays the link's name
+      await expect(page.locator('.site-header .aun-brand')).toHaveAccessibleName(LONG_NAME[l]);
+      await expect.poll(() => page.locator('.aun-brand-name').evaluate((e) => e.scrollWidth <= e.clientWidth + 1 || !e.checkVisibility() || e.getBoundingClientRect().width <= 1), `long name ${w} never cut`).toBe(true);
     }
     // one typeface: every text in the bar uses the header's font
     const fonts = await page.locator('.site-header :is(.aun-brand-name, .site-nav a, .aun-lang, .aun-signin)').evaluateAll((els) => [...new Set(els.map((e) => getComputedStyle(e).fontFamily))]);
@@ -433,3 +435,23 @@ test('a site page renders its blocks with the shared page-builder renderer, en a
   expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
   await page.screenshot({ path: `e2e-artifacts/${info.project.name}/site-page-blocks-ar-dark.png`, fullPage: true });
 });
+
+// Owner rule: no truncated words. On a phone with Sign in the site's name doesn't fit beside the
+// tools: the bar shows the logo alone rather than «الشي…»; where it fits it shows whole.
+for (const l of ['en', 'ar'] as const) {
+  test(`${l}: the site's name in the bar is whole or not shown, never cut`, async ({ page }) => {
+    const name = l === 'ar' ? 'الشيخ مصطفى البدري' : 'Sh. Mustafa Elbadry';
+    for (const w of [1366, 800, 412, 390, 360]) {
+      await page.setViewportSize({ width: w, height: 844 });
+      await page.goto(at(HOSTS.both, `/${l}/`));
+      await expect(page.locator('.site-header .aun-brand')).toHaveAccessibleName(name);
+      const state = () =>
+        page.locator('.site-header .aun-brand-name').evaluate((e) => {
+          const r = e.getBoundingClientRect();
+          return r.width <= 1 ? 'hidden' : e.scrollWidth <= e.clientWidth + 1 ? 'whole' : 'cut';
+        });
+      await expect.poll(state, `${l} ${w}`).not.toBe('cut');
+      if (w >= 800) expect(await state(), `${l} ${w} room for the name`).toBe('whole');
+    }
+  });
+}

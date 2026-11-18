@@ -12,6 +12,17 @@ export const HOSTS = {
   suspended: 'paused.sites.localhost',
 };
 
+/**
+ * The fixture site's logo: a real picture (an eight-point star on a round field), as a data: URL so
+ * it renders under the sites CSP (img-src 'self' data: + the image hosts) with no network.
+ */
+const LOGO_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">' +
+  '<circle cx="48" cy="48" r="48" fill="#123f3a"/>' +
+  '<g fill="#e8c46a"><rect x="24" y="24" width="48" height="48" rx="3"/><rect x="24" y="24" width="48" height="48" rx="3" transform="rotate(45 48 48)"/></g>' +
+  '<circle cx="48" cy="48" r="15" fill="#123f3a"/><circle cx="48" cy="48" r="8" fill="#e8c46a"/></svg>';
+export const LOGO_URL = `data:image/svg+xml;base64,${Buffer.from(LOGO_SVG).toString('base64')}`;
+
 const channel = {
   id: CHANNEL_ID,
   name: 'Mustafa Elbadry',
@@ -34,7 +45,7 @@ function site(host: string, over: Record<string, unknown>) {
       status: 'live',
       themeRef: 'nahas@1.0.0',
       name: { en: 'Sh. Mustafa Elbadry', ar: 'الشيخ مصطفى البدري' },
-      logoUrl: 'https://images.alummahnow.net/e2e/logo.png',
+      logoUrl: LOGO_URL,
       faviconUrl: null,
       locales: ['en', 'ar'],
       navigation: [

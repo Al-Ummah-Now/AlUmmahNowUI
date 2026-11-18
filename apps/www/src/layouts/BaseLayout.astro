@@ -46,7 +46,7 @@ const { cfg, locale, title, description, alternates, nav, settings, ogImage, ogT
 const t = strings(locale);
 const siteName = settings?.site_title || t.meta.siteName;
 const fullTitle = title === siteName ? siteName : `${title} | ${siteName}`;
-const desc = (description || settings?.tagline || t.meta.defaultDescription).slice(0, 300);
+const desc = (description || settings?.tagline || (cfg.signIn ? t.meta.defaultDescription : t.meta.watchDescription)).slice(0, 300);
 const { canonical, hreflang } = seoLinks && !errorPage ? seoLinks : headLinks(cfg, alternates, { locale, contentLocale, pathname: Astro.url.pathname, errorPage });
 const other = otherLocale(locale);
 const switchHref = alternates[other] ?? `/${other}/`;

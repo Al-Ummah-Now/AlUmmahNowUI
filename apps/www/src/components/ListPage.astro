@@ -41,7 +41,7 @@ const now = new Date();
 const all = [...view.pinned, ...view.items];
 const empty = all.length === 0;
 const pageOf = (page: number, pages: number) => fmt(t.articles.pageOf, { page, pages });
-const description = view.seoDescription || view.summary || t.meta.defaultDescription;
+const description = view.seoDescription || view.summary || (cfg.signIn ? t.meta.defaultDescription : t.meta.watchDescription);
 // An ItemList of the listed videos (their watch pages carry the VideoObject)
 const jsonLd = [
   itemListLd(
