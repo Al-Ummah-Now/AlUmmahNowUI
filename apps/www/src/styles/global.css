@@ -3231,14 +3231,14 @@ html.fanous-street .reading :is(.prose :is(h1, h2, h3, h4), .pb-b.pb-t-none .pb-
 @media (max-width: 24.99rem) {
   /* the Arabic labels ("English", the sign-in) are wider: tighter padding keeps the whole 32px logo */
   .site-header .aun-signin {
-    padding-inline: var(--fanous-spacing-sm, 8px);
+    padding-inline: 8px;
     font-size: 0.875rem;
   }
   .site-header .aun-lang {
-    padding-inline: var(--fanous-spacing-xs, 4px);
+    padding-inline: 4px;
   }
   .site-header .aun-brand {
-    padding-inline-end: var(--fanous-spacing-xs, 4px);
+    padding-inline-end: 4px;
   }
   .site-header .aun-env {
     position: absolute;
