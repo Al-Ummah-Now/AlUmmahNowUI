@@ -2332,6 +2332,11 @@ html[data-js] .ci-deck .tl-ov {
   color: var(--text-soft);
   opacity: 1;
 }
+/* dir=auto resolves an empty field to LTR, which pushed the Arabic placeholder to the far (left) end,
+   away from the icon at the inline start: while the placeholder shows, it follows the page's direction */
+[dir='rtl'] .search-field input:placeholder-shown {
+  text-align: right;
+}
 .search-field input:focus-visible {
   outline: var(--focus);
   outline-offset: 1px;

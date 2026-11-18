@@ -16,7 +16,8 @@ const items = nav.flatMap((n) => {
 });
 const social = (settings?.social ?? []).filter((s) => /^https:\/\//.test(s.url)).slice(0, 8);
 const socialLabel = (kind: string) => kind.charAt(0).toUpperCase() + kind.slice(1);
-const year = new Date().getUTCFullYear();
+// Eastern Arabic (Hindi) numerals ٠–٩ in Arabic: an explicit numbering system, never the implicit 'ar' default
+const year = new Intl.NumberFormat(locale === 'ar' ? 'ar-u-nu-arab' : 'en', { useGrouping: false }).format(new Date().getUTCFullYear());
 // Off or unconfigured: no newsletter section at all (src/lib/features.ts)
 const newsletter = featuresFromRequest(Astro.request).newsletter;
 ---

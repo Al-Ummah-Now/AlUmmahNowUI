@@ -44,6 +44,27 @@ describe('footer newsletter section', () => {
       expect(html).toContain('data-testid="footer-help"');
     });
   }
+  it('ar: the copyright year is in Eastern Arabic (Hindi) numerals ٠–٩', async () => {
+    const props = { locale: 'ar' as const, nav: [], settings: null, videosWebUrl: 'https://videos.qa.alummahnow.net' };
+    const html = await container.renderToString(Footer, { props, request: req('/ar/', true) });
+    const rights = /<div class="footer-base"[^>]*>\s*<p[^>]*>([^<]*)<\/p>/.exec(html)?.[1] ?? '';
+    expect(rights).toMatch(/^© [٠-٩]{4} الأمة الآن$/);
+  });
+  it('en: the copyright year is in 0–9', async () => {
+    const props = { locale: 'en' as const, nav: [], settings: null, videosWebUrl: 'https://videos.qa.alummahnow.net' };
+    const html = await container.renderToString(Footer, { props, request: req('/en/', true) });
+    expect(html).toMatch(/© \d{4} Al Ummah Now/);
+  });
+});
+
+describe('the off-state copy promises nothing a visitor cannot reach', () => {
+  for (const t of [en, ar]) {
+    it(`${t === en ? 'en' : 'ar'}: no uploading, going live on a channel or posting`, () => {
+      for (const s of [t.home.heroBodyWatch, t.meta.watchDescription]) {
+        expect(s).not.toMatch(/upload|go live|post to|ارفع|ابدأ البث|انشر/i);
+      }
+    });
+  }
 });
 
 describe('header Sign in', () => {

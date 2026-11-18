@@ -40,6 +40,8 @@ for (const l of LOCALES) {
     await expect(page.locator('#account')).toHaveCount(0);
     await expect(page.locator('a[href*="/auth/login"]')).toHaveCount(0);
     await expect(page.getByRole('link', { name: t.home.profileCta })).toHaveCount(0);
+    // the hero doesn't describe what needs an account (uploading, going live, posting)
+    await expect(page.locator('.hero-body')).toHaveText(t.home.heroBodyWatch);
     const text = await page.locator('body').innerText();
     for (const gone of [t.newsletter.unavailable, t.newsletter.title, 'not configured', 'SESSION_SECRET']) expect(text).not.toContain(gone);
     await expectAxeClean(page);

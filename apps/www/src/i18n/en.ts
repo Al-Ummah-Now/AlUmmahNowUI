@@ -3,6 +3,8 @@ export const en = {
   meta: {
     siteName: 'Al Ummah Now',
     defaultDescription: 'Upload videos, go live and post to your channel, and see what the community is sharing, in Arabic and English.',
+    /** defaultDescription when sign-in isn't configured: nothing a visitor can't reach (no uploading or posting) */
+    watchDescription: 'Watch videos and live streams, and see what the community is sharing, in Arabic and English.',
   },
   a11y: {
     skipToContent: 'Skip to main content',
@@ -54,6 +56,8 @@ export const en = {
     wordmarkLatin: 'Al Ummah Now',
     heroTitle: 'Share what matters to the Ummah',
     heroBody: 'Upload videos, go live and post to your channel, and see what the community is sharing, in Arabic and English.',
+    /** heroBody when sign-in isn't configured (no account, so no uploading or posting) */
+    heroBodyWatch: 'Watch videos and live streams, and see what the community is sharing, in Arabic and English.',
     watchCta: 'Watch videos',
     profileCta: 'Create your account',
     libraryCta: 'Continue watching',

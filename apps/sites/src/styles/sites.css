@@ -123,6 +123,16 @@ img {
 /* Header: the shared bar (.aun-header, aun-nav.generated.css), dark in every theme, full width, one
    typeface. Only the site's own links (in the bar, and in the menu panel below 1024px) and the account
    states are styled here. */
+/* the name doesn't fit whole (src/scripts/site.ts fitBrand): the logo alone, the name stays the
+   link's accessible name, as the shared header's own rule below 400px */
+.site-brand-mark-only .aun-brand-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 /* a site with no logo and no channel avatar: the name's first letter in the round slot */
 .aun-brand-letter {
   display: grid;
