@@ -8,7 +8,7 @@
  * ٠–٩ through the explicit numbering system (ar-u-nu-arab), never the implicit 'ar' default.
  * Keep the tables in step with shared-types; add a noun here rather than writing another helper.
  */
-import { formatNumber } from './format';
+import { formatNumber, pluralCategory } from './format';
 
 export type CountNoun = 'view' | 'like' | 'comment';
 
@@ -45,7 +45,7 @@ export function formatCountNoun(locale: string, count: number | string | null | 
   if (isArabic(locale)) {
     const forms = AR[noun];
     if (n === 0) return forms.zero;
-    const category = new Intl.PluralRules('ar').select(n);
+    const category = pluralCategory(n, 'ar');
     if (category === 'one') return forms.one;
     if (category === 'two') return forms.two;
     return `${shown} ${category === 'few' ? forms.few : category === 'many' ? forms.many : forms.other}`;

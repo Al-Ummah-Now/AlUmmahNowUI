@@ -131,7 +131,10 @@ export type PluralForms = Partial<Record<'zero' | 'one' | 'two' | 'few' | 'many'
  * "3 likes" / «٣ إعجابات», «١١ إعجابًا», «إعجاب واحد»: picks the language's plural form for `n`
  * (Intl.PluralRules) and fills `{count}` with the formatted number.
  */
+/** The language's CLDR plural category for `n`: zero, one, two, few, many or other. */
+export const pluralCategory = (n: number, lang: Lang | string): Intl.LDMLPluralRule => new Intl.PluralRules(isAr(lang) ? 'ar' : 'en').select(n);
+
 export function plural(n: number, forms: PluralForms, lang: Lang | string): string {
-  const cat = new Intl.PluralRules(isAr(lang) ? 'ar' : 'en').select(n) as keyof PluralForms;
+  const cat = pluralCategory(n, lang) as keyof PluralForms;
   return fill(forms[cat] ?? forms.other, { count: n }, lang);
 }
