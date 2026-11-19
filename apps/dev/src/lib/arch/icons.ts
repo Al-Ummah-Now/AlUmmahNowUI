@@ -43,17 +43,26 @@ const KEEP = ['fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejo
 /** The symbol id for an icon inside one diagram. */
 export const symId = (prefix: string, id: IconId) => `${prefix}-i-${id.replace(/[^a-z0-9]+/gi, '-')}`;
 
+/** Remove every <!-- … --> by scanning, not by a regex (an unterminated comment drops the rest). */
+export function stripComments(s: string): string {
+  let out = '';
+  let i = 0;
+  for (;;) {
+    const open = s.indexOf('<!--', i);
+    if (open < 0) return out + s.slice(i);
+    out += s.slice(i, open);
+    const close = s.indexOf('-->', open + 4);
+    if (close < 0) return out;
+    i = close + 3;
+  }
+}
+
 /** A <symbol> for one vendored icon, ids prefixed. Throws for an unknown icon: a missing mark fails the build. */
 export function symbol(prefix: string, id: IconId): string {
   const raw = ICONS[id];
   if (!raw) throw new Error(`diagram icon not vendored: ${id}`);
-  // start at the <svg> tag (drops the XML prolog and licence comments), then remove any inner
-  // comments until none are left (the files are vendored, but never trust one pass)
-  let clean = raw.slice(Math.max(0, raw.indexOf('<svg')));
-  for (let prev = ''; prev !== clean; ) {
-    prev = clean;
-    clean = clean.replace(/<!--[\s\S]*?-->/g, '').replace(/<!--|-->/g, '');
-  }
+  // start at the <svg> tag (drops the XML prolog and licence comments), then cut any inner comments
+  const clean = stripComments(raw.slice(Math.max(0, raw.indexOf('<svg'))));
   const open = /<svg\b([^>]*)>/.exec(clean);
   if (!open) throw new Error(`not an svg: ${id}`);
   const attrs = open[1] ?? '';
