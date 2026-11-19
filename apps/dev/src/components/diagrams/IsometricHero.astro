@@ -5,7 +5,7 @@
  * behind; providers hang off the side. Real product icons from src/assets/icons (ICONS.md);
  * slabs from theme tokens, so light and dark both work. Two variants; Arabic mirrors.
  */
-import { ICONS, iconStyle } from '../../lib/icons.ts';
+import { iconSvg } from '../../lib/icons.ts';
 
 interface Props {
   title: string;
@@ -87,11 +87,8 @@ const band = variant === 'wide' ? `M ${x(170)} 470 L ${x(1010)} 470` : `M ${x(60
     );
   })}
   {icons.map(({ id, cx, cy, size }) => {
-    const st = iconStyle(id, size);
     return (
-      <g transform={`translate(${x(cx) - size / 2}, ${cy - size / 2})`}>
-        <g class={st.class} style={st.style} set:html={ICONS[id]}></g>
-      </g>
+      <g transform={`translate(${x(cx) - size / 2}, ${cy - size / 2})`} set:html={iconSvg(id, size)}></g>
     );
   })}
   {texts.map((t) => (
