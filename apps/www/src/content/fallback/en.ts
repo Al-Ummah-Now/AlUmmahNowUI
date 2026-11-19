@@ -54,7 +54,7 @@ export const en: Builtin = {
         '- Watch and share **videos and Shorts**.',
         '- Read **community posts** from the channels you subscribe to.',
         '- Share **news** that matters to the Ummah.',
-        '- Share **educational materials**.',
+        '- Share **your videos and posts** with the community.',
         '- Watch **live streams** as they happen.',
         '',
         '## Get started',
