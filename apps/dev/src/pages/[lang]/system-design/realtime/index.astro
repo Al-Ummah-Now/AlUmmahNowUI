@@ -1,0 +1,23 @@
+---
+import SystemDesignPage from '../../../../components/SystemDesignPage.astro';
+import { strings } from '../../../../i18n';
+import { dir, type Locale } from '../../../../lib/pages';
+import { localePaths } from '../../../../lib/static-paths';
+import { realtimeNarrow, realtimeWide } from '../../../../lib/diagrams/realtime.ts';
+
+export const getStaticPaths = localePaths;
+const locale = Astro.params.lang as Locale;
+const t = strings(locale);
+const block = t.systemDesignPages.realtime;
+const labels = block.diagram;
+const rtl = dir(locale) === 'rtl';
+---
+<SystemDesignPage
+  locale={locale}
+  slug="system-design/realtime"
+  t={t}
+  block={block}
+  wide={realtimeWide(labels)}
+  narrow={realtimeNarrow(labels)}
+  rtl={rtl}
+/>

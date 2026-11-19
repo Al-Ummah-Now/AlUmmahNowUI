@@ -1,0 +1,23 @@
+---
+import SystemDesignPage from '../../../../components/SystemDesignPage.astro';
+import { strings } from '../../../../i18n';
+import { dir, type Locale } from '../../../../lib/pages';
+import { localePaths } from '../../../../lib/static-paths';
+import { scalingNarrow, scalingWide } from '../../../../lib/diagrams/scaling.ts';
+
+export const getStaticPaths = localePaths;
+const locale = Astro.params.lang as Locale;
+const t = strings(locale);
+const block = t.systemDesignPages.scaling;
+const labels = block.diagram;
+const rtl = dir(locale) === 'rtl';
+---
+<SystemDesignPage
+  locale={locale}
+  slug="system-design/scaling"
+  t={t}
+  block={block}
+  wide={scalingWide(labels)}
+  narrow={scalingNarrow(labels)}
+  rtl={rtl}
+/>

@@ -1,0 +1,114 @@
+---
+/**
+ * The isometric hero for the System design hub (style sample 4): devices reach the Cloudflare
+ * edge slab; the Workers apps stand on it; the data stores and the transcoder container sit
+ * behind; providers hang off the side. Real product icons from src/assets/icons (ICONS.md);
+ * slabs from theme tokens, so light and dark both work. Two variants; Arabic mirrors.
+ */
+import { ICONS, iconStyle } from '../../lib/icons.ts';
+
+interface Props {
+  title: string;
+  desc: string;
+  rtl: boolean;
+  labels: { edge: string; apps: string; data: string; containers: string; devices: string; providers: string; observability: string };
+  variant: 'wide' | 'narrow';
+}
+const { title, desc, rtl, labels, variant } = Astro.props;
+const W = variant === 'wide' ? 1200 : 360;
+const H = variant === 'wide' ? 560 : 880;
+const x = (v: number) => (rtl ? W - v : v);
+
+interface SlabDef { cx: number; cy: number; w: number; h: number }
+const slabPaths = ({ cx, cy, w, h }: SlabDef) => {
+  const dx = w * 0.866;
+  const dy = w * 0.5;
+  const c = x(cx);
+  return {
+    top: `M ${c} ${cy - dy} L ${c + dx} ${cy} L ${c} ${cy + dy} L ${c - dx} ${cy} Z`,
+    left: `M ${c - dx} ${cy} L ${c} ${cy + dy} L ${c} ${cy + dy + h} L ${c - dx} ${cy + h} Z`,
+    right: `M ${c + dx} ${cy} L ${c} ${cy + dy} L ${c} ${cy + dy + h} L ${c + dx} ${cy + h} Z`,
+  };
+};
+const slabs: SlabDef[] =
+  variant === 'wide'
+    ? [{ cx: 520, cy: 300, w: 560, h: 44 }, { cx: 430, cy: 200, w: 140, h: 30 }, { cx: 620, cy: 200, w: 140, h: 30 }, { cx: 880, cy: 262, w: 300, h: 110 }, { cx: 1080, cy: 396, w: 120, h: 80 }]
+    : [{ cx: 180, cy: 222, w: 210, h: 32 }, { cx: 180, cy: 322, w: 210, h: 32 }, { cx: 180, cy: 430, w: 210, h: 56 }, { cx: 180, cy: 546, w: 150, h: 56 }];
+const icons: { id: string; cx: number; cy: number; size: number }[] =
+  variant === 'wide'
+    ? [
+        { id: 'lucide/browser', cx: 70, cy: 180, size: 34 }, { id: 'lucide/smartphone', cx: 70, cy: 254, size: 34 }, { id: 'lucide/tv', cx: 70, cy: 328, size: 34 },
+        { id: 'simple-icons/cloudflare', cx: 520, cy: 262, size: 30 },
+        { id: 'cloudflare/workers', cx: 430, cy: 190, size: 30 }, { id: 'cloudflare/workers', cx: 620, cy: 190, size: 30 },
+        { id: 'cloudflare/r2', cx: 800, cy: 250, size: 30 }, { id: 'cloudflare/d1', cx: 890, cy: 250, size: 30 }, { id: 'cloudflare/queues', cx: 980, cy: 250, size: 30 },
+        { id: 'simple-icons/docker', cx: 1080, cy: 386, size: 26 }, { id: 'simple-icons/ffmpeg', cx: 1080, cy: 434, size: 20 },
+        { id: 'brand/bunny-stream', cx: 950, cy: 500, size: 28 }, { id: 'cloudflare/workers-ai', cx: 1060, cy: 500, size: 28 },
+      ]
+    : [
+        { id: 'lucide/smartphone', cx: 100, cy: 58, size: 30 }, { id: 'lucide/browser', cx: 180, cy: 58, size: 30 }, { id: 'lucide/tv', cx: 260, cy: 58, size: 30 },
+        { id: 'simple-icons/cloudflare', cx: 180, cy: 188, size: 26 }, { id: 'cloudflare/workers', cx: 180, cy: 288, size: 26 },
+        { id: 'cloudflare/r2', cx: 120, cy: 394, size: 26 }, { id: 'cloudflare/d1', cx: 240, cy: 394, size: 26 },
+        { id: 'simple-icons/docker', cx: 180, cy: 512, size: 24 },
+        { id: 'brand/bunny-stream', cx: 118, cy: 646, size: 24 }, { id: 'cloudflare/workers-ai', cx: 242, cy: 646, size: 24 },
+      ];
+const texts: { v: number; y: number; text: string; cls?: string }[] =
+  variant === 'wide'
+    ? [
+        { v: 70, y: 386, text: labels.devices }, { v: 520, y: 332, text: labels.edge, cls: 'iso-strong' },
+        { v: 430, y: 244, text: labels.apps }, { v: 620, y: 244, text: labels.apps }, { v: 890, y: 306, text: labels.data },
+        { v: 1080, y: 470, text: labels.containers }, { v: 1005, y: 544, text: labels.providers }, { v: 590, y: 492, text: labels.observability, cls: 'iso-obs' },
+      ]
+    : [
+        { v: 180, y: 112, text: labels.devices }, { v: 180, y: 252, text: labels.edge, cls: 'iso-strong' }, { v: 180, y: 352, text: labels.apps },
+        { v: 180, y: 462, text: labels.data }, { v: 180, y: 578, text: labels.containers }, { v: 180, y: 692, text: labels.providers },
+        { v: 180, y: 752, text: labels.observability, cls: 'iso-obs' },
+      ];
+const wire = variant === 'wide' ? `M ${x(96)} 254 Q ${x(230)} 200 ${x(330)} 244` : `M ${x(180)} 122 L ${x(180)} 168`;
+const band = variant === 'wide' ? `M ${x(170)} 470 L ${x(1010)} 470` : `M ${x(60)} 730 L ${x(300)} 730`;
+---
+<svg class={`iso iso-${variant}`} viewBox={`0 0 ${W} ${H}`} role="img" aria-labelledby="iso-t iso-d" preserveAspectRatio="xMidYMin meet">
+  <title id="iso-t">{title}</title>
+  <desc id="iso-d">{desc}</desc>
+  <defs>
+    <linearGradient id={`iso-top-${variant}`} x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="var(--raised)"></stop>
+      <stop offset="1" stop-color="var(--surface)"></stop>
+    </linearGradient>
+  </defs>
+  <path class="iso-wire" d={wire}></path>
+  {slabs.map((sl) => {
+    const p = slabPaths(sl);
+    return (
+      <g>
+        <path class="iso-side" d={p.left}></path>
+        <path class="iso-side2" d={p.right}></path>
+        <path class="iso-top-rect" d={p.top}></path>
+      </g>
+    );
+  })}
+  {icons.map(({ id, cx, cy, size }) => {
+    const st = iconStyle(id, size);
+    return (
+      <g transform={`translate(${x(cx) - size / 2}, ${cy - size / 2})`}>
+        <g class={st.class} style={st.style} set:html={ICONS[id]}></g>
+      </g>
+    );
+  })}
+  {texts.map((t) => (
+    <text class={`iso-label${t.cls ? ` ${t.cls}` : ''}`} x={x(t.v)} y={t.y} text-anchor="middle">{t.text}</text>
+  ))}
+  <path class="iso-band" d={band}></path>
+</svg>
+<style>
+  .iso { width: 100%; height: auto; }
+  .iso-top-rect { fill: var(--surface); fill-opacity: 0.9; stroke: var(--edge-strong); stroke-width: 1.5; }
+  .iso-side { fill: color-mix(in srgb, var(--muted) 16%, var(--surface)); stroke: var(--edge-strong); stroke-width: 1.5; }
+  .iso-side2 { fill: color-mix(in srgb, var(--gold) 14%, var(--surface)); stroke: var(--edge-strong); stroke-width: 1.5; }
+  .iso-label { fill: var(--text); font-size: 14px; font-family: var(--font-sans); }
+  .iso-narrow .iso-label { font-size: 12px; }
+  html[lang='ar'] .iso-label { font-family: var(--font-arabic); }
+  .iso-strong { font-weight: 700; fill: var(--link); }
+  .iso-obs { fill: var(--muted); font-size: 12.5px; letter-spacing: 0.04em; }
+  .iso-wire { fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-dasharray: 2 5; stroke-linecap: round; }
+  .iso-band { stroke: var(--edge-strong); stroke-width: 1.2; stroke-dasharray: 1 6; stroke-linecap: round; }
+</style>

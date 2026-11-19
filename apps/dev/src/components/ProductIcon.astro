@@ -1,0 +1,18 @@
+---
+/**
+ * One vendored icon (src/lib/icons.ts, docs/ICONS.md): the brand's own svg, unmodified, scaled
+ * by CSS. Vendor marks get their official colour through the .ic-<vendor> classes; Lucide
+ * glyphs take the text colour so they follow light and dark.
+ */
+import { iconRaw, type IconId } from '../../lib/icons.ts';
+
+interface Props {
+  id: IconId;
+  size?: number;
+  class?: string;
+}
+const { id, size = 44, class: cls = '' } = Astro.props;
+const raw = await iconRaw(id);
+const vendor = id.split('/')[0];
+---
+<span class={`ic ic-${vendor}${cls ? ` ${cls}` : ''}`} style={`--ic:${size}px`} set:html={raw} />
