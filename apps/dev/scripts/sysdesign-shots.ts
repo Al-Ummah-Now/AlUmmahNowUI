@@ -118,7 +118,26 @@ if (RECORD) {
       const secs = j.secs || (await svg.evaluate((s) => Number((s as SVGSVGElement).dataset.cycle ?? 10)));
       const target = j.target ?? 'svg';
       const fig = page.locator('.an-figure').filter({ has: page.locator(`svg.an[data-diagram="${j.id}"]`) });
-      if (target === 'figure') await fig.scrollIntoViewIfNeeded();
+      // a clip of a whole figure: a viewport tall enough to hold it, page chrome that sticks to the
+      // viewport hidden (clips only; review frames keep it), cropped to the figure plus its bleed
+      let figClip: { x: number; y: number; width: number; height: number } | null = null;
+      if (target === 'figure') {
+        await page.evaluate(() => {
+          for (const el of document.querySelectorAll<HTMLElement>('body *')) {
+            const p = getComputedStyle(el).position;
+            if (p === 'fixed' || p === 'sticky') el.style.visibility = 'hidden';
+          }
+        });
+        const h = await fig.evaluate((el) => el.getBoundingClientRect().height);
+        await page.setViewportSize({ width: vp.width, height: Math.ceil(h) + 64 });
+        await fig.evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 32));
+        figClip = await fig.evaluate((el) => {
+          const a = el.getBoundingClientRect();
+          const b = el.querySelector('.an-frame')!.getBoundingClientRect();
+          const x = Math.max(0, Math.min(a.left, b.left) - 12);
+          return { x, y: Math.max(0, a.top - 12), width: Math.min(window.innerWidth, Math.max(a.right, b.right) + 12) - x, height: a.height + 24 };
+        });
+      }
       const clip = typeof target === 'object' ? await svg.locator(`[data-group="${target.group}"]`).boundingBox() : null;
       const fps = 25;
       const dir = join(out, `rec-${j.id}-${j.w}-${mode}`);
@@ -136,7 +155,7 @@ if (RECORD) {
         }, i / fps);
         await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => ok(null)))));
         const file = join(dir, `f${String(i).padStart(4, '0')}.png`);
-        if (target === 'figure') await fig.screenshot({ path: file });
+        if (figClip) await page.screenshot({ path: file, clip: figClip });
         else if (clip) await page.screenshot({ path: file, clip: { x: clip.x - 14, y: clip.y - 24, width: clip.width + 28, height: clip.height + 38 } });
         else await svg.screenshot({ path: file });
       }
