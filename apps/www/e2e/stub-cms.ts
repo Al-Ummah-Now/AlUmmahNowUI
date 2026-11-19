@@ -18,16 +18,17 @@ import { scholarSitesFixture, siteByChannel } from './stub-scholar-sites.ts';
 import { newsletterFixture, publicFeatures } from './stub-newsletter.ts';
 import { en as builtinEn } from '../src/content/fallback/en.ts';
 import { ar as builtinAr } from '../src/content/fallback/ar.ts';
+import { aboutBlocks } from './stub-about.ts';
 
 /**
- * The About page as the CMS serves it (CMS migration 0021: the owner's copy, en + ar, linked as
- * translations, one markdown block). Only the SEO description differs from the built-in page, so
- * e2e/about.spec.ts can tell a page rendered from the CMS from the built-in fallback.
+ * The About page as the CMS serves it (CMS migrations 0021-0023: the owner's copy, en + ar, linked as
+ * translations, built from blocks: hero, feature list, note). The SEO description differs from the
+ * built-in page, so e2e/about.spec.ts can tell a page rendered from the CMS from the built-in fallback.
  */
 const STUB_ABOUT_DESCRIPTION = 'About page served by the stub CMS';
 const aboutPage = (locale: string) => {
   const page = (locale === 'ar' ? builtinAr : builtinEn).pages.about!;
-  return { ...page, seo_description: STUB_ABOUT_DESCRIPTION, images: [], list_kind: null, blocks: [{ id: 'body', type: 'markdown', text: page.body }] };
+  return { ...page, seo_description: STUB_ABOUT_DESCRIPTION, images: [], list_kind: null, blocks: aboutBlocks(locale === 'ar' ? 'ar' : 'en') };
 };
 
 const PORT = Number(process.env.STUB_CMS_PORT || 8585);
