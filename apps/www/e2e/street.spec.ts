@@ -12,7 +12,7 @@ import { IS_PRODUCTION, SCHEMES } from './site-theme';
  *   - the street is on, shows the picked variant of this mode's tile, repeated, centred, at its
  *     own size (never stretched), down the whole page, and no other variant is fetched;
  *   - the timeline column has its light frost (a soft-edged blur layer behind its content);
- *   - no control or text block is see-through;
+ *   - no control or text block is see-through (frosted glass, which blurs the street behind it, is not);
  * a test can pin the variant; other themes have no street; the street adds no element, fixed
  * layer or animation (nothing to do on scroll).
  */
@@ -58,7 +58,7 @@ function street(page: Page) {
   });
 }
 
-/** Translucent controls and text blocks whose backdrop is the page (the street would show through). */
+/** Translucent controls and text blocks whose backdrop is the page with no blur of their own (the street would show through sharp). */
 function seeThrough(page: Page) {
   return page.evaluate(() => {
     const alpha = (bg: string) => { const slash = bg.match(/\/\s*([\d.]+)\)/), rgba = bg.match(/^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)/); return slash ? parseFloat(slash[1]!) : rgba ? parseFloat(rgba[1]!) : bg === 'transparent' ? 0 : 1; };
@@ -67,8 +67,12 @@ function seeThrough(page: Page) {
       if (el.tagName === 'IMG') return false;
       const r = el.getBoundingClientRect();
       if (!r.width || !r.height || r.bottom < 0 || r.top > innerHeight) return false;
-      const a = alpha(getComputedStyle(el).backgroundColor);
+      const cs = getComputedStyle(el);
+      const a = alpha(cs.backgroundColor);
       if (!(a > 0 && a < 1)) return false;
+      // Frosted glass (O36: the shared card, e.g. the timeline's empty state) blurs the street behind it by
+      // design: only a translucent block WITHOUT its own blur lets the street show through sharp
+      if (/blur\(/.test(cs.backdropFilter || (cs as unknown as Record<string, string>).webkitBackdropFilter || '')) return false;
       const stack = document.elementsFromPoint(r.left + r.width / 2, Math.min(innerHeight - 1, Math.max(0, r.top + r.height / 2)));
       const below = stack.slice(stack.indexOf(el) + 1).filter((e) => !el.contains(e) && e !== document.body && e !== document.documentElement);
       return !below.some(paints);
