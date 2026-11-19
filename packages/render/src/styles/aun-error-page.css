@@ -37,6 +37,9 @@ html[lang=ar] .ep-code,.ep[lang=ar] .ep-code{letter-spacing:0}
 .ep-search-input{flex:1 1 0;inline-size:100%;min-inline-size:0;box-sizing:border-box;min-height:44px;padding:0 14px;border:1px solid var(--fanous-color-outline);border-radius:12px;background:var(--fanous-color-surface);color:var(--fanous-color-text-primary);font:inherit;font-size:16px}
 .ep-search-input::placeholder{color:var(--fanous-color-text-secondary);opacity:1}
 .ep-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.ep .ep-btn{gap:8px}
+/* A <button> (Go back, Search) reads like the app's link buttons next to it: zero specificity, so only the browser's button font is replaced */
+:where(.ep button.ep-btn){font-family:inherit;font-size:inherit;line-height:inherit}
 .ep-btn svg{width:18px;height:18px;flex:none}
 .ep[dir=rtl] svg:is([data-icon=back],[data-icon=session]){transform:scaleX(-1)}
 
