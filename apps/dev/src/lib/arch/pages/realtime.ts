@@ -169,7 +169,7 @@ const sketch: Builder = (d) => {
   return {
     kind: 'sketch',
     spec,
-    wide: { colW: 340, rowH: 215, nodeW: 260, cols: 3 },
+    wide: { colW: 340, rowH: 250, nodeW: 260, cols: 3 },
     narrow: {
       colW: 300,
       rowH: 160,
