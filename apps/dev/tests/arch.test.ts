@@ -2,9 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DIAGRAMS, diagram } from '../src/lib/arch/all';
+import { stripComments } from '../src/lib/arch/icons';
 
 /** Build-time checks on every diagram; the measured checks run in a browser (e2e/diagram-gate.spec.ts). */
 describe('system design diagrams', () => {
+  it('icon comments are stripped completely, nested or unterminated', () => {
+    expect(stripComments('a<!-- x -->b<!--<!-- y -->-->c')).toBe('ab-->c');
+    expect(stripComments('<svg><!-- licence -->')).toBe('<svg>');
+    expect(stripComments('<svg><!-- open')).toBe('<svg>');
+    expect(stripComments('x<!---->y')).toBe('xy');
+  });
+
   for (const id of DIAGRAMS)
     for (const locale of ['en', 'ar'] as const)
       it(`${id} renders in ${locale}`, () => {
