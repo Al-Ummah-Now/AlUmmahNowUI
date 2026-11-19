@@ -1,30 +1,18 @@
 ---
 import SystemDesignPage from '../../../../components/SystemDesignPage.astro';
+import SdDiagram from '../../../../components/SdDiagram.astro';
 import { strings } from '../../../../i18n';
-import { dir, type Locale } from '../../../../lib/pages';
+import type { Locale } from '../../../../lib/pages';
 import { localePaths } from '../../../../lib/static-paths';
-import { costNarrow, costWide } from '../../../../lib/diagrams/cost.ts';
-import ArchFigure from '../../../../components/ArchFigure.astro';
 
 export const getStaticPaths = localePaths;
 const locale = Astro.params.lang as Locale;
 const t = strings(locale);
 const block = t.systemDesignPages.cost;
-const labels = block.diagram;
-const rtl = dir(locale) === 'rtl';
+const d = t.diagrams.pages.cost;
 ---
-<SystemDesignPage
-  locale={locale}
-  slug="system-design/cost"
-  t={t}
-  block={block}
-  wide={costWide(labels)}
-  narrow={costNarrow(labels)}
-  rtl={rtl}
->
-  <section slot="visual" class="band" aria-labelledby="costs-h">
-    <div class="wrap">
-      <ArchFigure id="costs" locale={locale} title={t.diagrams.costs.title} headingId="costs-h" costs />
-    </div>
-  </section>
+<SystemDesignPage locale={locale} slug="system-design/cost" t={t} block={block}>
+  <SdDiagram id="costs" locale={locale} title={t.diagrams.costs.title} costs />
+  <SdDiagram id="cost-monitor" locale={locale} title={d.monitor.title} lead={d.monitor.lead} raised />
+  <SdDiagram id="cost-cheap" locale={locale} title={d.cheap.title} lead={d.cheap.lead} />
 </SystemDesignPage>

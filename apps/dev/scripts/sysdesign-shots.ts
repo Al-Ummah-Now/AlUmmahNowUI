@@ -103,6 +103,17 @@ if (RECORD) {
     { slug: 'video-pipeline/', id: 'pipeline', w: 'desktop', secs: 0 },
     { slug: 'video-pipeline/', id: 'pipeline', w: 'phone', secs: 0 },
     { slug: 'video-pipeline/', id: 'sketch-play', w: 'desktop', secs: 8 },
+    // one animated flow per page (numbered hops; the AI map carries its cost meter)
+    { slug: 'delivery-caching/', id: 'delivery-miss', w: 'desktop', secs: 0 },
+    { slug: 'data/', id: 'data-write', w: 'desktop', secs: 0 },
+    { slug: 'async/', id: 'async-fail', w: 'desktop', secs: 0 },
+    { slug: 'realtime/', id: 'realtime-views', w: 'desktop', secs: 0 },
+    { slug: 'identity/', id: 'identity-signin', w: 'desktop', secs: 0 },
+    { slug: 'ai/', id: 'ai-scan', w: 'desktop', secs: 0 },
+    { slug: 'ai/', id: 'ai-map', w: 'desktop', secs: 9 },
+    { slug: 'scaling/', id: 'scaling-slot', w: 'desktop', secs: 0 },
+    { slug: 'clients/', id: 'clients-device', w: 'desktop', secs: 0 },
+    { slug: 'release/', id: 'release-train', w: 'desktop', secs: 0 },
   ];
   for (const mode of ['dark', 'light'] as const)
     for (const j of jobs) {

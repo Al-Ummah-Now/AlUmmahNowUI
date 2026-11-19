@@ -1,2 +1,60 @@
-/** realtime page diagram copy (English). Same keys in realtime.ar.ts. */
-export const realtimeEn = {};
+/** Realtime page diagram copy (English). Same keys in realtime.ar.ts. Facts: docs/SOURCES.md §6. */
+export const realtimeEn = {
+  map: {
+    title: 'One Worker, many shards',
+    lead: 'Every live update rides one Worker. A socket lands on a random shard; a broadcast goes to its channel’s directory, which knows which shards hold a subscriber. Admin updates are paced, and view counts are kept in their own small shards.',
+    desc: 'A reference architecture. Apps and admin pages open a socket at /ws on al-ummah-now-comms, the realtime Worker, which checks the connect and message rate limits and passes the socket to a random shard, sockets:0 to sockets:n. Producers — api-videos and the processor, with admin-api and the scheduler — post to /broadcast. The Worker sends each broadcast to the channel’s directory, topic:<channel>, which forwards it only to the shards that hold a subscriber; admin updates go first to a coalescer, coalesce:admin:<topic>, which lets at most one through per second. All of these are objects of one Durable Object class, WebSocketDurableObject. api-videos also binds that class directly from another script, as VIEW_COUNTER, to count views in views:<id>:<n>, which flush into the video record in R2.',
+    group: { cf: 'Cloudflare account', do: 'WebSocketDurableObject', shards: 'Socket shards', producers: 'Producers' },
+    caption: { shards: '8 by default · 64 at most', producers: '+ admin-api · scheduler' },
+    node: {
+      clients: { name: 'Apps + admins', role: 'web · native · admin' },
+      limits: { name: 'Rate limits', role: 'connect · message' },
+      worker: { name: 'al-ummah-now-comms', role: '/ws · /broadcast' },
+      dir: { name: 'topic:<channel>', role: 'who holds a channel' },
+      coalescer: { name: 'coalesce:admin:*', role: '≤ 1 update per second' },
+      s0: { name: 'sockets:0', role: 'hibernating shard' },
+      s1: { name: 'sockets:1', role: 'hibernating shard' },
+      sn: { name: 'sockets:n', role: 'hibernating shard' },
+      apiVideos: { name: 'api-videos', role: 'events · counts' },
+      processor: { name: 'processor', role: 'notifications' },
+      views: { name: 'views:<id>:<n>', role: '4 shards per video' },
+      record: { name: 'R2 videos', role: 'the video record' },
+    },
+    edge: { socket: '/ws', limit: 'limit', shard: 'random shard', post: 'POST /broadcast', broadcast: 'broadcast', admin: 'admin:*', forward: 'only holders', paced: 'paced', counter: 'VIEW_COUNTER', flush: 'CAS flush' },
+  },
+  views: {
+    title: 'A view, counted exactly',
+    lead: 'Counting views by reading the record, adding one and writing it back loses views under load. Instead each view goes to one of four counter shards, and the shards fold their totals into the record with a compare-and-swap.',
+    desc: 'Numbered steps for one view. 1: the player tells api-videos a view happened. 2: api-videos adds one on a counter object views:<id>:<n>, one of four shards picked at random; each shard keeps its own total and serialises its increments, so none are lost. 3: at most every ten seconds a shard writes its total into the video record in R2 with an etag compare-and-swap, merging by maximum, so a retry never counts twice; it rewrites again 30 seconds and 5 minutes later in case a blind writer hid it. 4: api-videos answers with the record’s count plus what the shards have not flushed yet. If the counter cannot be reached, api-videos adds one to the record itself with a compare-and-swap. A test sends 1,000 parallel views across the four shards and checks the exact count.',
+    group: { cf: 'Cloudflare account', shards: 'views:<id>:<n>' },
+    caption: { shards: '1,000 parallel views → exact (test)' },
+    node: {
+      player: { name: 'Player', role: 'one view' },
+      api: { name: 'api-videos', role: 'POST /videos/:id/view' },
+      v0: { name: 'shard 0', role: 'own total' },
+      v1: { name: 'shard 1', role: 'own total' },
+      v2: { name: 'shard 2', role: 'own total' },
+      v3: { name: 'shard 3', role: 'own total' },
+      record: { name: 'R2 video record', role: 'base + shard totals' },
+    },
+    edge: { view: 'view', inc: '+1, random shard', flush: 'CAS ≤ every 10 s', answer: 'views + unflushed' },
+  },
+  sketch: {
+    title: 'Shards that sleep, limits at the door',
+    lead: 'The shards use the hibernation API, so an idle socket costs nothing while it waits. What a socket needs to be rebuilt is kept on the socket itself, and the limits sit at the door, before any shard does work.',
+    desc: 'A hand-drawn sketch. The realtime Worker takes /ws, caps socket opens at 120 a minute per IP, checks the token against the issuer and the revocation list, and hands the socket to a random shard. The shard, sockets:n, hibernates between messages; each socket’s state lives in its attachment, under 2 KiB and at most 12 channels. Messages are capped at 600 a minute per user, or per IP before sign-in. A shard joins a channel’s directory before it confirms the first subscriber, and the directory forwards broadcasts only to such shards; admin updates pass a coalescer at most once a second. When a directory cannot answer, every shard takes the broadcast, so a deploy never loses one.',
+    heading: 'Sleeping shards',
+    around: 'a deploy never loses a broadcast: fallback to all shards',
+    node: {
+      worker: { title: 'realtime Worker', note: '/ws · random shard' },
+      opens: { title: 'Connect limit', note: '120 a minute per IP' },
+      tokens: { title: 'Token check', note: 'issuer + revocations' },
+      shard: { title: 'sockets:n', note: 'hibernation API' },
+      msgs: { title: 'Message limit', note: '600 a minute per user' },
+      attach: { title: 'Socket attachment', note: '< 2 KiB · ≤ 12 channels' },
+      dir: { title: 'topic:<channel>', note: 'holders only' },
+      coal: { title: 'coalesce:admin:*', note: '≤ 1 per second' },
+    },
+    tag: { join: 'join first' },
+  },
+};

@@ -1,4 +1,62 @@
-/** async page diagram copy (Arabic): the same keys as async.en.ts. */
+/** Async work page diagram copy (Arabic): the same keys as async.en.ts. */
 import type { asyncEn } from './async.en.ts';
 
-export const asyncAr: typeof asyncEn = {};
+export const asyncAr: typeof asyncEn = {
+  queues: {
+    title: 'المنتجون والطوابير والمستهلكون',
+    lead: 'يسلّم العمّال العمل البطيء إلى Cloudflare Queues ويجيبون فورًا. لكل طابور مستهلك واحد بحجم دفعة ورصيد محاولات خاص به؛ وما يبقى فاشلًا ينتقل إلى طابور الرسائل الميتة، ومنه إلى صفحة الأخطاء في الإدارة مع زر إعادة الإرسال.',
+    desc: 'بنية مرجعية داخل حساب Cloudflare. على جانب المنتجون: api-videos وadmin-api والمُجدوِل scheduler، ويُنتج المعالج processor وcost-monitor وauth أيضًا. في الوسط الطوابير (وكلها تبدأ بـ al-ummah-now-…): videos بدفعة ١٠ و٣ محاولات؛ وmoderation بدفعة ٥ و٣ محاولات؛ وprocessing-check بدفعة ١٠ و٥ محاولات؛ وadmin-jobs وyt-import بدفعة ١ و٥ محاولات؛ وtranscode بدفعة ١ و٨ محاولات؛ وerrors بدفعة ١٠ و٥ محاولات. وعلى الجانب الآخر المستهلكون: المعالج يأخذ videos وmoderation، وapi-videos تأخذ processing-check وadmin-jobs وyt-import، وعامل media يأخذ transcode، وadmin-api يأخذ errors. والرسائل التي تستنفد محاولاتها تذهب إلى al-ummah-now-dlq (ولطابوري transcode وerrors طابوراهما الخاصان). يقرأ المعالج ذلك الطابور ويحفظ كل رسالة ويرفعها إلى صفحة الأخطاء في الإدارة؛ وزر إعادة الإرسال هناك يطلب من المعالج إرسالها من جديد.',
+    group: { cf: 'حساب Cloudflare', producers: 'المنتجون', queues: 'الطوابير', consumers: 'المستهلكون', dead: 'الرسائل الميتة' },
+    caption: { producers: '+ processor · cost-monitor · auth', queues: 'كلها al-ummah-now-…', dead: 'طوابير خاصة: transcode · errors' },
+    node: {
+      apiVideos: { name: 'api-videos', role: 'أحداث · مهام · رفع' },
+      adminApi: { name: 'admin-api', role: 'بريد · أخطاء · أحداث' },
+      scheduler: { name: 'scheduler', role: 'المرئيات المجدولة' },
+      videosQ: { name: 'videos', role: 'دفعة ١٠ · ٣ محاولات' },
+      moderationQ: { name: 'moderation', role: 'دفعة ٥ · ٣ محاولات' },
+      processingQ: { name: 'processing-check', role: 'دفعة ١٠ · ٥ محاولات' },
+      jobsQ: { name: 'admin-jobs · yt-import', role: 'دفعة ١ · ٥ محاولات' },
+      transcodeQ: { name: 'transcode', role: 'دفعة ١ · ٨ محاولات' },
+      errorsQ: { name: 'errors', role: 'دفعة ١٠ · ٥ محاولات' },
+      processor: { name: 'processor', role: 'أحداث · فحوص' },
+      apiC: { name: 'api-videos', role: 'فحوص · مهام · استيراد' },
+      media: { name: 'media Worker', role: 'يبدأ التحويل' },
+      adminC: { name: 'admin-api', role: 'مجموعات الأخطاء إلى D1' },
+      dlq: { name: 'al-ummah-now-dlq', role: 'يقرؤه المعالج' },
+      errorsPage: { name: 'صفحة الأخطاء', role: 'الإدارة · إعادة الإرسال' },
+    },
+    edge: { enqueue: 'إدراج', giveUp: 'بعد المحاولات', flag: 'حفظ + تنبيه', replay: 'إعادة الإرسال' },
+  },
+  fail: {
+    title: 'رسالة تفشل مرة بعد مرة',
+    lead: 'لا يضيع شيء بصمت. الرسالة التي تفشل تُعاد محاولتها؛ وحين تنفد محاولاتها تصير رسالة ميتة تُحفظ وتُسجَّل وتوضع أمام مشرف، يستطيع أن يعيدها إلى الدورة بنقرة واحدة.',
+    desc: 'خطوات مرقّمة لرسالة واحدة تفشل. ١: تضع api-videos حدثًا على طابور al-ummah-now-videos. ٢: يسلّمه الطابور إلى المعالج في دفعة. ٣: يرمي المعالج خطأ، فيعيد الطابور المحاولة حتى ٣ مرات. ٤: بعد آخر محاولة ينقله الطابور إلى al-ummah-now-dlq. ٥: يقرأ المعالج ذلك الطابور في دفعات من عشرة على الأكثر. ٦: يحفظ الرسالة في جدول dead_letters في قاعدة الإشعارات مدة ٣٠ يومًا، ويرفعها إلى صفحة الأخطاء في الإدارة. ٧: يضغط مشرف «إعادة الإرسال». ٨: يرسل المعالج الرسالة المحفوظة إلى طابور videos من جديد برصيد محاولات جديد.',
+    node: {
+      producer: { name: 'api-videos', role: 'المنتج' },
+      queue: { name: 'al-ummah-now-videos', role: '٣ محاولات على الأكثر' },
+      consumer: { name: 'processor', role: 'يعالج الحدث' },
+      dlq: { name: 'al-ummah-now-dlq', role: 'طابور الرسائل الميتة' },
+      dlqConsumer: { name: 'processor', role: 'مستهلك DLQ · دفعة ١٠' },
+      deadLetters: { name: 'dead_letters', role: 'D1 · ٣٠ يومًا' },
+      errorsPage: { name: 'صفحة الأخطاء', role: 'تحتاج إجراء' },
+      admin: { name: 'المشرف', role: 'يقرّر' },
+    },
+    edge: { event: 'حدث', batch: 'دفعة', retry: 'خطأ · إعادة', dead: 'نفدت المحاولات', read: 'قراءة', store: 'حفظ', flag: 'تنبيه', replay: 'إعادة الإرسال', resend: 'إرسال من جديد' },
+  },
+  crons: {
+    title: 'ساعة المهام المجدولة',
+    lead: 'بعض العمل لا يطلقه أحد، بل يجري على جدول. كل عامل يعلن مشغّلات Cron الخاصة به في إعداد wrangler، والمهمة التي يبدأها تنجز جزأها الثقيل عبر طابور أو في خطوات صغيرة محسوبة.',
+    desc: 'رسم يدوي لمشغّلات Cron في بيئة الإنتاج، وكلها بتوقيت UTC. يعمل المُجدوِل كل دقيقة لنشر المرئيات التي حان وقتها. وتعمل api-videos كل عشر دقائق لتبدأ فحص المعالجة لأي مرئي عالق بلا فحص، وكذلك كل دقيقة للبث المباشر، وكل ساعة للاشتراكات، ويوميًّا في ٠٣:١٧ لمسح الاحتفاظ وفق GDPR. ويعمل المعالج كل ساعة عند الدقيقة ١٧ لنقل تجميعات الإحصاءات إلى D1، ويوميًّا في ٠٣:٤١ لحذف الإشعارات الأقدم من ٩٠ يومًا. وتعمل admin-api كل خمس دقائق للطلبات المفتوحة إلى auth، ويوميًّا في ٠٣:١٧ لحذف بيانات الأخطاء القديمة. ويفحص عامل الحالة كل دقيقتين. ويجمع cost-monitor التكاليف كل ساعة عند الدقيقة ١٠ ويجمّعها يوميًّا في ٠٣:٣٠.',
+    heading: 'ساعة المهام المجدولة (UTC)',
+    around: 'كل جدول في إعداد wrangler لعامله',
+    node: {
+      clock: { title: 'Cron Triggers', note: 'جداول الإنتاج' },
+      scheduler: { title: 'scheduler', note: 'كل دقيقة: المرئيات المستحقة' },
+      apiVideos: { title: 'api-videos', note: 'كل ١٠ د: المعالجة العالقة' },
+      processor: { title: 'processor', note: 'كل ساعة: تجميع الإحصاءات' },
+      adminApi: { title: 'admin-api', note: 'كل ٥ د: طلبات auth' },
+      status: { title: 'status', note: 'كل دقيقتين: فحص الحالة' },
+      costMonitor: { title: 'cost-monitor', note: 'كل ساعة: جمع التكاليف' },
+    },
+  },
+};

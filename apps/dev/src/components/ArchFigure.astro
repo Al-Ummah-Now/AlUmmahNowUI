@@ -28,6 +28,9 @@ const dg = strings(locale).diagrams;
 const lg = dg.legend;
 const flows = d.flows as (keyof typeof lg)[];
 const totals = laneTotals();
+/** each lane's total in the example shown without script */
+const first = (lane: keyof typeof totals) => totals[lane].one ?? 0;
+const most = Math.max(first('bunny'), first('r2'), first('shared'), 1e-9);
 const compareRows = [
   { lane: 'bunny', label: dg.costs.lane.bunny },
   { lane: 'r2', label: dg.costs.lane.r2 },
@@ -58,10 +61,10 @@ const uid = `${id}-${headingId ?? 'fig'}`;
       <h3 class="an-compare-title">{dg.costs.compare}</h3>
       <ul role="list">
         {compareRows.map((row) => (
-          <li class={`an-compare-row an-compare-${row.lane}`} data-compare={row.lane} data-usd={JSON.stringify(totals[row.lane])} style={`--fill:${(totals[row.lane].one / Math.max(totals.bunny.one, totals.r2.one, totals.shared.one)) * 100}%`}>
+          <li class={`an-compare-row an-compare-${row.lane}`} data-compare={row.lane} data-usd={JSON.stringify(totals[row.lane])} style={`--fill:${(first(row.lane) / most) * 100}%`}>
             <span class="an-compare-label">{row.label}</span>
             <span class="an-compare-bar" aria-hidden="true"><span /></span>
-            <output>{formatUsd(locale, totals[row.lane].one)}</output>
+            <output>{formatUsd(locale, first(row.lane))}</output>
           </li>
         ))}
       </ul>

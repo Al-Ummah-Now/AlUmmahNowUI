@@ -1,2 +1,60 @@
-/** clients page diagram copy (English). Same keys in clients.ar.ts. */
-export const clientsEn = {};
+/** Clients page diagram copy (English). Same keys in clients.ar.ts. Facts: docs/SOURCES.md §11. */
+export const clientsEn = {
+  map: {
+    title: 'Every client and what it talks to',
+    lead: 'Browsers reach the public site, the videos site and the admin, all running on Workers. The native apps are in development: each one links the same Rust core, which talks to api-videos and to the sign-in service. The bulk importer uploads straight to R2 and Bunny.',
+    desc: 'On the left, browsers and embeds on other sites reach four sites in the Cloudflare account: www on Astro, the videos site and the admin on Next.js, and the short-link service on alummahnow.link. Service bindings take them to the APIs: api-videos, admin-api and the auth issuer that gives every app single sign-on. api-videos keeps media in R2. Below, the native apps, in development and in no app store yet, for Apple, Android, Windows and Linux, and TVs, all link AlUmmahNowCore, the shared Rust core, which calls api-videos through a client generated from its OpenAPI document and signs in with the auth issuer. On the right, the AlUmmahNowTools bulk importer uploads to R2 and to Bunny Stream.',
+    group: { web: 'Web', cf: 'Cloudflare account', sites: 'Sites on Workers', apis: 'APIs and sign-in', native: 'Native apps · in development', bunny: 'bunny.net' },
+    caption: { native: 'viewer and Studio apps · not in stores' },
+    node: {
+      browsers: { name: 'Browsers', role: 'www · videos · admin' },
+      embeds: { name: 'Embeds', role: 'player on other sites' },
+      www: { name: 'www', role: 'Astro · CMS content' },
+      videos: { name: 'videos', role: 'Next.js · OpenNext' },
+      adminWeb: { name: 'admin', role: 'Next.js · OpenNext' },
+      shortLinks: { name: 'short-links', role: 'alummahnow.link' },
+      apiVideos: { name: 'api-videos', role: 'videos.api' },
+      adminApi: { name: 'admin-api', role: 'admin.api' },
+      auth: { name: 'auth', role: 'single sign-on' },
+      r2: { name: 'R2', role: 'media and originals' },
+      apple: { name: 'Apple', role: 'iPhone · iPad · Mac' },
+      android: { name: 'Android', role: 'phone · tablet · Auto' },
+      desktop: { name: 'Desktop', role: 'Windows · Linux' },
+      tv: { name: 'TV apps', role: 'tvOS · Android TV · Tizen' },
+      core: { name: 'AlUmmahNowCore', role: 'shared Rust core' },
+      importer: { name: 'AlUmmahNowTools', role: '.NET bulk importer' },
+      bunny: { name: 'Bunny Stream', role: 'second pipeline' },
+    },
+    edge: { https: 'HTTPS', bindings: 'service bindings', media: 'media', uniffi: 'UniFFI', api: 'OpenAPI client', signIn: 'sign-in', upload: 'uploads' },
+  },
+  device: {
+    title: 'A TV signs in with a code',
+    lead: 'Typing a password with a remote is painful, so a TV app asks the sign-in service for a short code and shows it. The viewer enters the code on a phone or computer and signs in there; the TV keeps asking until its tokens are ready.',
+    desc: 'Numbered steps of the device authorization grant (RFC 8628) from the openauth fork. 1: the TV app asks the auth issuer’s /device_authorization for a code. 2: the issuer answers with a device code kept on the TV and a short user code, shown with a QR code. 3: on a phone or computer, the viewer opens /activate and enters the code. 4: the issuer runs its normal sign-in and asks the viewer to confirm. 5: meanwhile the TV polls /token, by default every 5 seconds. 6: once confirmed, the tokens reach the TV, only once. 7: the TV calls api-videos signed in.',
+    node: {
+      tv: { name: 'TV app', role: 'shows the code' },
+      issuer: { name: 'auth issuer', role: 'device grant' },
+      phone: { name: 'Phone or computer', role: '/activate' },
+      api: { name: 'api-videos', role: 'signed-in calls' },
+    },
+    edge: { ask: 'ask for a code', code: 'user code + QR', enter: 'enter the code', confirm: 'sign in · confirm', poll: 'poll /token', tokens: 'tokens, once', call: 'API calls' },
+  },
+  core: {
+    title: 'One Rust core, every app',
+    lead: 'Logic that must behave the same everywhere, from the API client and sign-in to uploads and the Studio media engine, lives once in Rust. Screens, players and hardware encoders stay native on each platform.',
+    desc: 'A hand-drawn sketch. Along the top, the Apple apps in Swift, the Android apps in Kotlin and the desktop apps in C#. Each links AlUmmahNowCore, the shared Rust library, through UniFFI bindings. Each platform ships a viewer app and a Studio app for creators. The core calls api-videos through a client generated from its OpenAPI document and signs in with the auth issuer, including the code sign-in for TVs. Remote config, feature flags and versions are set in the videos admin and read by the apps. The apps are in development and in no app store yet.',
+    heading: 'One Rust core, every app',
+    around: 'in development · in no app store yet',
+    node: {
+      apple: { title: 'Apple', note: 'Swift · SwiftUI' },
+      android: { title: 'Android', note: 'Kotlin · Compose' },
+      desktop: { title: 'Windows · Linux', note: 'C# · WinUI 3 · GTK 4' },
+      core: { title: 'AlUmmahNowCore', note: 'Rust · UniFFI' },
+      pair: { title: 'Viewer + Studio', note: 'two apps per platform' },
+      config: { title: 'Remote config', note: 'set in the videos admin' },
+      api: { title: 'api-videos', note: 'client from OpenAPI' },
+      auth: { title: 'auth', note: 'sign-in · TV codes' },
+    },
+    tag: { linked: 'linked in' },
+  },
+};

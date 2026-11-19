@@ -1,23 +1,18 @@
 ---
 import SystemDesignPage from '../../../../components/SystemDesignPage.astro';
+import SdDiagram from '../../../../components/SdDiagram.astro';
 import { strings } from '../../../../i18n';
-import { dir, type Locale } from '../../../../lib/pages';
+import type { Locale } from '../../../../lib/pages';
 import { localePaths } from '../../../../lib/static-paths';
-import { identityNarrow, identityWide } from '../../../../lib/diagrams/identity.ts';
 
 export const getStaticPaths = localePaths;
 const locale = Astro.params.lang as Locale;
 const t = strings(locale);
 const block = t.systemDesignPages.identity;
-const labels = block.diagram;
-const rtl = dir(locale) === 'rtl';
+const d = t.diagrams.pages.identity;
 ---
-<SystemDesignPage
-  locale={locale}
-  slug="system-design/identity"
-  t={t}
-  block={block}
-  wide={identityWide(labels)}
-  narrow={identityNarrow(labels)}
-  rtl={rtl}
-/>
+<SystemDesignPage locale={locale} slug="system-design/identity" t={t} block={block}>
+  <SdDiagram id="identity-map" locale={locale} title={d.map.title} lead={d.map.lead} />
+  <SdDiagram id="identity-signin" locale={locale} title={d.signin.title} lead={d.signin.lead} raised />
+  <SdDiagram id="identity-roles" locale={locale} title={d.roles.title} lead={d.roles.lead} />
+</SystemDesignPage>
