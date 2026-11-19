@@ -144,6 +144,9 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   const nodes = new Map<string, NodeBox>();
   const rolesOf = (n: ArchNode) => (n.role ? (Array.isArray(n.role) ? n.role : [n.role]) : []);
   const RT = RS - 0.5;
+  // the gap between a tile's lines: in Arabic, a tile that carries prices (rate lines, a meter) needs more,
+  // because Noto Naskh sits in a taller line box than Latin and the price lines are long
+  const lgOf = (n: ArchNode) => (opts.locale === 'ar' && (n.rate?.length || n.meter || n.total) ? 6 : 3);
   const nodeW = (n: ArchNode) =>
     Math.max(S + 20, textWidth(n.name, NS, true) + 16, ...rolesOf(n).map((x) => textWidth(x, RS) + 16), ...(n.rate ?? []).map((x) => textWidth(x, RT) + 16), n.meter ? moneyWidest(opts, n.meter.usd) + 18 : 0, n.total ? moneyWidest(opts, n.total.usd) + 18 : 0);
   const widest = Math.max(...spec.nodes.map(nodeW));
@@ -153,7 +156,8 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   // one tile height per diagram, so icons, names and wires line up along a row
   const nodeH = (n: ArchNode) => {
     const roles = n.role ? (Array.isArray(n.role) ? n.role : [n.role]) : [];
-    return 8 + S + 7 + NS + 3 + roles.length * (RS + 3) + (n.rate ?? []).length * (RT + 3) + (n.meter || n.total ? MS + 6 : 0) + 6;
+    const LG = lgOf(n);
+    return 8 + S + 7 + NS + LG + roles.length * (RS + LG) + (n.rate ?? []).length * (RT + LG) + (n.meter || n.total ? MS + 3 + LG : 0) + 6;
   };
   // per row (same grid y): tiles side by side share a height
   const rowOf = (n: ArchNode) => (layout.at?.[n.id] ?? n.at)[1];
@@ -169,13 +173,14 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     const h = tileH(n);
     const box = { x: cx - w / 2, y: cy - h / 2, w, h };
     const lines: NodeBox['lines'] = [{ text: n.name, y: box.y + 8 + S + 7 + NS - 2, size: NS, bold: true }];
-    roles.forEach((x, i) => lines.push({ text: x, y: box.y + 8 + S + 7 + NS + 3 + (i + 1) * (RS + 3) - 3, size: RS, bold: false }));
-    let ly = box.y + 8 + S + 7 + NS + 3 + roles.length * (RS + 3);
+    const LG = lgOf(n);
+    roles.forEach((x, i) => lines.push({ text: x, y: box.y + 8 + S + 7 + NS + LG + (i + 1) * (RS + LG) - LG, size: RS, bold: false }));
+    let ly = box.y + 8 + S + 7 + NS + LG + roles.length * (RS + LG);
     rates.forEach((x) => {
-      ly += RT + 3;
+      ly += RT + LG;
       lines.push({ text: x, y: ly - 3, size: RT, bold: false, kind: 'rate' });
     });
-    if (money0) lines.push({ text: money(opts, money0.usd[opts.scenario ?? 'one']), y: ly + MS + 3, size: MS, bold: true, kind: n.meter ? 'meter' : 'total' });
+    if (money0) lines.push({ text: money(opts, money0.usd[opts.scenario ?? 'one']), y: ly + MS + LG, size: MS, bold: true, kind: n.meter ? 'meter' : 'total' });
     nodes.set(n.id, { n, cx, cy, box, icon: { x: cx - S / 2, y: box.y + 8, s: S }, lines });
   }
 

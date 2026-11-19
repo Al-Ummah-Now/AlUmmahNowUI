@@ -133,7 +133,8 @@ export function costs(c: Copy, locale: 'en' | 'ar'): { spec: ArchSpec; wide: Arc
     ],
     edges,
   };
-  const wide: ArchLayout = { colW: 178, rowH: 196, iconSize: 34, nameSize: 13, roleSize: 11 };
+  // Arabic tiles are taller (Noto Naskh line boxes): more room between the lanes
+  const wide: ArchLayout = { colW: 178, rowH: locale === 'ar' ? 222 : 196, iconSize: 34, nameSize: 13, roleSize: 11 };
   const narrow: ArchLayout = {
     colW: 182,
     rowH: 100,
