@@ -144,9 +144,9 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   const nodes = new Map<string, NodeBox>();
   const rolesOf = (n: ArchNode) => (n.role ? (Array.isArray(n.role) ? n.role : [n.role]) : []);
   const RT = RS - 0.5;
-  // the gap between a tile's lines: in Arabic, a tile that carries prices (rate lines, a meter) needs more,
-  // because Noto Naskh sits in a taller line box than Latin and the price lines are long
-  const lgOf = (n: ArchNode) => (opts.locale === 'ar' && (n.rate?.length || n.meter || n.total) ? 6 : 3);
+  // the gap between a tile's lines: Arabic is set in Noto Naskh, whose line box is taller than Latin's
+  // (and taller still on Linux), so Arabic tiles get more room between lines
+  const lgOf = (_n: ArchNode) => (opts.locale === 'ar' ? 6 : 3);
   const nodeW = (n: ArchNode) =>
     Math.max(S + 20, textWidth(n.name, NS, true) + 16, ...rolesOf(n).map((x) => textWidth(x, RS) + 16), ...(n.rate ?? []).map((x) => textWidth(x, RT) + 16), n.meter ? moneyWidest(opts, n.meter.usd) + 18 : 0, n.total ? moneyWidest(opts, n.total.usd) + 18 : 0);
   const widest = Math.max(...spec.nodes.map(nodeW));

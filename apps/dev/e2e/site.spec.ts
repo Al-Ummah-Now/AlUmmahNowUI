@@ -239,25 +239,31 @@ test('the system design diagrams: titled, described, one visible variant per vie
   for (const locale of LOCALES) {
     for (const slug of ['system-design', 'system-design/video-pipeline'] as const) {
       await page.goto(pagePath(locale, slug));
-      const wide = page.locator('svg.dg-wide');
-      const narrow = page.locator('svg.dg-narrow');
-      await expect(wide).toHaveCount(1);
-      await expect(narrow).toHaveCount(1);
-      for (const dg of [wide, narrow]) {
-        await expect(dg).toHaveAttribute('role', 'img');
-        await expect(dg.locator('title')).toHaveText(/\S/);
-        await expect(dg.locator('desc')).toHaveText(/\S/);
+      const figures = page.locator('.an-figure');
+      const count = await figures.count();
+      expect(count, `${locale} ${slug} diagrams`).toBeGreaterThanOrEqual(3);
+      for (let i = 0; i < count; i++) {
+        const fig = figures.nth(i);
+        // every figure has a desktop and a phone drawing, each a titled, described image
+        const svgs = fig.locator('svg.an');
+        await expect(svgs).toHaveCount(2);
+        for (let k = 0; k < 2; k++) {
+          await expect(svgs.nth(k)).toHaveAttribute('role', 'img');
+          await expect(svgs.nth(k).locator(':scope > title')).toHaveText(/\S/);
+          await expect(svgs.nth(k).locator(':scope > desc')).toHaveText(/\S/);
+        }
       }
       // text is text, never baked into paths
-      expect(await page.locator('svg.dg text').count()).toBeGreaterThan(10);
-      await page.setViewportSize({ width: 1280, height: 900 });
-      await expect(wide).toBeVisible();
-      await expect(narrow).toBeHidden();
-      await page.setViewportSize({ width: 390, height: 844 });
-      await expect(narrow).toBeVisible();
-      await expect(wide).toBeHidden();
-      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${locale} ${slug} no sideways scroll`).toBe(true);
-      const axe = await new AxeBuilder({ page }).include('.dg-figure').withTags(['wcag2a', 'wcag2aa']).analyze();
+      expect(await page.locator('svg.an text').count()).toBeGreaterThan(30);
+      for (const [width, variant] of [[1280, 'wide'], [390, 'narrow']] as const) {
+        await page.setViewportSize({ width, height: 900 });
+        for (let i = 0; i < count; i++) {
+          const visible = await figures.nth(i).locator('svg.an').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).map((e) => (e as SVGSVGElement).dataset.variant));
+          expect(visible, `${locale} ${slug} figure ${i} at ${width}px`).toEqual([variant]);
+        }
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${locale} ${slug} no sideways scroll at ${width}px`).toBe(true);
+      }
+      const axe = await new AxeBuilder({ page }).include('.an-figure').withTags(['wcag2a', 'wcag2aa']).analyze();
       expect(axe.violations.map((v) => v.id)).toEqual([]);
     }
   }
