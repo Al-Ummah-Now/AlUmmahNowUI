@@ -1,0 +1,51 @@
+/** Delivery & caching page diagram copy (English). Same keys in delivery.ar.ts. Facts: docs/SOURCES.md §3. */
+export const deliveryEn = {
+  rails: {
+    title: 'Three rails to the viewer',
+    lead: 'Public videos stream from R2 through the CDN without running any code. Private and unlisted ones go through the media Worker, which checks a token carried in the path. Bunny’s CDN serves its own copies. The API decides which rail a play takes and signs the address.',
+    desc: 'Viewers on the left ask api-videos for a play address. Three rails lead back to them: R2’s public bucket through its custom domain and a Cache Rule; R2’s private bucket through the media Worker with a token in the path and an edge cache keyed by object; and Bunny Stream’s library through Bunny’s token-signed CDN. api-videos purges the CDN when a video’s visibility changes.',
+    group: { cf: 'Cloudflare account', pub: 'Public rail', priv: 'Private rail', bunny: 'bunny.net' },
+    caption: { pub: 'segments 1 year · playlists 10 s', priv: 'token in the path · one copy per object' },
+    node: {
+      viewers: { name: 'Viewers', role: 'web · apps · embeds' },
+      api: { name: 'api-videos', role: 'picks the rail · signs' },
+      cache: { name: 'Cache Rule', role: 'Smart Tiered Cache' },
+      domain: { name: 'R2 custom domain', role: 'media.<env>' },
+      pub: { name: 'R2 public', role: 'pub/<id>/<rev>/' },
+      edge: { name: 'Edge cache', role: 'keyed by object' },
+      worker: { name: 'media Worker', role: '/priv/* · HMAC token' },
+      priv: { name: 'R2 private', role: 'no public access' },
+      bunnyCdn: { name: 'Bunny CDN', role: 'token auth' },
+      library: { name: 'Bunny Stream', role: 'the library' },
+    },
+    edge: { ask: 'play address', hls: 'HLS', origin: 'origin', token: 'token', key: 'same signing key', purge: 'purge on visibility change' },
+  },
+  miss: {
+    title: 'One segment: hit or miss',
+    lead: 'A segment is immutable, addressed by the video’s revision, so the edge keeps it for a year. A miss goes to the upper tier first; only if that misses too does R2 serve a read, and then every viewer nearby hits.',
+    desc: 'Numbered steps for one HLS segment. 1: the player asks the nearest edge. 2: on a hit the edge answers; on a miss it asks the upper tier of Smart Tiered Cache. 3: if the upper tier misses too, it reads the object from R2. 4: the upper tier keeps a copy. 5: the edge keeps a copy. 6: the segment reaches the player.',
+    node: {
+      player: { name: 'Player', role: 'one HLS segment' },
+      edge: { name: 'Nearest edge', role: 'Cache Rule · 1 year' },
+      upper: { name: 'Upper tier', role: 'Smart Tiered Cache' },
+      r2: { name: 'R2 public', role: 'read only on a miss' },
+    },
+    edge: { get: 'GET segment', hit: 'hit', miss: 'miss', read: 'read', fillUpper: 'fill', fillEdge: 'fill', deliver: 'segment' },
+  },
+  caches: {
+    title: 'Small caches, big savings',
+    lead: 'Inside the API, a few short-lived caches keep thousands of requests from becoming thousands of reads, and keep sign-in working when a database is slow.',
+    desc: 'A hand-drawn sketch. api-videos in the middle: it reads the delivery settings from a 30-second cache, the issuer’s public keys from an edge cache with the last good copy kept, and token revocations from a KV copy. It signs every playback address on the way out and never stores one. Share images stay on our own domain, and MP4 downloads are rate-limited per IP. All cache rules ship as code with every release.',
+    heading: 'Small caches, big savings',
+    around: 'cache rules ship as code with every release',
+    node: {
+      api: { title: 'api-videos', note: 'signs on the way out' },
+      settings: { title: 'Delivery settings', note: 'cached 30 s per copy' },
+      jwks: { title: 'Issuer keys', note: 'edge cache + last good' },
+      revoked: { title: 'Revocations', note: 'read from KV' },
+      share: { title: 'Share images', note: 'our own domain' },
+      mp4: { title: 'MP4 downloads', note: '10 per 10 s per IP' },
+    },
+    tag: { never: 'never stored' },
+  },
+};

@@ -6,7 +6,8 @@
  *  - an edge that passes through a node it does not connect;
  *  - a node, label or icon outside the SVG's viewBox;
  *  - a node label that spills out of its node box;
- *  - a wire that wanders far beyond the direct path between its ends (a detour).
+ *  - a wire that wanders far beyond the direct path between its ends (a detour);
+ *  - groups that half-overlap, or a node inside a group it doesn't belong to.
  * Only visible diagrams are checked (the wide/narrow twin that CSS hides is skipped).
  */
 export function gateInBrowser(): string[] {
@@ -95,6 +96,18 @@ export function gateInBrowser(): string[] {
       const b = bb(p);
       if (!inside(b, view, 1)) out.push(`${name}: edge ${p.dataset.from}→${p.dataset.to} leaves the viewBox`);
     }
+    // groups nest or stand apart, never half-overlap; a node inside a group's box belongs to it
+    const groups = [...svg.querySelectorAll<SVGGElement>('[data-group]')]
+      .map((g) => ({ id: g.dataset.group!, members: new Set((g.dataset.members ?? '').split(' ').filter(Boolean)), b: bb(g.querySelector<SVGGraphicsElement>('rect, polygon') ?? g) }))
+      .filter((g) => g.members.size);
+    for (let i = 0; i < groups.length; i++)
+      for (let j = i + 1; j < groups.length; j++) {
+        const a = groups[i]!.b;
+        const b = groups[j]!.b;
+        if (hit(a, b, 1) && !inside(a, b, 1) && !inside(b, a, 1)) out.push(`${name}: groups ${groups[i]!.id} and ${groups[j]!.id} overlap`);
+      }
+    for (const g of groups)
+      for (const [id, box] of nodeBox) if (!g.members.has(id) && hit(box, g.b, 2)) out.push(`${name}: node ${id} sits inside group ${g.id} it doesn't belong to`);
     // nothing clipped by the page: the svg fits its container
     const parent = svg.parentElement!;
     if (svg.getBoundingClientRect().right > parent.getBoundingClientRect().right + 1 && getComputedStyle(parent).overflowX !== 'auto') out.push(`${name}: svg wider than its container`);

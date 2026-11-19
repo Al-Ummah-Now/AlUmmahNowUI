@@ -67,6 +67,8 @@ export interface ArchLayout {
   roleSize?: number;
   /** group ids to leave out in this layout */
   hideGroups?: string[];
+  /** canvas margin (default 28); more when wires arc around the outside */
+  pad?: number;
   /** edges replaced in this layout (e.g. fewer wires on a phone) */
   edges?: ArchEdge[];
 }
@@ -201,7 +203,7 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
 
   // 3. canvas: the bbox of everything plus a margin, then mirror for RTL
   const all: Rect[] = [...[...nodes.values()].map((n) => n.box), ...[...groups.values()].flatMap((g) => [g.box, g.label])];
-  const pad = 28;
+  const pad = layout.pad ?? 28;
   const minX = Math.min(...all.map((q) => q.x)) - pad;
   const minY = Math.min(...all.map((q) => q.y)) - pad;
   const maxX = Math.max(...all.map((q) => q.x + q.w)) + pad;
@@ -292,7 +294,16 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     const v = side === 'e' || side === 'w';
     const lo = (v ? q.y : q.x) + 40;
     const hi = (v ? q.y + q.h : q.x + q.w) - 40;
-    return Math.max(lo, Math.min(hi, v ? other.y : other.x));
+    let at = Math.max(lo, Math.min(hi, v ? other.y : other.x));
+    // never land on the group's own header (top) or caption (bottom): step past it
+    const gb = groups.get(id);
+    const block = side === 'n' ? gb?.label : side === 's' ? gb?.caption : undefined;
+    if (block && !v && at > block.x - 14 && at < block.x + block.w + 14) {
+      const after = block.x + block.w + 22;
+      const before = block.x - 22;
+      at = after <= q.x + q.w - 20 && (!opts.rtl || before < q.x + 20) ? after : before;
+    }
+    return at;
   };
   // pass 1: pick a side for each end
   const chosen = edgesSpec.map((e) => {
@@ -436,7 +447,11 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
           if (free(q, [...others, ...own])) hit = { q, wires: [] };
         }
     }
-    if (!hit) throw new Error(`${spec.id}/${opts.variant}: no room for the label "${rt.e.label}" (${rt.e.from} → ${rt.e.to})`);
+    if (!hit) {
+      // on a phone a margin wire may have no room for its words: the step badge and the page text carry them
+      if (opts.variant === 'narrow') continue;
+      throw new Error(`${spec.id}/${opts.variant}: no room for the label "${rt.e.label}" (${rt.e.from} → ${rt.e.to})`);
+    }
     const q = hit.q;
     placed.push(q);
     labels.push({ rt, rect: q, text: rt.e.label });
@@ -472,7 +487,11 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     const { g, box, label } = gb;
     const kind = g.kind ?? 'group';
     const st = g.accent ? ` style="--an-accent:${g.accent}"` : '';
-    out.push(`<g class="an-group an-group-${kind}" data-group="${g.id}"${st}>`);
+    const deep = (id: string): string[] => {
+      const gg = groups.get(id)?.g;
+      return gg ? gg.members.flatMap(deep) : [id];
+    };
+    out.push(`<g class="an-group an-group-${kind}" data-group="${g.id}" data-members="${deep(g.id).join(' ')}"${st}>`);
     out.push(`<rect class="an-group-box" x="${r(box.x)}" y="${r(box.y)}" width="${r(box.w)}" height="${r(box.h)}" rx="${kind === 'group' ? 10 : 16}"/>`);
     if (kind === 'boundary' || kind === 'platform') {
       if (g.tagLogo) {
