@@ -22,6 +22,7 @@ const sha = REGISTRY.source.sha === 'local' ? 'local' : REGISTRY.source.sha.slic
   <PageHero title={p.heroTitle} lead={p.heroLead} />
   <section class="band" aria-labelledby="groups-h">
     <div class="wrap">
+      <p class="more"><a href={p.systemLink.href}>{p.systemLink.label} <span class="dir-icon" aria-hidden="true">→</span></a></p>
       <h2 id="groups-h" class="visually-hidden">{p.title}</h2>
       <div class="groups">
         {p.groups.map((g) => (

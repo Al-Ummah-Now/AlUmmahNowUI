@@ -1,0 +1,22 @@
+---
+/**
+ * A vendored icon placed inside a diagram's <svg>: the brand's own vector embedded as a nested
+ * <svg>, scaled only (docs/ICONS.md). Vendor marks are coloured by the .icv-<vendor> classes in
+ * site.css; Lucide glyphs follow the text colour.
+ */
+import { iconParts, type IconId } from '../../lib/icons.ts';
+
+interface Props {
+  id: IconId;
+  x: number;
+  y: number;
+  size?: number;
+}
+const { id, x, y, size = 44 } = Astro.props;
+const { viewBox, inner, w, h } = await iconParts(id);
+const vendor = id.split('/')[0];
+const scale = size / Math.max(w, h);
+const iw = w * scale;
+const ih = h * scale;
+---
+<svg class={`icv icv-${vendor}`} x={x - iw / 2} y={y} width={iw} height={ih} viewBox={viewBox} overflow="visible" set:html={inner} />

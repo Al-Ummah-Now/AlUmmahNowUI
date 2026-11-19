@@ -19,6 +19,7 @@ const src = (links: { label: string; href: string }[]) => ({ links, label: t.com
   <PageHero title={p.heroTitle} lead={p.heroLead} />
   <section class="band band-street" aria-labelledby="pipeline-h">
     <div class="wrap">
+      <p class="more"><a href={p.deepLink.href}>{p.deepLink.label} <span class="dir-icon" aria-hidden="true">→</span></a></p>
       <h2 id="pipeline-h" class="h2">{p.pipelineTitle}</h2>
       <Street steps={p.pipeline} label={p.pipelineLabel} />
       <Sources {...src(p.pipelineSources)} />

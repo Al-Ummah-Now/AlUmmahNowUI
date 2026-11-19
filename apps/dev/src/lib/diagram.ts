@@ -9,6 +9,14 @@
  */
 
 export type Tone = 'plain' | 'client' | 'external' | 'store' | 'queue' | 'accent' | 'ai';
+/** Small icon drawn at the inline start of a node (see Diagram.astro; strokes take theme tokens). */
+export type IconKind =
+  | 'person' | 'browser' | 'device' | 'cloud' | 'shield' | 'worker' | 'film' | 'gear' | 'chart' | 'pulse'
+  | 'db' | 'kv' | 'bucket' | 'queue' | 'do' | 'globe' | 'book' | 'ai' | 'mail' | 'bell' | 'play' | 'upload' | 'link' | 'lock' | 'container' | 'search';
+/** A node's silhouette: box (default), cylinder (databases), pipe (queues). */
+export type NodeShape = 'box' | 'cylinder' | 'pipe';
+/** Zone tint family: each gets its own header-band tint from the tokens (site.css). */
+export type ZoneTone = 'apps' | 'edge' | 'clients' | 'async' | 'data' | 'providers' | 'obs' | 'ai' | 'default';
 
 export interface DiagramNode {
   kind: 'node';
@@ -22,6 +30,8 @@ export interface DiagramNode {
   /** Smaller lines under the title. */
   sub?: string[];
   tone?: Tone;
+  icon?: IconKind;
+  shape?: NodeShape;
 }
 
 export interface DiagramZone {
@@ -32,6 +42,7 @@ export interface DiagramZone {
   w: number;
   h: number;
   label: string;
+  tone?: ZoneTone;
 }
 
 export interface DiagramEdge {
@@ -40,9 +51,11 @@ export interface DiagramEdge {
   /** Start point (logical LTR). For elbows, `via` holds the intermediate corners, start excluded. */
   from: [number, number];
   to: [number, number];
-  /** Corner points between from and to; empty for a straight line. */
+  /** Corner points between from and to; empty for a straight line. Orthogonal only, please. */
   via?: [number, number][];
   label?: string;
+  /** Where the label chip sits; defaults to the middle of the longest segment. */
+  labelAt?: [number, number];
   dashed?: boolean;
 }
 
@@ -71,19 +84,35 @@ export function edgePath(spec: { width: number }, rtl: boolean, edge: DiagramEdg
   return points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'} ${mx(x)} ${y}`).join(' ');
 }
 
-/** Where an edge's label sits: the middle of its longest segment, and that segment's midpoint x. */
-export function edgeLabelAt(edge: DiagramEdge): { x: number; y: number } {
+/** Every orthogonal segment of an edge, as pairs of points. */
+export function edgeSegments(edge: DiagramEdge): [number, number, number, number][] {
   const points: [number, number][] = [edge.from, ...(edge.via ?? []), edge.to];
-  let best = { i: 0, len: -1 };
-  for (let i = 1; i < points.length; i++) {
-    const [x1, y1] = points[i - 1]!;
-    const [x2, y2] = points[i]!;
-    const len = Math.abs(x2 - x1) + Math.abs(y2 - y1);
-    if (len > best.len) best = { i, len };
+  const out: [number, number, number, number][] = [];
+  for (let i = 1; i < points.length; i++) out.push([...points[i - 1]!, ...points[i]!]);
+  return out;
+}
+
+/** Where an edge's label sits by default: the middle of its longest segment. */
+export function edgeLabelAt(edge: DiagramEdge): { x: number; y: number } {
+  let best: [number, number, number, number] | undefined;
+  let len = -1;
+  for (const seg of edgeSegments(edge)) {
+    const l = Math.abs(seg[2] - seg[0]) + Math.abs(seg[3] - seg[1]);
+    if (l > len) {
+      len = l;
+      best = seg;
+    }
   }
-  const [ax, ay] = points[best.i - 1]!;
-  const [bx, by] = points[best.i]!;
-  return { x: (ax + bx) / 2, y: (ay + by) / 2 };
+  const [x1, y1, x2, y2] = best!;
+  return { x: (x1 + x2) / 2, y: (y1 + y2) / 2 };
+}
+
+/** The chip a label occupies, for collision checks: centred on its anchor. */
+export function labelRect(text: string, at: { x: number; y: number }): { x: number; y: number; w: number; h: number } {
+  const lines = wrap(text, 22);
+  const w = Math.min(190, Math.max(...lines.map((l) => l.length)) * 6.2 + 16);
+  const h = lines.length * 13 + 4;
+  return { x: at.x - w / 2, y: at.y - h / 2 - 1, w, h };
 }
 
 /** Wrap a label into lines of at most `max` characters, on word boundaries. */

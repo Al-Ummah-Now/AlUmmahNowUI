@@ -243,7 +243,7 @@ test('the system design diagrams: titled, described, one visible variant per vie
       const narrow = page.locator('svg.dg-narrow');
       await expect(wide).toHaveCount(1);
       await expect(narrow).toHaveCount(1);
-      for (const dg of await [wide, narrow]) {
+      for (const dg of [wide, narrow]) {
         await expect(dg).toHaveAttribute('role', 'img');
         await expect(dg.locator('title')).toHaveText(/\S/);
         await expect(dg.locator('desc')).toHaveText(/\S/);
@@ -263,11 +263,13 @@ test('the system design diagrams: titled, described, one visible variant per vie
   }
 });
 
-test('the system design hub links into the pipeline page in the same language', async ({ page }) => {
-  // the copy holds a relative href; what matters is where it resolves from each hub
-  await page.goto('/en/system-design/');
-  expect(await page.locator('.dg-next a').evaluate((a) => new URL(a.href).pathname)).toBe('/en/system-design/video-pipeline/');
-  await page.goto('/ar/system-design/');
-  expect(await page.locator('.dg-next a').evaluate((a) => new URL(a.href).pathname)).toBe('/ar/system-design/video-pipeline/');
-  await expect(page.locator('.dg-next a')).toContainText('مسار المرئيات');
+test('the system design hub indexes every subpage, in both languages', async ({ page }) => {
+  for (const locale of LOCALES) {
+    await page.goto(pagePath(locale, 'system-design'));
+    const hrefs = await page.locator('.sd-index a').evaluateAll((as) => as.map((a) => new URL((a as HTMLAnchorElement).href).pathname));
+    expect(hrefs.length).toBeGreaterThan(10);
+    expect(hrefs[0]).toBe(pagePath(locale, 'system-design/video-pipeline'));
+    expect(hrefs).toContain(pagePath(locale, 'system-design/release'));
+    for (const locale2 of LOCALES) for (const h of hrefs) expect(h).toContain(`/${locale2}/`.replace(`/${locale2}/`, `/${locale}/`));
+  }
 });

@@ -34,3 +34,4 @@ apps/dev/public/feature-registry.json
 # apps/dev review screenshots (npm run screenshots)
 screenshots/
 .sd-shots/
+apps/dev/docs/style-samples/

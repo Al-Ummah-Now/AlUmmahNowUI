@@ -1,0 +1,37 @@
+---
+import SystemDesignPage from '../../../../components/SystemDesignPage.astro';
+import { strings } from '../../../../i18n';
+import { dir, type Locale } from '../../../../lib/pages';
+import { localePaths } from '../../../../lib/static-paths';
+import { deliveryNarrow, deliveryWide } from '../../../../lib/diagrams/delivery.ts';
+import SketchExplainer from '../../../../components/diagrams/SketchExplainer.astro';
+
+export const getStaticPaths = localePaths;
+const locale = Astro.params.lang as Locale;
+const t = strings(locale);
+const block = t.systemDesignPages.deliveryCaching;
+const labels = block.diagram;
+const rtl = dir(locale) === 'rtl';
+const sk = t.showcase.sketch;
+---
+<SystemDesignPage
+  locale={locale}
+  slug="system-design/delivery-caching"
+  t={t}
+  block={block}
+  wide={deliveryWide(labels)}
+  narrow={deliveryNarrow(labels)}
+  rtl={rtl}
+>
+  <section class="band" slot="visual" aria-labelledby="sketch-h">
+    <div class="wrap">
+      <h2 id="sketch-h" class="visually-hidden">{sk.title}</h2>
+      <figure class="dg-figure">
+        <div class="panel">
+          <div class="dg-wide-only"><SketchExplainer title={sk.title} desc={sk.desc} rtl={rtl} labels={sk} variant="wide" /></div>
+          <div class="dg-narrow-only"><SketchExplainer title={sk.title} desc={sk.desc} rtl={rtl} labels={sk} variant="narrow" /></div>
+        </div>
+      </figure>
+    </div>
+  </section>
+</SystemDesignPage>

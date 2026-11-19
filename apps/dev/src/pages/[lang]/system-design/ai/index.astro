@@ -1,0 +1,23 @@
+---
+import SystemDesignPage from '../../../../components/SystemDesignPage.astro';
+import { strings } from '../../../../i18n';
+import { dir, type Locale } from '../../../../lib/pages';
+import { localePaths } from '../../../../lib/static-paths';
+import { aiNarrow, aiWide } from '../../../../lib/diagrams/ai.ts';
+
+export const getStaticPaths = localePaths;
+const locale = Astro.params.lang as Locale;
+const t = strings(locale);
+const block = t.systemDesignPages.ai;
+const labels = block.diagram;
+const rtl = dir(locale) === 'rtl';
+---
+<SystemDesignPage
+  locale={locale}
+  slug="system-design/ai"
+  t={t}
+  block={block}
+  wide={aiWide(labels)}
+  narrow={aiNarrow(labels)}
+  rtl={rtl}
+/>
