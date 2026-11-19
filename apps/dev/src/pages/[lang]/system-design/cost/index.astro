@@ -4,6 +4,7 @@ import { strings } from '../../../../i18n';
 import { dir, type Locale } from '../../../../lib/pages';
 import { localePaths } from '../../../../lib/static-paths';
 import { costNarrow, costWide } from '../../../../lib/diagrams/cost.ts';
+import ArchFigure from '../../../../components/ArchFigure.astro';
 
 export const getStaticPaths = localePaths;
 const locale = Astro.params.lang as Locale;
@@ -20,4 +21,10 @@ const rtl = dir(locale) === 'rtl';
   wide={costWide(labels)}
   narrow={costNarrow(labels)}
   rtl={rtl}
-/>
+>
+  <section slot="visual" class="band" aria-labelledby="costs-h">
+    <div class="wrap">
+      <ArchFigure id="costs" locale={locale} title={t.diagrams.costs.title} headingId="costs-h" costs />
+    </div>
+  </section>
+</SystemDesignPage>

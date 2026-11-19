@@ -58,13 +58,15 @@ for (const slug of PAGES)
         await page.evaluate(() => {
           for (const s of document.querySelectorAll<SVGSVGElement>('svg.an')) {
             s.pauseAnimations();
-            s.setCurrentTime(2.2);
+            // a diagram with cost meters is shown at the end of its cycle (every total counted)
+            s.setCurrentTime(s.querySelector('[data-meter]') ? Number(s.dataset.cycle) - 0.25 : 2.2);
           }
           for (const a of document.getAnimations()) {
             a.pause();
             a.currentTime = 400;
           }
         });
+        await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => ok(null)))));
         const found = await page.evaluate(gateInBrowser);
         for (const d of found) defects.push(`${name(slug)} ${lang} ${mode} ${w}: ${d}`);
         const tag = `${name(slug)}-${mode}-${w}-${lang}`;
@@ -89,7 +91,13 @@ for (const slug of PAGES)
 
 if (RECORD) {
   // one recording per animated diagram: dark, desktop, English; plus the pipeline on a phone
-  const jobs: { slug: string; id: string; w: keyof typeof WIDTHS; secs: number }[] = [
+  /** what to film: the svg, the whole figure (with the comparison bars), or one lane group */
+  type Target = 'svg' | 'figure' | { group: string };
+  const jobs: { slug: string; id: string; w: keyof typeof WIDTHS; secs: number; target?: Target; name?: string }[] = [
+    { slug: 'video-pipeline/', id: 'costs', w: 'desktop', secs: 0, target: 'figure', name: 'costs-both' },
+    { slug: 'video-pipeline/', id: 'costs', w: 'desktop', secs: 0, target: { group: 'laneBunny' }, name: 'costs-bunny' },
+    { slug: 'video-pipeline/', id: 'costs', w: 'desktop', secs: 0, target: { group: 'laneR2' }, name: 'costs-r2' },
+    { slug: 'video-pipeline/', id: 'costs', w: 'phone', secs: 0, target: 'figure', name: 'costs-both' },
     { slug: '', id: 'hero', w: 'desktop', secs: 9 },
     { slug: '', id: 'overview', w: 'desktop', secs: 9 },
     { slug: 'video-pipeline/', id: 'pipeline', w: 'desktop', secs: 0 },
@@ -107,7 +115,11 @@ if (RECORD) {
       const svg = page.locator(`svg.an[data-diagram="${j.id}"]:visible`);
       await svg.scrollIntoViewIfNeeded();
       // a numbered flow records exactly one cycle, so the clip loops seamlessly
-      const secs = j.secs || (await svg.evaluate((s) => Number(s.querySelector('.an-lit animate')?.getAttribute('dur')?.replace('s', '') ?? 10)));
+      const secs = j.secs || (await svg.evaluate((s) => Number((s as SVGSVGElement).dataset.cycle ?? 10)));
+      const target = j.target ?? 'svg';
+      const fig = page.locator('.an-figure').filter({ has: page.locator(`svg.an[data-diagram="${j.id}"]`) });
+      if (target === 'figure') await fig.scrollIntoViewIfNeeded();
+      const clip = typeof target === 'object' ? await svg.locator(`[data-group="${target.group}"]`).boundingBox() : null;
       const fps = 25;
       const dir = join(out, `rec-${j.id}-${j.w}-${mode}`);
       rmSync(dir, { recursive: true, force: true });
@@ -122,9 +134,13 @@ if (RECORD) {
             a.currentTime = t * 1000;
           }
         }, i / fps);
-        await svg.screenshot({ path: join(dir, `f${String(i).padStart(4, '0')}.png`) });
+        await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => ok(null)))));
+        const file = join(dir, `f${String(i).padStart(4, '0')}.png`);
+        if (target === 'figure') await fig.screenshot({ path: file });
+        else if (clip) await page.screenshot({ path: file, clip: { x: clip.x - 14, y: clip.y - 24, width: clip.width + 28, height: clip.height + 38 } });
+        else await svg.screenshot({ path: file });
       }
-      const stem = join(out, `${j.id}-${mode}-${j.w}-en`);
+      const stem = join(out, `${j.name ?? j.id}-${mode}-${j.w}-en`);
       execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', String(fps), '-i', join(dir, 'f%04d.png'), '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '18', '-movflags', '+faststart', `${stem}.mp4`]);
       const gw = j.w === 'phone' ? 480 : 1100;
       execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', String(fps), '-i', join(dir, 'f%04d.png'), '-vf', `fps=20,scale=${gw}:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=192:stats_mode=diff[p];[b][p]paletteuse=dither=sierra2_4a:diff_mode=rectangle`, '-loop', '0', `${stem}.gif`]);

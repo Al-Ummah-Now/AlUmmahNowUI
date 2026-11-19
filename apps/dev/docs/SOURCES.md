@@ -164,6 +164,38 @@ configs. Cited only where marked "historic analysis".
 - AI spend bounded by daily neuron caps (above, §8).
 - Workers static-assets requests not billed as Worker invocations — `apps/dev/wrangler.jsonc:1-3`.
 
+## 9a. Pipeline costs, stage by stage (cost diagram on Video pipeline and Cost; AI meters on the overview and pipeline)
+
+Owner request 2026-11-19: show each stage's rate and the running cost of both pipelines. Code:
+`apps/dev/src/lib/arch/cost.ts` (every constant carries its source); tests `apps/dev/tests/cost.test.ts`
+pin it to the sources below. Read at AlUmmahNow origin/main and AlUmmahNowWiki origin/main on 2026-11-19.
+
+| Rate | Value | Source |
+|---|---|---|
+| Container `standard-4` per instance-second | 4 × $0.00002 (vCPU) + 12 × $0.0000025 (GiB) + 20 × $0.00000007 (GB disk) = $0.0001114 → about $0.40 per busy slot-hour | `AUN apps/api-videos/src/lib/media/costs.ts` `PRICES.containerInstanceSecond`; `apps/admin-api/src/lib/opsCost.ts:23`; `docs/media-delivery/RUNBOOK.md` ("about $0.40 an hour … same as lib/media/costs.ts") |
+| Container-seconds per video-minute | 45 (≈ 0.75× real time) | `AUN apps/admin-web/src/app/(protected)/delivery/metrics.ts` `ASSUMED`; `docs/media-delivery/R2-DELIVERY-PLAN.md` "Cost model" |
+| R2 storage / Class A / Class B / egress | $0.015 per GB-month · $4.50 per million · $0.36 per million · $0 | `lib/media/costs.ts` `PRICES`; `apps/cost-monitor/src/pricing.ts`; R2-DELIVERY-PLAN.md "Cost model" |
+| Stored ladder, writes, reads, delivered | 0.04 GB and 40 writes per video-minute; 72 reads and 0.9 GB per viewer-hour | admin `delivery/metrics.ts` `ASSUMED` (same as the plan) |
+| Bunny storage / delivery / encoding | $0.01 per GB-month per region × 2 regions · $0.01 per GB ($0.005 on the volume network) · encoding free | `lib/media/costs.ts` `PRICES`; admin `delivery/metrics.ts` `PRICES`; R2-DELIVERY-PLAN.md "Cost model" |
+| Workers requests · Queues operations · Durable Object requests | $0.30 · $0.40 · $0.15 per million (Queues billed 3 operations per message) | `AUN apps/cost-monitor/src/pricing.ts:10-27,67` |
+| Workers requests included | 10M a month (account allowance) | `AUN docs/cost-monitoring/README.md:323` |
+| Workers AI | $0.011 per 1,000 neurons; first 10,000 neurons a day free | `AUN apps/processor/src/moderation/pricing.ts` (`USD_PER_NEURON`, citing developers.cloudflare.com/workers-ai/platform/pricing, checked 2026-11-08); admin-web `i18n/messages/en.ts:554` |
+| Moderation scan neurons | Gemma 4 translate + one Llama Guard 3 run + Gemma 4 extensions, prompt sizes 450 / 700, outputs 20 / 300: ≈ 83 neurons for the example's 300-token title and description | `AUN apps/processor/src/moderation/budget.ts:15-31` + `pricing.ts` (neurons per M tokens) |
+| Whisper transcription | $0.000513 per audio minute (`@cf/openai/whisper-large-v3-turbo`) | `pricing.ts`; `WIKI epics/AUN-VIDEO-REVIEW-pre-publication-review.md:93` |
+| Pre-publication review | about $0.075 per video-hour (frames, stage 2, Whisper, text) — rolling out | `WIKI epics/AUN-VIDEO-REVIEW-pre-publication-review.md` "Cost and latency" (lines 144-156) |
+| Quran detection | no AI call: the transcript is matched in code against the synced Quran index | `AUN apps/processor/src/quran/review-matcher.ts:1-9` |
+| Thumbnails | R2 path: two FFmpeg stills inside the same container job (no extra line); Bunny makes its own | `AUN apps/media/container/ladder.mjs:150-151`, `server.mjs:524-525` |
+| Originals kept | $0.015 per GB-month, 30–90 days | R2 price above; api-videos vars `ORIGINALS_RETENTION_DAYS`/`ORIGINALS_MAX_DAYS` |
+| Transcoder reads our original first | Bunny's copy only if ours is unreadable | `AUN apps/media/src/transcoder.ts:58-69` |
+
+Examples (not platform figures): one 10-minute video watched in full 1,000 times and kept a month; and
+the admin cost page's **small** (20 h uploaded, 2,000 viewer-hours) and **medium** (200 h, 50,000
+viewer-hours) presets, storage shown for the month after 12 months of uploads — `delivery/metrics.ts`
+`SCALES` and `projectMonthlyCost`. **Unknown, left out of totals:** the cost of keeping originals (the
+model doesn't track upload file sizes), and per-upload lines at scale (moderation scans, queue and slot
+requests: the presets give hours, not uploads). The site never quotes `lib/media/costs.ts`'s account or
+zone ids.
+
 ## 10. Scaling (`/{lang}/system-design/scaling/`)
 
 - Workers/Queues/DO scale automatically per request/message; the platform's own scaling work is about *correctness under many copies at once* — `AUN docs/architecture/SCALABILITY-AUDIT.md:1-12`.

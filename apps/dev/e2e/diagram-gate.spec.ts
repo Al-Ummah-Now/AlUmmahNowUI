@@ -9,7 +9,7 @@ import { gateInBrowser } from './diagram-gate';
  */
 const PAGES = ['', 'video-pipeline/', 'delivery-caching/', 'data/', 'async/', 'realtime/', 'identity/', 'ai/', 'cost/', 'scaling/', 'clients/', 'release/'];
 /** Pages already drawn with src/lib/arch; each must show at least this many diagrams. */
-const MIN_DIAGRAMS: Record<string, number> = { '': 2, 'video-pipeline/': 2 };
+const MIN_DIAGRAMS: Record<string, number> = { '': 2, 'video-pipeline/': 3, 'cost/': 1 };
 
 for (const lang of ['en', 'ar'])
   for (const mode of ['light', 'dark'] as const)

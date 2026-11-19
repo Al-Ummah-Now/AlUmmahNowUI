@@ -19,7 +19,12 @@ const p = t.videoPipeline;
       <ArchFigure id="pipeline" locale={locale} title={p.logoFlow.title} lead={p.diagramLead} headingId="logoflow-h" />
     </div>
   </section>
-  <section class="band band-raised" aria-labelledby="sketch-h">
+  <section class="band band-raised" aria-labelledby="costs-h">
+    <div class="wrap">
+      <ArchFigure id="costs" locale={locale} title={t.diagrams.costs.title} headingId="costs-h" costs />
+    </div>
+  </section>
+  <section class="band" aria-labelledby="sketch-h">
     <div class="wrap">
       <ArchFigure id="sketch-play" locale={locale} title={t.diagrams.sketch.title} headingId="sketch-h" />
     </div>

@@ -31,7 +31,7 @@ interface PlatSpec {
   tag?: string;
   tagLogo?: { id: string; w: number; h: number };
   accent: string;
-  tone: 'cf' | 'plain' | 'bunny';
+  tone: 'cf' | 'plain' | 'bunny' | 'prov';
   dashed?: boolean;
 }
 type PSide = 'x0' | 'x1' | 'y0' | 'y1';
@@ -76,7 +76,7 @@ function sceneSpec(c: Copy, variant: string): SceneSpec {
           tone: 'cf',
         },
         { id: 'bunny', at: [330, 520], cols: 2, rows: 1, blocks: [b('stream', 'brand/bunny-stream', 34), b('bunnyCdn', 'brand/bunny-cdn')], label: p.bunny, tagLogo: logo, accent: '#f29b1d', tone: 'bunny' },
-        { id: 'providers', at: [1150, -250], cols: 1, rows: 3, blocks: [b('qf', 'lucide/book-open'), b('resend', 'simple-icons/resend'), b('github', 'simple-icons/github')], label: p.providers, accent: 'var(--an-boundary)', tone: 'plain' },
+        { id: 'providers', at: [1150, -250], cols: 1, rows: 3, blocks: [b('qf', 'lucide/book-open'), b('resend', 'simple-icons/resend'), b('github', 'simple-icons/github')], label: p.providers, accent: 'var(--an-boundary)', tone: 'prov' },
       ],
       pipes: [
         { id: 'req', from: ['people', 'x1', 66 / 532], to: ['cf', 'x0', 266 / 362], flow: 'request', label: c.wire.requests },
@@ -95,7 +95,7 @@ function sceneSpec(c: Copy, variant: string): SceneSpec {
       { id: 'cf', at: [260, 200], cols: 2, rows: 2, blocks: [b('cdn', 'cloudflare/cache'), b('workers', 'cloudflare/workers', 40), b('containers', 'cloudflare/containers', 36), b('ai', 'cloudflare/workers-ai')], label: p.cfCompute, tag: 'simple-icons/cloudflare', accent: '#f6821f', tone: 'cf' },
       { id: 'cfData', at: [640, 580], cols: 2, rows: 2, blocks: [b('r2', 'cloudflare/r2'), b('d1', 'cloudflare/d1'), b('kv', 'cloudflare/kv'), b('queues', 'cloudflare/queues')], label: p.cfData, tag: 'simple-icons/cloudflare', accent: '#f6821f', tone: 'cf' },
       { id: 'bunny', at: [1020, 960], cols: 2, rows: 1, blocks: [b('stream', 'brand/bunny-stream', 30), b('bunnyCdn', 'brand/bunny-cdn')], label: p.bunny, tagLogo: logo, accent: '#f29b1d', tone: 'bunny' },
-      { id: 'providers', at: [1330, 1240], cols: 3, rows: 1, blocks: [b('qf', 'lucide/book-open'), b('resend', 'simple-icons/resend'), b('github', 'simple-icons/github')], label: p.providers, accent: 'var(--an-boundary)', tone: 'plain' },
+      { id: 'providers', at: [1330, 1240], cols: 3, rows: 1, blocks: [b('qf', 'lucide/book-open'), b('resend', 'simple-icons/resend'), b('github', 'simple-icons/github')], label: p.providers, accent: 'var(--an-boundary)', tone: 'prov' },
     ],
     pipes: [
       { id: 'req', from: ['people', 'x1', 0.5], to: ['cf', 'y0', 250 / 282], flow: 'request', label: c.wire.requests },
@@ -105,6 +105,11 @@ function sceneSpec(c: Copy, variant: string): SceneSpec {
     ],
   };
 }
+
+/** The shape each component stands as (samples 4, 6, 9): stores are cylinders, edges and queues flat slabs, the transcoder a tower. */
+type Shape = 'cube' | 'cyl' | 'slab' | 'tower';
+const SHAPE: Record<string, Shape> = { r2: 'cyl', d1: 'cyl', kv: 'cyl', cdn: 'slab', queues: 'slab', bunnyCdn: 'slab', containers: 'tower' };
+const HEIGHT: Record<Shape, number> = { cube: 30, cyl: 34, slab: 12, tower: 58 };
 
 interface Plat extends PlatSpec {
   x: number;
@@ -151,6 +156,7 @@ export function renderIso(c: Copy, opts: { rtl: boolean; variant: string }): str
     s: number;
     h: number;
     tone: Plat['tone'];
+    shape: Shape;
   }
   const blocks: Blk[] = [];
   for (const p of plats)
@@ -158,7 +164,9 @@ export function renderIso(c: Copy, opts: { rtl: boolean; variant: string }): str
       if (!b) return;
       const col = i % p.cols;
       const row = Math.floor(i / p.cols);
-      blocks.push({ ...b, x: p.x + sc.pad + col * sc.step, y: p.y + sc.pad + row * sc.step, s: sc.size, h: b.h ?? 24, tone: p.tone });
+      const shape = SHAPE[b.id] ?? 'cube';
+      const h = p.tone === 'plain' ? 22 : HEIGHT[shape];
+      blocks.push({ ...b, x: p.x + sc.pad + col * sc.step, y: p.y + sc.pad + row * sc.step, s: shape === 'slab' ? sc.size * 1.15 : sc.size, h, tone: p.tone, shape });
     });
 
   // fit: every drawn point, the tiles above blocks, the labels under them, the tags
@@ -169,10 +177,10 @@ export function renderIso(c: Copy, opts: { rtl: boolean; variant: string }): str
     ys.push(q[1] - dy, q[1] + dy);
   };
   for (const p of plats) for (const q of [Q(p.x, p.y), Q(p.x + p.w, p.y), Q(p.x + p.w, p.y + p.d, -T), Q(p.x, p.y + p.d, -T)]) add(q, 0, 0);
-  const cardW = (b: BlockSpec) => 44 + textWidth(b.label, 13, true) + 14;
+  const pillW = (b: BlockSpec) => textWidth(b.label, 12.5, true) + 22;
   for (const b of blocks) {
     const tc = Q(b.x, b.y, b.h);
-    add([tc[0], tc[1] - 18 - 40], cardW(b) / 2 + 2, 0);
+    add([tc[0], tc[1] - 70], pillW(b) / 2 + 2, 0);
   }
   const tagW = (p: Plat) => (p.tagLogo ? p.tagLogo.w + 24 : textWidth(p.label, 13, true) + (p.tag ? 36 : 24));
   for (const p of plats) {
@@ -197,6 +205,8 @@ export function renderIso(c: Copy, opts: { rtl: boolean; variant: string }): str
   o.push(
     `<svg class="an an-iso" data-diagram="hero" data-variant="${opts.variant}" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-labelledby="${prefix}-t ${prefix}-d" style="--an-w:${W}px">`,
     `<title id="${prefix}-t">${esc(c.title)}</title><desc id="${prefix}-d">${esc(c.desc)}</desc><defs>${icons.map((i) => symbol(prefix, i)).join('')}`,
+    `<filter id="${prefix}-soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4"/></filter>`,
+    ...(['cf', 'bunny', 'prov', 'plain'] as const).map((t) => `<linearGradient id="${prefix}-cyl-${t}" class="an-tone-${t}" x1="0" x2="1" y1="0" y2="0"><stop offset="0" class="an-cyl-a"/><stop offset="0.55" class="an-cyl-b"/><stop offset="1" class="an-cyl-c"/></linearGradient>`),
     `<pattern id="${prefix}-grid" x="${r(ox % (2 * C * g))}" y="${r(oy % g)}" width="${r(2 * C * g)}" height="${g}" patternUnits="userSpaceOnUse"><path class="an-iso-gridline" d="M0 ${g / 2} L${r(C * g)} 0 L${r(2 * C * g)} ${g / 2} L${r(C * g)} ${g} Z"/></pattern>`,
     `</defs><rect class="an-canvas" width="${W}" height="${H}" rx="18"/><rect class="an-iso-floor" width="${W}" height="${H}" rx="18" fill="url(#${prefix}-grid)"/>`,
   );
@@ -247,37 +257,66 @@ export function renderIso(c: Copy, opts: { rtl: boolean; variant: string }): str
   }
   o.push('</g>');
 
-  // blocks, back to front: block + floating icon tile + label
+  // blocks, back to front: a product-coloured shape, its icon on the top face, a name pill above
   o.push('<g class="an-nodes">');
+  const RY = Math.SQRT2 * SN;
+  const RX = Math.SQRT2 * C;
   for (const b of [...blocks].sort((a, bb) => a.x + a.y - (bb.x + bb.y))) {
     const s = b.s;
     const x0 = b.x - s / 2;
     const y0 = b.y - s / 2;
-    const top = [P(x0, y0, b.h), P(x0 + s, y0, b.h), P(x0 + s, y0 + s, b.h), P(x0, y0 + s, b.h)];
-    const front = [P(x0, y0 + s, b.h), P(x0 + s, y0 + s, b.h), P(x0 + s, y0 + s), P(x0, y0 + s)];
-    const side = [P(x0 + s, y0, b.h), P(x0 + s, y0 + s, b.h), P(x0 + s, y0 + s), P(x0 + s, y0)];
-    // keep the light from the upper left in both directions
-    const [lf, rf] = opts.rtl ? [side, front] : [front, side];
     const tc = P(b.x, b.y, b.h);
-    const cw = cardW(b);
-    const ch = 40;
-    const cx0 = tc[0] - cw / 2;
-    const cy0 = tc[1] - ch - 18;
-    const all = [...top, ...lf, ...rf];
-    const bx0 = Math.min(...all.map((q) => q[0]), cx0) - 3;
-    const bx1 = Math.max(...all.map((q) => q[0]), cx0 + cw) + 3;
-    const by0 = cy0 - 3;
-    const by1 = Math.max(...all.map((q) => q[1])) + 3;
-    const iconX = opts.rtl ? cx0 + cw - 6 - 28 : cx0 + 6;
-    const t0 = opts.rtl ? cx0 + 8 : cx0 + 40;
-    const t1 = opts.rtl ? cx0 + cw - 40 : cx0 + cw - 8;
-    o.push(`<g class="an-node an-iso-block an-tone-${b.tone}" data-node="${b.id}">`);
+    const base = P(b.x, b.y, 0);
+    const shapes: string[] = [];
+    let pts2: [number, number][];
+    // soft ground shadow, cast away from the light (upper left; upper right in Arabic)
+    const sh = [P(x0, y0), P(x0 + s, y0), P(x0 + s, y0 + s), P(x0, y0 + s)].map(([x, y]) => [x + (opts.rtl ? -8 : 8), y + 6] as [number, number]);
+    shapes.push(`<polygon class="an-iso-shadow" points="${pts(sh)}" filter="url(#${prefix}-soft)"/>`);
+    if (b.shape === 'cyl') {
+      const R = s / 2;
+      const rx = R * RX;
+      const ry = R * RY;
+      shapes.push(
+        `<path class="an-iso-cyl" fill="url(#${prefix}-cyl-${b.tone})" d="M${r(tc[0] - rx)} ${r(tc[1])} L${r(base[0] - rx)} ${r(base[1])} A${r(rx)} ${r(ry)} 0 0 0 ${r(base[0] + rx)} ${r(base[1])} L${r(tc[0] + rx)} ${r(tc[1])} Z"/>`,
+        `<path class="an-iso-band" d="M${r(tc[0] - rx)} ${r(tc[1] + b.h * 0.45)} A${r(rx)} ${r(ry)} 0 0 0 ${r(tc[0] + rx)} ${r(tc[1] + b.h * 0.45)}"/>`,
+        `<ellipse class="an-iso-face-t" cx="${r(tc[0])}" cy="${r(tc[1])}" rx="${r(rx)}" ry="${r(ry)}"/>`,
+      );
+      pts2 = [[tc[0] - rx, tc[1] - ry], [tc[0] + rx, base[1] + ry]];
+    } else {
+      const top = [P(x0, y0, b.h), P(x0 + s, y0, b.h), P(x0 + s, y0 + s, b.h), P(x0, y0 + s, b.h)];
+      const front = [P(x0, y0 + s, b.h), P(x0 + s, y0 + s, b.h), P(x0 + s, y0 + s), P(x0, y0 + s)];
+      const side = [P(x0 + s, y0, b.h), P(x0 + s, y0 + s, b.h), P(x0 + s, y0 + s), P(x0 + s, y0)];
+      const [lf, rf] = opts.rtl ? [side, front] : [front, side];
+      shapes.push(`<polygon class="an-iso-face-l" points="${pts(lf)}"/><polygon class="an-iso-face-r" points="${pts(rf)}"/><polygon class="an-iso-face-t" points="${pts(top)}"/>`);
+      // a lit rim along the two top edges facing the light
+      const rim = opts.rtl ? [top[1]!, top[0]!, top[3]!] : [top[3]!, top[0]!, top[1]!];
+      shapes.push(`<polyline class="an-iso-rim" points="${pts(rim)}"/>`);
+      if (b.shape === 'tower') {
+        // a seam halfway up: the stacked look of a container rack
+        const mid = [P(x0, y0 + s, b.h / 2), P(x0 + s, y0 + s, b.h / 2), P(x0 + s, y0, b.h / 2)];
+        shapes.push(`<polyline class="an-iso-seam" points="${pts(opts.rtl ? mid.map(([x, y]) => [x, y] as [number, number]) : mid)}"/>`);
+      }
+      pts2 = [...top, ...lf, ...rf];
+    }
+    const IS = b.shape === 'slab' ? 30 : 30;
+    const ix = tc[0] - IS / 2;
+    const iy = tc[1] - IS + 4;
+    const pw = pillW(b);
+    const px0 = tc[0] - pw / 2;
+    const py0 = iy - 10 - 22;
+    const xs = pts2.map((q) => q[0]);
+    const ys = pts2.map((q) => q[1]);
+    const bx0 = Math.min(...xs, px0, ix) - 3;
+    const bx1 = Math.max(...xs, px0 + pw, ix + IS) + 3;
+    const by0 = py0 - 3;
+    const by1 = Math.max(...ys) + 3;
+    o.push(`<g class="an-node an-iso-block an-tone-${b.tone} an-shape-${b.shape}" data-node="${b.id}">`);
     o.push(`<rect data-box class="an-iso-hit" x="${r(bx0)}" y="${r(by0)}" width="${r(bx1 - bx0)}" height="${r(by1 - by0)}"/>`);
-    o.push(`<polygon class="an-iso-face-l" points="${pts(lf)}"/><polygon class="an-iso-face-r" points="${pts(rf)}"/><polygon class="an-iso-face-t" points="${pts(top)}"/>`);
-    o.push(`<path class="an-iso-stem" d="M${r(tc[0])} ${r(cy0 + ch)} L${r(tc[0])} ${r(tc[1])}"/>`);
-    o.push(`<rect class="an-iso-tile" x="${r(cx0)}" y="${r(cy0)}" width="${r(cw)}" height="${ch}" rx="10"/>`);
-    o.push(useIcon(prefix, b.icon, iconX, cy0 + 6, 28));
-    o.push(`<text class="an-name" x="${r((t0 + t1) / 2)}" y="${r(cy0 + 25)}" text-anchor="middle" style="font-size:13px"${hasArabic(b.label) ? ' direction="rtl"' : ''}>${esc(b.label)}</text>`);
+    o.push(...shapes);
+    o.push(`<ellipse class="an-iso-icon-shadow" cx="${r(tc[0] + (opts.rtl ? -2 : 2))}" cy="${r(tc[1] + 3)}" rx="${r(IS * 0.42)}" ry="${r(IS * 0.16)}"/>`);
+    o.push(useIcon(prefix, b.icon, ix, iy, IS));
+    o.push(`<rect class="an-iso-pill" x="${r(px0)}" y="${r(py0)}" width="${r(pw)}" height="22" rx="11"/>`);
+    o.push(`<text class="an-name" x="${r(tc[0])}" y="${r(py0 + 15.5)}" text-anchor="middle" style="font-size:12.5px"${hasArabic(b.label) ? ' direction="rtl"' : ''}>${esc(b.label)}</text>`);
     o.push('</g>');
   }
   o.push('</g>');

@@ -5,12 +5,13 @@
 import { renderArch } from './arch.ts';
 import { overview } from './specs/overview.ts';
 import { pipeline } from './specs/pipeline.ts';
+import { costs } from './specs/costs.ts';
 import { renderIso } from './iso.ts';
 import { renderSketch } from './sketch.ts';
 import { diagramsEn } from '../../i18n/diagrams.en.ts';
 import { diagramsAr } from '../../i18n/diagrams.ar.ts';
 
-export type DiagramId = 'overview' | 'pipeline' | 'hero' | 'sketch-play';
+export type DiagramId = 'overview' | 'pipeline' | 'hero' | 'sketch-play' | 'costs';
 
 export interface Rendered {
   wide: string;
@@ -22,14 +23,19 @@ export interface Rendered {
 export function diagram(id: DiagramId, locale: 'en' | 'ar'): Rendered {
   const c = locale === 'ar' ? diagramsAr : diagramsEn;
   const rtl = locale === 'ar';
+  const ro = (variant: string) => ({ rtl, variant, locale, scenario: 'one', unknown: c.costs.unknown });
   switch (id) {
     case 'overview': {
-      const o = overview(c.overview);
-      return { wide: renderArch(o.spec, o.wide, { rtl, variant: 'wide' }), narrow: renderArch(o.spec, o.narrow, { rtl, variant: 'narrow' }), flows: flowsIn(o.spec.edges, o.narrow.edges), steps: false };
+      const o = overview(c.overview, c.costs, locale);
+      return { wide: renderArch(o.spec, o.wide, ro('wide')), narrow: renderArch(o.spec, o.narrow, ro('narrow')), flows: flowsIn(o.spec.edges, o.narrow.edges), steps: false };
     }
     case 'pipeline': {
-      const o = pipeline(c.pipeline);
-      return { wide: renderArch(o.spec, o.wide, { rtl, variant: 'wide' }), narrow: renderArch(o.spec, o.narrow, { rtl, variant: 'narrow' }), flows: flowsIn(o.spec.edges, o.narrow.edges), steps: true };
+      const o = pipeline(c.pipeline, c.costs, locale);
+      return { wide: renderArch(o.spec, o.wide, ro('wide')), narrow: renderArch(o.spec, o.narrow, ro('narrow')), flows: flowsIn(o.spec.edges, o.narrow.edges), steps: true };
+    }
+    case 'costs': {
+      const o = costs(c.costs, locale);
+      return { wide: renderArch(o.spec, o.wide, ro('wide')), narrow: renderArch(o.spec, o.narrow, ro('narrow')), flows: flowsIn(o.spec.edges, o.narrow.edges), steps: true };
     }
     case 'hero':
       return { wide: renderIso(c.hero, { rtl, variant: 'wide' }), narrow: renderIso(c.hero, { rtl, variant: 'narrow' }), flows: ['request', 'media', 'delivery'], steps: false };
@@ -40,4 +46,4 @@ export function diagram(id: DiagramId, locale: 'en' | 'ar'): Rendered {
 
 const flowsIn = (...lists: ({ flow: string }[] | undefined)[]) => [...new Set(lists.flatMap((l) => (l ?? []).map((e) => e.flow)))];
 
-export const DIAGRAMS: DiagramId[] = ['hero', 'overview', 'pipeline', 'sketch-play'];
+export const DIAGRAMS: DiagramId[] = ['hero', 'overview', 'pipeline', 'sketch-play', 'costs'];
