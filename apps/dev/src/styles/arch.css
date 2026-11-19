@@ -25,9 +25,11 @@
   --an-mono: #000000;
   --an-glow: 0;
   display: block;
-  width: 100%;
+  /* the width attribute is the drawing's natural size; it shrinks to fit, never grows (no inline
+     styles: the site's CSP is style-src 'self') */
+  width: auto;
+  max-width: 100%;
   height: auto;
-  max-width: var(--an-w);
   margin-inline: auto;
   direction: ltr;
   font-family: var(--font-sans);
@@ -729,20 +731,6 @@ html[data-mode='dark'] .an-sketch {
   align-items: center;
   gap: 12px;
 }
-.an-compare-bar {
-  height: 14px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--line) 60%, transparent);
-  overflow: hidden;
-}
-.an-compare-bar span {
-  display: block;
-  height: 100%;
-  width: var(--fill, 0%);
-  border-radius: inherit;
-  background: var(--bar);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--bar) 60%, transparent);
-}
 .an-compare-bunny {
   --bar: #f29b1d;
 }
@@ -884,4 +872,48 @@ html[data-mode='dark'] .an-iso .an-iso-shadow {
   stroke: color-mix(in srgb, var(--r, #9fb4c8) 60%, transparent);
   stroke-width: 1;
   filter: drop-shadow(0 2px 4px rgb(16 40 70 / 0.18));
+}
+
+/* platform outline colours (lib/arch/icons.ts accentClass) */
+.an .an-accent-bunny {
+  --an-accent: #f29b1d;
+}
+.an .an-accent-cf {
+  --an-accent: #f6821f;
+}
+.an .an-accent-blue {
+  --an-accent: var(--an-boundary);
+}
+.an .an-accent-ink {
+  --an-accent: var(--an-ink);
+}
+/* legend swatches by flow */
+.an-legend .an-sw-f-request { --sw: var(--sw-request); }
+.an-legend .an-sw-f-media { --sw: var(--sw-media); }
+.an-legend .an-sw-f-delivery { --sw: var(--sw-delivery); }
+.an-legend .an-sw-f-async { --sw: var(--sw-async); }
+.an-legend .an-sw-f-control { --sw: var(--sw-control); }
+/* comparison bars are <progress>, so their length needs no inline style */
+.an-compare-bar {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 14px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--line) 60%, transparent);
+  overflow: hidden;
+  color: var(--bar);
+}
+.an-compare-bar::-webkit-progress-bar {
+  background: color-mix(in srgb, var(--line) 60%, transparent);
+  border-radius: 999px;
+}
+.an-compare-bar::-webkit-progress-value {
+  background: var(--bar);
+  border-radius: 999px;
+}
+.an-compare-bar::-moz-progress-bar {
+  background: var(--bar);
+  border-radius: 999px;
 }

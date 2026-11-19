@@ -190,7 +190,7 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
   const icons = [...new Set([...spec.nodes.map((n) => n.icon), ...foot.map((f) => f.icon)])];
   const o: string[] = [];
   o.push(
-    `<svg class="an an-sketch" data-diagram="${spec.id}" data-variant="${opts.variant}" viewBox="0 0 ${W} ${Hc}" width="${W}" height="${Hc}" role="img" aria-labelledby="${prefix}-t ${prefix}-d" style="--an-w:${W}px">`,
+    `<svg class="an an-sketch" data-diagram="${spec.id}" data-variant="${opts.variant}" viewBox="0 0 ${W} ${Hc}" width="${W}" height="${Hc}" role="img" aria-labelledby="${prefix}-t ${prefix}-d">`,
     `<title id="${prefix}-t">${esc(spec.title)}</title><desc id="${prefix}-d">${esc(spec.desc)}</desc><defs>${icons.map((i) => symbol(prefix, i)).join('')}</defs>`,
     `<rect class="an-canvas an-paper" width="${W}" height="${Hc}" rx="18"/>`,
   );

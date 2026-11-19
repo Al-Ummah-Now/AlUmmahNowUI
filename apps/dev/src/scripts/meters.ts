@@ -68,7 +68,8 @@ function paintFigure(fig: HTMLElement, final: boolean) {
   rows.forEach((row, i) => {
     const lane = row.dataset.compare ?? '';
     const v = sums[lane] ?? 0;
-    row.style.setProperty('--fill', `${Math.min(100, (v / max) * 100)}%`);
+    const bar = row.querySelector('progress');
+    if (bar) bar.value = Math.round(Math.min(1, v / max) * 1000);
     const out = row.querySelector('output');
     if (out) out.textContent = fmt(v, finals[i] ?? 0);
   });
