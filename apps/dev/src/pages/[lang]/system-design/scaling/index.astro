@@ -1,23 +1,18 @@
 ---
 import SystemDesignPage from '../../../../components/SystemDesignPage.astro';
+import SdDiagram from '../../../../components/SdDiagram.astro';
 import { strings } from '../../../../i18n';
-import { dir, type Locale } from '../../../../lib/pages';
+import type { Locale } from '../../../../lib/pages';
 import { localePaths } from '../../../../lib/static-paths';
-import { scalingNarrow, scalingWide } from '../../../../lib/diagrams/scaling.ts';
 
 export const getStaticPaths = localePaths;
 const locale = Astro.params.lang as Locale;
 const t = strings(locale);
 const block = t.systemDesignPages.scaling;
-const labels = block.diagram;
-const rtl = dir(locale) === 'rtl';
+const d = t.diagrams.pages.scaling;
 ---
-<SystemDesignPage
-  locale={locale}
-  slug="system-design/scaling"
-  t={t}
-  block={block}
-  wide={scalingWide(labels)}
-  narrow={scalingNarrow(labels)}
-  rtl={rtl}
-/>
+<SystemDesignPage locale={locale} slug="system-design/scaling" t={t} block={block}>
+  <SdDiagram id="scaling-copies" locale={locale} title={d.copies.title} lead={d.copies.lead} />
+  <SdDiagram id="scaling-slot" locale={locale} title={d.slot.title} lead={d.slot.lead} raised />
+  <SdDiagram id="scaling-fixes" locale={locale} title={d.fixes.title} lead={d.fixes.lead} />
+</SystemDesignPage>

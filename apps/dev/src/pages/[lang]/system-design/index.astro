@@ -3,6 +3,7 @@ import Base from '../../../layouts/Base.astro';
 import PageHero from '../../../components/PageHero.astro';
 import ItemGrid from '../../../components/ItemGrid.astro';
 import ArchFigure from '../../../components/ArchFigure.astro';
+import SdDiagram from '../../../components/SdDiagram.astro';
 import { strings } from '../../../i18n';
 import type { Locale } from '../../../lib/pages';
 import { localePaths } from '../../../lib/static-paths';
@@ -11,6 +12,7 @@ export const getStaticPaths = localePaths;
 const locale = Astro.params.lang as Locale;
 const t = strings(locale);
 const p = t.systemDesign;
+const hub = t.diagrams.pages.hub;
 ---
 <Base locale={locale} slug="system-design" title={p.title} description={p.description}>
   <PageHero title={p.heroTitle} lead={p.heroLead} />
@@ -24,13 +26,14 @@ const p = t.systemDesign;
       <ArchFigure id="overview" locale={locale} title={p.diagramTitle} lead={p.diagramLead} headingId="diagram-h" />
     </div>
   </section>
-  <section class="band" aria-labelledby="zones-h">
+  <SdDiagram id="hub-pattern" locale={locale} title={hub.pattern.title} lead={hub.pattern.lead} />
+  <section class="band band-raised" aria-labelledby="zones-h">
     <div class="wrap">
       <h2 id="zones-h" class="h2">{p.walkthroughTitle}</h2>
       <ItemGrid items={p.zones} t={t} />
     </div>
   </section>
-  <section class="band band-raised" aria-labelledby="pages-h">
+  <section class="band" aria-labelledby="pages-h">
     <div class="wrap">
       <h2 id="pages-h" class="h2">{p.pagesTitle}</h2>
       <p class="section-lead">{p.pagesLead}</p>

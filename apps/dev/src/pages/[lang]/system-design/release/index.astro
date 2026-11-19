@@ -1,23 +1,18 @@
 ---
 import SystemDesignPage from '../../../../components/SystemDesignPage.astro';
+import SdDiagram from '../../../../components/SdDiagram.astro';
 import { strings } from '../../../../i18n';
-import { dir, type Locale } from '../../../../lib/pages';
+import type { Locale } from '../../../../lib/pages';
 import { localePaths } from '../../../../lib/static-paths';
-import { releaseNarrow, releaseWide } from '../../../../lib/diagrams/release.ts';
 
 export const getStaticPaths = localePaths;
 const locale = Astro.params.lang as Locale;
 const t = strings(locale);
 const block = t.systemDesignPages.release;
-const labels = block.diagram;
-const rtl = dir(locale) === 'rtl';
+const d = t.diagrams.pages.release;
 ---
-<SystemDesignPage
-  locale={locale}
-  slug="system-design/release"
-  t={t}
-  block={block}
-  wide={releaseWide(labels)}
-  narrow={releaseNarrow(labels)}
-  rtl={rtl}
-/>
+<SystemDesignPage locale={locale} slug="system-design/release" t={t} block={block}>
+  <SdDiagram id="release-train" locale={locale} title={d.train.title} lead={d.train.lead} />
+  <SdDiagram id="release-who" locale={locale} title={d.who.title} lead={d.who.lead} raised />
+  <SdDiagram id="release-gates" locale={locale} title={d.gates.title} lead={d.gates.lead} />
+</SystemDesignPage>

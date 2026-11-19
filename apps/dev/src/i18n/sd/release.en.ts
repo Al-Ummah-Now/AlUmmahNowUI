@@ -1,2 +1,61 @@
-/** release page diagram copy (English). Same keys in release.ar.ts. */
-export const releaseEn = {};
+/** Release & quality page diagram copy (English). Same keys in release.ar.ts. Facts: docs/SOURCES.md §12. */
+export const releaseEn = {
+  train: {
+    title: 'One release, gate by gate',
+    lead: 'Production moves only when someone pushes a dated tag on main. The build is made once and the same build goes everywhere; production waits for every gate, takes traffic in two steps and rolls itself back on a failure.',
+    desc: 'Numbered steps of a monorepo release. 1: a tag vYYYY.MM.DD (the US Eastern date) is pushed on main; the code is built once, and local E2E starts on the tagged commit, each job on its own local stack. 2: stage runs its migrations, is deployed and smoke-tested. 3: stage E2E runs the deployed specs, and the secrets checks look at stage and production. 4: once every gate passes, the production candidate is deployed at 0% and smoke-tested through an override. 5: it goes to 100% and is smoke-tested again, with a signed-in check using throwaway accounts. 6: the media Worker and the transcoder are deployed after the other apps; their smoke starts one real transcoder container, which must start within 60 seconds. 7: any failure rolls back automatically.',
+    group: { gates: 'Gates · all must pass', prod: 'Production' },
+    node: {
+      tag: { name: 'Tag on main', role: 'vYYYY.MM.DD · US Eastern' },
+      build: { name: 'Build once', role: 'release.yml' },
+      stage: { name: 'Stage', role: 'migrate · deploy · smoke' },
+      stageE2E: { name: 'Stage E2E', role: 'deployed specs' },
+      secrets: { name: 'Secrets checks', role: 'names only' },
+      localE2E: { name: 'Local E2E', role: 'tagged commit' },
+      zero: { name: 'Candidate at 0%', role: 'smoke via override' },
+      full: { name: '100%', role: 'smoke · signed-in check' },
+      media: { name: 'Media smoke', role: 'real container ≤ 60 s' },
+      rollback: { name: 'Rollback', role: 'automatic on failure' },
+    },
+    edge: { build: 'build', local: 'own stack per job', deploy: 'deploy', test: 'test', check: 'check', pass: 'all green', promote: 'promote', media: 'media last', fail: 'on failure' },
+  },
+  who: {
+    title: 'Who releases how',
+    lead: 'Every repo releases through GitHub Actions, never by hand. Most wait for a dated tag; the sign-in service releases on every merge. A status page checks the services every two minutes.',
+    desc: 'Along the top, inside GitHub: the AlUmmahNow monorepo, AlUmmahNowUI (www and the scholar sites), this developer site, and AlUmmahNowCMS release to production from a vYYYY.MM.DD tag on main; AlUmmahNowAuth releases on every merge to main and publishes a local-stack bundle the monorepo’s local E2E runs. GitHub Actions deploys into the Cloudflare account: QA on every push to main, then stage, then production from 0% to 100% with automatic rollback. The status page Worker checks the services every 2 minutes.',
+    group: { github: 'GitHub', cf: 'Cloudflare account' },
+    node: {
+      mono: { name: 'AlUmmahNow', role: 'tag on main' },
+      auth: { name: 'AlUmmahNowAuth', role: 'every merge to main' },
+      ui: { name: 'AlUmmahNowUI', role: 'www · sites: tag' },
+      dev: { name: 'alummahnow.dev', role: 'its own jobs: tag' },
+      cms: { name: 'AlUmmahNowCMS', role: 'tag on main' },
+      actions: { name: 'GitHub Actions', role: 'release · rollback' },
+      qa: { name: 'QA', role: 'every push to main' },
+      stage: { name: 'Stage', role: 'smoke · E2E' },
+      prod: { name: 'Production', role: '0% → 100% · rollback' },
+      status: { name: 'Status page', role: 'checks every 2 min' },
+    },
+    edge: { release: 'deploy', promote: 'promote', checks: 'every 2 min' },
+  },
+  gates: {
+    title: 'Red means a real bug',
+    lead: 'Each change meets the same checks on its way out: on the pull request, on stage, and again in production. A failure stops the release and leaves production as it was.',
+    desc: 'A hand-drawn sketch. A pull request runs lint, types, unit tests and local E2E. A merge to main deploys QA. A dated tag starts a release: stage E2E with the deployed specs, local E2E on the tagged commit, and the secrets checks, which compare names, never values. Production then takes the candidate at 0% and at 100%, smoke-testing each step, checks sign-in with throwaway accounts and that no test data remains, and starts one real transcoder container. Along the bottom: automatic rollback on failure, a rollback dry run after every promote, and the status page every 2 minutes. There are no hand deploys.',
+    heading: 'Red means a real bug',
+    around: 'no hand deploys · CI only',
+    node: {
+      pr: { title: 'Pull request', note: 'lint · types · unit · local E2E' },
+      qa: { title: 'QA', note: 'every merge to main' },
+      tag: { title: 'Release tag', note: 'US Eastern date' },
+      stageE2E: { title: 'Stage E2E', note: 'the deployed specs' },
+      local: { title: 'Local E2E', note: 'tagged commit, own stack' },
+      secrets: { title: 'Secrets checks', note: 'names, never values' },
+      smoke: { title: '0% → 100%', note: 'smoke at each step' },
+      signedIn: { title: 'Signed-in check', note: 'then: no test data left' },
+      media: { title: 'Media smoke', note: 'one real container' },
+    },
+    obs: { rollback: 'Rollback', dry: 'Dry run', status: 'Status' },
+    tag: { fail: 'on failure', all: 'all green' },
+  },
+};

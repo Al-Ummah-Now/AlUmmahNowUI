@@ -1,23 +1,18 @@
 ---
 import SystemDesignPage from '../../../../components/SystemDesignPage.astro';
+import SdDiagram from '../../../../components/SdDiagram.astro';
 import { strings } from '../../../../i18n';
-import { dir, type Locale } from '../../../../lib/pages';
+import type { Locale } from '../../../../lib/pages';
 import { localePaths } from '../../../../lib/static-paths';
-import { clientsNarrow, clientsWide } from '../../../../lib/diagrams/clients.ts';
 
 export const getStaticPaths = localePaths;
 const locale = Astro.params.lang as Locale;
 const t = strings(locale);
 const block = t.systemDesignPages.clients;
-const labels = block.diagram;
-const rtl = dir(locale) === 'rtl';
+const d = t.diagrams.pages.clients;
 ---
-<SystemDesignPage
-  locale={locale}
-  slug="system-design/clients"
-  t={t}
-  block={block}
-  wide={clientsWide(labels)}
-  narrow={clientsNarrow(labels)}
-  rtl={rtl}
-/>
+<SystemDesignPage locale={locale} slug="system-design/clients" t={t} block={block}>
+  <SdDiagram id="clients-map" locale={locale} title={d.map.title} lead={d.map.lead} />
+  <SdDiagram id="clients-device" locale={locale} title={d.device.title} lead={d.device.lead} raised />
+  <SdDiagram id="clients-core" locale={locale} title={d.core.title} lead={d.core.lead} />
+</SystemDesignPage>

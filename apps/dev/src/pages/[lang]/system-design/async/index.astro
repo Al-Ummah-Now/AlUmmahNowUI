@@ -1,23 +1,18 @@
 ---
 import SystemDesignPage from '../../../../components/SystemDesignPage.astro';
+import SdDiagram from '../../../../components/SdDiagram.astro';
 import { strings } from '../../../../i18n';
-import { dir, type Locale } from '../../../../lib/pages';
+import type { Locale } from '../../../../lib/pages';
 import { localePaths } from '../../../../lib/static-paths';
-import { asyncNarrow, asyncWide } from '../../../../lib/diagrams/async.ts';
 
 export const getStaticPaths = localePaths;
 const locale = Astro.params.lang as Locale;
 const t = strings(locale);
 const block = t.systemDesignPages.asyncWork;
-const labels = block.diagram;
-const rtl = dir(locale) === 'rtl';
+const d = t.diagrams.pages.async;
 ---
-<SystemDesignPage
-  locale={locale}
-  slug="system-design/async"
-  t={t}
-  block={block}
-  wide={asyncWide(labels)}
-  narrow={asyncNarrow(labels)}
-  rtl={rtl}
-/>
+<SystemDesignPage locale={locale} slug="system-design/async" t={t} block={block}>
+  <SdDiagram id="async-queues" locale={locale} title={d.queues.title} lead={d.queues.lead} />
+  <SdDiagram id="async-fail" locale={locale} title={d.fail.title} lead={d.fail.lead} raised />
+  <SdDiagram id="async-crons" locale={locale} title={d.crons.title} lead={d.crons.lead} />
+</SystemDesignPage>

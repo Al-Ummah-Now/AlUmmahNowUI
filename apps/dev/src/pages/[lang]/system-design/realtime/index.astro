@@ -1,23 +1,18 @@
 ---
 import SystemDesignPage from '../../../../components/SystemDesignPage.astro';
+import SdDiagram from '../../../../components/SdDiagram.astro';
 import { strings } from '../../../../i18n';
-import { dir, type Locale } from '../../../../lib/pages';
+import type { Locale } from '../../../../lib/pages';
 import { localePaths } from '../../../../lib/static-paths';
-import { realtimeNarrow, realtimeWide } from '../../../../lib/diagrams/realtime.ts';
 
 export const getStaticPaths = localePaths;
 const locale = Astro.params.lang as Locale;
 const t = strings(locale);
 const block = t.systemDesignPages.realtime;
-const labels = block.diagram;
-const rtl = dir(locale) === 'rtl';
+const d = t.diagrams.pages.realtime;
 ---
-<SystemDesignPage
-  locale={locale}
-  slug="system-design/realtime"
-  t={t}
-  block={block}
-  wide={realtimeWide(labels)}
-  narrow={realtimeNarrow(labels)}
-  rtl={rtl}
-/>
+<SystemDesignPage locale={locale} slug="system-design/realtime" t={t} block={block}>
+  <SdDiagram id="realtime-map" locale={locale} title={d.map.title} lead={d.map.lead} />
+  <SdDiagram id="realtime-views" locale={locale} title={d.views.title} lead={d.views.lead} raised />
+  <SdDiagram id="realtime-sketch" locale={locale} title={d.sketch.title} lead={d.sketch.lead} />
+</SystemDesignPage>

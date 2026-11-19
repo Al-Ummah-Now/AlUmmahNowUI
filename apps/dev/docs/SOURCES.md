@@ -43,6 +43,7 @@ configs. Cited only where marked "historic analysis".
 - Observability band: Workers Logs with `head_sampling_rate 1`, `invocation_logs false`, `LOG_LEVEL warn` on production workers — e.g. `AUN apps/api-videos/wrangler.jsonc` (observability block + vars), `apps/processor/wrangler.jsonc` (top-level observability), logging policy `AUN docs/operations/logging.md:1-60`; error reports to admin Errors page via `ERRORS_INGEST_URL` (api-videos, processor, websocket-server, scheduler, status, cost-monitor, short-links, admin-api, auth vars); RUM beacon 1-in-20 to Analytics Engine `al_ummah_now_rum` — `AUN docs/operations/rum.md` (whole doc; sample rate, fields, datasets); Abuse counters Analytics Engine `al_ummah_now_abuse` (api-videos analytics_engine_datasets).
 - Providers zone: Bunny Stream libraries (primary 498994 `vz-25839d05-80d.b-cdn.net`, legacy 400189) — `AUN apps/api-videos/wrangler.jsonc` vars `bunny_hostname`, `BUNNY_LEGACY_*` + secrets comments; QA/stage share test library 553336 — `WIKI guides/video-delivery.md:54-55`. Quran Foundation hosts — api-videos/processor vars `QF_OAUTH_HOST`/`QF_API_HOST`. Resend (status alerts + contact mail + auth email codes) — `WIKI guides/authentication.md:41`, `AUN apps/status/wrangler.jsonc` RESEND_API_KEY, `apps/admin-api/wrangler.jsonc:118-121`. Push: APNs/FCM/WNS + Web Push VAPID secrets — `AUN apps/processor/wrangler.jsonc` secrets list. Google OAuth (Move from YouTube) — api-videos secrets `GOOGLE_OAUTH_CLIENT_SECRET`.
 - "Everything server-side runs on Cloudflare Workers" phrasing — `WIKI README.md:117`; the transcoker exception (Cloudflare Containers) is `WIKI guides/video-delivery.md:26` and `AUN apps/media/wrangler.jsonc` containers block.
+- Hub "common pattern" sketch (clients → edge → Workers → cache/data; Queues → background Workers → Workers AI / Containers; logs, Errors page, RUM around it) — the same facts as the system map and observability band above (`WIKI README.md:61-125`, `AUN docs/operations/rum.md`, `docs/operations/logging.md`).
 
 ## 2. Video pipeline (`/{lang}/system-design/video-pipeline/`)
 
@@ -88,6 +89,8 @@ configs. Cited only where marked "historic analysis".
 - Queues inventory — see §5 sources (queue names are in each wrangler `queues` block).
 - Erasure/retention: GDPR retention sweep cron `17 3 * * *` in api-videos — api-videos wrangler triggers comment (`src/lib/privacy/retention.ts`); soft delete 30 days then purge — `WIKI guides/data-lifecycle.md`.
 
+- Diagrams (data page): R2 records are written with an etag compare-and-swap (`onlyIf: { etagMatches }`) — e.g. `AUN apps/api-videos/src/lib/community-comments.ts:84`, `src/lib/channelHandles.ts:249`; the processor binds `REPORTS_DB`, `NOTIFICATIONS_DB`, `SEARCH_DB` — `apps/processor/wrangler.jsonc:10-23`; it writes notification rows — `apps/processor/src/lib/notifications-store.ts:74` — and broadcasts them through the realtime Worker (`WEBSOCKET_URL`) — `src/lib/websocket-notify.ts:84-90`; dead letters live in NOTIFICATIONS_DB `dead_letters` — `src/dlq/store.ts:1-19`; error groups live in REPORTS_DB — `apps/admin-api/src/lib/errors-store.ts:2`; the processor's videos-queue consumer batch 10, 3 retries — `apps/processor/wrangler.jsonc:75-79`.
+
 ## 5. Async work (`/{lang}/system-design/async/`)
 
 - Rule "Always async, with admin-visible errors" — `WIKI epics/decisions.md` O26; Errors page with Retry — registry `error-reporting` live.
@@ -107,6 +110,9 @@ configs. Cited only where marked "historic analysis".
 - Queue consumers are registered by a release script because version promotion does not register them — `WIKI guides/release-process.md:66`.
 - Messages archive: processor vars `MESSAGE_ARCHIVE=all` (production) into `al-ummah-now-messages` bucket — processor wrangler vars + MESSAGES_BUCKET binding.
 
+- Diagrams (async page): the processor's DLQ consumer logs each message, stores it in `dead_letters` (30-day retention) and flags it on the Errors page with a "Replay message" action — `AUN apps/processor/src/dlq/consumer.ts:20-45`, `src/dlq/store.ts:18`; Replay (admin-api → processor `POST /dlq/replay`) re-sends the stored message to the videos queue with a clean retry budget — `src/dlq/store.ts:140-180`, `src/index.ts:147-172`, `apps/admin-api/src/lib/errors-actions.ts:42`; DLQ consumer batch 10, retries 10, no DLQ — `apps/processor/wrangler.jsonc:100-103`; transcode's own DLQ `al-ummah-now-transcode-dlq` — `apps/media/wrangler.jsonc:63-70`; admin-api consumes contact-mail/status-notify (5 retries) and errors (batch 10, 5 retries, `al-ummah-now-errors-dlq`) — `apps/admin-api/wrangler.jsonc:111-155`; error ingest writes error groups to D1 — `apps/admin-api/src/endpoints/errors/ErrorsIngest.ts:1-15`.
+- Cron jobs: api-videos `*/10` processing-check sweep, `* * * * *` live sessions + scheduled posts, `47 * * * *` legacy subscription import — `apps/api-videos/src/index.ts:34-41`, `src/lib/subscription-import.ts:17`; processor `17 * * * *` analytics rollup import, daily 90-day notification retention — `apps/processor/src/index.ts:259-262`; admin-api `*/5` auth requests + invites, `17 3` error retention — `apps/admin-api/src/index.ts:325-340`; status `*/2` checks, `40 3` prune — `apps/status/src/index.ts:124-130`, wrangler:16; cost-monitor `10 * * * *` hourly collection, `30 3` daily rollup — `apps/cost-monitor/src/index.ts:20-38`, wrangler:16. (Note: the processor's `41 3` cron is the daily retention run, not the rollup import.)
+
 ## 6. Realtime (`/{lang}/system-design/realtime/`)
 
 - Worker `al-ummah-now-comms` on `realtime.alummahnow.net`, WebSocket endpoint `/ws`, health at `/health` reporting the version id — `AUN apps/websocket-server/wrangler.jsonc` (name, routes env), `src/index.ts:78-110`.
@@ -118,6 +124,8 @@ configs. Cited only where marked "historic analysis".
 - Rate limits: `WS_CONNECT_LIMITER` 120/min per IP, `WS_MESSAGE_LIMITER` 600/min — websocket-server wrangler ratelimits.
 - Auth: tokens verified against the issuer; admin channels gated by token roles; revocation KV checked — websocket-server wrangler TOKEN_REVOCATIONS + `src/auth.ts`, `token-revocation.ts`; `WIKI guides/authentication.md:63`.
 - Consumers: live viewers per video (`live-viewers.ts`, LIVE_VIEWER_LIMITER 60/min per IP in api-videos), QoE beacons live (`qoe-live.ts`), post view counter (`post-view-counter.ts`) — websocket-server src file list + api-videos ratelimits comments.
+
+- Diagrams (realtime page): `POST /broadcast` needs the internal key; `admin:<topic>` items go to the coalescer, the rest through `routeBroadcast` (directories) — `AUN apps/websocket-server/src/index.ts:140-190`; the coalescer sends on to the topic router — `src/admin-coalescer.ts:1-11`; `WS_CONNECT_LIMITER` keyed by IP on `/ws` — `src/index.ts:97-104`; broadcast producers bind `WEBSOCKET_URL`: api-videos, admin-api, processor, scheduler — each wrangler vars (`apps/api-videos/wrangler.jsonc:438`, `apps/admin-api/wrangler.jsonc:196`, `apps/processor/wrangler.jsonc:119`, `apps/scheduler/wrangler.jsonc:106`); the class name `WebSocketDurableObject` hosts shards, directories, coalescers and view counters — `src/shards.ts:20-23`.
 
 ## 7. Identity & security (`/{lang}/system-design/identity/`)
 
@@ -136,6 +144,7 @@ configs. Cited only where marked "historic analysis".
 - Bot protection: Turnstile `monitor` in production (auth + api-videos vars), human-verified KV 180-day, Abuse page — api-videos vars TURNSTILE_MODE/SITE_KEY, `WIKI guides/bot-protection.md`.
 - Worker-to-worker auth: `INTERNAL_API_KEY` (Secrets Store) on api-videos, admin-api, processor, websocket-server, scheduler, status, cost-monitor, short-links, media — each wrangler secrets_store_secrets.
 - CSAM evidence encrypted AES-256-GCM in `al-ummah-now-csam-evidence`, legal hold — api-videos wrangler CSAM comments; registry `csam-intake` live.
+- Diagrams (identity-map, identity-signin, identity-roles; read at AUTH `fd631a2`, WIKI `c6007e9`): issuer bindings `AUTH_STORAGE` (KV), `TOKEN_REVOCATIONS` (KV), `AUTH_DB` (D1), production rate limiters TOKEN/TOKEN_CLIENT/SEND_CODE/ADMIN/ADMIN_SENSITIVE/PASSWORD_IP/PASSWORD_EMAIL/NATIVE_PASSKEY, `TURNSTILE_MODE monitor`, `RESEND_API_KEY` — `AUTH apps/auth/wrangler.json:100-128,148,198`; email codes through Resend — `WIKI guides/authentication.md:41`; device grant for TVs — line 47; sign-in sequence (authorize with challenge → code → exchange with verifier → tokens) — mermaid at lines 25-38; revocation KV holds the user-wide entry and `s:<sid>` — line 63.
 
 ## 8. AI usage (`/{lang}/system-design/ai/`)
 
@@ -149,6 +158,7 @@ configs. Cited only where marked "historic analysis".
 - Inline title/description translation runs in the processor (Workers AI, AI budget) — `AUN apps/api-videos/wrangler.jsonc` services comment (AUN-CAPTIONS §5.8).
 - CMS AI writing assist (registry `cms-ai-assist` live) on the CMS Workers AI binding — `CMS wrangler.jsonc` `ai` binding + registry.
 - Owner decision O5 "AI moderation on Cloudflare" — `WIKI epics/decisions.md` O5.
+- Diagrams (ai-map, ai-scan, ai-captions; read at AUN `6cafd07ba`): moderation queue `al-ummah-now-moderation` produced by api-videos and consumed by the processor with DLQ `al-ummah-now-dlq` — `AUN apps/api-videos/wrangler.jsonc:256`, `apps/processor/wrangler.jsonc:82-86`; scan order kill switch → reserve → (Arabic) translate → Llama Guard → extensions → settle → decide → signal, budget skip at the cap, fail-safe retries — `apps/processor/src/moderation/consumer.ts:1-7,44-122`; signals and budget in `REPORTS_DB` (`moderation_signals`, `ai_budget_daily`, `ai_usage_daily`) — consumer.ts:45, store.ts:38, budget.ts:41-52, usage.ts:49; worst case ×1.25 reserved — budget.ts:20-31; AI never deletes, shadow records `would_*`, hide only spam/charity_scam, enforced hide becomes flag while auto-hide is unavailable — `src/moderation/decide.ts:1-9`; admin reads signals — `apps/admin-api/src/lib/aiModeration.ts`; category suggestions are a queued processor job — `packages/shared-types/src/category-suggestion.ts:1-14`; the processor transcribes captions, api-videos owns the job — `apps/api-videos/src/lib/captions/jobs.ts:1-9`; review models (clef-flash frames, Gemma 4 image review, Whisper, Llama Guard, Gemma 4 text policy) — `packages/shared-types/src/video-review.ts:180-187`; Workers AI meter = moderation + captions + review for the cost example — `apps/dev/src/lib/arch/specs/costs.ts` `aiChecksUsd`.
 
 ## 9. Cost (`/{lang}/system-design/cost/`)
 
@@ -163,6 +173,8 @@ configs. Cited only where marked "historic analysis".
 - Cost monitoring (registry `cost-budget` live): cost-monitor worker collects platform analytics hourly (`10 * * * *`) for production, stage, QA into D1 `al-ummah-now-costs`; Costs page month-to-date vs budget, forecast, products, environments, top movers; budget/spike/weekly-digest alerts opt-in by email; read-only Cloudflare token set by super admin, AES-GCM sealed; queue with retry + DLQ — `AUN apps/cost-monitor/wrangler.jsonc` (crons, COLLECT_ENVS, queues, COSTS_DB) + `WIKI epics/AUN-COST-cost-monitoring.md` (COST-1 #1400). Per-channel cost later — O24.
 - AI spend bounded by daily neuron caps (above, §8).
 - Workers static-assets requests not billed as Worker invocations — `apps/dev/wrangler.jsonc:1-3`.
+- Cost-monitor diagram: crons `10 * * * *` hourly + `30 3 * * *` daily only enqueue jobs on `al-ummah-cost-jobs` (retry, DLQ), jobs = hourly/daily collection + Containers, Bunny, Resend — `AUN apps/cost-monitor/src/index.ts:1-12`, `src/jobs.ts:23`, `wrangler.jsonc:16-27`; one Cloudflare GraphQL request per run — `src/graphql.ts:1-12`, `src/collect.ts:4`; admin-api binds `COSTS_DB` — `apps/admin-api/wrangler.jsonc:35-36`; alert emails: hourly alert tick → one job per opted-in subscriber on `CONTACT_MAIL_QUEUE` → Resend, failures on the Errors page — `apps/admin-api/src/lib/cost-alert-mail.ts:1-12`, `wrangler.jsonc:119,224-227`.
+- One test clip transcoded per release run, other E2E accounts never — `WIKI guides/video-delivery.md:30`.
 
 ## 9a. Pipeline costs, stage by stage (cost diagram on Video pipeline and Cost; AI meters on the overview and pipeline)
 
@@ -207,6 +219,7 @@ zone ids.
 - Subrequest budget awareness: admin jobs run one per invocation "each gets the full subrequest budget" — api-videos wrangler comment; AV-16 full-bucket scans — SCALABILITY-AUDIT.md.
 - Skew protection keeps pages open during deploys working — `WIKI guides/release-process.md:71`.
 - Wiki scalability epic (audit page) — `WIKI epics/AUN-SCALABILITY-scalability-audit.md` (status/links).
+- Diagrams (scaling-copies, scaling-slot, scaling-fixes; read at AUN `6cafd07ba`): slot leases — the consumer acquires (`apps/media/src/dispatch.ts:19`), the Transcoder renews every minute and releases when ready, failed for good or cancelled (`apps/media/src/transcoder.ts:764-770`, `slot-state.ts:14-17`), a lease nobody renews lapses after 10 min (`LEASE_MS`), a job with no slot asks again in 60 s without using a delivery (`SLOT_WAIT_SECONDS`), `allowed` is min normally and grows by one per start or finish while jobs wait, up to max — `apps/media/src/slot-state.ts:1-29`; defect statuses — `docs/architecture/SCALABILITY-AUDIT.md:134-235` (AV-1 #504, PR-1 #505, PR-9 #521, WS-2 #507/#674, AU-1 Auth#268: KV hot key → Workers Rate Limiting binding, `WIKI guides/authentication.md:52`); R2 conditional writes `onlyIf: { etagMatches }` + retry — SCALABILITY-AUDIT.md:17-19; exact count with a thousand parallel views — lines 55-57.
 
 ## 11. Clients (`/{lang}/system-design/clients/`)
 
@@ -220,6 +233,9 @@ zone ids.
 - AlUmmahNowTools bulk importer (.NET) uploads to Bunny and R2 — `WIKI README.md:99-101` (map edges) + `repos/AlUmmahNowTools.md`.
 - Embeds + oEmbed + short links — registry `embeds`, `short-links` live.
 - One header/account menu across apps — registry `shared-header` live.
+- Device grant steps: `POST /device_authorization` → device_code + 8-letter user_code + QR of `verification_uri_complete`; user enters it at `/activate`, confirms, normal `/authorize` sign-in; device polls `/token` (default interval 5 s, `slow_down` +5 s), tokens once; codes expire 600 s — `openauth origin/master packages/openauth/src/device.ts:1-20,51,280`; enabled for TV apps in the issuer — `AUTH apps/auth/src/index.ts:503-508`.
+- Core: API client generated from the api-videos OpenAPI document, sign-in, sync, uploads, Studio media engine; UniFFI bindings for Swift, Kotlin, C#; UI, players, capture and hardware encoders stay native — `WIKI repos/AlUmmahNowCore.md` (Purpose, Tech stack, Layout).
+- Platforms: Apple iOS/iPadOS/tvOS/macOS in Swift/SwiftUI — `WIKI repos/AlUmmahNowApple.md`; Android phones/tablets/TV/Auto in Kotlin/Compose — `repos/AlUmmahNowAndroid.md`; Windows/Linux (WinUI 3 / GTK 4) + Tizen TV in C# — `repos/AlUmmahNowDesktop.md`; Apple "no release cut yet" — `guides/release-process.md:15`. Remote config = flags, config, versions in KV `APP_CONFIG`, edited in the videos admin — `AUN apps/api-videos/wrangler.jsonc:208-209`.
 
 ## 12. Release & quality (`/{lang}/system-design/release/`)
 
@@ -232,6 +248,8 @@ zone ids.
 - Migrations expand-only before traffic; queue consumers registered by script; translation store sync each deploy; production signed-in check with throwaway accounts then test-data check — `guides/release-process.md:66-79`.
 - Status page checks every 2 min, incidents + maintenance, email/webhook subscriptions building — `AUN apps/status/wrangler.jsonc:16`, registry `status-page` live / `status-subscriptions` building.
 - Dev site pipeline (this site): PR CI (lint, typecheck, unit, config check, build, Playwright + axe vs `wrangler dev`), QA on main, tag → stage → production with rollback; jobs separate from www/sites — `WIKI epics/AUN-DEV-SITE…` Hosting "Pipeline"; `UI .github/workflows/` (ci.yml, deploy-qa.yml, release.yml, rollback.yml, dev-registry.yml).
+- Release trigger per repo (monorepo/UI/CMS tags, Auth every merge, QA on push to main) — `WIKI guides/release-process.md:7-12`; gate flowchart (tag → build once ‖ local E2E → stage → stage E2E + secrets → 0% → 100% → rollback / dry run) — `release-process.md:33-48`; media smoke starts one real transcoder container, rolls back if it doesn't start or takes over 60 s — `WIKI guides/video-delivery.md:30`.
+- PR checks: type-check, lint, unit tests — `AUN .github/workflows/deploy.yml:38-46`; Local E2E on every PR, push to main, nightly and release — `WIKI guides/testing.md:18`; deployed QA tested only on numbered releases — `testing.md:26`.
 
 ---
 
