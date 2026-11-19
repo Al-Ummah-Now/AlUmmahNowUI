@@ -14,8 +14,8 @@
   --ep-edge:var(--aun-glass-edge,color-mix(in srgb,var(--ep-c) 55%,var(--fanous-color-surface)));
   --ep-glow:var(--aun-glass-glow,0 0 28px -4px color-mix(in srgb,var(--ep-c) 45%,transparent));
   --ep-tint:color-mix(in srgb,var(--fanous-color-text-primary) 7%,transparent);
-  display:grid;place-items:center;width:100%;min-height:calc(100dvh - 160px);padding:clamp(24px,6vw,72px) 16px;color:var(--fanous-color-text-primary)}
-.ep-card{box-sizing:border-box;width:100%;max-width:600px;border:1px solid var(--ep-edge);border-radius:var(--aun-radius-card,16px);background:var(--ep-surface);box-shadow:var(--ep-glow);-webkit-backdrop-filter:var(--aun-glass-blur,blur(20px) saturate(1.6));backdrop-filter:var(--aun-glass-blur,blur(20px) saturate(1.6));padding:clamp(24px,4vw,40px);text-align:start}
+  display:grid;grid-template-columns:minmax(0,1fr);place-items:center;box-sizing:border-box;width:100%;max-width:100%;overflow-x:clip;min-height:calc(100dvh - 160px);padding:clamp(24px,6vw,72px) 16px;color:var(--fanous-color-text-primary)}
+.ep-card{box-sizing:border-box;width:100%;max-width:600px;min-width:0;overflow-wrap:anywhere;border:1px solid var(--ep-edge);border-radius:var(--aun-radius-card,16px);background:var(--ep-surface);box-shadow:var(--ep-glow);-webkit-backdrop-filter:var(--aun-glass-blur,blur(20px) saturate(1.6));backdrop-filter:var(--aun-glass-blur,blur(20px) saturate(1.6));padding:clamp(24px,4vw,40px);text-align:start}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.ep-card{background:var(--fanous-color-surface)}}
 @media(prefers-reduced-transparency:reduce){.ep-card{background:var(--fanous-color-surface)}}
 @media print{.ep-card{background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}}
@@ -25,7 +25,7 @@
 .ep[data-error-status="404"] .ep-head[data-when="410"],.ep[data-error-status="410"] .ep-head[data-when="404"]{display:none}
 .ep-badge{display:grid;place-items:center;width:52px;height:52px;border-radius:14px;background:var(--fanous-color-primary);color:var(--fanous-color-on-primary);box-shadow:0 0 18px -4px color-mix(in srgb,var(--ep-c) 60%,transparent)}
 .ep-badge svg{width:26px;height:26px}
-.ep-heading{min-width:0}
+.ep-heading,.ep-head,.ep-search,.ep-foot,.ep-actions{min-width:0}
 .ep-code{margin:0 0 2px;font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--fanous-color-text-secondary)}
 html[lang=ar] .ep-code,.ep[lang=ar] .ep-code{letter-spacing:0}
 .ep-title{margin:0;font-size:clamp(24px,3vw,30px);font-weight:700;line-height:1.25;text-wrap:balance;color:var(--fanous-color-text-primary)}
@@ -34,7 +34,7 @@ html[lang=ar] .ep-code,.ep[lang=ar] .ep-code{letter-spacing:0}
 .ep[lang=ar] .ep-body{line-height:1.9}
 
 .ep-search{display:flex;gap:var(--fanous-spacing-sm,8px);margin-block-start:var(--fanous-spacing-xl,24px)}
-.ep-search-input{flex:1;min-inline-size:0;box-sizing:border-box;min-height:44px;padding:0 14px;border:1px solid var(--fanous-color-outline);border-radius:12px;background:var(--fanous-color-surface);color:var(--fanous-color-text-primary);font:inherit;font-size:16px}
+.ep-search-input{flex:1 1 0;inline-size:100%;min-inline-size:0;box-sizing:border-box;min-height:44px;padding:0 14px;border:1px solid var(--fanous-color-outline);border-radius:12px;background:var(--fanous-color-surface);color:var(--fanous-color-text-primary);font:inherit;font-size:16px}
 .ep-search-input::placeholder{color:var(--fanous-color-text-secondary);opacity:1}
 .ep-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .ep-btn svg{width:18px;height:18px;flex:none}
