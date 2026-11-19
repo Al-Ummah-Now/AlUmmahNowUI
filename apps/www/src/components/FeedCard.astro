@@ -121,7 +121,7 @@ const siteName = t.meta.siteName;
         <div slot="overlay" class="tl-ov">
           <H class="tl-title" id={id} lang={contentLocale} dir={dir(contentLocale)}><a href={href}>{title}</a></H>
           <p class="tl-meta">
-            {post?.author_name && <span class="tl-author">{post.author_name}</span>}
+            {post?.author_name && <span class="tl-author">{byHref ? <a rel="author" href={byHref} data-scholar-byline>{post.author_name}</a> : post.author_name}</span>}
             <time datetime={item.date} data-rel title={absoluteTime(item.date, locale)}>{relativeTime(item.date, now, locale)}</time>
             <span class="visually-hidden" data-abs>{absoluteTime(item.date, locale)}</span>
           </p>
@@ -141,7 +141,7 @@ const siteName = t.meta.siteName;
           </H>
           <p class="tl-meta">
             {channelName && <span class="tl-author" dir="auto">{channelName}</span>}
-            {!channelName && post?.author_name && <span class="tl-author">{post.author_name}</span>}
+            {!channelName && post?.author_name && <span class="tl-author">{byHref ? <a rel="author" href={byHref} data-scholar-byline>{post.author_name}</a> : post.author_name}</span>}
             <time datetime={item.date} data-rel title={absoluteTime(item.date, locale)}>{relativeTime(item.date, now, locale)}</time>
             <span class="visually-hidden" data-abs>{absoluteTime(item.date, locale)}</span>
           </p>
@@ -162,7 +162,7 @@ const siteName = t.meta.siteName;
       <>
         <p class="tl-byline">
           {avatarHtml ? <Fragment set:html={avatarHtml} /> : <img class="tl-avatar" src="/brand/logo-192.webp" alt="" width="32" height="32" loading="lazy" decoding="async" />}
-          <span class="tl-author">{byHref ? <a href={byHref}>{post?.author_name}</a> : (post?.author_name ?? siteName)}</span>
+          <span class="tl-author">{byHref ? <a rel="author" href={byHref} data-scholar-byline>{post?.author_name ?? author?.name}</a> : (post?.author_name ?? siteName)}</span>
           <time datetime={item.date} data-rel title={absoluteTime(item.date, locale)}>{relativeTime(item.date, now, locale)}</time>
           <span class="visually-hidden" data-abs>{absoluteTime(item.date, locale)}</span>
         </p>

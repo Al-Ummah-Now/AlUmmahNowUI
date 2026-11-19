@@ -15,6 +15,7 @@ const headerNav = [
   { label: 'المقالات', url: '/articles/' },
   { label: 'المرئيات', url: '/videos/' },
   { label: 'من نحن', url: '/about/' },
+  { label: 'العلماء', url: '/scholars/' },
 ];
 const footerNav = [
   { label: 'من نحن', url: '/about/' },

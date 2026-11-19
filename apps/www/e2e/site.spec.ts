@@ -31,6 +31,14 @@ test.describe('rendering', () => {
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(HEADINGS[l].videos);
     });
 
+    test(`${l}: the header links the Scholars directory (UI#41)`, async ({ page }) => {
+      const res = await page.goto(`/${l}/`);
+      // The built-in nav (CMS down, as locally) has it; deployed envs get it from the CMS menu (CMS migration 0022)
+      const link = page.locator('header nav[aria-label]').getByRole('link', { name: l === 'en' ? 'Scholars' : 'العلماء', exact: true });
+      test.skip(res?.headers()['x-content-source'] !== 'builtin', 'the CMS menu decides');
+      await expect(link).toHaveAttribute('href', `/${l}/scholars/`);
+    });
+
     test(`${l}: unknown routes get the localized 404`, async ({ page }) => {
       const res = await page.goto(`/${l}/this/does/not/exist/`);
       expect(res?.status()).toBe(404);

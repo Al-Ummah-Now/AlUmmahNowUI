@@ -44,6 +44,13 @@ const kahf = (ar: boolean) =>
     position: (['bottom', 'top', 'middle', 'bottom', 'bottom'] as const)[i]!,
   }));
 
+/** A scholar's post as the CMS feed carries it: `author` (slug, name, avatar) and the same name in `author_name`. */
+export const SEED_SCHOLAR_SLUG = 'seed-scholar';
+const scholar = (ar: boolean) => {
+  const name = ar ? 'الشيخ يوسف رحمن' : 'Shaykh Yusuf Rahman';
+  return { author_name: name, author: { slug: SEED_SCHOLAR_SLUG, name, avatar: null } };
+};
+
 export function seedItems(locale: 'en' | 'ar'): FeedItem[] {
   const ar = locale === 'ar';
   const items: FeedItem[] = [
@@ -101,13 +108,17 @@ export function seedItems(locale: 'en' | 'ar'): FeedItem[] {
       excerpt: ar ? 'بطاقات قصيرة للقراءة.' : 'Short cards to read.',
       locale,
       kind: 'cards',
+      // A scholar's card post: the byline over the cards links to their page (UI#42)
+      ...scholar(ar),
       slide_count: 5,
       first_slide: kahf(ar)[0],
       slides: kahf(ar),
     }),
   ];
   for (let i = 0; i < 50; i++) {
-    items.push(post(100 + i, at(30 + i * 37), { title: ar ? `خبر رقم ${i + 1}` : `News item ${i + 1}`, excerpt: ar ? 'تحديث من الفريق.' : 'An update from the team.', author_name: ar ? 'فريق التحرير' : 'The editors', locale }));
+    // The first one is a scholar's post: its byline links to their page (UI#42)
+    const by = i === 0 ? scholar(ar) : { author_name: ar ? 'فريق التحرير' : 'The editors' };
+    items.push(post(100 + i, at(30 + i * 37), { title: ar ? `خبر رقم ${i + 1}` : `News item ${i + 1}`, excerpt: ar ? 'تحديث من الفريق.' : 'An update from the team.', ...by, locale }));
   }
   return items;
 }

@@ -15,6 +15,7 @@ const headerNav = [
   { label: 'Articles', url: '/articles/' },
   { label: 'Videos', url: '/videos/' },
   { label: 'About', url: '/about/' },
+  { label: 'Scholars', url: '/scholars/' },
 ];
 const footerNav = [
   { label: 'About', url: '/about/' },
