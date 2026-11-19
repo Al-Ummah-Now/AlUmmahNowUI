@@ -3156,6 +3156,12 @@ html:not([data-js]) .ci-nav {
    street gets a soft halo of the page colour around its glyphs only, so it reads crisply where a
    string or lantern passes behind it; the timeline column adds a light, soft-edged frost (below). */
 html.fanous-street { --page-bg: none; }
+/* The frost layers below spread 4rem past their column (--tl-frost-out, --rd-frost-out). On a column
+   as wide as the viewport (a CMS block page, the timeline at tablet width) that spread stuck out of
+   the page: 64px of sideways scroll, a dark band down the left in Arabic. The section that holds
+   each layer clips it sideways (clip, not hidden: no scroll container, sticky still works; the
+   frost's ends fade out anyway). e2e/no-sideways-scroll.spec.ts measures every page on the street. */
+html.fanous-street :is(.section.reading, .tl-section) { overflow-x: clip; }
 html.fanous-street :is(.tl-head, .tl-date, .tl-card:not(.tl-bare) .tl-body, .tl-foot) {
   text-shadow: 0 0 2px var(--bg), 0 0 6px var(--bg), 0 0 10px var(--bg);
 }
