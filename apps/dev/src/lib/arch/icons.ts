@@ -47,7 +47,13 @@ export const symId = (prefix: string, id: IconId) => `${prefix}-i-${id.replace(/
 export function symbol(prefix: string, id: IconId): string {
   const raw = ICONS[id];
   if (!raw) throw new Error(`diagram icon not vendored: ${id}`);
-  const clean = raw.replace(/<!--[\s\S]*?-->/g, '').replace(/<\?xml[^>]*>/g, '');
+  // start at the <svg> tag (drops the XML prolog and licence comments), then remove any inner
+  // comments until none are left (the files are vendored, but never trust one pass)
+  let clean = raw.slice(Math.max(0, raw.indexOf('<svg')));
+  for (let prev = ''; prev !== clean; ) {
+    prev = clean;
+    clean = clean.replace(/<!--[\s\S]*?-->/g, '').replace(/<!--|-->/g, '');
+  }
   const open = /<svg\b([^>]*)>/.exec(clean);
   if (!open) throw new Error(`not an svg: ${id}`);
   const attrs = open[1] ?? '';

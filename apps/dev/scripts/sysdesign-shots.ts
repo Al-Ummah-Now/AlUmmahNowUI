@@ -11,7 +11,7 @@
  */
 import { createServer } from 'node:http';
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs';
-import { extname, join } from 'node:path';
+import { extname, join, normalize, resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { chromium } from '@playwright/test';
 import { gateInBrowser } from '../e2e/diagram-gate.ts';
@@ -21,7 +21,7 @@ if (!out) throw new Error('usage: sysdesign-shots.ts <outDir> [--pages=a/,b/] [-
 const pagesArg = process.argv.find((a) => a.startsWith('--pages='));
 const PAGES = pagesArg ? pagesArg.slice(8).split(',') : ['', 'video-pipeline/'];
 const RECORD = process.argv.includes('--record');
-const DIST = join(import.meta.dirname, '../dist');
+const DIST = resolve(import.meta.dirname, '../dist');
 mkdirSync(out, { recursive: true });
 
 const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.json': 'application/json', '.xml': 'application/xml' };
@@ -40,8 +40,14 @@ const SITE_HEADERS: Record<string, string> = {};
   if (!SITE_HEADERS['Content-Security-Policy']) throw new Error('dist/_headers has no CSP: build first');
 }
 const server = createServer((req, res) => {
-  const p = decodeURIComponent((req.url ?? '/').split('?')[0]);
-  let f = join(DIST, p);
+  // only files under dist/ are served, whatever the request path says
+  const p = decodeURIComponent((req.url ?? '/').split('?')[0] ?? '/');
+  let f = resolve(DIST, `.${normalize(`/${p}`)}`);
+  if (f !== DIST && !f.startsWith(DIST + sep)) {
+    res.writeHead(403);
+    res.end();
+    return;
+  }
   if (existsSync(f) && statSync(f).isDirectory()) f = join(f, 'index.html');
   if (!existsSync(f)) {
     res.writeHead(404);
