@@ -1,5 +1,5 @@
 ---
-import { formatNumber, type Strings } from '../i18n';
+import type { Strings } from '../i18n';
 import { PAGES, pagePath, type Locale, type PageSlug } from '../lib/pages';
 import { GH, STATUS_PAGE, VIDEOS, WWW } from '../lib/links';
 import { formatYear } from '../../../../packages/render/src/format.ts';
@@ -34,7 +34,7 @@ const year = formatYear(new Date().getUTCFullYear(), locale);
       </ul>
     </nav>
     <div class="footer-base">
-      <p>{t.footer.rights.replace('{year}', formatNumber(locale, year))}</p>
+      <p>{t.footer.rights.replace('{year}', year)}</p>
       <p lang={locale === 'ar' ? 'en' : 'ar'}>{locale === 'ar' ? 'Al Ummah Now' : 'الأمة الآن'}</p>
     </div>
   </div>

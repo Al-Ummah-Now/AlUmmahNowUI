@@ -1,9 +1,8 @@
 ---
 import type { SitePost } from '../lib/data';
 import type { PageContext } from '../lib/context';
-import { fmt } from '../lib/i18n';
 import { formatCountNoun } from '../../../../packages/render/src/count-nouns';
-import { formatDate } from '../../../../packages/render/src/format';
+import { formatDate, plural } from '../../../../packages/render/src/format';
 import PostLinkCard from '../../../../packages/render/src/posts/PostLinkCard.astro';
 
 interface Props { ctx: PageContext; post: SitePost; full?: boolean }
