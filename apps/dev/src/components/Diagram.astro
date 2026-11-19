@@ -1,0 +1,102 @@
+---
+/**
+ * Renders a DiagramSpec as inline SVG. Desktop and phone variants are two SVGs of the same spec
+ * builder; CSS (site.css .dg-wide / .dg-narrow) shows one per viewport, and the hidden one is
+ * removed from the a11y tree by display:none. Arabic: every x is mirrored (src/lib/diagram.ts),
+ * <text> keeps its own direction, so the composition flips and the words stay readable.
+ */
+import {
+  boxX,
+  edgeLabelAt,
+  edgePath,
+  pointX,
+  wrap,
+  type DiagramEdge,
+  type DiagramNode,
+  type DiagramSpec,
+} from '../lib/diagram.ts';
+
+interface Props {
+  spec: DiagramSpec;
+  rtl: boolean;
+  variant: 'wide' | 'narrow';
+  className?: string;
+}
+const { spec, rtl, variant, className = '' } = Astro.props;
+const labels = (node: DiagramNode) => {
+  const title = wrap(node.title, node.w > 240 ? 34 : 26);
+  const sub = (node.sub ?? []).flatMap((s) => wrap(s, node.w > 240 ? 40 : 30));
+  const all = [...title.map((t) => ({ t, sub: false })), ...sub.map((t) => ({ t, sub: true }))];
+  const line = node.h >= 64 ? 15 : 14;
+  const start = node.y + node.h / 2 - ((all.length - 1) * line) / 2 + 4.5;
+  return all.map((l, i) => ({ ...l, y: start + i * line }));
+};
+const edgeLabelLines = (e: DiagramEdge) => (e.label ? wrap(e.label, 22) : []);
+---
+<svg
+  class={`dg dg-${variant} ${className}`}
+  viewBox={`0 0 ${spec.width} ${spec.height}`}
+  role="img"
+  aria-labelledby={`${spec.id}-${variant}-title ${spec.id}-${variant}-desc`}
+  preserveAspectRatio="xMidYMin meet"
+>
+  <title id={`${spec.id}-${variant}-title`}>{spec.title}</title>
+  <desc id={`${spec.id}-${variant}-desc`}>{spec.desc}</desc>
+  <defs>
+    <marker id={`${spec.id}-${variant}-head`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path class="dg-head" d="M 0 1 L 9 5 L 0 9 z"></path>
+    </marker>
+    <marker id={`${spec.id}-${variant}-head-dashed`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path class="dg-head dg-head-quiet" d="M 0 1 L 9 5 L 0 9 z"></path>
+    </marker>
+  </defs>
+  {spec.shapes.map((s) =>
+    s.kind === 'zone' ? (
+      <g>
+        <rect
+          class="dg-zone"
+          x={boxX(spec, rtl, s.x, s.w)}
+          y={s.y}
+          width={s.w}
+          height={s.h}
+          rx="18"></rect>
+        <text class="dg-zone-label" x={boxX(spec, rtl, s.x, s.w) + s.w / 2} y={s.y + 22} text-anchor="middle">{s.label}</text>
+      </g>
+    ) : s.kind === 'node' ? (
+      <g>
+        <rect
+          class={`dg-node dg-node-${s.tone ?? 'plain'}`}
+          x={boxX(spec, rtl, s.x, s.w)}
+          y={s.y}
+          width={s.w}
+          height={s.h}
+          rx={s.tone === 'queue' ? s.h / 2 : 10}></rect>
+        {labels(s).map((l) => (
+          <text
+            class={l.sub ? 'dg-sub' : 'dg-title'}
+            x={boxX(spec, rtl, s.x, s.w) + s.w / 2}
+            y={l.y}
+            text-anchor="middle">{l.t}</text>
+        ))}
+      </g>
+    ) : (
+      <g>
+        <path
+          class={`dg-edge${s.dashed ? ' dg-edge-dashed' : ''}`}
+          d={edgePath(spec, rtl, s)}
+          marker-end={`url(#${spec.id}-${variant}-head${s.dashed ? '-dashed' : ''})`}></path>
+        {edgeLabelLines(s).map((line, i, arr) => {
+          const at = edgeLabelAt(s);
+          const y = at.y - 5 - (arr.length - 1 - i) * 13 + (arr.length - 1) * 6.5;
+          const w = Math.min(190, line.length * 6.4 + 14);
+          return (
+            <g>
+              <rect class="dg-edge-label-bg" x={pointX(spec, rtl, at.x) - w / 2} y={y - 10} width={w} height={14} rx="7"></rect>
+              <text class="dg-edge-label" x={pointX(spec, rtl, at.x)} y={y} text-anchor="middle">{line}</text>
+            </g>
+          );
+        })}
+      </g>
+    )
+  )}
+</svg>

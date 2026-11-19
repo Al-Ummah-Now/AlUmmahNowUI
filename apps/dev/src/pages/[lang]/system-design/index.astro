@@ -1,0 +1,59 @@
+---
+import Base from '../../../layouts/Base.astro';
+import PageHero from '../../../components/PageHero.astro';
+import Diagram from '../../../components/Diagram.astro';
+import ItemGrid from '../../../components/ItemGrid.astro';
+import { strings } from '../../../i18n';
+import { dir, type Locale } from '../../../lib/pages';
+import { localePaths } from '../../../lib/static-paths';
+import { overviewNarrow, overviewWide } from '../../../lib/diagrams/overview';
+
+export const getStaticPaths = localePaths;
+const locale = Astro.params.lang as Locale;
+const t = strings(locale);
+const p = t.systemDesign;
+const d = p.diagram;
+const wide = overviewWide(d);
+const narrow = overviewNarrow(d);
+---
+<Base locale={locale} slug="system-design" title={p.title} description={p.description}>
+  <PageHero title={p.heroTitle} lead={p.heroLead} />
+  <section class="band band-raised" aria-labelledby="diagram-h">
+    <div class="wrap">
+      <h2 id="diagram-h" class="h2">{p.diagramTitle}</h2>
+      <p class="section-lead">{p.diagramLead}</p>
+      <figure class="dg-figure">
+        <div class="panel">
+          <Diagram spec={wide} rtl={dir(locale) === 'rtl'} variant="wide" />
+          <Diagram spec={narrow} rtl={dir(locale) === 'rtl'} variant="narrow" />
+        </div>
+        <figcaption class="dg-legend" aria-labelledby="legend-h">
+          <h3 id="legend-h" class="dg-legend-title">{p.legendTitle}</h3>
+          <dl class="dg-legend-list">
+            {p.legend.map((x) => (
+              <div class="dg-legend-item">
+                <dt>{x.term}</dt>
+                <dd>{x.body}</dd>
+              </div>
+            ))}
+          </dl>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+  <section class="band" aria-labelledby="zones-h">
+    <div class="wrap">
+      <h2 id="zones-h" class="h2">{p.walkthroughTitle}</h2>
+      <ItemGrid items={p.zones} t={t} />
+    </div>
+  </section>
+  <section class="band band-raised" aria-labelledby="pipeline-card-h">
+    <div class="wrap">
+      <div class="panel panel-glow dg-next">
+        <h2 id="pipeline-card-h" class="h2">{p.pipelineCard.title}</h2>
+        <p>{p.pipelineCard.body}</p>
+        <p><a class="button button-primary" href={p.pipelineCard.link.href}>{p.pipelineCard.link.label}</a></p>
+      </div>
+    </div>
+  </section>
+</Base>
