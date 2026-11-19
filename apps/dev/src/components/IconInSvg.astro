@@ -13,11 +13,10 @@ interface Props {
   size?: number;
 }
 const { id, x, y, size = 44 } = Astro.props;
-const { viewBox, inner, w, h } = iconParts(id);
+const { viewBox, inner } = iconParts(id);
 const vendor = id.split('/')[0];
 const st = iconStyle(id, size);
-const scale = size / Math.max(w, h);
-const iw = w * scale;
-const ih = h * scale;
+const iw = size;
+const ih = size;
 ---
-<svg class={`icv icv-${vendor} ${st.class}`} style={st.style} x={x - iw / 2} y={y} width={iw} height={ih} viewBox={viewBox} overflow="visible" set:html={inner} />
+<svg class={`icv icv-${vendor} ${st.class}`} style={`${st.style};width:${iw}px;height:${ih}px`} x={x - iw / 2} y={y} width={iw} height={ih} viewBox={viewBox} preserveAspectRatio="xMidYMid meet" overflow="visible" set:html={inner} />

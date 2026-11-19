@@ -5,7 +5,7 @@
  * boundary that wraps everything — "observability wraps it all". Used for friendly explainers;
  * this showcase one is "how a play is served". Two variants; Arabic mirrors.
  */
-import { ICONS, iconStyle } from '../../lib/icons.ts';
+import { iconSvg } from '../../lib/icons.ts';
 
 interface Props {
   title: string;
@@ -85,12 +85,9 @@ const arrows =
     ))}
   </g>
   {steps.map((st) => {
-    const ist = iconStyle(st.icon, st.size);
     return (
       <g>
-        <g transform={`translate(${x(st.cx) - st.size / 2}, ${st.cy - st.size / 2})`}>
-          <g class={ist.class} style={ist.style} set:html={ICONS[st.icon]}></g>
-        </g>
+        <g transform={`translate(${x(st.cx) - st.size / 2}, ${st.cy - st.size / 2})`} set:html={iconSvg(st.icon, st.size)}></g>
         <text class="sk-label" x={x(st.cx)} y={st.cy + st.size / 2 + 30} text-anchor="middle">{st.label}</text>
         {st.note && <text class="sk-note" x={x(st.cx)} y={st.cy + st.size / 2 + 52} text-anchor="middle">{st.note}</text>}
       </g>

@@ -2099,3 +2099,7 @@ html:not([data-mode='light']) .pi-invert-dark svg {
     display: none;
   }
 }
+
+.rf-boundary-label-narrow {
+  font-size: 11px;
+}

@@ -6,7 +6,7 @@
  * badges that fire in order. Dashed control lines stay still. Animations pause under
  * prefers-reduced-motion; arrows and numbers remain readable alone.
  */
-import { ICONS, iconStyle } from '../../lib/icons.ts';
+import { iconSvg } from '../../lib/icons.ts';
 
 interface Props {
   title: string;
@@ -46,18 +46,18 @@ const nodes: Node[] = wide ? [
   { icon: 'cloudflare/r2', cx: 180, cy: 1160, size: 34, name: 'R2 pub' },
   { icon: 'simple-icons/cloudflare', cx: 180, cy: 1330, size: 34, name: 'CDN' },
 ];
-interface Wire { id: string; d: string; flow: 'request' | 'upload' | 'response'; label?: string; step?: number; stream?: boolean }
+interface Wire { id: string; d: string; flow: 'request' | 'upload' | 'response'; label?: string; step?: number; stream?: boolean; badgeAt?: [number, number]; labelAt?: [number, number] }
 const wire = (d: (X: (v: number) => number) => string): string => d(x);
 const wires: Wire[] = wide ? [
   { id: 'w1', d: wire((X) => `M ${X(128)} 170 L ${X(284)} 170`), flow: 'request', step: 1, label: steps[0]?.label },
-  { id: 'w2', d: wire((X) => `M ${X(348)} 170 L ${X(470)} 170 L ${X(470)} 100 L ${X(588)} 100`), flow: 'upload', step: 2, label: steps[1]?.label },
-  { id: 'w3', d: wire((X) => `M ${X(348)} 170 L ${X(470)} 170 L ${X(470)} 250 L ${X(588)} 250`), flow: 'upload', step: 2 },
-  { id: 'w4', d: wire((X) => `M ${X(638)} 250 L ${X(638)} 376`), flow: 'upload', step: 3, label: steps[3]?.label },
+  { id: 'w2', d: wire((X) => `M ${X(348)} 170 L ${X(470)} 170 L ${X(470)} 100 L ${X(588)} 100`), flow: 'upload', step: 2, label: steps[1]?.label, badgeAt: [405, 140] },
+  { id: 'w3', d: wire((X) => `M ${X(348)} 170 L ${X(470)} 170 L ${X(470)} 250 L ${X(588)} 250`), flow: 'upload', step: 2, badgeAt: [405, 200] },
+  { id: 'w4', d: wire((X) => `M ${X(638)} 250 L ${X(638)} 376`), flow: 'upload', step: 3, label: steps[3]?.label, labelAt: [695, 313] },
   { id: 'w5', d: wire((X) => `M ${X(656)} 400 L ${X(804)} 400`), flow: 'upload', step: 4 },
   { id: 'w6', d: wire((X) => `M ${X(864)} 400 L ${X(994)} 400`), flow: 'upload', step: 4 },
   { id: 'w7', d: wire((X) => `M ${X(1046)} 376 L ${X(1046)} 216`), flow: 'upload', step: 5, label: steps[4]?.label },
   { id: 'w8', d: wire((X) => `M ${X(1054)} 170 L ${X(1158)} 170`), flow: 'response', step: 6, stream: true },
-  { id: 'w9', d: wire((X) => `M ${X(1190)} 216 L ${X(1190)} 376`), flow: 'response', step: 6, stream: true, label: steps[5]?.label },
+  { id: 'w9', d: wire((X) => `M ${X(1190)} 216 L ${X(1190)} 376`), flow: 'response', step: 6, stream: true, label: steps[5]?.label, labelAt: [1160, 352] },
 ] : [
   { id: 'w1', d: wire((X) => `M ${X(180)} 148 L ${X(180)} 264`), flow: 'request', step: 1, label: steps[0]?.label },
   { id: 'w2', d: wire((X) => `M ${X(152)} 300 L ${X(96)} 300 L ${X(96)} 440`), flow: 'upload', step: 2, label: steps[1]?.label },
@@ -70,14 +70,14 @@ const wires: Wire[] = wide ? [
 ];
 const dur = (w: Wire) => (w.step ? 900 : 3200);
 const begin = (i: number, w: Wire) => (w.step ? `-${(w.step - 1) * 0.45}s` : `-${i * 1.1 + 0.3}s`);
-const labelAt = (w: Wire): { x: number; y: number } => {
-  const m = /M (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)/.exec(w.d);
-  const l = /L (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)(?: L|$)/.exec(w.d);
-  const x1 = m ? Number(m[1]) : 0;
-  const y1 = m ? Number(m[2]) : 0;
-  const x2 = l ? Number(l[1]) : x1;
-  const y2 = l ? Number(l[2]) : y1;
-  return { x: (x1 + x2) / 2, y: (y1 + y2) / 2 - 8 };
+const at2 = (w: Wire): { x: number; y: number } => {
+  if (w.labelAt) return { x: w.labelAt[0], y: w.labelAt[1] };
+  const m = /M (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)/.exec(w.d)!;
+  const l = /L (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)/.exec(w.d);
+  const mx = (Number(m[1]) + Number(l?.[1] ?? m[1])) / 2;
+  const my = (Number(m[2]) + Number(l?.[2] ?? m[2])) / 2;
+  const vertical = Math.abs(Number(l?.[1] ?? m[1]) - Number(m[1])) < 2;
+  return vertical ? { x: mx + (wide ? 92 : 44), y: my + 4 } : { x: mx, y: my + 18 };
 };
 ---
 <svg class={`lp lp-${variant}`} viewBox={`0 0 ${W} ${H}`} role="img" aria-labelledby={`${uid}-t ${uid}-d`} preserveAspectRatio="xMidYMin meet">
@@ -89,7 +89,7 @@ const labelAt = (w: Wire): { x: number; y: number } => {
     </marker>
   </defs>
   {wires.map((w, i) => {
-    const at = labelAt(w);
+    const at = at2(w);
     return (
       <g>
         <path id={`${uid}-${w.id}`} class={`lp-edge rf-flow-${w.flow}`} d={w.d} marker-end={`url(#${uid}-ah)`}></path>
@@ -111,27 +111,28 @@ const labelAt = (w: Wire): { x: number; y: number } => {
         )}
         {w.step && (() => {
           const m = /M (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)/.exec(w.d)!;
-          const bx = Number(m[1]);
-          const by = Number(m[2]);
+          const l = /L (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)/.exec(w.d);
+          const mx = (Number(m[1]) + Number(l?.[1] ?? m[1])) / 2;
+          const my = (Number(m[2]) + Number(l?.[2] ?? m[2])) / 2;
+          const vertical = Math.abs(Number(l?.[1] ?? m[1]) - Number(m[1])) < 2;
+          const bx = w.badgeAt ? w.badgeAt[0] : mx;
+          const by = w.badgeAt ? w.badgeAt[1] : my - (vertical ? 0 : 16);
           return (
             <g class={`rf-flow-${w.flow}`}>
-              <circle class="rf-step-badge" cx={bx} cy={by} r="11"></circle>
-              <text class="rf-step-num" x={bx} y={by + 4} text-anchor="middle">{w.step}</text>
+              <circle class="rf-step-badge" cx={x(bx)} cy={by} r="11"></circle>
+              <text class="rf-step-num" x={x(bx)} y={by + 4} text-anchor="middle">{w.step}</text>
             </g>
           );
         })()}
-        {w.label && <text class={`lp-label rf-flow-${w.flow}`} x={at.x} y={at.y} text-anchor="middle">{w.label}</text>}
+        {w.label && <text class={`lp-label rf-flow-${w.flow}`} x={x(at.x)} y={at.y} text-anchor="middle">{w.label}</text>}
       </g>
     );
   })}
   {nodes.map((n) => {
-    const st = iconStyle(n.icon, n.size);
     return (
       <g>
         <rect class="lp-card" x={x(n.cx) - 56} y={n.cy - 56} width="112" height="112" rx="18"></rect>
-        <g transform={`translate(${x(n.cx) - n.size / 2}, ${n.cy - n.size / 2})`}>
-          <g class={st.class} style={st.style} set:html={ICONS[n.icon]}></g>
-        </g>
+        <g transform={`translate(${x(n.cx) - n.size / 2}, ${n.cy - n.size / 2})`} set:html={iconSvg(n.icon, n.size)}></g>
         {n.name && <text class="lp-name" x={x(n.cx)} y={n.cy + 44} text-anchor="middle">{n.name}</text>}
       </g>
     );
@@ -146,6 +147,5 @@ const labelAt = (w: Wire): { x: number; y: number } => {
   .lp-head { fill: var(--text); }
   .lp-name { fill: var(--text); font-size: 12.5px; font-weight: 600; }
   .lp-narrow .lp-name { font-size: 11px; }
-  .lp-narrow .lp-card { width: 92px; height: 92px; x: -46px; }
   .lp-label { font-size: 12px; font-weight: 600; fill: var(--muted); }
 </style>

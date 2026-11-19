@@ -50,23 +50,23 @@ const flowClass = (e: RefEdge) => (e.dashed ? 'rf-flow-control' : `rf-flow-${e.f
     s.kind === 'boundary' ? (
       <g>
         <rect class="rf-boundary" x={refBoxX(spec, rtl, s.x, s.w)} y={s.y} width={s.w} height={s.h} rx="14"></rect>
-        <IconInSvg id="simple-icons/cloudflare" x={refBoxX(spec, rtl, s.x, s.w) + (rtl ? s.w - 26 : 26)} y={s.y + s.h - 34} size={26} />
-        <text class="rf-boundary-label" x={refBoxX(spec, rtl, s.x, s.w) + (rtl ? s.w - 42 : 42)} y={s.y + s.h - 12} text-anchor={rtl ? 'end' : 'start'}>{s.label}</text>
+        <IconInSvg id="simple-icons/cloudflare" x={refBoxX(spec, rtl, s.x, s.w) + s.w / 2 + (rtl ? -1 : 1) * Math.min(190, s.w / 2 - 60)} y={variant === 'narrow' ? s.y + s.h - 40 : s.y - 36} size={24} />
+        <text class={`rf-boundary-label${variant === 'narrow' ? ' rf-boundary-label-narrow' : ''}`} x={refBoxX(spec, rtl, s.x, s.w) + s.w / 2} y={variant === 'narrow' ? s.y + s.h - 12 : s.y - 12} text-anchor="middle">{s.label}</text>
       </g>
     ) : s.kind === 'group' ? (
       <g>
         <rect class="rf-group" x={refBoxX(spec, rtl, s.x, s.w)} y={s.y} width={s.w} height={s.h}></rect>
-        <text class="rf-group-title" x={refBoxX(spec, rtl, s.x, s.w) + (rtl ? s.w - 12 : 12)} y={s.y + 20} text-anchor={rtl ? 'end' : 'start'}>{s.title}</text>
-        {s.caption && <text class="rf-group-caption" x={refBoxX(spec, rtl, s.x, s.w) + (rtl ? s.w - 12 : 12)} y={s.y + s.h - 8} text-anchor={rtl ? 'end' : 'start'}>{s.caption}</text>}
+        <text class="rf-group-title" x={refBoxX(spec, rtl, s.x, s.w) + s.w / 2} y={s.y + 20} text-anchor="middle">{s.title}</text>
+        {s.caption && <text class="rf-group-caption" x={refBoxX(spec, rtl, s.x, s.w) + s.w / 2} y={s.y + s.h - 8} text-anchor="middle">{s.caption}</text>}
       </g>
     ) : s.kind === 'heading' ? (
-      <text class="rf-heading" x={refPointX(spec, rtl, s.x)} y={s.y} text-anchor={rtl ? 'end' : 'start'}>{s.text}</text>
+      <text class="rf-heading" x={refPointX(spec, rtl, s.x + 90)} y={s.y} text-anchor="middle">{s.text}</text>
     ) : s.kind === 'service' ? (
       <g>
-        <rect class="rf-card" x={refPointX(spec, rtl, s.x) - 34} y={s.y - 6} width="68" height={68 + s.name.length * 14 + 6} rx="10"></rect>
-        <IconInSvg id={s.icon as IconId} x={refPointX(spec, rtl, s.x)} y={s.y + 2} size={44} />
-        {s.name.slice(0, 2).map((line, i) => (
-          <text class="rf-name" x={refPointX(spec, rtl, s.x)} y={s.y + 62 + i * 14} text-anchor="middle">{line}</text>
+        <rect class="rf-card" x={refPointX(spec, rtl, s.x) - 34} y={s.y - 6} width="68" height={68 + s.name.length * 17 + 6} rx="10"></rect>
+        <IconInSvg id={s.icon as IconId} x={refPointX(spec, rtl, s.x)} y={s.y + 2} size={variant === 'wide' ? 44 : 34} />
+        {s.name.slice(0, variant === 'wide' ? 2 : 1).map((line, i) => (
+          <text class="rf-name" x={refPointX(spec, rtl, s.x)} y={s.y + 62 + i * 17} text-anchor="middle">{line}</text>
         ))}
       </g>
     ) : (

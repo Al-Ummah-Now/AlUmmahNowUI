@@ -13,12 +13,22 @@ for (const [path, raw] of Object.entries(files)) ICONS[path.replace('../assets/i
 export type IconId = string;
 export const iconRaw = (id: string): string => ICONS[id] ?? '';
 
+/** The vendored svg with width/height/preserveAspectRatio injected: scale only (docs/ICONS.md).
+ *  Without explicit dimensions a nested <svg> defaults to 100% of the viewport — a giant blob. */
+export function iconSvg(id: string, size: number, cls = '', style = ''): string {
+  const raw = ICONS[id] ?? '';
+  const attrs = `width="${size}" height="${size}" preserveAspectRatio="xMidYMid meet"${cls ? ` class="${cls}"` : ''} style="width:${size}px;height:${size}px;${style}"`;
+  return raw.replace('<svg', `<svg ${attrs}`);
+}
+
+
 /** Parse a vendored svg into a viewBox + inner markup, for nesting inside a diagram's svg. */
 export function iconParts(id: string): { viewBox: string; inner: string; w: number; h: number } {
   const raw = ICONS[id] ?? '';
   const vb = /viewBox="([^"]+)"/.exec(raw)?.[1] ?? '0 0 24 24';
   const [, , , w, h] = vb.split(' ').map(Number);
-  const inner = raw.replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '').replace(/<\/svg>/g, '');
+  // drop any leading comment/license prolog, the outer <svg> tag, and any stray closing tag
+  const inner = raw.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>[\s\S]*$/, '').trim();
   return { viewBox: vb, inner, w: w || 24, h: h || 24 };
 }
 

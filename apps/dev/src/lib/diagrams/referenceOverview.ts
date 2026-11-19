@@ -68,19 +68,19 @@ export function refOverviewWide(l: RefOverviewLabels): RefSpec {
   const e = (id: string, from: [number, number], to: [number, number], label?: string, via?: [number, number][], dashed?: boolean, labelAt?: [number, number], flow?: 'request' | 'upload' | 'response', stream?: boolean, durMs?: number) =>
     s.push({ kind: 'edge', id, from, to, via, label, dashed, labelAt, flow, stream, durMs });
   e('www-in', [82, 170], [220, 170], l.edge.https, undefined, false, [151, 160], 'request');
-  e('native-in', [82, 280], [220, 430], l.edge.nativeHttps, [[150, 280], [150, 430]], false, [150, 355], 'request');
+  e('native-in', [82, 280], [220, 430], l.edge.nativeHttps, [[150, 280], [150, 430]], false, [118, 262], 'request');
   e('front-apis', [412, 276], [412, 344], l.edge.fetch, undefined, false, undefined, 'request');
   e('apis-async', [630, 434], [656, 434], l.edge.events, undefined, false, undefined, 'upload');
   e('apis-data', [282, 382], [1216, 100], l.edge.bindings, [[282, 88], [1216, 88]], false, [749, 80], 'response', true);
   e('async-data', [1112, 340], [1188, 340], l.edge.bindings, undefined, false, undefined, 'upload', true);
   e('apis-bunny', [542, 458], [1216, 826], l.edge.bunny, [[542, 980], [1216, 980]], false, [879, 994], 'upload');
-  e('apis-identity', [412, 524], [300, 796], l.edge.sso, [[412, 700], [300, 700]], false, [356, 692]);
+  e('apis-identity', [412, 524], [300, 796], l.edge.sso, [[412, 700], [300, 700]], false, [520, 692]);
   e('monitoring-retry', [560, 848], [716, 712], l.edge.retry, [[560, 880], [716, 880]], true, [638, 894]);
-  e('ci-deploy', [130, 644], [220, 644], l.edge.deploy, undefined, true, [175, 634]);
+  e('ci-deploy', [130, 644], [220, 644], l.edge.deploy, undefined, true, [175, 700]);
   e('devops-sso', [40, 712], [40, 790], undefined, [[40, 760], [278, 760], [278, 796]]);
   e('async-ai', [976, 306], [1330, 930], l.edge.ai, [[976, 490], [1150, 490], [1150, 950], [1308, 950]], true, [1070, 502]);
   e('cron-queues', [846, 226], [1216, 516], l.edge.cronQueues, [[846, 528], [1216, 528]], false, [1030, 542]);
-  return { id: 'rf-overview', width: 1400, height: 1010, title: l.title, desc: l.desc, shapes: s };
+  return { id: 'rf-overview', width: 1400, height: 1090, title: l.title, desc: l.desc, shapes: s };
 }
 
 export function refOverviewNarrow(l: RefOverviewLabels): RefSpec {
@@ -119,10 +119,10 @@ export function refOverviewNarrow(l: RefOverviewLabels): RefSpec {
   svc('queues', 'cloudflare/queues', 180, 1172);
   svc('do', 'cloudflare/durable-objects', 290, 1172);
   svc('analytics', 'lucide/chart-line', 180, 1282);
-  svc('bunny', 'brand/bunny-stream', 70, 1442);
-  svc('resend', 'simple-icons/resend', 180, 1442);
-  svc('qf', 'lucide/book-open', 290, 1442);
-  svc('workersAi', 'cloudflare/workers-ai', 180, 1552);
+  svc('bunny', 'brand/bunny-stream', 60, 1442);
+  svc('resend', 'simple-icons/resend', 180, 1436);
+  svc('qf', 'lucide/book-open', 300, 1442);
+  svc('workersAi', 'cloudflare/workers-ai', 180, 1500);
   svc('identity', 'lucide/shield-check', 70, 1660);
   svc('monitoring', 'lucide/activity', 180, 1660);
   svc('secrets', 'cloudflare/secrets-store', 290, 1660);
@@ -134,6 +134,6 @@ export function refOverviewNarrow(l: RefOverviewLabels): RefSpec {
   e('front-apis', [70, 290], [70, 310], l.edge.fetch, false, 'request');
   e('apis-async', [70, 426], [70, 460], l.edge.events, false, 'upload');
   e('async-data', [180, 700], [180, 1040], l.edge.bindings, false, 'upload', true);
-  e('ci-deploy', [70, 1870], [70, 1910], l.edge.deploy, true);
+  e('ci-deploy', [70, 1870], [70, 1910], undefined, true);
   return { id: 'rf-overview-narrow', width: 360, height: 1930, title: l.title, desc: l.narrowDesc, shapes: s };
 }
