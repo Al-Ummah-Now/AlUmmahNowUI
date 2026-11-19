@@ -20,6 +20,7 @@ export interface MarkPart {
   size?: number;
   weight?: number;
   flip?: boolean;
+  strokeOnly?: boolean;
 }
 export const LOGOS: Record<LogoKind, MarkPart[]> = {
   // Cloudflare products: the brand orange, white glyphs

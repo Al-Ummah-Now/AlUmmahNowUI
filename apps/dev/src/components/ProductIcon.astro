@@ -4,7 +4,7 @@
  * by CSS. Vendor marks get their official colour through the .ic-<vendor> classes; Lucide
  * glyphs take the text colour so they follow light and dark.
  */
-import { iconRaw, type IconId } from '../../lib/icons.ts';
+import { iconRaw, iconStyle, type IconId } from '../lib/icons.ts';
 
 interface Props {
   id: IconId;
@@ -12,7 +12,8 @@ interface Props {
   class?: string;
 }
 const { id, size = 44, class: cls = '' } = Astro.props;
-const raw = await iconRaw(id);
+const raw = iconRaw(id);
 const vendor = id.split('/')[0];
+const st = iconStyle(id, size);
 ---
-<span class={`ic ic-${vendor}${cls ? ` ${cls}` : ''}`} style={`--ic:${size}px`} set:html={raw} />
+<span class={`ic ic-${vendor} ${st.class}${cls ? ` ${cls}` : ''}`} style={st.style} set:html={raw} />

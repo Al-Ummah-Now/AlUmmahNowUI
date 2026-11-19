@@ -1,7 +1,6 @@
 ---
 import Base from '../../../layouts/Base.astro';
 import PageHero from '../../../components/PageHero.astro';
-import Diagram from '../../../components/Diagram.astro';
 import ItemGrid from '../../../components/ItemGrid.astro';
 import { strings } from '../../../i18n';
 import { dir, type Locale } from '../../../lib/pages';
@@ -14,7 +13,6 @@ export const getStaticPaths = localePaths;
 const locale = Astro.params.lang as Locale;
 const t = strings(locale);
 const p = t.systemDesign;
-const d = p.diagram;
 const rw = refOverviewWide(t.showcase.reference);
 const rn = refOverviewNarrow(t.showcase.reference);
 const rtl = dir(locale) === 'rtl';

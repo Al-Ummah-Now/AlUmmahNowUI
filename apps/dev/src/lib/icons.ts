@@ -4,10 +4,23 @@
  * brand hex (Simple Icons are single-path currentColor marks; Lucide strokes take the text
  * colour). `id` is `<vendor>/<name>` and must match a file under src/assets/icons.
  */
-const files = import.meta.glob<{ default: string }>('../assets/icons/**/*.svg', { query: '?raw', import: 'default', eager: true });
+const files = import.meta.glob<string>('../assets/icons/**/*.svg', { query: '?raw', import: 'default', eager: true });
 
 export const ICONS: Record<string, string> = {};
-for (const [path, raw] of Object.entries(files)) ICONS[path.replace('../assets/icons/', '').replace('.svg', '')] = raw;
+for (const [path, raw] of Object.entries(files)) ICONS[path.replace('../assets/icons/', '').replace('.svg', '')] = raw as string;
+
+/** A stable id for every vendored icon file. */
+export type IconId = string;
+export const iconRaw = (id: string): string => ICONS[id] ?? '';
+
+/** Parse a vendored svg into a viewBox + inner markup, for nesting inside a diagram's svg. */
+export function iconParts(id: string): { viewBox: string; inner: string; w: number; h: number } {
+  const raw = ICONS[id] ?? '';
+  const vb = /viewBox="([^"]+)"/.exec(raw)?.[1] ?? '0 0 24 24';
+  const [, , , w, h] = vb.split(' ').map(Number);
+  const inner = raw.replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '').replace(/<\/svg>/g, '');
+  return { viewBox: vb, inner, w: w || 24, h: h || 24 };
+}
 
 /** The official brand colour for a mark (ICONS.md); Lucide marks inherit the text colour. */
 const BRAND: Record<string, string> = {

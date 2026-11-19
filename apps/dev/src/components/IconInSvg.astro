@@ -4,7 +4,7 @@
  * <svg>, scaled only (docs/ICONS.md). Vendor marks are coloured by the .icv-<vendor> classes in
  * site.css; Lucide glyphs follow the text colour.
  */
-import { iconParts, type IconId } from '../../lib/icons.ts';
+import { iconParts, iconStyle, type IconId } from '../lib/icons.ts';
 
 interface Props {
   id: IconId;
@@ -13,10 +13,11 @@ interface Props {
   size?: number;
 }
 const { id, x, y, size = 44 } = Astro.props;
-const { viewBox, inner, w, h } = await iconParts(id);
+const { viewBox, inner, w, h } = iconParts(id);
 const vendor = id.split('/')[0];
+const st = iconStyle(id, size);
 const scale = size / Math.max(w, h);
 const iw = w * scale;
 const ih = h * scale;
 ---
-<svg class={`icv icv-${vendor}`} x={x - iw / 2} y={y} width={iw} height={ih} viewBox={viewBox} overflow="visible" set:html={inner} />
+<svg class={`icv icv-${vendor} ${st.class}`} style={st.style} x={x - iw / 2} y={y} width={iw} height={ih} viewBox={viewBox} overflow="visible" set:html={inner} />

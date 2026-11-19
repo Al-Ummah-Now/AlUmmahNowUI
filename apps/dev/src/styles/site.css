@@ -2010,3 +2010,92 @@ html[data-mode='dark'] .rf-legend-dot-response, html:not([data-mode='light']) .r
   .dg-narrow-only { display: block; }
 }
 .dg-figure-hero { margin: 0; }
+
+/* unified vendored-icon rendering (docs/ICONS.md): .pi sizing + stroke/fill modes; the icon
+   keeps the vendor's official colour (set inline); .ic / .icv are the same rules for the
+   html and inside-svg placement components */
+.pi,
+.ic {
+  display: inline-block;
+  line-height: 0;
+  color: inherit;
+}
+.pi svg,
+.ic svg {
+  width: var(--pi, var(--ic, 44px));
+  height: var(--pi, var(--ic, 44px));
+  display: block;
+}
+.icv {
+  overflow: visible;
+}
+.pi svg path,
+.ic svg path,
+.icv path,
+.pi svg circle,
+.ic svg circle,
+.icv circle {
+  fill: currentColor;
+}
+.pi-strokes path,
+.pi-strokes circle,
+.pi-strokes line,
+.pi-strokes polyline,
+.pi-strokes rect {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.icv.pi-strokes path,
+.icv.pi-strokes circle {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+html[data-mode='dark'] .pi-invert-dark,
+html[data-mode='dark'] .pi-invert-dark svg,
+html:not([data-mode='light']) .pi-invert-dark,
+html:not([data-mode='light']) .pi-invert-dark svg {
+  filter: invert(1);
+}
+.rf-flow-control {
+  color: var(--muted);
+}
+
+/* reference diagrams: service tiles (white in light, raised in dark), stream + step aliases */
+.rf-card {
+  fill: var(--raised);
+  stroke: var(--edge-strong);
+  stroke-width: 1px;
+}
+.rf-stream {
+  stroke: currentColor;
+  stroke-width: 2.6px;
+  fill: none;
+  stroke-dasharray: 6 14;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px currentColor);
+  animation: rf-march 1.6s linear infinite;
+}
+.rf-step {
+  fill: var(--bg);
+  stroke: currentColor;
+  stroke-width: 1.6px;
+}
+.rf-step-n {
+  fill: currentColor;
+  font-size: 11px;
+  font-weight: 700;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rf-stream {
+    animation: none;
+    filter: none;
+    stroke-dasharray: none;
+  }
+  .rf-anim {
+    display: none;
+  }
+}

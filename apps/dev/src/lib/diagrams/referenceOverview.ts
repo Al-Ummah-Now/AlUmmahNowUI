@@ -24,7 +24,7 @@ export function refOverviewWide(l: RefOverviewLabels): RefSpec {
     { kind: 'heading', id: 'h-providers', x: 1176, y: 812, text: l.heading.providers },
     { kind: 'heading', id: 'h-cross', x: 220, y: 770, text: l.heading.cross },
     { kind: 'boundary', id: 'platform', x: 200, y: 70, w: 930, h: 640, label: l.boundary },
-    { kind: 'group', id: 'front', x: 220, y: 112, w: 410, h: 200, title: l.group.front, caption: l.group.frontCap },
+    { kind: 'group', id: 'front', x: 220, y: 112, w: 410, h: 170, title: l.group.front, caption: l.group.frontCap },
     { kind: 'group', id: 'apis', x: 220, y: 344, w: 410, h: 180, title: l.group.apis, caption: l.group.apisCap },
     { kind: 'group', id: 'async', x: 656, y: 112, w: 456, h: 412, title: l.group.async, caption: l.group.asyncCap },
     { kind: 'group', id: 'cicd', x: 24, y: 560, w: 150, h: 130, title: l.group.cicd },
@@ -37,8 +37,6 @@ export function refOverviewWide(l: RefOverviewLabels): RefSpec {
   svc('www', 'simple-icons/astro', 282, 150);
   svc('videos', 'simple-icons/nextjs', 412, 150);
   svc('admin', 'simple-icons/nextjs', 542, 150);
-  svc('cms', 'lucide/server', 282, 246);
-  svc('shortLinks', 'cloudflare/workers', 412, 246);
   svc('apiVideos', 'cloudflare/workers', 282, 382);
   svc('adminApi', 'cloudflare/workers', 412, 382);
   svc('auth', 'lucide/key-round', 542, 382);
