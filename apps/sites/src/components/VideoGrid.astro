@@ -11,7 +11,7 @@ const { videos, locale, testId } = Astro.props;
       <a href={`/${locale}/watch/${v.id}/`}>
         <span class="thumb">
           {v.thumbnailUrl ? <img src={v.thumbnailUrl} alt="" loading="lazy" decoding="async" width="320" height="180" /> : <span class="thumb-empty" />}
-          {v.durationSeconds && <span class="duration" dir="ltr">{formatDuration(v.durationSeconds)}</span>}
+          {v.durationSeconds && <span class="duration" dir="ltr">{formatDuration(v.durationSeconds, locale)}</span>}
         </span>
         <span class="video-title">{localizedTitle(v, locale)}</span>
       </a>

@@ -15,7 +15,7 @@ const shown = full ? paragraphs : paragraphs.slice(0, 2);
 const discussion = `${ctx.channelHref}/community`;
 ---
 <article class="post-card" data-testid="site-post" data-kind={post.kind}>
-  {date && <p class="post-date"><a href={href}><time datetime={post.createdAt}>{date.toLocaleDateString(locale === 'ar' ? 'ar' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' })}</time></a></p>}
+  {date && <p class="post-date"><a href={href}><time datetime={post.createdAt}>{date.toLocaleDateString(locale === 'ar' ? 'ar-u-nu-arab' : 'en-GB', { year: 'numeric', month: 'long', day: 'numeric' })}</time></a></p>}
   {post.article && (
     <div class="post-article">
       {post.article.coverUrl && <img src={post.article.coverUrl} alt="" loading="lazy" width="640" height="360" />}

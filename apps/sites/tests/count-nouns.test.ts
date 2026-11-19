@@ -34,3 +34,18 @@ describe('formatCountNoun', () => {
     expect(formatCountNoun('en', -4, 'comment')).toBe('No comments');
   });
 });
+
+describe('Arabic digits in sites formatting', () => {
+  it('durations: ٠–٩ in Arabic, 0–9 in English', async () => {
+    const { formatDuration } = await import('../src/lib/data');
+    expect(formatDuration(125, 'ar')).toBe('٢:٠٥');
+    expect(formatDuration(3600, 'ar')).toBe('١:٠٠:٠٠');
+    expect(formatDuration(125, 'en')).toBe('2:05');
+    expect(formatDuration(null, 'ar')).toBe('');
+  });
+  it('localDigits leaves English alone', async () => {
+    const { localDigits } = await import('../../../packages/render/src/count-nouns');
+    expect(localDigits('ar', '2026')).toBe('٢٠٢٦');
+    expect(localDigits('en', '2026')).toBe('2026');
+  });
+});
