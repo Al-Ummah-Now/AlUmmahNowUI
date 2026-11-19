@@ -55,7 +55,7 @@ const discussion = `${ctx.channelHref}/community`;
   )}
   {post.options.length > 0 && (
     <div class="post-options">
-      <ul>{post.options.map((o) => <li dir="auto">{o}</li>)}</ul>
+      <ul>{post.options.map((o) => <li><bdi>{o}</bdi></li>)}</ul>
       <p><a href={discussion}>{post.kind === 'quiz' ? t.quizOnPlatform : t.pollOnPlatform}</a></p>
     </div>
   )}
