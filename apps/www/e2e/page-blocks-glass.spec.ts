@@ -18,7 +18,6 @@ const LOCAL = !process.env.WWW_URL || /^http:\/\/(localhost|127\.0\.0\.1)[:/]/.t
 test.skip(!LOCAL, 'needs the stub CMS (local E2E)');
 
 const PANELS = '.pb-b:not(.pb-t-none):not(.pb-w-full):not(.pb-k-hero) > .pb-in';
-/** Text-only pages (here About as the CMS migrated it: one markdown block): one glass box per section. */
 const PAGES = [
   { locale: 'en', path: '/en/every-block/', what: 'page-builder panels', sel: PANELS, min: 2, lines: 20 },
   { locale: 'ar', path: '/ar/kull-al-kutal/', what: 'page-builder panels', sel: PANELS, min: 2, lines: 20 },
