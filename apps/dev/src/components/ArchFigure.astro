@@ -1,0 +1,39 @@
+---
+/**
+ * One system design diagram (src/lib/arch): the wide layout for desktops, the stacked layout for
+ * phones (CSS picks one), a heading, and a legend naming only the flow types this diagram uses.
+ */
+import '../styles/arch.css';
+import { diagram, type DiagramId } from '../lib/arch/all';
+import { strings } from '../i18n';
+import type { Locale } from '../lib/pages';
+
+interface Props {
+  id: DiagramId;
+  locale: Locale;
+  title?: string;
+  lead?: string;
+  bleed?: boolean;
+  headingId?: string;
+}
+const { id, locale, title, lead, bleed = true, headingId } = Astro.props;
+const d = diagram(id, locale);
+const lg = strings(locale).diagrams.legend;
+const flows = d.flows as (keyof typeof lg)[];
+---
+<figure class="an-figure" aria-labelledby={headingId}>
+  {title && <h2 id={headingId} class="h2">{title}</h2>}
+  {lead && <p class="section-lead">{lead}</p>}
+  <div class:list={['an-frame', bleed && 'an-bleed']}>
+    <div class="an-wide" set:html={d.wide} />
+    <div class="an-narrow" set:html={d.narrow} />
+  </div>
+  {(flows.length > 0 || d.steps) && (
+    <ul class="an-legend an-legend-wrap" aria-label={lg.title}>
+      {flows.map((f) => (
+        <li><span class:list={['an-sw', f === 'control' && 'an-sw-dash']} style={`--sw: var(--sw-${f})`} aria-hidden="true" />{lg[f]}</li>
+      ))}
+      {d.steps && <li><span class="an-sw an-sw-step" aria-hidden="true">1</span>{lg.steps}</li>}
+    </ul>
+  )}
+</figure>

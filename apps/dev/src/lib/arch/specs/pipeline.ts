@@ -1,0 +1,89 @@
+/**
+ * The video pipeline as numbered hops (styles 3 + 5): upload, the tee to Bunny and to our R2
+ * originals, the transcode queue, the slot gate, the FFmpeg container, the R2 renditions, and the
+ * two delivery rails. Facts: docs/SOURCES.md §2.
+ */
+import { stack, type ArchEdge, type ArchLayout, type ArchSpec } from '../arch.ts';
+import type { diagramsEn } from '../../../i18n/diagrams.en.ts';
+
+type Copy = typeof diagramsEn.pipeline;
+
+export function pipeline(c: Copy): { spec: ArchSpec; wide: ArchLayout; narrow: ArchLayout } {
+  const n = c.node;
+  const node = (id: keyof Copy['node'], icon: string, at: [number, number]) => ({ id, icon, name: n[id].name, role: n[id].role, at });
+  const e = c.edge;
+  const edges: ArchEdge[] = [
+    { from: 'creator', to: 'apiVideos', flow: 'media', label: e.upload, step: 1, fromSide: 'e', toSide: 'w' },
+    { from: 'apiVideos', to: 'bunny', flow: 'media', label: e.encode, step: 2, fromSide: 'n', toSide: 'w' },
+    { from: 'apiVideos', to: 'originals', flow: 'media', label: e.tee, step: 2, fromSide: 'e', toSide: 'w' },
+    { from: 'apiVideos', to: 'queue', flow: 'async', label: e.enqueue, step: 3, fromSide: 's', toSide: 'w' },
+    { from: 'queue', to: 'media', flow: 'async', label: e.consume, step: 4, fromSide: 'e', toSide: 'w' },
+    { from: 'media', to: 'slots', flow: 'control', label: e.slot, step: 5, fromSide: 's', toSide: 'n' },
+    { from: 'media', to: 'container', flow: 'media', label: e.start, step: 6, fromSide: 'e', toSide: 'w' },
+    { from: 'originals', to: 'container', flow: 'media', label: e.read, step: 7, fromSide: 'e', toSide: 'n' },
+    { from: 'container', to: 'renditions', flow: 'media', label: e.write, step: 8, fromSide: 'e', toSide: 'w' },
+    { from: 'player', to: 'apiVideos', flow: 'request', label: e.ask, step: 9, fromSide: 's', toSide: 's' },
+    { from: 'renditions', to: 'cdn', flow: 'delivery', label: e.cdnOut, fromSide: 'n', toSide: 's' },
+    { from: 'bunny', to: 'bunnyCdn', flow: 'delivery', label: e.bunnyOut, fromSide: 'e', toSide: 'w' },
+    { from: 'cdn', to: 'player', flow: 'delivery', label: e.r2, step: 10, fromSide: 'e', toSide: 'w' },
+    { from: 'bunnyCdn', to: 'player', flow: 'delivery', label: e.bunnyHls, step: 10, fromSide: 'e', toSide: 'n' },
+  ];
+  const spec: ArchSpec = {
+    id: 'pipeline',
+    title: c.title,
+    desc: c.desc,
+    motion: 'steps',
+    hop: 0.85,
+    nodes: [
+      node('creator', 'lucide/user', [0, 1]),
+      node('apiVideos', 'cloudflare/workers', [1.15, 1]),
+      node('bunny', 'brand/bunny-stream', [2.4, -0.18]),
+      node('bunnyCdn', 'brand/bunny-cdn', [5.8, -0.18]),
+      node('originals', 'cloudflare/r2', [2.4, 1]),
+      node('queue', 'cloudflare/queues', [2.4, 2.15]),
+      node('media', 'cloudflare/workers', [3.55, 2.15]),
+      node('slots', 'cloudflare/durable-objects', [3.55, 3.2]),
+      node('container', 'cloudflare/containers', [4.7, 2.15]),
+      node('renditions', 'cloudflare/r2', [5.8, 2.15]),
+      node('cdn', 'cloudflare/cache', [5.8, 1.05]),
+      node('player', 'lucide/play', [7.05, 1.05]),
+    ],
+    groups: [
+      { id: 'transcode', label: c.lane.transcode, members: ['media', 'slots', 'container'] },
+      { id: 'cf', label: c.lane.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', members: ['apiVideos', 'originals', 'queue', 'transcode', 'renditions', 'cdn'] },
+      { id: 'bunnyNet', label: c.lane.bunny, kind: 'platform', tagLogo: { id: 'brand/bunnynet-logo-dark', w: 66, h: 19 }, accent: '#f29b1d', members: ['bunny', 'bunnyCdn'] },
+    ],
+    edges,
+  };
+  const wide: ArchLayout = { colW: 190, rowH: 160 };
+  const narrow: ArchLayout = {
+    colW: 180,
+    rowH: 100,
+    iconSize: 36,
+    at: stack([
+      [['creator'], 0],
+      [['apiVideos', 'originals'], 2.25],
+      [['queue', 'renditions'], 1.5],
+      [['media', 'slots'], 1.9],
+      [['container'], 1.05],
+      [['cdn'], 1.55],
+      [['player'], 2.1],
+      [['bunny', 'bunnyCdn'], 2.2],
+    ]),
+    edges: [
+      { from: 'creator', to: 'apiVideos', flow: 'media', label: e.upload, step: 1, fromSide: 's', toSide: 'n' },
+      { from: 'apiVideos', to: 'bunny', flow: 'media', label: e.encode, step: 2, fromSide: 'w', toSide: 'w' },
+      { from: 'apiVideos', to: 'originals', flow: 'media', label: e.tee, step: 2, fromSide: 'e', toSide: 'w' },
+      { from: 'apiVideos', to: 'queue', flow: 'async', label: e.enqueue, step: 3, fromSide: 's', toSide: 'n' },
+      { from: 'queue', to: 'media', flow: 'async', label: e.consume, step: 4, fromSide: 's', toSide: 'w' },
+      { from: 'media', to: 'slots', flow: 'control', label: e.slot, step: 5, fromSide: 'e', toSide: 'w' },
+      { from: 'media', to: 'container', flow: 'media', label: e.start, step: 6, fromSide: 's', toSide: 'w' },
+      { from: 'originals', to: 'container', flow: 'media', label: e.read, step: 7, fromSide: 'e', toSide: 'e' },
+      { from: 'container', to: 'renditions', flow: 'media', label: e.write, step: 8, fromSide: 'e', toSide: 'e' },
+      { from: 'player', to: 'apiVideos', flow: 'request', step: 9, fromSide: 'w', toSide: 'w' },
+      { from: 'cdn', to: 'player', flow: 'delivery', label: e.r2, step: 10, fromSide: 'w', toSide: 'n' },
+      { from: 'bunnyCdn', to: 'player', flow: 'delivery', label: e.bunnyHls, step: 10, fromSide: 'n', toSide: 'e' },
+    ],
+  };
+  return { spec, wide, narrow };
+}

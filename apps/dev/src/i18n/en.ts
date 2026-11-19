@@ -6,6 +6,7 @@
  * written as plans. Each technical claim carries the wiki page it comes from in `sources`.
  */
 import { WIKI, GH, VIDEOS, WWW, STATUS_PAGE } from '../lib/links.ts';
+import { diagramsEn } from './diagrams.en.ts';
 
 export type Status = 'live' | 'ready' | 'rolling' | 'building' | 'planned';
 /** A feature's status is never written here: `feature` is its id in the wiki's feature registry (src/lib/registry.ts). */
@@ -1215,6 +1216,7 @@ export const en = {
     home: 'Go to the home page',
     other: 'الصفحة الرئيسية بالعربية',
   },
+  diagrams: diagramsEn,
 };
 
 export type Strings = typeof en;

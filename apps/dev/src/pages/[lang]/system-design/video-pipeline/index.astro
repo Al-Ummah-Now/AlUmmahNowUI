@@ -1,63 +1,27 @@
 ---
 import Base from '../../../../layouts/Base.astro';
 import PageHero from '../../../../components/PageHero.astro';
-import Diagram from '../../../../components/Diagram.astro';
 import ItemGrid from '../../../../components/ItemGrid.astro';
+import ArchFigure from '../../../../components/ArchFigure.astro';
 import { strings } from '../../../../i18n';
-import { dir, type Locale } from '../../../../lib/pages';
+import type { Locale } from '../../../../lib/pages';
 import { localePaths } from '../../../../lib/static-paths';
-import { pipelineNarrow, pipelineWide } from '../../../../lib/diagrams/pipeline';
-import LogoPipeline from '../../../../components/diagrams/LogoPipeline.astro';
 
 export const getStaticPaths = localePaths;
 const locale = Astro.params.lang as Locale;
 const t = strings(locale);
 const p = t.videoPipeline;
-const d = p.diagram;
-const wide = pipelineWide(d);
-const narrow = pipelineNarrow(d);
 ---
 <Base locale={locale} slug="system-design/video-pipeline" title={p.title} description={p.description}>
   <PageHero title={p.heroTitle} lead={p.heroLead} />
   <section class="band" aria-labelledby="logoflow-h">
     <div class="wrap">
-      <h2 id="logoflow-h" class="h2">{p.logoFlow.title}</h2>
-      <figure class="dg-figure">
-        <div class="panel">
-          <div class="dg-wide-only"><LogoPipeline title={p.logoFlow.title} desc={p.logoFlow.desc} rtl={dir(locale) === 'rtl'} steps={p.logoFlow.steps} variant="wide" /></div>
-          <div class="dg-narrow-only"><LogoPipeline title={p.logoFlow.title} desc={p.logoFlow.desc} rtl={dir(locale) === 'rtl'} steps={p.logoFlow.steps} variant="narrow" /></div>
-        </div>
-        <p class="rf-legend" aria-label="legend">
-          <span class="rf-legend-item"><span class="rf-legend-dot rf-legend-dot-request"></span>{t.showcase.legend.requests}</span>
-          <span class="rf-legend-item"><span class="rf-legend-dot rf-legend-dot-upload"></span>{t.showcase.legend.upload}</span>
-          <span class="rf-legend-item"><span class="rf-legend-dot rf-legend-dot-response"></span>{t.showcase.legend.response}</span>
-          <span class="rf-legend-item"><span class="rf-legend-dash"></span>{t.showcase.legend.control}</span>
-          <span class="rf-legend-item"><span class="rf-legend-step">1</span>{t.showcase.legend.steps}</span>
-        </p>
-      </figure>
+      <ArchFigure id="pipeline" locale={locale} title={p.logoFlow.title} lead={p.diagramLead} headingId="logoflow-h" />
     </div>
   </section>
-  <section class="band band-raised" aria-labelledby="diagram-h">
+  <section class="band band-raised" aria-labelledby="sketch-h">
     <div class="wrap">
-      <h2 id="diagram-h" class="h2">{p.diagramTitle}</h2>
-      <p class="section-lead">{p.diagramLead}</p>
-      <figure class="dg-figure">
-        <div class="panel">
-          <Diagram spec={wide} rtl={dir(locale) === 'rtl'} variant="wide" />
-          <Diagram spec={narrow} rtl={dir(locale) === 'rtl'} variant="narrow" />
-        </div>
-        <figcaption class="dg-legend" aria-labelledby="legend-h">
-          <h3 id="legend-h" class="dg-legend-title">{p.legendTitle}</h3>
-          <dl class="dg-legend-list">
-            {p.legend.map((x) => (
-              <div class="dg-legend-item">
-                <dt>{x.term}</dt>
-                <dd>{x.body}</dd>
-              </div>
-            ))}
-          </dl>
-        </figcaption>
-      </figure>
+      <ArchFigure id="sketch-play" locale={locale} title={t.diagrams.sketch.title} headingId="sketch-h" />
     </div>
   </section>
   <section class="band" aria-labelledby="stages-h">
