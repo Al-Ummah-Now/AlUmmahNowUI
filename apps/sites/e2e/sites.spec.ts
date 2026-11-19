@@ -480,6 +480,10 @@ test('post counts agree with their nouns and Arabic uses ٠–٩: dates, duratio
   await expect(page.locator('.site-footer .footer-base')).toHaveText(/^© \d{4} Sh\. Mustafa Elbadry$/);
   await page.goto(at(HOSTS.both, '/ar/posts/post-e2e-1/'));
   await expect(page.getByTestId('site-post').first()).toContainText('٣ إعجابات · تعليق واحد');
+  // the author's English text keeps its own direction on the Arabic site (its full stop at the end, not the start)
+  const body = page.locator('[data-testid=site-post] .post-text').first();
+  await expect(body).toHaveAttribute('dir', 'auto');
+  expect(await body.evaluate((e) => getComputedStyle(e).direction)).toBe('ltr');
   expect(await page.locator('.post-date').first().innerText()).not.toMatch(/[0-9]/);
   await expect(page.locator('.site-footer .footer-base')).toHaveText(/^© [٠-٩]{4} الشيخ مصطفى البدري$/);
   await page.goto(at(HOSTS.both, '/ar/'));
