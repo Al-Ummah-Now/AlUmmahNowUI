@@ -7,7 +7,9 @@
  *  - a node, label or icon outside the SVG's viewBox;
  *  - a node label that spills out of its node box;
  *  - a wire that wanders far beyond the direct path between its ends (a detour);
- *  - groups that half-overlap, or a node inside a group it doesn't belong to.
+ *  - groups that half-overlap, or a node inside a group it doesn't belong to;
+ *  - a wire that runs through any text, unless it is that wire's own label drawn on an opaque pill
+ *    (labels carry data-for=<edge id>, plus data-covers when their background hides the wire).
  * Only visible diagrams are checked (the wide/narrow twin that CSS hides is skipped).
  */
 export function gateInBrowser(): string[] {
@@ -86,6 +88,23 @@ export function gateInBrowser(): string[] {
           if (pt.x > box.x + 1 && pt.x < box.x + box.w - 1 && pt.y > box.y + 1 && pt.y < box.y + box.h - 1) {
             out.push(`${name}: edge ${p.dataset.from}→${p.dataset.to} passes through ${id}`);
             d = len + 1;
+            break;
+          }
+        }
+      }
+      // a wire never runs through words: any text that isn't its own label (data-for) or inside a node it connects
+      const own = p.id || p.dataset.edge || '';
+      for (const { t, b } of tb) {
+        // only a label drawn on an opaque pill over its own wire may sit on it (data-covers)
+        const label = t.closest<SVGElement>('[data-for]');
+        if (label?.getAttribute('data-for') === own && label.hasAttribute('data-covers')) continue;
+        const inNode = t.closest<SVGGElement>('[data-node]')?.dataset.node;
+        if (inNode && ends.has(inNode)) continue;
+        const box = { x: b.x + 1.5, y: b.y + 1.5, w: b.w - 3, h: b.h - 3 };
+        for (let d = 0; d <= len; d += 2) {
+          const pt = p.getPointAtLength(d);
+          if (pt.x > box.x && pt.x < box.x + box.w && pt.y > box.y && pt.y < box.y + box.h) {
+            out.push(`${name}: edge ${p.dataset.from}→${p.dataset.to} runs through the text "${t.textContent}"`);
             break;
           }
         }

@@ -21,6 +21,9 @@ if (!out) throw new Error('usage: sysdesign-shots.ts <outDir> [--pages=a/,b/] [-
 const pagesArg = process.argv.find((a) => a.startsWith('--pages='));
 const PAGES = pagesArg ? pagesArg.slice(8).split(',') : ['', 'video-pipeline/'];
 const RECORD = process.argv.includes('--record');
+/** --only=id,id: reshoot just these diagrams (their frame and shot, and clips of them); skip the rest */
+const onlyArg = process.argv.find((a) => a.startsWith('--only='));
+const ONLY = onlyArg ? new Set(onlyArg.slice(7).split(',')) : null;
 const DIST = resolve(import.meta.dirname, '../dist');
 mkdirSync(out, { recursive: true });
 
@@ -98,19 +101,20 @@ for (const slug of PAGES)
         const H = await page.evaluate(() => document.scrollingElement!.scrollHeight);
         // viewport frames: top, then each diagram centred, then the end
         await page.evaluate(() => window.scrollTo(0, 0));
-        await page.screenshot({ path: join(out, `${tag}-frame-1-top.png`) });
+        if (!ONLY) await page.screenshot({ path: join(out, `${tag}-frame-1-top.png`) });
         const figs = await page.locator('.an-figure').count();
         for (let i = 0; i < figs; i++) {
           const fig = page.locator('.an-figure').nth(i);
+          const svg = fig.locator('svg.an:visible');
+          const id = await svg.getAttribute('data-diagram');
+          if (ONLY && !ONLY.has(id ?? '')) continue;
           await fig.evaluate((el) => el.scrollIntoView({ block: 'start' }));
           await page.evaluate(() => window.scrollBy(0, -72));
           await page.screenshot({ path: join(out, `${tag}-frame-${i + 2}-diagram-${i + 1}.png`) });
-          const svg = fig.locator('svg.an:visible');
-          const id = await svg.getAttribute('data-diagram');
           await svg.screenshot({ path: join(out, `${tag}-diagram-${id}.png`) });
         }
         await page.evaluate((h) => window.scrollTo(0, h), H);
-        await page.screenshot({ path: join(out, `${tag}-frame-${figs + 2}-end.png`) });
+        if (!ONLY) await page.screenshot({ path: join(out, `${tag}-frame-${figs + 2}-end.png`) });
         await ctx.close();
       }
 
@@ -141,7 +145,7 @@ if (RECORD) {
     { slug: 'release/', id: 'release-train', w: 'desktop', secs: 0 },
   ];
   for (const mode of ['dark', 'light'] as const)
-    for (const j of jobs) {
+    for (const j of jobs.filter((x) => !ONLY || ONLY.has(x.id))) {
       const vp = WIDTHS[j.w];
       const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: j.w === 'phone' ? 2 : 1.5, colorScheme: mode });
       await ctx.addInitScript((m) => localStorage.setItem('aun_mode', m), mode);

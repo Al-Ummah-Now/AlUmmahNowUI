@@ -204,10 +204,9 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
   }
   o.push(`<g data-node-label="heading"><text class="an-sk-title ${fam}" x="${r(W / 2)}" y="52" text-anchor="middle"${ar ? ' direction="rtl"' : ''}>${esc(spec.heading)}</text></g>`);
 
-  const tags: string[] = [];
-  o.push('<g class="an-edges">');
-  const paths: string[] = [];
-  spec.edges.forEach((e, i) => {
+  // first every curve, so tags can be placed clear of all of them
+  type Curve = { e: SketchEdge; i: number; a: [number, number]; ctrl: [number, number]; b: [number, number] };
+  const curves: Curve[] = spec.edges.map((e, i) => {
     const bf = box.get(e.from)!;
     const bt = box.get(e.to)!;
     const a = anchor(e.from, e.fromSide, bt);
@@ -216,17 +215,53 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
     const bend = (e.bend ?? 0) * (opts.rtl ? -1 : 1);
     const nx = -(b[1] - a[1]) / len;
     const ny = (b[0] - a[0]) / len;
-    const ctrl: [number, number] = [(a[0] + b[0]) / 2 + nx * bend, (a[1] + b[1]) / 2 + ny * bend];
+    return { e, i, a, b, ctrl: [(a[0] + b[0]) / 2 + nx * bend, (a[1] + b[1]) / 2 + ny * bend] };
+  });
+  const at = (c: Curve, t: number): [number, number] => [
+    (1 - t) * (1 - t) * c.a[0] + 2 * (1 - t) * t * c.ctrl[0] + t * t * c.b[0],
+    (1 - t) * (1 - t) * c.a[1] + 2 * (1 - t) * t * c.ctrl[1] + t * t * c.b[1],
+  ];
+  const samples = curves.flatMap((c) => Array.from({ length: 61 }, (_, k) => at(c, k / 60)));
+  type Box = { x: number; y: number; w: number; h: number };
+  const hits = (q: Box, p: [number, number], pad: number) => p[0] > q.x - pad && p[0] < q.x + q.w + pad && p[1] > q.y - pad && p[1] < q.y + q.h + pad;
+  const overlaps = (q: Box, r2: Box, pad: number) => q.x < r2.x + r2.w + pad && r2.x < q.x + q.w + pad && q.y < r2.y + r2.h + pad && r2.y < q.y + q.h + pad;
+  const placedTags: Box[] = [];
+  const nodeBoxes = [...box.values()];
+
+  const tags: string[] = [];
+  o.push('<g class="an-edges">');
+  curves.forEach((c) => {
+    const { e, i, a, b, ctrl } = c;
     const { shaft, head } = pen.arrow(a[0], a[1], b[0], b[1], ctrl);
-    paths.push(shaft);
     o.push(`<path id="${prefix}-e${i}" data-edge="${prefix}-e${i}" data-from="${e.from}" data-to="${e.to}" class="an-edge an-sk-arrow${e.dashed ? ' an-sk-dashed' : ''}" d="${shaft}"/><path class="an-sk-head" d="${head}"/>`);
-    if (e.tag) {
-      const t = e.tagAt ?? 0.5;
-      const px = (1 - t) * (1 - t) * a[0] + 2 * (1 - t) * t * ctrl[0] + t * t * b[0];
-      const py = (1 - t) * (1 - t) * a[1] + 2 * (1 - t) * t * ctrl[1] + t * t * b[1];
-      const tw = textWidth(e.tag, 15, true) + 18;
-      tags.push(`<g class="an-sk-tag an-sk-${e.tone ?? 'blue'}"><path class="an-sk-mark" d="${pen.marker(px - tw / 2 - 4, py - 15, tw, 26)}"/><path class="an-sk-line" d="${pen.rect(px - tw / 2, py - 14, tw, 26)}"/><text class="${fam}" x="${r(px)}" y="${r(py + 4)}" text-anchor="middle"${hasArabic(e.tag) ? ' direction="rtl"' : ''}>${esc(e.tag)}</text></g>`);
+    if (!e.tag) return;
+    // a tag sits beside its curve, never on it: try both sides at a few points along it
+    const tw = textWidth(e.tag, 15, true) + 18;
+    const th = 26;
+    let best: Box | null = null;
+    for (const t of [e.tagAt ?? 0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8]) {
+      const p = at(c, t);
+      const q2 = at(c, Math.min(1, t + 0.01));
+      const dl = Math.hypot(q2[0] - p[0], q2[1] - p[1]) || 1;
+      const n: [number, number] = [-(q2[1] - p[1]) / dl, (q2[0] - p[0]) / dl];
+      const off = Math.abs(n[0]) * (tw / 2) + Math.abs(n[1]) * (th / 2) + 8;
+      for (const s of [1, -1]) {
+        const cx = p[0] + n[0] * off * s;
+        const cy = p[1] + n[1] * off * s;
+        const q = { x: cx - tw / 2, y: cy - th / 2, w: tw, h: th };
+        if (q.x < 8 || q.y < 60 || q.x + q.w > W - 8 || q.y + q.h > Hc - 8) continue;
+        if (samples.some((pt) => hits(q, pt, 4))) continue;
+        if (nodeBoxes.some((nb) => overlaps(q, nb, 6)) || placedTags.some((pb) => overlaps(q, pb, 6))) continue;
+        best = q;
+        break;
+      }
+      if (best) break;
     }
+    if (!best) throw new Error(`${spec.id}/${opts.variant}: no room beside its curve for the tag "${e.tag}"`);
+    placedTags.push(best);
+    const px = best.x + tw / 2;
+    const py = best.y + th / 2;
+    tags.push(`<g class="an-sk-tag an-sk-${e.tone ?? 'blue'}" data-for="${prefix}-e${i}"><path class="an-sk-mark" d="${pen.marker(px - tw / 2 - 4, py - 15, tw, 26)}"/><path class="an-sk-line" d="${pen.rect(px - tw / 2, py - 14, tw, 26)}"/><text class="${fam}" x="${r(px)}" y="${r(py + 4)}" text-anchor="middle"${hasArabic(e.tag) ? ' direction="rtl"' : ''}>${esc(e.tag)}</text></g>`);
   });
   o.push('</g><g class="an-motion" aria-hidden="true">');
   spec.edges.forEach((e, i) => {
