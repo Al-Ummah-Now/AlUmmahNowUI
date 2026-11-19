@@ -23,15 +23,15 @@ export const costEn = {
   cheap: {
     title: 'How the platform stays cheap',
     lead: 'Nothing waits on a server that bills by the hour. Each line of the bill is kept small on purpose, and the whole of it is watched every hour.',
-    desc: 'A hand-drawn sketch. In the middle, the monthly budget, watched hourly. Around it, the choices that keep it small: transcoding on Cloudflare Containers billed per second while a job runs, never a rented server; production logs at warning level with no invocation logs; real-user monitoring from one page load in twenty; originals kept 30 to 90 days, not forever; AI under daily neuron caps; release tests that transcode a single short clip; and this developer site served as static files with no Worker script, so an idle site costs nothing.',
+    desc: 'A hand-drawn sketch. In the middle, the monthly budget, watched hourly. Around it, the choices that keep it small: transcoding on Cloudflare Containers billed per second while a job runs, never a rented server; production logs at warning level with no invocation logs; real-user monitoring from one page load in twenty; originals kept {N30} to {N90} days, not forever; AI under daily neuron caps; release tests that transcode a single short clip; and this developer site served as static files with no Worker script, so an idle site costs nothing.',
     heading: 'How the platform stays cheap',
     around: 'watched every hour against the budget',
     node: {
       budget: { title: 'Monthly budget', note: 'watched hourly' },
       containers: { title: 'Per-second containers', note: 'no rented servers' },
       logs: { title: 'Warn-only logs', note: 'no invocation logs' },
-      rum: { title: 'RUM, 1 in 20', note: 'page loads sampled' },
-      originals: { title: 'Bounded originals', note: 'kept 30–90 days' },
+      rum: { title: 'RUM, {N1} in {N20}', note: 'page loads sampled' },
+      originals: { title: 'Bounded originals', note: 'kept {N30}–{N90} days' },
       ai: { title: 'AI under caps', note: 'daily neuron budget' },
       tests: { title: 'Lean release tests', note: 'one clip transcoded' },
       dev: { title: 'Static dev site', note: 'idle costs nothing' },

@@ -5,7 +5,7 @@ export const deliveryEn = {
     lead: 'Public videos stream from R2 through the CDN without running any code. Private and unlisted ones go through the media Worker, which checks a token carried in the path. Bunny’s CDN serves its own copies. The API decides which rail a play takes and signs the address.',
     desc: 'Viewers on the left ask api-videos for a play address. Three rails lead back to them: R2’s public bucket through its custom domain and a Cache Rule; R2’s private bucket through the media Worker with a token in the path and an edge cache keyed by object; and Bunny Stream’s library through Bunny’s token-signed CDN. api-videos purges the CDN when a video’s visibility changes.',
     group: { cf: 'Cloudflare account', pub: 'Public rail', priv: 'Private rail', bunny: 'bunny.net' },
-    caption: { pub: 'segments 1 year · playlists 10 s', priv: 'token in the path · one copy per object' },
+    caption: { pub: 'segments {N1} year · playlists {N10} s', priv: 'token in the path · one copy per object' },
     node: {
       viewers: { name: 'Viewers', role: 'web · apps · embeds' },
       api: { name: 'api-videos', role: 'picks the rail · signs' },
@@ -26,7 +26,7 @@ export const deliveryEn = {
     desc: 'Numbered steps for one HLS segment. 1: the player asks the nearest edge. 2: on a hit the edge answers; on a miss it asks the upper tier of Smart Tiered Cache. 3: if the upper tier misses too, it reads the object from R2. 4: the upper tier keeps a copy. 5: the edge keeps a copy. 6: the segment reaches the player.',
     node: {
       player: { name: 'Player', role: 'one HLS segment' },
-      edge: { name: 'Nearest edge', role: 'Cache Rule · 1 year' },
+      edge: { name: 'Nearest edge', role: 'Cache Rule · {N1} year' },
       upper: { name: 'Upper tier', role: 'Smart Tiered Cache' },
       r2: { name: 'R2 public', role: 'read only on a miss' },
     },
@@ -40,11 +40,11 @@ export const deliveryEn = {
     around: 'cache rules ship as code with every release',
     node: {
       api: { title: 'api-videos', note: 'signs on the way out' },
-      settings: { title: 'Delivery settings', note: 'cached 30 s per copy' },
+      settings: { title: 'Delivery settings', note: 'cached {N30} s per copy' },
       jwks: { title: 'Issuer keys', note: 'edge cache + last good' },
       revoked: { title: 'Revocations', note: 'read from KV' },
       share: { title: 'Share images', note: 'our own domain' },
-      mp4: { title: 'MP4 downloads', note: '10 per 10 s per IP' },
+      mp4: { title: 'MP4 downloads', note: '{N10} per {N10} s per IP' },
     },
     tag: { never: 'never stored' },
   },

@@ -1,3 +1,8 @@
+import { formatMoney } from '../../../../../packages/render/src/format.ts';
+
+/** The formatter's own options type (no Intl here: one formatter, packages/render/src/format.ts). */
+export type MoneyOptions = NonNullable<Parameters<typeof formatMoney>[3]>;
+
 /**
  * What a video costs on each pipeline, stage by stage (docs/SOURCES.md §9a). Every rate is copied
  * from the code or docs named beside it, at AlUmmahNow origin/main; nothing here is a new estimate.
@@ -157,9 +162,14 @@ export function costTable(): Record<StageId, Record<ScenarioId, number | null>> 
   return out;
 }
 
-/** Money as the page's language writes it: ٠–٩ in Arabic; more decimals for tiny amounts. */
+/** Money as the page's language writes it, through the shared formatter (packages/render/src/format.ts):
+ * ٠–٩ and the currency's Arabic name in Arabic, "$" in English; more decimals for tiny amounts. */
 export function formatUsd(locale: 'en' | 'ar', usd: number): string {
   if (usd > 0 && usd < 0.0001) return `< ${formatUsd(locale, 0.0001)}`;
   const digits = usd === 0 ? 2 : usd < 0.01 ? 4 : usd < 1 ? 3 : 2;
-  return new Intl.NumberFormat(locale === 'ar' ? 'ar-u-nu-arab' : 'en-US', { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol', minimumFractionDigits: digits, maximumFractionDigits: digits }).format(usd);
+  return money(usd, locale, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
+
+/** USD for a language: the shared formatter, with the narrow "$" in English. */
+export const money = (usd: number, locale: 'en' | 'ar', opts: MoneyOptions = {}) =>
+  formatMoney(usd, 'USD', locale, { ...(locale === 'en' ? { currencyDisplay: 'narrowSymbol' } : {}), ...opts });

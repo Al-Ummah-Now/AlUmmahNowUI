@@ -10,6 +10,7 @@
 import { esc, hasArabic, textWidth } from './text.ts';
 import { accentClass, r, symbol, symId, useIcon, type IconId } from './icons.ts';
 import { formatUsd } from './cost.ts';
+import { formatNumber } from '../../../../../packages/render/src/format.ts';
 import { G, Router, intersects, polyLength, roundedPath, sideDir, simplify, type Endpoint, type Pt, type Rect, type Side } from './route.ts';
 
 export type Flow = 'request' | 'media' | 'delivery' | 'async' | 'control';
@@ -584,7 +585,7 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     out.push(`<g class="an-elabel an-f-${l.rt.e.flow}" data-for="${l.rt.id}" data-covers><rect class="an-elabel-bg" x="${r(l.rect.x)}" y="${r(l.rect.y)}" width="${r(l.rect.w)}" height="${l.rect.h}" rx="${l.rect.h / 2}"/><text x="${r(l.rect.x + l.rect.w / 2)}" y="${r(l.rect.y + 12.5)}" text-anchor="middle" font-size="${LS}"${hasArabic(l.text) ? ' direction="rtl"' : ''}>${esc(l.text)}</text></g>`);
   }
   for (const b of badges) {
-    out.push(`<g class="an-badge an-f-${b.rt.e.flow}" data-for="${b.rt.id}" data-covers><circle cx="${r(b.c.x)}" cy="${r(b.c.y)}" r="${BR}"/><text x="${r(b.c.x)}" y="${r(b.c.y + 4)}" text-anchor="middle">${new Intl.NumberFormat(opts.locale === 'ar' ? 'ar-u-nu-arab' : 'en').format(b.n)}</text></g>`);
+    out.push(`<g class="an-badge an-f-${b.rt.e.flow}" data-for="${b.rt.id}" data-covers><circle cx="${r(b.c.x)}" cy="${r(b.c.y)}" r="${BR}"/><text x="${r(b.c.x)}" y="${r(b.c.y + 4)}" text-anchor="middle">${formatNumber(b.n, opts.locale ?? 'en')}</text></g>`);
   }
   out.push('</g>');
   out.push('</svg>');

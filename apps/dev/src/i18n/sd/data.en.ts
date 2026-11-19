@@ -44,7 +44,7 @@ export const dataEn = {
       r2: { name: 'R2 videos', role: 'the video record' },
       search: { name: 'D1 search', role: 'FTS5 row' },
       queue: { name: 'al-ummah-now-videos', role: 'queue' },
-      processor: { name: 'processor', role: 'batch 10 · 3 retries' },
+      processor: { name: 'processor', role: 'batch {N10} · {N3} retries' },
       notif: { name: 'D1 notifications', role: 'one row per person' },
       realtime: { name: 'realtime Worker', role: 'POST /broadcast' },
       subscribers: { name: 'Subscribers', role: 'bell in open apps' },

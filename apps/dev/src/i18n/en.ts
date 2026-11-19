@@ -398,7 +398,7 @@ export const en = {
       { title: 'Cost', body: 'A fixed monthly budget, watched hourly, with alerts.', href: 'cost/' },
       { title: 'Scaling', body: 'What scales by itself, and the work that keeps it safe.', href: 'scaling/' },
       { title: 'Clients', body: 'The web apps, the native apps in development, TVs and tools.', href: 'clients/' },
-      { title: 'Release & quality', body: 'Tags, gates, stage, a 0% promotion and automatic rollback.', href: 'release/' },
+      { title: 'Release & quality', body: 'Tags, gates, stage, a {N0}% promotion and automatic rollback.', href: 'release/' },
     ],
   },
   systemDesignPages: {
@@ -455,7 +455,7 @@ export const en = {
       heroLead: 'One Worker, realtime.alummahnow.net, carries every live update: the notification bell, admin dashboards, live viewer counts and player quality beacons. Connections land on a random shard; each channel has a directory that knows which shards hold a subscriber.',
       stagesTitle: 'How it stays correct',
       stages: [
-        { title: 'Hibernating shards', body: 'Sockets are spread over shard objects named sockets:0…n — eight by default, sixty-four at most. Each socket’s state (session, channels, rate-limit window) lives in its hibernation attachment, under two kilobytes, at most twelve channels; the runtime can hibernate and rebuild without losing anyone.', sources: [{ label: 'Scalability audit', href: `${GH}/AlUmmahNow/blob/main/docs/architecture/SCALABILITY-AUDIT.md` }] },
+        { title: 'Hibernating shards', body: 'Sockets are spread over shard objects named {tkSocketsZero}…n — eight by default, sixty-four at most. Each socket’s state (session, channels, rate-limit window) lives in its hibernation attachment, under two kilobytes, at most twelve channels; the runtime can hibernate and rebuild without losing anyone.', sources: [{ label: 'Scalability audit', href: `${GH}/AlUmmahNow/blob/main/docs/architecture/SCALABILITY-AUDIT.md` }] },
         { title: 'Directories, not shouting', body: 'Before a shard confirms its first local subscriber to a channel it joins that channel’s directory object. A broadcast goes to the directory, which forwards it only to the shards that hold a subscriber. When a directory cannot answer, or a batch is bigger than the shard count, or a shard is still on older code mid-rollout, the broadcast falls back to every shard — so a deploy never loses messages.', sources: [{ label: 'Socket shards', href: `${GH}/AlUmmahNow/blob/main/apps/websocket-server/src/shards.ts` }] },
         { title: 'Views that add up', body: 'Each view increments a counter object views:&lt;videoId&gt;:&lt;shard&gt; — four shards, chosen at random. A shard flushes its total back into the video record at most every ten seconds with a compare-and-swap, merging by maximum; a blind writer can hide a count only briefly. The API reads the record plus the unflushed shards, and a test replays a thousand parallel views to an exact count.', sources: [{ label: 'View counter', href: `${GH}/AlUmmahNow/blob/main/docs/architecture/SCALABILITY-AUDIT.md` }] },
         { title: 'Coalesced admin updates', body: 'Admin pages subscribe to admin topics; producers send updates through a coalescer object that lets at most one through per second, so a busy job never floods the dashboard.', sources: [{ label: 'websocket-server', href: `${GH}/AlUmmahNow/blob/main/apps/websocket-server/src/admin-coalescer.ts` }] },
@@ -485,11 +485,11 @@ export const en = {
       heroLead: 'AI reads and drafts; people decide. Every model runs on Workers AI with open weights, every call is metered in neurons against a daily budget reserved before the call and settled after it, and moderation can only hold content for review — never delete it.',
       stagesTitle: 'What runs where',
       stages: [
-        { title: 'Moderation: translate, guard, score', body: 'Text is translated to English (Gemma 4 26B) so Llama Guard 3 8B can read it, and Gemma scores the platform categories. Everything starts in shadow mode: policies live in D1 and an admin switches a category to enforce; only spam and charity-scam may hide, and religious-authenticity flags go to scholars only. Production runs it in shadow mode today.', feature: 'ai-moderation', sources: [{ label: 'E28 AI moderation', href: `${WIKI}/epics/E28-ai-moderation.md` }, { label: 'Models', href: `${GH}/AlUmmahNow/blob/main/apps/processor/src/moderation/pricing.ts` }] },
+        { title: 'Moderation: translate, guard, score', body: 'Text is translated to English ({tkGemma}) so {tkGuard} can read it, and Gemma scores the platform categories. Everything starts in shadow mode: policies live in D1 and an admin switches a category to enforce; only spam and charity-scam may hide, and religious-authenticity flags go to scholars only. Production runs it in shadow mode today.', feature: 'ai-moderation', sources: [{ label: 'E28 AI moderation', href: `${WIKI}/epics/E28-ai-moderation.md` }, { label: 'Models', href: `${GH}/AlUmmahNow/blob/main/apps/processor/src/moderation/pricing.ts` }] },
         { title: 'The budget that bounds it', body: 'Before any call, the scan reserves its worst-case cost for today in one conditional update; afterwards it settles to what it really spent. The daily caps are settings — moderation and categorising each have one, and the Costs page shows the spend against them. Unit tests never call a model: they pass a mock binding.', sources: [{ label: 'Budget', href: `${GH}/AlUmmahNow/blob/main/apps/processor/src/moderation/budget.ts` }] },
         { title: 'Captions: Whisper plus the Quran layer', body: 'Transcription is a creator action. Whisper large-v3-turbo returns a draft; Quran passages are matched against the official text and rendered from it only after the creator confirms — an uncertain match shows a reference, never guessed text. Quran is never machine-translated or machine-spoken.', feature: 'transcripts', sources: [{ label: 'AUN-CAPTIONS', href: `${WIKI}/epics/AUN-CAPTIONS-transcription-translation.md` }] },
         { title: 'Review before publication', body: 'For videos under pre-publication review, the transcoder also extracts frames (every two seconds plus scene cuts, capped) and the pipeline checks them with clef-flash for NSFW imagery and Whisper for the transcript. It can only hold the video for a person. Frames and transcripts are kept thirty days, signals twelve months. This is built and rolling out.', feature: 'video-review', sources: [{ label: 'AUN-VIDEO-REVIEW', href: `${WIKI}/epics/AUN-VIDEO-REVIEW-pre-publication-review.md` }] },
-        { title: 'Categories, translation, writing help', body: 'Category suggestions run on Llama 4 Scout; caption translation runs DeepSeek’s flash model on Workers AI, with DeepL as a measured paid alternative (in development); the CMS writing assist helps staff draft articles. Titles translate inline under the same AI budget.', feature: 'content-categories', sources: [{ label: 'Category model', href: `${GH}/AlUmmahNow/blob/main/packages/shared-types/src/category-suggestion.ts` }, { label: 'AUN-CAPTIONS', href: `${WIKI}/epics/AUN-CAPTIONS-transcription-translation.md` }] },
+        { title: 'Categories, translation, writing help', body: 'Category suggestions run on {tkScout}; caption translation runs DeepSeek’s flash model on Workers AI, with DeepL as a measured paid alternative (in development); the CMS writing assist helps staff draft articles. Titles translate inline under the same AI budget.', feature: 'content-categories', sources: [{ label: 'Category model', href: `${GH}/AlUmmahNow/blob/main/packages/shared-types/src/category-suggestion.ts` }, { label: 'AUN-CAPTIONS', href: `${WIKI}/epics/AUN-CAPTIONS-transcription-translation.md` }] },
         { title: 'Open weights only', body: 'The owner’s rule for review applies to AI generally: open-weight models only, hosted on Workers AI first, no proprietary model APIs — so behaviour and cost stay inspectable.', sources: [{ label: 'Owner rules', href: `${WIKI}/epics/AUN-VIDEO-REVIEW-pre-publication-review.md` }] },
       ] as Item[],
     },
@@ -540,7 +540,7 @@ export const en = {
 
     release: {
       title: 'Release & quality',
-      description: 'How code reaches production on Al Ummah Now: no hand deploys, a dated tag builds once, local E2E and stage gate it, production promotes at 0% before 100%, and rollback is automatic.',
+      description: 'How code reaches production on Al Ummah Now: no hand deploys, a dated tag builds once, local E2E and stage gate it, production promotes at {N0}% before {N100}%, and rollback is automatic.',
       heroTitle: 'No hand deploys',
       heroLead: 'Stage and production move only through CI. A dated tag on main builds once; the same build passes local end-to-end tests and the stage environment; production takes it at zero percent, smoke-tests it, then goes to full — or rolls back on its own.',
       stagesTitle: 'The gates, in order',
@@ -569,7 +569,7 @@ export const en = {
     stages: [
       {
         title: 'Upload, split at the API',
-        body: 'The creator uploads through the videos API with resumable (TUS) uploads. Each chunk is teed: one branch goes to Bunny Stream unchanged — Bunny’s answer is the response the uploader sees — and the other is kept as our own original in a private R2 bucket, so the R2 transcode never waits for Bunny. Originals are kept at least 30 days, never past 90.',
+        body: 'The creator uploads through the videos API with resumable (TUS) uploads. Each chunk is teed: one branch goes to Bunny Stream unchanged — Bunny’s answer is the response the uploader sees — and the other is kept as our own original in a private R2 bucket, so the R2 transcode never waits for Bunny. Originals are kept at least {N30} days, never past {N90}.',
         feature: 'upload-resilience',
         sources: [
           { label: 'Keeping our own originals', href: `${GH}/AlUmmahNow/blob/main/docs/media-delivery/ORIGINALS.md` },
@@ -587,7 +587,7 @@ export const en = {
       },
       {
         title: 'Renditions in R2',
-        body: 'One FFmpeg pass builds an HLS ladder by the short side of the picture — 360p, 480p, 720p and 1080p, never above the source — with 6-second segments, plus one progressive MP4 that public videos offer to search engines. Renditions land in a public bucket (served by the CDN) or a private one (served through the media Worker with a token in the path), and per-rung progress shows on the admin’s Processing card.',
+        body: 'One FFmpeg pass builds an HLS ladder by the short side of the picture — {tkRungLow}, {tkRungSd}, {tkRungHd} and {tkRungFull}, never above the source — with 6-second segments, plus one progressive MP4 that public videos offer to search engines. Renditions land in a public bucket (served by the CDN) or a private one (served through the media Worker with a token in the path), and per-rung progress shows on the admin’s Processing card.',
         sources: [
           { label: 'HLS ladder', href: `${GH}/AlUmmahNow/blob/main/apps/media/container/ladder.mjs` },
           { label: 'Public MP4', href: `${WIKI}/guides/video-delivery.md#public-mp4` },
@@ -604,7 +604,7 @@ export const en = {
       },
       {
         title: 'Failures are visible, viewers never stall',
-        body: 'A transcode that fails three times is marked failed and appears on the admin Errors page with Retry. A job that cannot start is retried on a growing backoff for about 24 minutes before it fails; a deploy never kills a running transcode (up to an hour of grace), and a stuck job is re-queued by an hourly sweep. Viewers keep playing Bunny throughout.',
+        body: 'A transcode that fails three times is marked failed and appears on the admin Errors page with Retry. A job that cannot start is retried on a growing backoff for about {N24} minutes before it fails; a deploy never kills a running transcode (up to an hour of grace), and a stuck job is re-queued by an hourly sweep. Viewers keep playing Bunny throughout.',
         feature: 'error-reporting',
         sources: [
           { label: 'Start failures and deploys', href: `${WIKI}/guides/video-delivery.md#two-sources-side-by-side` },
@@ -622,7 +622,7 @@ export const en = {
       },
       {
         title: 'Pre-publication review (rolling out)',
-        body: 'Before a video goes public, the transcoder also extracts frames (every 2 seconds plus scene cuts, capped) and the review pipeline checks them with open-weight models on Workers AI — clef-flash for NSFW, Whisper for the transcript. It only holds a video for a person; it never publishes or deletes anything. Frames and transcripts are kept for 30 days.',
+        body: 'Before a video goes public, the transcoder also extracts frames (every {N2} seconds plus scene cuts, capped) and the review pipeline checks them with open-weight models on Workers AI — clef-flash for NSFW, Whisper for the transcript. It only holds a video for a person; it never publishes or deletes anything. Frames and transcripts are kept for {N30} days.',
         feature: 'video-review',
         sources: [
           { label: 'AUN-VIDEO-REVIEW', href: `${WIKI}/epics/AUN-VIDEO-REVIEW-pre-publication-review.md` },
