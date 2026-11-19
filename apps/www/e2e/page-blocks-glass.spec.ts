@@ -19,12 +19,12 @@ test.skip(!LOCAL, 'needs the stub CMS (local E2E)');
 
 const PANELS = '.pb-b:not(.pb-t-none):not(.pb-w-full):not(.pb-k-hero) > .pb-in';
 /** Text-only pages (here About as the CMS migrated it: one markdown block): one glass box per section. */
-const SECTIONS = '[data-testid=page-sections] .pb-glass';
 const PAGES = [
   { locale: 'en', path: '/en/every-block/', what: 'page-builder panels', sel: PANELS, min: 2, lines: 20 },
   { locale: 'ar', path: '/ar/kull-al-kutal/', what: 'page-builder panels', sel: PANELS, min: 2, lines: 20 },
-  { locale: 'en', path: '/en/about/', what: 'text page sections', sel: SECTIONS, min: 2, lines: 8 },
-  { locale: 'ar', path: '/ar/about/', what: 'text page sections', sel: SECTIONS, min: 2, lines: 8 },
+  // About is built from blocks as the CMS seeds it (e2e/stub-about.ts): its feature list and Get started panels
+  { locale: 'en', path: '/en/about/', what: 'About page-builder panels', sel: PANELS, min: 2, lines: 8 },
+  { locale: 'ar', path: '/ar/about/', what: 'About page-builder panels', sel: PANELS, min: 2, lines: 8 },
 ] as const;
 
 interface TextBox { x: number; y: number; w: number; h: number; rgb: [number, number, number]; large: boolean; text: string }
