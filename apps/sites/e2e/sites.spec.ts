@@ -455,3 +455,15 @@ for (const l of ['en', 'ar'] as const) {
     }
   });
 }
+
+// Arabic numbers in ٠–٩ and counts that agree with their nouns (packages/render/src/count-nouns.ts:
+// AlUmmahNow's formatCountNoun rules): the post with 3 likes and 1 comment, and the footer year.
+test('post counts agree with their nouns and Arabic uses ٠–٩, the footer year included', async ({ page }) => {
+  await page.goto(at(HOSTS.both, '/en/posts/post-e2e-1/'));
+  await expect(page.getByTestId('site-post').first()).toContainText('3 likes · 1 comment');
+  await expect(page.getByTestId('site-post').first()).not.toContainText('1 comments');
+  await expect(page.locator('.site-footer .footer-base')).toHaveText(/^© \d{4} Sh\. Mustafa Elbadry$/);
+  await page.goto(at(HOSTS.both, '/ar/posts/post-e2e-1/'));
+  await expect(page.getByTestId('site-post').first()).toContainText('٣ إعجابات · تعليق واحد');
+  await expect(page.locator('.site-footer .footer-base')).toHaveText(/^© [٠-٩]{4} الشيخ مصطفى البدري$/);
+});
