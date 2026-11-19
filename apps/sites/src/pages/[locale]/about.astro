@@ -5,7 +5,7 @@ import { renderMarkdown } from '../../../../../packages/render/src/markdown';
 import { alternates, canonicalUrl, siteName } from '../../lib/seo';
 
 const ctx = pageContext(Astro);
-if (!ctx) return new Response('Not found', { status: 404 });
+if (!ctx) return Astro.rewrite('/404');
 const { site, locale, t } = ctx;
 const text = site.site.about[locale] || site.channel.descriptionLocalized?.[locale] || site.channel.description || '';
 // Markdown with raw HTML escaped and unsafe links dropped (packages/render/src/markdown.ts)

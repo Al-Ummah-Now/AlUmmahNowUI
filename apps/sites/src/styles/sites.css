@@ -426,3 +426,9 @@ html[data-signed-in] .site-header .aun-signin {
 .button:focus-visible {
   filter: brightness(1.08);
 }
+/* The other actions next to the main one (the error card's Go back): outlined, flat */
+.button-secondary {
+  background: transparent;
+  color: var(--fanous-color-text-primary);
+  box-shadow: inset 0 0 0 1px var(--fanous-color-outline);
+}

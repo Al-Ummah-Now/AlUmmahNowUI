@@ -12,11 +12,11 @@ import { canonicalUrl, siteName } from '../../lib/seo';
 import { dir, type Locale } from '../../../../../packages/render/src/locale';
 
 const ctx = pageContext(Astro);
-if (!ctx) return new Response('Not found', { status: 404 });
+if (!ctx) return Astro.rewrite('/404');
 const { site, locale } = ctx;
 const slug = String(Astro.params.slug ?? '').toLowerCase();
 const page = await sitePage(ctx.data, site.host, slug, site.preview ? Astro.url.searchParams.get('preview') : null);
-if (!page) return new Response('Not found', { status: 404 });
+if (!page) return Astro.rewrite('/404');
 const other: Locale = locale === 'ar' ? 'en' : 'ar';
 const has = (l: Locale) => !!(page.title[l] || (page.blocks[l] ?? []).length);
 const shown: Locale = has(locale) ? locale : other;
