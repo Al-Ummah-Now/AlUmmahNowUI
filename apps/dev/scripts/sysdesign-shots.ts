@@ -24,6 +24,9 @@ const RECORD = process.argv.includes('--record');
 /** --only=id,id: reshoot just these diagrams (their frame and shot, and clips of them); skip the rest */
 const onlyArg = process.argv.find((a) => a.startsWith('--only='));
 const ONLY = onlyArg ? new Set(onlyArg.slice(7).split(',')) : null;
+/** --langs=ar: reshoot only these languages */
+const langsArg = process.argv.find((a) => a.startsWith('--langs='));
+const LANGS = langsArg ? langsArg.slice(8).split(',') : ['en', 'ar'];
 const DIST = resolve(import.meta.dirname, '../dist');
 mkdirSync(out, { recursive: true });
 
@@ -69,7 +72,7 @@ const name = (slug: string) => (slug ? slug.replace(/\/$/, '') : 'hub');
 const defects: string[] = [];
 
 for (const slug of PAGES)
-  for (const lang of ['en', 'ar'])
+  for (const lang of LANGS)
     for (const mode of ['dark', 'light'] as const)
       for (const [w, vp] of Object.entries(WIDTHS)) {
         const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: vp.dsf, colorScheme: mode, reducedMotion: 'no-preference' });
