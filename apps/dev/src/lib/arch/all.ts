@@ -7,11 +7,12 @@ import { overview } from './specs/overview.ts';
 import { pipeline } from './specs/pipeline.ts';
 import { costs } from './specs/costs.ts';
 import { renderIso } from './iso.ts';
-import { renderSketch } from './sketch.ts';
+import { renderSketch, renderSketchSpec } from './sketch.ts';
+import { PAGE_BUILDERS } from './pages/index.ts';
 import { diagramsEn } from '../../i18n/diagrams.en.ts';
 import { diagramsAr } from '../../i18n/diagrams.ar.ts';
 
-export type DiagramId = 'overview' | 'pipeline' | 'hero' | 'sketch-play' | 'costs';
+export type DiagramId = string;
 
 export interface Rendered {
   wide: string;
@@ -24,6 +25,12 @@ export function diagram(id: DiagramId, locale: 'en' | 'ar'): Rendered {
   const c = locale === 'ar' ? diagramsAr : diagramsEn;
   const rtl = locale === 'ar';
   const ro = (variant: string) => ({ rtl, variant, locale, scenario: 'one', unknown: c.costs.unknown });
+  const page = PAGE_BUILDERS[id];
+  if (page) {
+    const b = page(c, locale);
+    if (b.kind === 'sketch') return { wide: renderSketchSpec(b.spec, b.wide, { rtl, variant: 'wide' }), narrow: renderSketchSpec(b.spec, b.narrow, { rtl, variant: 'narrow' }), flows: [], steps: false };
+    return { wide: renderArch(b.spec, b.wide, ro('wide')), narrow: renderArch(b.spec, b.narrow, ro('narrow')), flows: flowsIn(b.spec.edges, b.narrow.edges), steps: b.spec.motion === 'steps' && b.spec.badges !== false };
+  }
   switch (id) {
     case 'overview': {
       const o = overview(c.overview, c.costs, locale);
@@ -39,6 +46,8 @@ export function diagram(id: DiagramId, locale: 'en' | 'ar'): Rendered {
     }
     case 'hero':
       return { wide: renderIso(c.hero, { rtl, variant: 'wide' }), narrow: renderIso(c.hero, { rtl, variant: 'narrow' }), flows: ['request', 'media', 'delivery'], steps: false };
+    default:
+      throw new Error(`unknown diagram ${id}`);
     case 'sketch-play':
       return { wide: renderSketch(c.sketch, { rtl, variant: 'wide' }), narrow: renderSketch(c.sketch, { rtl, variant: 'narrow' }), flows: [], steps: false };
   }
@@ -46,4 +55,4 @@ export function diagram(id: DiagramId, locale: 'en' | 'ar'): Rendered {
 
 const flowsIn = (...lists: ({ flow: string }[] | undefined)[]) => [...new Set(lists.flatMap((l) => (l ?? []).map((e) => e.flow)))];
 
-export const DIAGRAMS: DiagramId[] = ['hero', 'overview', 'pipeline', 'sketch-play', 'costs'];
+export const DIAGRAMS: DiagramId[] = ['hero', 'overview', 'pipeline', 'sketch-play', 'costs', ...Object.keys(PAGE_BUILDERS)];

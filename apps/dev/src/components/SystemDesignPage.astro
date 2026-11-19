@@ -1,15 +1,13 @@
 ---
 /**
- * The shared shape of every System design subpage: hero, the diagram with its legend, then the
- * stage tiles with their registry statuses and wiki sources. Pages pass their i18n block and the
- * two diagram specs (wide and narrow) built from the same labels.
+ * The shared shape of every System design subpage: the hero, the page's diagrams (ArchFigure, passed
+ * as children — 3 to 5 per page, src/lib/arch), then the stage tiles with their registry statuses
+ * and wiki sources.
  */
 import Base from '../layouts/Base.astro';
 import PageHero from './PageHero.astro';
-import Diagram from './Diagram.astro';
 import ItemGrid from './ItemGrid.astro';
 import type { Item, Strings } from '../i18n';
-import type { DiagramSpec } from '../lib/diagram.ts';
 import type { Locale, PageSlug } from '../lib/pages';
 
 interface Props {
@@ -21,43 +19,15 @@ interface Props {
     description: string;
     heroTitle: string;
     heroLead: string;
-    diagramTitle: string;
-    diagramLead: string;
     stagesTitle: string;
     stages: Item[];
   };
-  wide: DiagramSpec;
-  narrow: DiagramSpec;
-  rtl: boolean;
 }
-const { locale, slug, t, block, wide, narrow, rtl } = Astro.props;
+const { locale, slug, t, block } = Astro.props;
 ---
 <Base locale={locale} slug={slug} title={block.title} description={block.description}>
   <PageHero title={block.heroTitle} lead={block.heroLead} />
-  <slot name="visual" />
-  <section class="band band-raised" aria-labelledby="diagram-h">
-    <div class="wrap">
-      <h2 id="diagram-h" class="h2">{block.diagramTitle}</h2>
-      <p class="section-lead">{block.diagramLead}</p>
-      <figure class="dg-figure">
-        <div class="panel">
-          <Diagram spec={wide} rtl={rtl} variant="wide" />
-          <Diagram spec={narrow} rtl={rtl} variant="narrow" />
-        </div>
-        <figcaption class="dg-legend" aria-labelledby="legend-h">
-          <h3 id="legend-h" class="dg-legend-title">{t.systemDesign.legendTitle}</h3>
-          <dl class="dg-legend-list">
-            {t.systemDesign.legend.map((x) => (
-              <div class="dg-legend-item">
-                <dt>{x.term}</dt>
-                <dd>{x.body}</dd>
-              </div>
-            ))}
-          </dl>
-        </figcaption>
-      </figure>
-    </div>
-  </section>
+  <slot />
   <section class="band" aria-labelledby="stages-h">
     <div class="wrap">
       <h2 id="stages-h" class="h2">{block.stagesTitle}</h2>

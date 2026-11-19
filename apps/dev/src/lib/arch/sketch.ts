@@ -95,158 +95,214 @@ class Pen {
   }
 }
 
-interface SNode {
+export type Tone = 'yellow' | 'blue' | 'orange' | 'green' | 'pink';
+export interface SketchNode {
   id: string;
   icon: string;
   title: string;
   note?: string;
-  x: number;
-  y: number;
-  w: number;
-  tone: string;
+  tone: Tone;
+  /** grid cell (column, row); fractions allowed */
+  at: [number, number];
 }
-interface SEdge {
+export interface SketchEdge {
   from: string;
   to: string;
-  a: [number, number];
-  b: [number, number];
-  ctrl?: [number, number];
+  fromSide?: 'n' | 'e' | 's' | 'w';
+  toSide?: 'n' | 'e' | 's' | 'w';
+  /** sideways bow of the curve, px (positive bows to the right of travel) */
+  bend?: number;
   dashed?: boolean;
   tag?: string;
-  tagAt?: [number, number];
-  tone?: string;
+  tone?: Tone;
+  /** moves the tag along the curve (0–1, default 0.5) */
+  tagAt?: number;
+}
+export interface SketchSpec {
+  id: string;
+  title: string;
+  desc: string;
+  /** the handwritten heading inside the drawing */
+  heading: string;
+  /** written up the cloud's side; omit for no cloud */
+  around?: string;
+  nodes: SketchNode[];
+  edges: SketchEdge[];
+  /** a row of icons along the bottom (metrics, logs…); edges may point at them by id */
+  foot?: { id: string; icon: string; title: string }[];
+}
+export interface SketchLayout {
+  colW: number;
+  rowH: number;
+  nodeW: number;
+  cols: number;
+  at?: Record<string, [number, number]>;
+  /** extra room above the icon row along the bottom, for long curves */
+  footGap?: number;
+  /** wires for this width (a phone column needs different ones) */
+  edges?: SketchEdge[];
 }
 
-export function renderSketch(c: Copy, opts: { rtl: boolean; variant: string }): string {
-  const s = c.step;
-  const wide = opts.variant === 'wide';
-  const prefix = `sketch-${opts.variant}`;
-  const pen = new Pen(prefix);
-  const H_NODE = 124;
-  const nodes: SNode[] = wide
-    ? [
-        { id: 'viewer', icon: 'lucide/user', title: s.viewer, note: s.viewerNote, x: 92, y: 190, w: 170, tone: 'yellow' },
-        { id: 'player', icon: 'lucide/play', title: s.player, note: s.playerNote, x: 312, y: 190, w: 180, tone: 'blue' },
-        { id: 'api', icon: 'cloudflare/workers', title: s.api, note: s.apiNote, x: 548, y: 190, w: 210, tone: 'orange' },
-        { id: 'r2', icon: 'cloudflare/r2', title: `${s.edge} · ${s.r2}`, note: s.edgeNote, x: 820, y: 110, w: 230, tone: 'green' },
-        { id: 'bunny', icon: 'brand/bunny-cdn', title: `${s.edge} · ${s.bunny}`, note: s.edgeNote, x: 820, y: 280, w: 230, tone: 'green' },
-        { id: 'plays', icon: 'lucide/monitor', title: s.play, note: s.playNote, x: 1110, y: 190, w: 220, tone: 'pink' },
-      ]
-    : [
-        { id: 'viewer', icon: 'lucide/user', title: s.viewer, note: s.viewerNote, x: 120, y: 112, w: 200, tone: 'yellow' },
-        { id: 'player', icon: 'lucide/play', title: s.player, note: s.playerNote, x: 120, y: 292, w: 200, tone: 'blue' },
-        { id: 'api', icon: 'cloudflare/workers', title: s.api, note: s.apiNote, x: 110, y: 472, w: 220, tone: 'orange' },
-        { id: 'r2', icon: 'cloudflare/r2', title: s.r2, note: s.edgeNote, x: 50, y: 666, w: 158, tone: 'green' },
-        { id: 'bunny', icon: 'brand/bunny-cdn', title: s.bunny, note: s.edgeNote, x: 222, y: 666, w: 158, tone: 'green' },
-        { id: 'plays', icon: 'lucide/monitor', title: s.play, note: s.playNote, x: 100, y: 860, w: 240, tone: 'pink' },
-      ];
-  const byId = new Map(nodes.map((n) => [n.id, n]));
-  const L = (id: string) => byId.get(id)!;
-  const mid = (n: SNode, side: 'n' | 's' | 'e' | 'w', d = 0): [number, number] =>
-    side === 'n' ? [n.x + n.w / 2 + d, n.y - 6] : side === 's' ? [n.x + n.w / 2 + d, n.y + H_NODE + 8] : side === 'e' ? [n.x + n.w + 8, n.y + H_NODE / 2 + d] : [n.x - 8, n.y + H_NODE / 2 + d];
-  const obsY = wide ? 500 : 1090;
-  const obs = wide
-    ? [
-        { id: 'logs', icon: 'cloudflare/logs', title: c.obs.logs, x: 470 },
-        { id: 'errors', icon: 'lucide/activity', title: c.obs.errors, x: 680 },
-        { id: 'vitals', icon: 'lucide/gauge', title: c.obs.vitals, x: 890 },
-      ]
-    : [
-        { id: 'logs', icon: 'cloudflare/logs', title: c.obs.logs, x: 80 },
-        { id: 'errors', icon: 'lucide/activity', title: c.obs.errors, x: 220 },
-        { id: 'vitals', icon: 'lucide/gauge', title: c.obs.vitals, x: 360 },
-      ];
-  const edges: SEdge[] = wide
-    ? [
-        { from: 'viewer', to: 'player', a: mid(L('viewer'), 'e'), b: mid(L('player'), 'w') },
-        { from: 'player', to: 'api', a: mid(L('player'), 'e'), b: mid(L('api'), 'w') },
-        { from: 'api', to: 'r2', a: mid(L('api'), 'e', -16), b: mid(L('r2'), 'w'), ctrl: [790, 160] },
-        { from: 'api', to: 'bunny', a: mid(L('api'), 'e', 16), b: mid(L('bunny'), 'w'), ctrl: [790, 300] },
-        { from: 'r2', to: 'plays', a: mid(L('r2'), 'e'), b: mid(L('plays'), 'w', -16), ctrl: [1085, 175] },
-        { from: 'bunny', to: 'plays', a: mid(L('bunny'), 'e'), b: mid(L('plays'), 'w', 16), ctrl: [1085, 290] },
-        { from: 'plays', to: 'api', a: mid(L('plays'), 's', -60), b: mid(L('api'), 's', 40), ctrl: [930, 600], dashed: true, tag: c.tag.optional, tagAt: [931, 462], tone: 'pink' },
-        { from: 'plays', to: 'vitals', a: mid(L('plays'), 's', 60), b: [944, obsY + 20], ctrl: [1220, 500], dashed: true, tag: c.tag.async, tagAt: [1153, 450], tone: 'blue' },
-      ]
-    : [
-        { from: 'viewer', to: 'player', a: mid(L('viewer'), 's'), b: mid(L('player'), 'n') },
-        { from: 'player', to: 'api', a: mid(L('player'), 's'), b: mid(L('api'), 'n') },
-        { from: 'api', to: 'r2', a: mid(L('api'), 's', -50), b: mid(L('r2'), 'n') },
-        { from: 'api', to: 'bunny', a: mid(L('api'), 's', 50), b: mid(L('bunny'), 'n') },
-        { from: 'r2', to: 'plays', a: mid(L('r2'), 's'), b: mid(L('plays'), 'n', -50) },
-        { from: 'bunny', to: 'plays', a: mid(L('bunny'), 's'), b: mid(L('plays'), 'n', 50) },
-        { from: 'plays', to: 'api', a: mid(L('plays'), 'e'), b: mid(L('api'), 'e'), ctrl: [480, 730], dashed: true, tag: c.tag.optional, tagAt: [382, 630], tone: 'pink' },
-        { from: 'plays', to: 'vitals', a: mid(L('plays'), 's', 70), b: [376, obsY - 8], dashed: true, tag: c.tag.async, tagAt: [300, 1040], tone: 'blue' },
-      ];
+const NODE_H = 124;
 
-  const W = wide ? 1400 : 440;
-  const Hc = wide ? 650 : 1230;
+export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: { rtl: boolean; variant: string }): string {
+  const spec = layout.edges ? { ...spec0, edges: layout.edges } : spec0;
+  const prefix = `${spec.id}-${opts.variant}`;
+  const pen = new Pen(prefix);
+  const side = 22; // the margin the rotated side note lives in
+  const mx = 64 + (spec.around ? side : 0);
+  const top = 96;
+  const rows = Math.max(...spec.nodes.map((n) => (layout.at?.[n.id] ?? n.at)[1])) + 1;
+  const W = Math.round(layout.cols * layout.colW + 2 * mx);
+  const footY = top + rows * layout.rowH + 10 + (layout.footGap ?? 0);
+  const Hc = Math.round(footY + (spec.foot?.length ? 120 : 20) + 40);
   const mirror = (x: number) => (opts.rtl ? W - x : x);
-  const ar = hasArabic(c.title2);
+  const ar = hasArabic(spec.heading);
   const fam = ar ? 'an-hand-ar' : 'an-hand';
-  const icons = [...new Set([...nodes.map((n) => n.icon), ...obs.map((o) => o.icon)])];
+  const box = new Map<string, { x: number; y: number; w: number; h: number }>();
+  for (const n of spec.nodes) {
+    const [c, r0] = layout.at?.[n.id] ?? n.at;
+    const x = mx + c * layout.colW + (layout.colW - layout.nodeW) / 2;
+    const y = top + r0 * layout.rowH + (layout.rowH - NODE_H) / 2;
+    box.set(n.id, { x: opts.rtl ? W - x - layout.nodeW : x, y, w: layout.nodeW, h: NODE_H });
+  }
+  const foot = spec.foot ?? [];
+  const footW = (W - 2 * mx) / Math.max(1, foot.length);
+  foot.forEach((f, i) => {
+    const cx = mx + footW * (i + 0.5);
+    const tw = Math.max(64, textWidth(f.title, 16, true) + 12);
+    box.set(f.id, { x: mirror(cx) - tw / 2, y: footY, w: tw, h: 92 });
+  });
+  const anchor = (id: string, sd: 'n' | 'e' | 's' | 'w' | undefined, other: { x: number; y: number; w: number; h: number }): [number, number] => {
+    const b = box.get(id)!;
+    const cx = b.x + b.w / 2;
+    const cy = b.y + b.h / 2;
+    const ox = other.x + other.w / 2;
+    const oy = other.y + other.h / 2;
+    const s2 = sd ?? (Math.abs(oy - cy) < b.h * 0.6 ? (ox > cx ? 'e' : 'w') : oy > cy ? 's' : 'n');
+    const real = opts.rtl && (s2 === 'e' || s2 === 'w') && sd ? (s2 === 'e' ? 'w' : 'e') : s2;
+    if (real === 'e') return [b.x + b.w + 8, cy];
+    if (real === 'w') return [b.x - 8, cy];
+    if (real === 's') return [cx, b.y + b.h + 8];
+    return [cx, b.y - 8];
+  };
+
+  const icons = [...new Set([...spec.nodes.map((n) => n.icon), ...foot.map((f) => f.icon)])];
   const o: string[] = [];
   o.push(
-    `<svg class="an an-sketch" data-diagram="sketch-play" data-variant="${opts.variant}" viewBox="0 0 ${W} ${Hc}" width="${W}" height="${Hc}" role="img" aria-labelledby="${prefix}-t ${prefix}-d" style="--an-w:${W}px">`,
-    `<title id="${prefix}-t">${esc(c.title)}</title><desc id="${prefix}-d">${esc(c.desc)}</desc><defs>${icons.map((i) => symbol(prefix, i)).join('')}</defs>`,
+    `<svg class="an an-sketch" data-diagram="${spec.id}" data-variant="${opts.variant}" viewBox="0 0 ${W} ${Hc}" width="${W}" height="${Hc}" role="img" aria-labelledby="${prefix}-t ${prefix}-d" style="--an-w:${W}px">`,
+    `<title id="${prefix}-t">${esc(spec.title)}</title><desc id="${prefix}-d">${esc(spec.desc)}</desc><defs>${icons.map((i) => symbol(prefix, i)).join('')}</defs>`,
     `<rect class="an-canvas an-paper" width="${W}" height="${Hc}" rx="18"/>`,
   );
-  // the cloud of observability around everything
-  const cl = wide ? [64, 96, W - 128, Hc - 150] : [44, 70, W - 88, Hc - 112];
-  o.push(`<g class="an-groups"><path class="an-sk-cloud" d="${pen.cloud(cl[0]!, cl[1]!, cl[2]!, cl[3]!)}"/>`);
-  // flip the cloud for RTL by mirroring its path through a transform-free rebuild
-  o.push('</g>');
-  if (opts.rtl) {
-    // mirror the cloud path in place: rebuild with mirrored x
-    o[o.length - 2]! = o[o.length - 2]!.replace(/([MQL ])(-?[\d.]+) (-?[\d.]+)/g, (_m, p, x, y) => `${p}${r(W - Number(x))} ${y}`);
+  if (spec.around) {
+    let cloud = pen.cloud(mx - 20, 74, W - 2 * mx + 40, Hc - 74 - 28);
+    if (opts.rtl) cloud = cloud.replace(/([MQL ])(-?[\d.]+) (-?[\d.]+)/g, (_m, p, x, y) => `${p}${r(W - Number(x))} ${y}`);
+    o.push(`<g class="an-groups"><path class="an-sk-cloud" d="${cloud}"/></g>`);
+    const sx = opts.rtl ? W - side - 6 : side + 6;
+    const sy = (74 + Hc - 28) / 2;
+    o.push(`<text class="an-sk-side ${fam}" x="${sx}" y="${r(sy)}" text-anchor="middle" transform="rotate(${opts.rtl ? 90 : -90} ${sx} ${r(sy)})"${ar ? ' direction="rtl"' : ''}>${esc(spec.around)}</text>`);
   }
-  const titleY = wide ? 52 : 46;
-  o.push(`<g data-node-label="title"><text class="an-sk-title ${fam}" x="${r(W / 2)}" y="${titleY}" text-anchor="middle"${ar ? ' direction="rtl"' : ''}>${esc(c.title2)}</text></g>`);
-  // the side note, written up the cloud's edge
-  const sx = opts.rtl ? W - (wide ? 30 : 22) : wide ? 30 : 22;
-  const sy = wide ? Hc / 2 : 640;
-  o.push(`<text class="an-sk-side ${fam}" x="${sx}" y="${sy}" text-anchor="middle" transform="rotate(${opts.rtl ? 90 : -90} ${sx} ${sy})"${ar ? ' direction="rtl"' : ''}>${esc(c.around)}</text>`);
+  o.push(`<g data-node-label="heading"><text class="an-sk-title ${fam}" x="${r(W / 2)}" y="52" text-anchor="middle"${ar ? ' direction="rtl"' : ''}>${esc(spec.heading)}</text></g>`);
 
-  // edges
-  o.push('<g class="an-edges">');
   const tags: string[] = [];
-  edges.forEach((e, i) => {
-    const a: [number, number] = [mirror(e.a[0]), e.a[1]];
-    const b: [number, number] = [mirror(e.b[0]), e.b[1]];
-    const ctrl = e.ctrl ? ([mirror(e.ctrl[0]), e.ctrl[1]] as [number, number]) : undefined;
+  o.push('<g class="an-edges">');
+  const paths: string[] = [];
+  spec.edges.forEach((e, i) => {
+    const bf = box.get(e.from)!;
+    const bt = box.get(e.to)!;
+    const a = anchor(e.from, e.fromSide, bt);
+    const b = anchor(e.to, e.toSide, bf);
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+    const bend = (e.bend ?? 0) * (opts.rtl ? -1 : 1);
+    const nx = -(b[1] - a[1]) / len;
+    const ny = (b[0] - a[0]) / len;
+    const ctrl: [number, number] = [(a[0] + b[0]) / 2 + nx * bend, (a[1] + b[1]) / 2 + ny * bend];
     const { shaft, head } = pen.arrow(a[0], a[1], b[0], b[1], ctrl);
+    paths.push(shaft);
     o.push(`<path id="${prefix}-e${i}" data-edge="${prefix}-e${i}" data-from="${e.from}" data-to="${e.to}" class="an-edge an-sk-arrow${e.dashed ? ' an-sk-dashed' : ''}" d="${shaft}"/><path class="an-sk-head" d="${head}"/>`);
-    if (e.tag && e.tagAt) {
+    if (e.tag) {
+      const t = e.tagAt ?? 0.5;
+      const px = (1 - t) * (1 - t) * a[0] + 2 * (1 - t) * t * ctrl[0] + t * t * b[0];
+      const py = (1 - t) * (1 - t) * a[1] + 2 * (1 - t) * t * ctrl[1] + t * t * b[1];
       const tw = textWidth(e.tag, 15, true) + 18;
-      const tx = mirror(e.tagAt[0]);
-      tags.push(`<g class="an-sk-tag an-sk-${e.tone}"><path class="an-sk-mark" d="${pen.marker(tx - tw / 2 - 4, e.tagAt[1] - 15, tw, 26)}"/><path class="an-sk-line" d="${pen.rect(tx - tw / 2, e.tagAt[1] - 14, tw, 26)}"/><text class="${fam}" x="${r(tx)}" y="${r(e.tagAt[1] + 4)}" text-anchor="middle"${hasArabic(e.tag) ? ' direction="rtl"' : ''}>${esc(e.tag)}</text></g>`);
+      tags.push(`<g class="an-sk-tag an-sk-${e.tone ?? 'blue'}"><path class="an-sk-mark" d="${pen.marker(px - tw / 2 - 4, py - 15, tw, 26)}"/><path class="an-sk-line" d="${pen.rect(px - tw / 2, py - 14, tw, 26)}"/><text class="${fam}" x="${r(px)}" y="${r(py + 4)}" text-anchor="middle"${hasArabic(e.tag) ? ' direction="rtl"' : ''}>${esc(e.tag)}</text></g>`);
     }
   });
   o.push('</g><g class="an-motion" aria-hidden="true">');
-  edges.forEach((e, i) => {
+  spec.edges.forEach((e, i) => {
     if (e.dashed) return;
     o.push(`<circle class="an-pulse an-sk-dot" r="4"><animateMotion dur="2.4s" begin="-${r(i * 0.4)}s" repeatCount="indefinite"><mpath href="#${prefix}-e${i}"/></animateMotion></circle>`);
   });
-  o.push('</g>');
-
-  // nodes
-  o.push('<g class="an-nodes">');
-  for (const n of nodes) {
-    const x = opts.rtl ? W - n.x - n.w : n.x;
+  o.push('</g><g class="an-nodes">');
+  for (const n of spec.nodes) {
+    const b = box.get(n.id)!;
     o.push(`<g class="an-node an-sk-node an-sk-${n.tone}" data-node="${n.id}">`);
-    o.push(`<rect data-box class="an-sk-hit" x="${r(x - 4)}" y="${r(n.y - 4)}" width="${r(n.w + 12)}" height="${H_NODE + 12}"/>`);
-    o.push(`<path class="an-sk-mark" d="${pen.marker(x, n.y, n.w, H_NODE)}"/><path class="an-sk-line" d="${pen.rect(x, n.y, n.w, H_NODE)}"/>`);
-    o.push(useIcon(prefix, n.icon, x + n.w / 2 - 20, n.y + 12, 40));
-    o.push(`<text class="an-sk-name ${fam}" x="${r(x + n.w / 2)}" y="${r(n.y + 78)}" text-anchor="middle"${hasArabic(n.title) ? ' direction="rtl"' : ''}>${esc(n.title)}</text>`);
-    if (n.note) o.push(`<text class="an-sk-note ${fam}" x="${r(x + n.w / 2)}" y="${r(n.y + 108)}" text-anchor="middle"${hasArabic(n.note) ? ' direction="rtl"' : ''}>${esc(n.note)}</text>`);
+    o.push(`<rect data-box class="an-sk-hit" x="${r(b.x - 4)}" y="${r(b.y - 4)}" width="${r(b.w + 12)}" height="${b.h + 12}"/>`);
+    o.push(`<path class="an-sk-mark" d="${pen.marker(b.x, b.y, b.w, b.h)}"/><path class="an-sk-line" d="${pen.rect(b.x, b.y, b.w, b.h)}"/>`);
+    o.push(useIcon(prefix, n.icon, b.x + b.w / 2 - 20, b.y + 12, 40));
+    o.push(`<text class="an-sk-name ${fam}" x="${r(b.x + b.w / 2)}" y="${r(b.y + 78)}" text-anchor="middle"${hasArabic(n.title) ? ' direction="rtl"' : ''}>${esc(n.title)}</text>`);
+    if (n.note) o.push(`<text class="an-sk-note ${fam}" x="${r(b.x + b.w / 2)}" y="${r(b.y + 108)}" text-anchor="middle"${hasArabic(n.note) ? ' direction="rtl"' : ''}>${esc(n.note)}</text>`);
     o.push('</g>');
   }
-  for (const ob of obs) {
-    const x = mirror(ob.x);
-    const tw = Math.max(64, textWidth(ob.title, 16, true) + 12);
-    o.push(`<g class="an-node an-sk-obs" data-node="${ob.id}"><rect data-box class="an-sk-hit" x="${r(x - tw / 2)}" y="${obsY - 4}" width="${r(tw)}" height="92"/>`);
-    o.push(useIcon(prefix, ob.icon, x - 20, obsY, 40));
-    o.push(`<text class="an-sk-name ${fam}" x="${r(x)}" y="${obsY + 62}" text-anchor="middle"${hasArabic(ob.title) ? ' direction="rtl"' : ''}>${esc(ob.title)}</text></g>`);
+  for (const f of foot) {
+    const b = box.get(f.id)!;
+    o.push(`<g class="an-node an-sk-obs" data-node="${f.id}"><rect data-box class="an-sk-hit" x="${r(b.x)}" y="${r(b.y - 4)}" width="${r(b.w)}" height="${b.h}"/>`);
+    o.push(useIcon(prefix, f.icon, b.x + b.w / 2 - 20, b.y, 40));
+    o.push(`<text class="an-sk-name ${fam}" x="${r(b.x + b.w / 2)}" y="${r(b.y + 62)}" text-anchor="middle"${hasArabic(f.title) ? ' direction="rtl"' : ''}>${esc(f.title)}</text></g>`);
   }
   o.push(`</g><g class="an-labels">${tags.join('')}</g></svg>`);
   return o.join('');
+}
+
+/** "One play, sketched" (video pipeline page), on the generic engine. */
+export function renderSketch(c: Copy, opts: { rtl: boolean; variant: string }): string {
+  const s = c.step;
+  const spec: SketchSpec = {
+    id: 'sketch-play',
+    title: c.title,
+    desc: c.desc,
+    heading: c.title2,
+    around: c.around,
+    nodes: [
+      { id: 'viewer', icon: 'lucide/user', title: s.viewer, note: s.viewerNote, tone: 'yellow', at: [0, 0.5] },
+      { id: 'player', icon: 'lucide/play', title: s.player, note: s.playerNote, tone: 'blue', at: [1, 0.5] },
+      { id: 'api', icon: 'cloudflare/workers', title: s.api, note: s.apiNote, tone: 'orange', at: [2, 0.5] },
+      { id: 'r2', icon: 'cloudflare/r2', title: `${s.edge} · ${s.r2}`, note: s.edgeNote, tone: 'green', at: [3, 0] },
+      { id: 'bunny', icon: 'brand/bunny-cdn', title: `${s.edge} · ${s.bunny}`, note: s.edgeNote, tone: 'green', at: [3, 1] },
+      { id: 'plays', icon: 'lucide/monitor', title: s.play, note: s.playNote, tone: 'pink', at: [4, 0.5] },
+    ],
+    edges: [
+      { from: 'viewer', to: 'player' },
+      { from: 'player', to: 'api' },
+      { from: 'api', to: 'r2', fromSide: 'e', toSide: 'w', bend: -10 },
+      { from: 'api', to: 'bunny', fromSide: 'e', toSide: 'w', bend: 10 },
+      { from: 'r2', to: 'plays', fromSide: 'e', toSide: 'w', bend: -10 },
+      { from: 'bunny', to: 'plays', fromSide: 'e', toSide: 'w', bend: 10 },
+      { from: 'plays', to: 'api', fromSide: 's', toSide: 's', bend: -310, dashed: true, tag: c.tag.optional, tone: 'pink' },
+      { from: 'plays', to: 'vitals', fromSide: 's', toSide: 'e', bend: 70, dashed: true, tag: c.tag.async, tone: 'blue', tagAt: 0.55 },
+    ],
+    foot: [
+      { id: 'logs', icon: 'cloudflare/logs', title: c.obs.logs },
+      { id: 'errors', icon: 'lucide/activity', title: c.obs.errors },
+      { id: 'vitals', icon: 'lucide/gauge', title: c.obs.vitals },
+    ],
+  };
+  if (opts.variant === 'wide') return renderSketchSpec(spec, { colW: 252, rowH: 170, nodeW: 220, cols: 5, footGap: 120 }, opts);
+  return renderSketchSpec(
+    {
+      ...spec,
+      edges: [
+        { from: 'viewer', to: 'player' },
+        { from: 'player', to: 'api' },
+        { from: 'api', to: 'r2', fromSide: 's', toSide: 'n' },
+        { from: 'api', to: 'bunny', fromSide: 's', toSide: 'n' },
+        { from: 'r2', to: 'plays', fromSide: 's', toSide: 'n' },
+        { from: 'bunny', to: 'plays', fromSide: 's', toSide: 'n' },
+        { from: 'plays', to: 'api', fromSide: 'e', toSide: 'e', bend: 290, dashed: true, tag: c.tag.optional, tone: 'pink', tagAt: 0.85 },
+        { from: 'plays', to: 'vitals', fromSide: 's', toSide: 'n', dashed: true, tag: c.tag.async, tone: 'blue', tagAt: 0.62 },
+      ],
+    },
+    { colW: 175, rowH: 180, nodeW: 165, cols: 2, footGap: 40, at: { viewer: [0.5, 0], player: [0.5, 1], api: [0.5, 2], r2: [0, 3], bunny: [1, 3], plays: [0.5, 4] } },
+    opts,
+  );
 }

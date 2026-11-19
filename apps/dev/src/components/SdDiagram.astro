@@ -1,0 +1,21 @@
+---
+/** One diagram of a System design page in its own band (src/lib/arch, docs/SOURCES.md). */
+import ArchFigure from './ArchFigure.astro';
+import type { Locale } from '../lib/pages';
+
+interface Props {
+  id: string;
+  locale: Locale;
+  title: string;
+  lead?: string;
+  raised?: boolean;
+  costs?: boolean;
+  bleed?: boolean;
+}
+const { id, locale, title, lead, raised = false, costs = false, bleed = true } = Astro.props;
+---
+<section class:list={['band', raised && 'band-raised']} aria-labelledby={`${id}-h`}>
+  <div class="wrap">
+    <ArchFigure id={id} locale={locale} title={title} lead={lead} headingId={`${id}-h`} costs={costs} bleed={bleed} />
+  </div>
+</section>

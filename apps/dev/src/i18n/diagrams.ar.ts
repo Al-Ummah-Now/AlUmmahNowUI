@@ -4,6 +4,18 @@
  * «مرئي/مرئيات» for video.
  */
 import type { diagramsEn } from './diagrams.en.ts';
+import { deliveryAr } from './sd/delivery.ar.ts';
+import { dataAr } from './sd/data.ar.ts';
+import { asyncAr } from './sd/async.ar.ts';
+import { realtimeAr } from './sd/realtime.ar.ts';
+import { identityAr } from './sd/identity.ar.ts';
+import { aiAr } from './sd/ai.ar.ts';
+import { costAr } from './sd/cost.ar.ts';
+import { scalingAr } from './sd/scaling.ar.ts';
+import { clientsAr } from './sd/clients.ar.ts';
+import { releaseAr } from './sd/release.ar.ts';
+import { hubAr } from './sd/hub.ar.ts';
+
 
 export const diagramsAr: typeof diagramsEn = {
   legend: {
@@ -231,5 +243,18 @@ export const diagramsAr: typeof diagramsEn = {
       renditions: ['{a} لكل GB شهريًا', '{b} لكل مليون كتابة'],
       r2Deliver: ['الخروج {z}', '{b} لكل مليون قراءة'],
     },
+  },
+  pages: {
+    delivery: deliveryAr,
+    data: dataAr,
+    async: asyncAr,
+    realtime: realtimeAr,
+    identity: identityAr,
+    ai: aiAr,
+    cost: costAr,
+    scaling: scalingAr,
+    clients: clientsAr,
+    release: releaseAr,
+    hub: hubAr,
   },
 };

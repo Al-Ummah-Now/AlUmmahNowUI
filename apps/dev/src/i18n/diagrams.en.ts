@@ -3,6 +3,18 @@
  * group names and wire labels are translated in diagrams.ar.ts (same keys, tests/i18n.test.ts).
  * Facts: docs/SOURCES.md.
  */
+import { deliveryEn } from './sd/delivery.en.ts';
+import { dataEn } from './sd/data.en.ts';
+import { asyncEn } from './sd/async.en.ts';
+import { realtimeEn } from './sd/realtime.en.ts';
+import { identityEn } from './sd/identity.en.ts';
+import { aiEn } from './sd/ai.en.ts';
+import { costEn } from './sd/cost.en.ts';
+import { scalingEn } from './sd/scaling.en.ts';
+import { clientsEn } from './sd/clients.en.ts';
+import { releaseEn } from './sd/release.en.ts';
+import { hubEn } from './sd/hub.en.ts';
+
 export const diagramsEn = {
   legend: {
     title: 'Reading the diagram',
@@ -229,5 +241,18 @@ export const diagramsEn = {
       renditions: ['{a}/GB-month', '{b}/M writes'],
       r2Deliver: ['egress {z}', '{b}/M reads'],
     },
+  },
+  pages: {
+    delivery: deliveryEn,
+    data: dataEn,
+    async: asyncEn,
+    realtime: realtimeEn,
+    identity: identityEn,
+    ai: aiEn,
+    cost: costEn,
+    scaling: scalingEn,
+    clients: clientsEn,
+    release: releaseEn,
+    hub: hubEn,
   },
 };
