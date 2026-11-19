@@ -68,6 +68,13 @@ settings, search, cloud-upload, play, circle-dot, arrow-right, container, layers
 message-square, rabbit, users, cpu, film, radio, git-branch, gauge, hard-drive, scroll-text,
 sparkles, timer, workflow, globe, monitor, laptop, layers-3, list-ordered, bell-ring, lock. Strokes take the diagram's text colour (they are not brand marks).
 
+## Diagram type (`public/fonts/inter-*`) — SIL Open Font License 1.1
+
+Architecture, flow and isometric diagrams set Latin text in Inter (400, 600, 700, 800; from
+`@fontsource/inter@5.2.5`, licence `inter-OFL.txt`) and Arabic in the site's Noto Naskh Arabic. The
+fonts are bundled, not the system's, so a diagram lays out the same on every platform: the system
+font differs per OS, and on Linux (CI's) it is wider and taller, which broke tight layouts.
+
 ## Handwriting fonts (`public/fonts/`) — SIL Open Font License 1.1
 
 The hand-drawn explainers (style sample 1) use Kalam (Latin) and Aref Ruqaa (Arabic: Ruqaa is the
