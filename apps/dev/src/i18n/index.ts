@@ -11,14 +11,37 @@ export type { Strings, Item, Link, Status } from './en.ts';
  */
 export const NUMBERS = { accessTokenMinutes: 15, undoDays: 30, stallSeconds: 15, reportDays: 3 } as const;
 
+/**
+ * Technical names that contain digits (model ids, socket shard names, HLS rungs). They are code, not
+ * numbers to format: filled as written, Latin in both languages.
+ */
+export const TOKENS = {
+  tkGuard: 'Llama Guard 3 8B',
+  tkGuardShort: 'Llama Guard 3',
+  tkGemma: 'Gemma 4 26B',
+  tkGemmaShort: 'Gemma 4',
+  tkScout: 'Llama 4 Scout',
+  tkSocketsZero: 'sockets:0',
+  tkSocketsOne: 'sockets:1',
+  tkRungLow: '360p',
+  tkRungSd: '480p',
+  tkRungHd: '720p',
+  tkRungFull: '1080p',
+  tkRfcDevice: 'RFC 8628',
+  tkWinUi: 'WinUI 3',
+  tkGtk: 'GTK 4',
+} as const;
+
 const values = (locale: Locale): Record<string, string | number> => ({
   ...NUMBERS,
+  ...TOKENS,
   rolloutStart: formatPercent(0, locale),
   rolloutFull: formatPercent(1, locale),
 });
 
 function filled<T>(v: T, vars: Record<string, string | number>, locale: Locale): T {
-  if (typeof v === 'string') return fill(v, vars, locale) as T;
+  // {N<value>}: a number the copy states once, written in the page's numerals by the formatter
+  if (typeof v === 'string') return fill(v.replace(/\{N(\d+(?:\.\d+)?)\}/g, (_m, n: string) => formatIn(Number(n), locale)), vars, locale) as T;
   if (Array.isArray(v)) return v.map((x) => filled(x, vars, locale)) as T;
   if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, filled(x, vars, locale)])) as T;
   return v;

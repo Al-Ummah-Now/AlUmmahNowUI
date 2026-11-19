@@ -9,8 +9,7 @@ import { costs } from './specs/costs.ts';
 import { renderIso } from './iso.ts';
 import { renderSketch, renderSketchSpec } from './sketch.ts';
 import { PAGE_BUILDERS } from './pages/index.ts';
-import { diagramsEn } from '../../i18n/diagrams.en.ts';
-import { diagramsAr } from '../../i18n/diagrams.ar.ts';
+import { strings } from '../../i18n/index.ts';
 
 export type DiagramId = string;
 
@@ -22,7 +21,8 @@ export interface Rendered {
 }
 
 export function diagram(id: DiagramId, locale: 'en' | 'ar'): Rendered {
-  const c = locale === 'ar' ? diagramsAr : diagramsEn;
+  // through strings(): {N…} numbers and {tk…} names are filled for the language
+  const c = strings(locale).diagrams;
   const rtl = locale === 'ar';
   const ro = (variant: string) => ({ rtl, variant, locale, scenario: 'one', unknown: c.costs.unknown });
   const page = PAGE_BUILDERS[id];

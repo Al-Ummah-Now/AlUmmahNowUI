@@ -48,7 +48,7 @@ export const identityEn = {
       token: { title: 'Access token', note: 'roles: site roles only' },
       transfer: { title: 'Ownership transfer', note: 'super admin only' },
       channelRoles: { title: 'Channel roles', note: 'owner · admin · editor · mod' },
-      record: { title: 'Channel record', note: 'in R2 · up to 50 members' },
+      record: { title: 'Channel record', note: 'in R2 · up to {N50} members' },
       can: { title: 'can(role, capability)', note: 'checked on every write' },
     },
     tag: { issued: 'issued in', stored: 'stored in', never: 'never in a token', neither: 'neither grants the other', owner: 'changes the owner' },

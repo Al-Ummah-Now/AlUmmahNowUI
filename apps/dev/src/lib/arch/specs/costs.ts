@@ -4,17 +4,18 @@
  * sourced); meters tick as the flow reaches each stage and every lane keeps a running total.
  */
 import { stack, type ArchEdge, type ArchLayout, type ArchNode, type ArchSpec } from '../arch.ts';
-import { ASSUMED, LANE_OF, RATES, SCENARIOS, costTable, type Lane, type StageId } from '../cost.ts';
+import { ASSUMED, LANE_OF, RATES, SCENARIOS, costTable, money, type MoneyOptions, type Lane, type StageId } from '../cost.ts';
+import { formatNumber } from '../../../../../../packages/render/src/format.ts';
 import type { diagramsEn } from '../../../i18n/diagrams.en.ts';
 
 type Copy = typeof diagramsEn.costs;
 
 /** A rate under 1 cent keeps 3 significant figures; otherwise 2 decimals. */
 export function formatRate(locale: 'en' | 'ar', usd: number): string {
-  const opt: Intl.NumberFormatOptions = usd !== 0 && usd < 0.01 ? { maximumSignificantDigits: 3 } : usd >= 0.1 || usd === 0 ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { minimumFractionDigits: 2, maximumFractionDigits: 3 };
-  return new Intl.NumberFormat(locale === 'ar' ? 'ar-u-nu-arab' : 'en-US', { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol', ...opt }).format(usd);
+  const opt: MoneyOptions = usd !== 0 && usd < 0.01 ? { maximumSignificantDigits: 3 } : usd >= 0.1 || usd === 0 ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { minimumFractionDigits: 2, maximumFractionDigits: 3 };
+  return money(usd, locale, opt);
 }
-const int = (locale: 'en' | 'ar', n: number) => new Intl.NumberFormat(locale === 'ar' ? 'ar-u-nu-arab' : 'en-US').format(n);
+const int = (locale: 'en' | 'ar', n: number) => formatNumber(n, locale);
 
 /** Fill a template's {placeholders} with locale-formatted numbers. */
 export function fill(t: string, locale: 'en' | 'ar', vals: Record<string, { usd: number } | { n: number }>): string {

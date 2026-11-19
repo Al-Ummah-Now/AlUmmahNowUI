@@ -5,18 +5,14 @@
  * recording that steps the clock records the same numbers. Lane totals and the comparison bars sum
  * the meters. With reduced motion the final totals are shown and nothing moves.
  */
+import { formatMoney } from '../../../../packages/render/src/format.ts';
+
 const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
 const lang = document.documentElement.lang === 'ar' ? 'ar' : 'en';
-const nfCache = new Map<number, Intl.NumberFormat>();
 function fmt(usd: number, scale: number): string {
   if (scale > 0 && scale < 0.0001) return usd > 0 ? `< ${fmt(0.0001, 0.0001)}` : fmt(0, 0.0001);
   const digits = scale === 0 ? 2 : scale < 0.01 ? 4 : scale < 1 ? 3 : 2;
-  let nf = nfCache.get(digits);
-  if (!nf) {
-    nf = new Intl.NumberFormat(lang === 'ar' ? 'ar-u-nu-arab' : 'en-US', { style: 'currency', currency: 'USD', currencyDisplay: 'narrowSymbol', minimumFractionDigits: digits, maximumFractionDigits: digits });
-    nfCache.set(digits, nf);
-  }
-  return nf.format(usd);
+  return formatMoney(usd, 'USD', lang, { ...(lang === 'en' ? { currencyDisplay: 'narrowSymbol' } : {}), minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
 let scenario = 'one';

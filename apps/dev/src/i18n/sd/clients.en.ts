@@ -30,7 +30,7 @@ export const clientsEn = {
   device: {
     title: 'A TV signs in with a code',
     lead: 'Typing a password with a remote is painful, so a TV app asks the sign-in service for a short code and shows it. The viewer enters the code on a phone or computer and signs in there; the TV keeps asking until its tokens are ready.',
-    desc: 'Numbered steps of the device authorization grant (RFC 8628) from the openauth fork. 1: the TV app asks the auth issuer’s /device_authorization for a code. 2: the issuer answers with a device code kept on the TV and a short user code, shown with a QR code. 3: on a phone or computer, the viewer opens /activate and enters the code. 4: the issuer runs its normal sign-in and asks the viewer to confirm. 5: meanwhile the TV polls /token, by default every 5 seconds. 6: once confirmed, the tokens reach the TV, only once. 7: the TV calls api-videos signed in.',
+    desc: 'Numbered steps of the device authorization grant ({tkRfcDevice}) from the openauth fork. 1: the TV app asks the auth issuer’s /device_authorization for a code. 2: the issuer answers with a device code kept on the TV and a short user code, shown with a QR code. 3: on a phone or computer, the viewer opens /activate and enters the code. 4: the issuer runs its normal sign-in and asks the viewer to confirm. 5: meanwhile the TV polls /token, by default every {N5} seconds. 6: once confirmed, the tokens reach the TV, only once. 7: the TV calls api-videos signed in.',
     node: {
       tv: { name: 'TV app', role: 'shows the code' },
       issuer: { name: 'auth issuer', role: 'device grant' },
@@ -48,7 +48,7 @@ export const clientsEn = {
     node: {
       apple: { title: 'Apple', note: 'Swift · SwiftUI' },
       android: { title: 'Android', note: 'Kotlin · Compose' },
-      desktop: { title: 'Windows · Linux', note: 'C# · WinUI 3 · GTK 4' },
+      desktop: { title: 'Windows · Linux', note: 'C# · {tkWinUi} · {tkGtk}' },
       core: { title: 'AlUmmahNowCore', note: 'Rust · UniFFI' },
       pair: { title: 'Viewer + Studio', note: 'two apps per platform' },
       config: { title: 'Remote config', note: 'set in the videos admin' },
