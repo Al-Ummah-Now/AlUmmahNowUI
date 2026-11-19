@@ -9,6 +9,7 @@
  */
 import { esc, hasArabic, textWidth } from './text.ts';
 import { r, symbol, symId, useIcon, type IconId } from './icons.ts';
+import { formatUsd } from './cost.ts';
 import { G, Router, intersects, polyLength, roundedPath, sideDir, simplify, type Endpoint, type Pt, type Rect, type Side } from './route.ts';
 
 export type Flow = 'request' | 'media' | 'delivery' | 'async' | 'control';
@@ -21,6 +22,12 @@ export interface ArchNode {
   role?: string | string[];
   /** grid position (column, row) — fractions allowed */
   at: [number, number];
+  /** price lines (sourced rates), under the role */
+  rate?: string[];
+  /** a cost meter: final USD per scenario (null = unknown); it ticks while the flow reaches this node */
+  meter?: { lane: string; usd: Record<string, number | null> };
+  /** a lane total: the sum of the lane's meters as they tick */
+  total?: { lane: string; usd: Record<string, number | null> };
 }
 export interface ArchGroup {
   id: string;
@@ -33,6 +40,8 @@ export interface ArchGroup {
   tag?: IconId;
   /** a vendor wordmark that already says the name (drawn on a white chip, no text) */
   tagLogo?: { id: IconId; w: number; h: number };
+  /** put the corner tag at the far end of the top edge (keeps the near corner free for wires) */
+  tagEnd?: boolean;
   /** CSS colour for a platform outline (a brand colour) */
   accent?: string;
   pad?: number;
@@ -72,6 +81,8 @@ export interface ArchSpec {
   motion: 'pulses' | 'steps';
   /** seconds per numbered hop */
   hop?: number;
+  /** false: no numbered badges (parallel lanes that share step timing) */
+  badges?: boolean;
 }
 
 interface NodeBox {
@@ -80,7 +91,7 @@ interface NodeBox {
   cy: number;
   box: Rect;
   icon: { x: number; y: number; s: number };
-  lines: { text: string; y: number; size: number; bold: boolean }[];
+  lines: { text: string; y: number; size: number; bold: boolean; kind?: 'rate' | 'meter' | 'total' }[];
 }
 interface GroupBox {
   g: ArchGroup;
@@ -98,7 +109,24 @@ interface Routed {
 
 const M = 10; // keep-out around node boxes for wires
 
-export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: { rtl: boolean; variant: string }): string {
+export interface RenderOpts {
+  rtl: boolean;
+  variant: string;
+  /** for cost meters: the page's language, the scenario shown without script, and the word for unknown */
+  locale?: 'en' | 'ar';
+  scenario?: string;
+  unknown?: string;
+}
+
+const MS = 15; // meter font size
+/** The text a meter or total shows for one scenario. */
+function money(o: RenderOpts, v: number | null | undefined): string {
+  if (v === null || v === undefined) return o.unknown ?? 'unknown';
+  return formatUsd(o.locale ?? 'en', v);
+}
+const moneyWidest = (o: RenderOpts, usd: Record<string, number | null>) => Math.max(...Object.values(usd).map((v) => textWidth(money(o, v), MS, true)), ...(['en', 'ar'] as const).flatMap((l) => Object.values(usd).map((v) => textWidth(money({ ...o, locale: l }, v), MS, true))));
+
+export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): string {
   const S = layout.iconSize ?? 40;
   const NS = layout.nameSize ?? 13;
   const RS = layout.roleSize ?? 11.5;
@@ -112,18 +140,39 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: { rtl: bool
   // 1. nodes on the grid
   const nodes = new Map<string, NodeBox>();
   const rolesOf = (n: ArchNode) => (n.role ? (Array.isArray(n.role) ? n.role : [n.role]) : []);
-  const widest = Math.max(...spec.nodes.map((n) => Math.max(S + 20, textWidth(n.name, NS, true) + 16, ...rolesOf(n).map((x) => textWidth(x, RS) + 16))));
+  const RT = RS - 0.5;
+  const nodeW = (n: ArchNode) =>
+    Math.max(S + 20, textWidth(n.name, NS, true) + 16, ...rolesOf(n).map((x) => textWidth(x, RS) + 16), ...(n.rate ?? []).map((x) => textWidth(x, RT) + 16), n.meter ? moneyWidest(opts, n.meter.usd) + 18 : 0, n.total ? moneyWidest(opts, n.total.usd) + 18 : 0);
+  const widest = Math.max(...spec.nodes.map(nodeW));
+  // a column always leaves a wire channel between neighbouring tiles
+  layout = { ...layout, colW: Math.max(layout.colW, Math.ceil(widest + 46)) };
   const tileW = Math.min(widest, layout.colW - 46);
+  // one tile height per diagram, so icons, names and wires line up along a row
+  const nodeH = (n: ArchNode) => {
+    const roles = n.role ? (Array.isArray(n.role) ? n.role : [n.role]) : [];
+    return 8 + S + 7 + NS + 3 + roles.length * (RS + 3) + (n.rate ?? []).length * (RT + 3) + (n.meter || n.total ? MS + 6 : 0) + 6;
+  };
+  // per row (same grid y): tiles side by side share a height
+  const rowOf = (n: ArchNode) => (layout.at?.[n.id] ?? n.at)[1];
+  const tileH = (n: ArchNode) => Math.max(...spec.nodes.filter((m) => rowOf(m) === rowOf(n)).map(nodeH));
   for (const n of spec.nodes) {
     const at = layout.at?.[n.id] ?? n.at;
     const cx = (at[0] + 0.5) * layout.colW;
     const cy = (at[1] + 0.5) * layout.rowH;
     const roles = n.role ? (Array.isArray(n.role) ? n.role : [n.role]) : [];
-    const w = Math.max(tileW, S + 20, textWidth(n.name, NS, true) + 16, ...roles.map((x) => textWidth(x, RS) + 16));
-    const h = 8 + S + 7 + NS + 3 + roles.length * (RS + 3) + 6;
+    const w = Math.max(tileW, nodeW(n));
+    const rates = n.rate ?? [];
+    const money0 = n.meter ?? n.total;
+    const h = tileH(n);
     const box = { x: cx - w / 2, y: cy - h / 2, w, h };
-    const lines = [{ text: n.name, y: box.y + 8 + S + 7 + NS - 2, size: NS, bold: true }];
+    const lines: NodeBox['lines'] = [{ text: n.name, y: box.y + 8 + S + 7 + NS - 2, size: NS, bold: true }];
     roles.forEach((x, i) => lines.push({ text: x, y: box.y + 8 + S + 7 + NS + 3 + (i + 1) * (RS + 3) - 3, size: RS, bold: false }));
+    let ly = box.y + 8 + S + 7 + NS + 3 + roles.length * (RS + 3);
+    rates.forEach((x) => {
+      ly += RT + 3;
+      lines.push({ text: x, y: ly - 3, size: RT, bold: false, kind: 'rate' });
+    });
+    if (money0) lines.push({ text: money(opts, money0.usd[opts.scenario ?? 'one']), y: ly + MS + 3, size: MS, bold: true, kind: n.meter ? 'meter' : 'total' });
     nodes.set(n.id, { n, cx, cy, box, icon: { x: cx - S / 2, y: box.y + 8, s: S }, lines });
   }
 
@@ -173,7 +222,8 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: { rtl: bool
   for (const gb of groups.values()) {
     gb.box = { ...gb.box, x: mx(gb.box.x, gb.box.w), y: gb.box.y + oy };
     const big = gb.g.kind === 'boundary' || gb.g.kind === 'platform';
-    const lx = opts.rtl ? gb.box.x + gb.box.w - (big ? 14 : 10) - gb.label.w : gb.box.x + (big ? 14 : 10);
+    const atEnd = big && gb.g.tagEnd ? !opts.rtl : opts.rtl;
+    const lx = atEnd ? gb.box.x + gb.box.w - (big ? 14 : 10) - gb.label.w : gb.box.x + (big ? 14 : 10);
     gb.label = { ...gb.label, x: lx, y: gb.label.y + oy };
     if (gb.caption) {
       const cx = opts.rtl ? gb.box.x + gb.box.w - 10 - gb.caption.w : gb.box.x + 10;
@@ -322,7 +372,7 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: { rtl: bool
   const badges: { rt: Routed; c: Pt; n: number; at: number }[] = [];
   const BR = 11;
   for (const rt of routed) {
-    if (rt.e.step == null) continue;
+    if (rt.e.step == null || spec.badges === false) continue;
     let best: { c: Pt; at: number } | null = null;
     const others = routed.filter((x) => x !== rt).flatMap((x) => segRects(x));
     for (let d = 22; d < rt.len - 22; d += 4) {
@@ -395,9 +445,19 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: { rtl: bool
   // 6. render
   const icons = [...new Set([...nodes.values()].map((n) => n.n.icon).concat([...groups.values()].flatMap((g) => [g.g.tag, g.g.tagLogo?.id]).filter(Boolean) as string[]))];
   const flows = [...new Set(routed.map((x) => x.e.flow))];
+  const stepsN = Math.max(0, ...routed.map((x) => x.e.step ?? 0));
+  const HOP = spec.hop ?? 1.2;
+  const T = spec.motion === 'steps' ? stepsN * HOP + 1.6 : 8;
+  /** a meter ticks while the flow travels into its node: the window of its incoming step, as fractions of the cycle */
+  const meterWin = (id: string): [number, number] => {
+    if (spec.motion !== 'steps') return [0.05, 0.85];
+    const k = Math.max(0, ...routed.filter((x) => x.e.to === id && x.e.step != null).map((x) => x.e.step!));
+    if (!k) return [0, HOP / T];
+    return [((k - 1) * HOP) / T, (k * HOP) / T];
+  };
   const out: string[] = [];
   out.push(
-    `<svg class="an an-arch" data-diagram="${spec.id}" data-variant="${opts.variant}" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-labelledby="${prefix}-t ${prefix}-d" style="--an-w:${W}px">`,
+    `<svg class="an an-arch" data-diagram="${spec.id}" data-variant="${opts.variant}" data-cycle="${f4(T)}" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-labelledby="${prefix}-t ${prefix}-d" style="--an-w:${W}px">`,
     `<title id="${prefix}-t">${esc(spec.title)}</title><desc id="${prefix}-d">${esc(spec.desc)}</desc>`,
     '<defs>',
     ...icons.map((i) => symbol(prefix, i)),
@@ -444,15 +504,15 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: { rtl: bool
   out.push('<g class="an-edges">');
   for (const rt of routed) {
     const d = roundedPath(rt.pts);
-    out.push(`<path id="${rt.id}" data-edge="${rt.id}" data-from="${rt.e.from}" data-to="${rt.e.to}" class="an-edge an-f-${rt.e.flow}" d="${d}" marker-end="url(#${prefix}-mk-${rt.e.flow})"/>`);
+    const a0 = rt.pts[0]!;
+    const a1 = rt.pts[rt.pts.length - 1]!;
+    const direct = Math.abs(a1.x - a0.x) + Math.abs(a1.y - a0.y);
+    out.push(`<path id="${rt.id}" data-edge="${rt.id}" data-direct="${r(direct)}" data-from="${rt.e.from}" data-to="${rt.e.to}" class="an-edge an-f-${rt.e.flow}" d="${d}" marker-end="url(#${prefix}-mk-${rt.e.flow})"/>`);
   }
   out.push('</g>');
 
   // motion: hidden entirely under prefers-reduced-motion (arch.css)
   out.push('<g class="an-motion" aria-hidden="true">');
-  const stepsN = Math.max(0, ...routed.map((x) => x.e.step ?? 0));
-  const HOP = spec.hop ?? 1.2;
-  const T = stepsN * HOP + 1.6;
   for (const rt of routed) {
     const d = roundedPath(rt.pts);
     if (rt.e.stream || rt.e.flow === 'delivery') out.push(`<path class="an-march an-f-${rt.e.flow}" d="${d}"/>`);
@@ -490,7 +550,11 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: { rtl: bool
     out.push(`<rect class="an-node-box" x="${r(box.x)}" y="${r(box.y)}" width="${r(box.w)}" height="${r(box.h)}" rx="10"/>`);
     out.push(useIcon(prefix, nb.n.icon, nb.icon.x, nb.icon.y, nb.icon.s));
     for (const l of nb.lines) {
-      out.push(`<text class="${l.bold ? 'an-name' : 'an-role'}" x="${r(nb.cx)}" y="${r(l.y)}" text-anchor="middle" style="font-size:${l.size}px"${hasArabic(l.text) ? ' direction="rtl"' : ''}>${esc(l.text)}</text>`);
+      const cls = l.kind === 'rate' ? 'an-rate' : l.kind === 'meter' ? 'an-meter' : l.kind === 'total' ? 'an-total' : l.bold ? 'an-name' : 'an-role';
+      let data = '';
+      if (l.kind === 'meter' && nb.n.meter) data = ` data-meter data-lane="${nb.n.meter.lane}" data-win="${meterWin(nb.n.id).map(f4).join(',')}" data-usd="${esc(JSON.stringify(nb.n.meter.usd))}"`;
+      if (l.kind === 'total' && nb.n.total) data = ` data-total="${nb.n.total.lane}" data-usd="${esc(JSON.stringify(nb.n.total.usd))}"`;
+      out.push(`<text class="${cls}" x="${r(nb.cx)}" y="${r(l.y)}" text-anchor="middle" style="font-size:${l.size}px"${hasArabic(l.text) ? ' direction="rtl"' : ''}${data}>${esc(l.text)}</text>`);
     }
     out.push('</g>');
   }
@@ -502,7 +566,7 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: { rtl: bool
     out.push(`<g class="an-elabel an-f-${l.rt.e.flow}"><rect class="an-elabel-bg" x="${r(l.rect.x)}" y="${r(l.rect.y)}" width="${r(l.rect.w)}" height="${l.rect.h}" rx="${l.rect.h / 2}"/><text x="${r(l.rect.x + l.rect.w / 2)}" y="${r(l.rect.y + 12.5)}" text-anchor="middle" style="font-size:${LS}px"${hasArabic(l.text) ? ' direction="rtl"' : ''}>${esc(l.text)}</text></g>`);
   }
   for (const b of badges) {
-    out.push(`<g class="an-badge an-f-${b.rt.e.flow}"><circle cx="${r(b.c.x)}" cy="${r(b.c.y)}" r="${BR}"/><text x="${r(b.c.x)}" y="${r(b.c.y + 4)}" text-anchor="middle">${b.n}</text></g>`);
+    out.push(`<g class="an-badge an-f-${b.rt.e.flow}"><circle cx="${r(b.c.x)}" cy="${r(b.c.y)}" r="${BR}"/><text x="${r(b.c.x)}" y="${r(b.c.y + 4)}" text-anchor="middle">${new Intl.NumberFormat(opts.locale === 'ar' ? 'ar-u-nu-arab' : 'en').format(b.n)}</text></g>`);
   }
   out.push('</g>');
   out.push('</svg>');

@@ -5,10 +5,11 @@
  */
 import { stack, type ArchEdge, type ArchLayout, type ArchSpec } from '../arch.ts';
 import type { diagramsEn } from '../../../i18n/diagrams.en.ts';
+import { aiChecksUsd, aiRateLine } from './costs.ts';
 
 type Copy = typeof diagramsEn.overview;
 
-export function overview(c: Copy): { spec: ArchSpec; wide: ArchLayout; narrow: ArchLayout } {
+export function overview(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'ar'): { spec: ArchSpec; wide: ArchLayout; narrow: ArchLayout } {
   const n = c.node;
   const node = (id: keyof Copy['node'], icon: string, at: [number, number]) => ({ id, icon, name: n[id].name, role: n[id].role, at });
   const spec: ArchSpec = {
@@ -35,7 +36,7 @@ export function overview(c: Copy): { spec: ArchSpec; wide: ArchLayout; narrow: A
       node('media', 'cloudflare/workers', [2.3, 3]),
       node('container', 'cloudflare/containers', [3.3, 3]),
       node('slots', 'cloudflare/durable-objects', [4.3, 3]),
-      node('workersAi', 'cloudflare/workers-ai', [5.62, 2.5]),
+      { ...node('workersAi', 'cloudflare/workers-ai', [5.62, 2.5]), rate: [aiRateLine(cc, locale)], meter: { lane: 'ai', usd: aiChecksUsd() } },
       node('r2', 'cloudflare/r2', [6.85, 0]),
       node('d1', 'cloudflare/d1', [6.85, 1]),
       node('kv', 'cloudflare/kv', [6.85, 2]),
@@ -62,7 +63,7 @@ export function overview(c: Copy): { spec: ArchSpec; wide: ArchLayout; narrow: A
       { id: 'data', label: c.group.data, members: ['r2', 'd1', 'kv', 'queues'] },
       { id: 'ops', label: c.group.ops, members: ['logs', 'analytics', 'secrets', 'status'] },
       { id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', members: ['edge', 'front', 'apis', 'async', 'ai', 'data', 'ops'] },
-      { id: 'bunny', label: c.group.bunny, kind: 'platform', tagLogo: { id: 'brand/bunnynet-logo-dark', w: 66, h: 19 }, accent: '#f29b1d', members: ['bunnyCdn', 'bunnyStream'] },
+      { id: 'bunny', label: c.group.bunny, kind: 'platform', tagEnd: true, tagLogo: { id: 'brand/bunnynet-logo-dark', w: 66, h: 19 }, accent: '#f29b1d', members: ['bunnyCdn', 'bunnyStream'] },
       { id: 'providers', label: c.group.providers, members: ['qf', 'resend', 'push', 'google'] },
       { id: 'cicd', label: c.group.cicd, members: ['ci'] },
     ],
@@ -75,8 +76,8 @@ export function overview(c: Copy): { spec: ArchSpec; wide: ArchLayout; narrow: A
     { from: 'cdn', to: 'front', flow: 'request', label: e.routes, fromSide: 'e', toSide: 'w' },
     { from: 'front', to: 'apis', flow: 'request', label: e.bindings, fromSide: 's', toSide: 'n' },
     { from: 'apis', to: 'data', flow: 'request', label: e.data, fromSide: 'e', toSide: 'w' },
-    { from: 'apiVideos', to: 'bunnyStream', flow: 'media', label: e.upload, fromSide: 'w', toSide: 'e' },
-    { from: 'bunnyCdn', to: 'browsers', flow: 'delivery', label: e.signedHls, fromSide: 'n', toSide: 's' },
+    { from: 'apiVideos', to: 'bunny', flow: 'media', label: e.upload, fromSide: 'w', toSide: 'e' },
+    { from: 'bunnyCdn', to: 'clients', flow: 'delivery', label: e.signedHls, fromSide: 'n', toSide: 's' },
     { from: 'r2', to: 'cdn', flow: 'delivery', label: e.publicHls, fromSide: 'n', toSide: 'n' },
     { from: 'queues', to: 'async', flow: 'async', label: e.consume, fromSide: 'w', toSide: 'e' },
     { from: 'async', to: 'ai', flow: 'request', label: e.ai, fromSide: 'e', toSide: 'w' },

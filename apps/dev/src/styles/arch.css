@@ -654,3 +654,234 @@ html[data-mode='dark'] .an-sketch {
   fill: #e8590c;
   filter: drop-shadow(0 0 3px #ff922b);
 }
+
+/* cost meters: the sourced rate, then the running amount */
+.an .an-rate {
+  fill: color-mix(in srgb, var(--an-async) 60%, var(--an-ink));
+  font-weight: 600;
+}
+.an .an-meter,
+.an .an-total {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  fill: var(--an-ink);
+}
+.an .an-total {
+  fill: color-mix(in srgb, var(--an-async) 75%, var(--an-ink));
+}
+.an .an-meter[data-unknown] {
+  fill: var(--an-muted);
+  font-weight: 600;
+  font-style: italic;
+}
+
+/* example picker and the per-pipeline comparison under the cost diagram */
+.an-scenarios {
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-tile);
+  padding: 10px 14px 12px;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+.an-scenarios legend {
+  font-weight: 700;
+  padding-inline: 6px;
+}
+.an-scenario {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--radius-chip);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.an-scenario:has(input:checked) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.an-scenario input {
+  accent-color: var(--accent);
+  margin: 0;
+}
+.an-compare {
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-tile);
+  padding: 14px 16px;
+}
+.an-compare-title {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+}
+.an-compare ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+.an-compare-row {
+  display: grid;
+  grid-template-columns: minmax(9rem, 14rem) 1fr minmax(6rem, auto);
+  align-items: center;
+  gap: 12px;
+}
+.an-compare-bar {
+  height: 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--line) 60%, transparent);
+  overflow: hidden;
+}
+.an-compare-bar span {
+  display: block;
+  height: 100%;
+  width: var(--fill, 0%);
+  border-radius: inherit;
+  background: var(--bar);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--bar) 60%, transparent);
+}
+.an-compare-bunny {
+  --bar: #f29b1d;
+}
+.an-compare-r2 {
+  --bar: #f6821f;
+}
+.an-compare-shared {
+  --bar: var(--sw-request, #1f6feb);
+}
+.an-compare output {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+.an-compare-note {
+  margin: 12px 0 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+@media (max-width: 560px) {
+  .an-compare-row {
+    grid-template-columns: 1fr auto;
+  }
+  .an-compare-bar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+/* isometric blocks with character: product-coloured sides, a light top that carries the official
+   icon, a lit rim, a soft ground shadow (samples 4, 6, 9) */
+.an-iso .an-tone-cf {
+  --top: #fff4e8;
+  --l: #f7a24c;
+  --r: #d8731a;
+  --rim: #ffffff;
+  --line-t: #e9a564;
+}
+.an-iso .an-tone-bunny {
+  --top: #fff7e3;
+  --l: #f5bb4e;
+  --r: #d3901d;
+  --rim: #ffffff;
+  --line-t: #e3b45a;
+}
+.an-iso .an-tone-prov {
+  --top: #eef4ff;
+  --l: #82a9ef;
+  --r: #4b77cc;
+  --rim: #ffffff;
+  --line-t: #9db8ea;
+}
+.an-iso .an-tone-plain {
+  --top: #ffffff;
+  --l: #dde7f0;
+  --r: #b9cadb;
+  --rim: #ffffff;
+  --line-t: #c9d6e2;
+}
+html[data-mode='dark'] .an-iso .an-tone-plain {
+  --top: #e9f2f8;
+  --l: #86a6bc;
+  --r: #5a7a90;
+  --line-t: #9fb8c8;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-mode='light']) .an-iso .an-tone-plain {
+    --top: #e9f2f8;
+    --l: #86a6bc;
+    --r: #5a7a90;
+    --line-t: #9fb8c8;
+  }
+}
+.an-iso .an-iso-block .an-iso-face-t {
+  fill: var(--top);
+  stroke: var(--line-t);
+  stroke-width: 1;
+}
+.an-iso .an-iso-block .an-iso-face-l {
+  fill: var(--l);
+  stroke: color-mix(in srgb, var(--l) 80%, #000);
+  stroke-width: 0.8;
+}
+.an-iso .an-iso-block .an-iso-face-r {
+  fill: var(--r);
+  stroke: color-mix(in srgb, var(--r) 80%, #000);
+  stroke-width: 0.8;
+}
+.an-iso .an-iso-rim {
+  fill: none;
+  stroke: var(--rim);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  opacity: 0.9;
+}
+.an-iso .an-iso-seam,
+.an-iso .an-iso-band {
+  fill: none;
+  stroke: color-mix(in srgb, var(--r) 70%, #000);
+  stroke-width: 1;
+  opacity: 0.55;
+}
+.an-iso .an-cyl-a {
+  stop-color: var(--l);
+}
+.an-iso .an-cyl-b {
+  stop-color: color-mix(in srgb, var(--l) 55%, var(--r));
+}
+.an-iso .an-cyl-c {
+  stop-color: var(--r);
+}
+.an-iso .an-iso-cyl {
+  stroke: color-mix(in srgb, var(--r) 80%, #000);
+  stroke-width: 0.8;
+}
+.an-iso .an-iso-shadow {
+  fill: rgb(9 30 50 / 0.28);
+}
+html[data-mode='dark'] .an-iso .an-iso-shadow {
+  fill: rgb(0 0 0 / 0.55);
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-mode='light']) .an-iso .an-iso-shadow {
+    fill: rgb(0 0 0 / 0.55);
+  }
+}
+.an-iso .an-iso-icon-shadow {
+  fill: rgb(0 0 0 / 0.12);
+}
+/* the top faces are light in both modes, so icons keep their light-mode colours */
+.an-iso .an-iso-block .an-ic-lucide {
+  color: #1b2430;
+}
+.an-iso .an-iso-block .an-ic-mono {
+  fill: #111111;
+}
+.an-iso .an-iso-pill {
+  fill: var(--iso-tile);
+  stroke: color-mix(in srgb, var(--r, #9fb4c8) 60%, transparent);
+  stroke-width: 1;
+  filter: drop-shadow(0 2px 4px rgb(16 40 70 / 0.18));
+}

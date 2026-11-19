@@ -2,9 +2,13 @@
 /**
  * One system design diagram (src/lib/arch): the wide layout for desktops, the stacked layout for
  * phones (CSS picks one), a heading, and a legend naming only the flow types this diagram uses.
+ * `costs` adds the example picker and the comparison bars; any diagram with cost meters is driven by
+ * src/scripts/meters.ts (final totals with reduced motion).
  */
 import '../styles/arch.css';
 import { diagram, type DiagramId } from '../lib/arch/all';
+import { laneTotals, scenarioLabels } from '../lib/arch/specs/costs';
+import { formatUsd } from '../lib/arch/cost';
 import { strings } from '../i18n';
 import type { Locale } from '../lib/pages';
 
@@ -15,25 +19,64 @@ interface Props {
   lead?: string;
   bleed?: boolean;
   headingId?: string;
+  /** show the example picker and the per-pipeline comparison */
+  costs?: boolean;
 }
-const { id, locale, title, lead, bleed = true, headingId } = Astro.props;
+const { id, locale, title, lead, bleed = true, headingId, costs = false } = Astro.props;
 const d = diagram(id, locale);
-const lg = strings(locale).diagrams.legend;
+const dg = strings(locale).diagrams;
+const lg = dg.legend;
 const flows = d.flows as (keyof typeof lg)[];
+const totals = laneTotals();
+const compareRows = [
+  { lane: 'bunny', label: dg.costs.lane.bunny },
+  { lane: 'r2', label: dg.costs.lane.r2 },
+  { lane: 'shared', label: dg.costs.lane.shared },
+] as const;
+const uid = `${id}-${headingId ?? 'fig'}`;
 ---
-<figure class="an-figure" aria-labelledby={headingId}>
+<figure class="an-figure" aria-labelledby={headingId} data-unknown-label={dg.costs.unknown}>
   {title && <h2 id={headingId} class="h2">{title}</h2>}
   {lead && <p class="section-lead">{lead}</p>}
+  {costs && (
+    <fieldset class="an-scenarios">
+      <legend>{dg.costs.pick}</legend>
+      {scenarioLabels(dg.costs, locale).map((s, i) => (
+        <label class="an-scenario">
+          <input type="radio" name="an-scenario" value={s.id} checked={i === 0} id={`${uid}-${s.id}`} />
+          <span>{s.label}</span>
+        </label>
+      ))}
+    </fieldset>
+  )}
   <div class:list={['an-frame', bleed && 'an-bleed']}>
     <div class="an-wide" set:html={d.wide} />
     <div class="an-narrow" set:html={d.narrow} />
   </div>
+  {costs && (
+    <section class="an-compare an-legend-wrap" aria-label={dg.costs.compare}>
+      <h3 class="an-compare-title">{dg.costs.compare}</h3>
+      <ul role="list">
+        {compareRows.map((row) => (
+          <li class={`an-compare-row an-compare-${row.lane}`} data-compare={row.lane} data-usd={JSON.stringify(totals[row.lane])} style={`--fill:${(totals[row.lane].one / Math.max(totals.bunny.one, totals.r2.one, totals.shared.one)) * 100}%`}>
+            <span class="an-compare-label">{row.label}</span>
+            <span class="an-compare-bar" aria-hidden="true"><span /></span>
+            <output>{formatUsd(locale, totals[row.lane].one)}</output>
+          </li>
+        ))}
+      </ul>
+      <p class="an-compare-note">{dg.costs.note}</p>
+    </section>
+  )}
   {(flows.length > 0 || d.steps) && (
     <ul class="an-legend an-legend-wrap" aria-label={lg.title}>
       {flows.map((f) => (
         <li><span class:list={['an-sw', f === 'control' && 'an-sw-dash']} style={`--sw: var(--sw-${f})`} aria-hidden="true" />{lg[f]}</li>
       ))}
-      {d.steps && <li><span class="an-sw an-sw-step" aria-hidden="true">1</span>{lg.steps}</li>}
+      {d.steps && id !== 'costs' && <li><span class="an-sw an-sw-step" aria-hidden="true">{locale === 'ar' ? '١' : '1'}</span>{lg.steps}</li>}
     </ul>
   )}
 </figure>
+<script>
+  import '../scripts/meters.ts';
+</script>

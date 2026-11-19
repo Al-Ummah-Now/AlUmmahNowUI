@@ -5,7 +5,8 @@
  *  - two text boxes that intersect;
  *  - an edge that passes through a node it does not connect;
  *  - a node, label or icon outside the SVG's viewBox;
- *  - a node label that spills out of its node box.
+ *  - a node label that spills out of its node box;
+ *  - a wire that wanders far beyond the direct path between its ends (a detour).
  * Only visible diagrams are checked (the wide/narrow twin that CSS hides is skipped).
  */
 export function gateInBrowser(): string[] {
@@ -88,6 +89,9 @@ export function gateInBrowser(): string[] {
           }
         }
       }
+      // no detours: a wire may bend around things, but not wander far beyond the direct path
+      const direct = Number(p.dataset.direct ?? NaN);
+      if (direct >= 0 && len > direct * 1.45 + 140) out.push(`${name}: edge ${p.dataset.from}→${p.dataset.to} takes a detour (${Math.round(len)} vs ${Math.round(direct)} direct)`);
       const b = bb(p);
       if (!inside(b, view, 1)) out.push(`${name}: edge ${p.dataset.from}→${p.dataset.to} leaves the viewBox`);
     }
