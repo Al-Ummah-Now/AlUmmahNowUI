@@ -1,6 +1,6 @@
 ---
 import type { Strings } from '../i18n';
-import { PAGES, pagePath, type Locale, type PageSlug } from '../lib/pages';
+import { NAV, pagePath, type Locale, type NavSlug } from '../lib/pages';
 import { GH, STATUS_PAGE, VIDEOS, WWW } from '../lib/links';
 import { formatYear } from '../../../../packages/render/src/format.ts';
 interface Props {
@@ -8,7 +8,7 @@ interface Props {
   t: Strings;
 }
 const { locale, t } = Astro.props;
-const label = (p: PageSlug) => (p === '' ? t.nav.home : t.nav[p]);
+const label = (p: NavSlug) => (p === '' ? t.nav.home : t.nav[p]);
 const year = formatYear(new Date().getUTCFullYear(), locale);
 ---
 <footer class="site-footer night">
@@ -21,7 +21,7 @@ const year = formatYear(new Date().getUTCFullYear(), locale);
     </div>
     <nav aria-label={t.footer.project}>
       <h2 class="footer-h">{t.footer.project}</h2>
-      <ul role="list">{PAGES.map((p) => <li><a href={pagePath(locale, p)}>{label(p)}</a></li>)}</ul>
+      <ul role="list">{NAV.map((p) => <li><a href={pagePath(locale, p)}>{label(p)}</a></li>)}</ul>
     </nav>
     <nav aria-label={t.footer.sites}>
       <h2 class="footer-h">{t.footer.sites}</h2>

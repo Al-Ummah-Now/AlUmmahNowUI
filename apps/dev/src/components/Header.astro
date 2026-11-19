@@ -12,7 +12,7 @@
 import { brandHtml, envBadgeHtml, langButtonHtml, menuButtonHtml } from '../../../../packages/render/src/nav/header.js';
 import { modeIconSvg, modeToggleLabel } from '../../../../packages/render/src/nav/mode-toggle.js';
 import type { Strings } from '../i18n';
-import { PAGES, otherLocale, pagePath, type Locale, type PageSlug } from '../lib/pages';
+import { NAV, otherLocale, pagePath, type Locale, type NavSlug, type PageSlug } from '../lib/pages';
 interface Props {
   locale: Locale;
   slug: PageSlug;
@@ -20,7 +20,7 @@ interface Props {
 }
 const { locale, slug, t } = Astro.props;
 const other = otherLocale(locale);
-const label = (p: PageSlug) => (p === '' ? t.nav.home : t.nav[p]);
+const label = (p: NavSlug) => (p === '' ? t.nav.home : t.nav[p]);
 const toDark = modeToggleLabel(locale, false);
 const toLight = modeToggleLabel(locale, true);
 const badges = JSON.stringify({ qa: envBadgeHtml('qa', locale), stage: envBadgeHtml('stage', locale) });
@@ -32,7 +32,7 @@ const badges = JSON.stringify({ qa: envBadgeHtml('qa', locale), stage: envBadgeH
     <div class="aun-header-primary aun-collapse">
       <nav class="primary-nav" aria-label={t.nav.primary}>
         <ul>
-          {PAGES.filter((p) => p !== '').map((p) => (
+          {NAV.filter((p) => p !== '').map((p) => (
             <li><a href={pagePath(locale, p)} aria-current={p === slug ? 'page' : undefined}>{label(p)}</a></li>
           ))}
         </ul>
@@ -50,7 +50,7 @@ const badges = JSON.stringify({ qa: envBadgeHtml('qa', locale), stage: envBadgeH
   <div id="site-menu" class="aun-header-panel" popover>
     <nav class="panel-nav" aria-label={t.nav.primary}>
       <ul>
-        {PAGES.filter((p) => p !== '').map((p) => (
+        {NAV.filter((p) => p !== '').map((p) => (
           <li><a href={pagePath(locale, p)} aria-current={p === slug ? 'page' : undefined}>{label(p)}</a></li>
         ))}
       </ul>

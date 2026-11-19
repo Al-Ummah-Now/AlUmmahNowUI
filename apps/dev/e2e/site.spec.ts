@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { LOCALES, PAGES, dir, pagePath } from '../src/lib/pages';
+import { LOCALES, NAV, PAGES, dir, pagePath } from '../src/lib/pages';
 
 for (const locale of LOCALES) {
   for (const slug of PAGES) {
@@ -105,7 +105,7 @@ test('one line on every screen, as www: below 1024px the links leave the bar for
       const panel = page.locator('#site-menu');
       await expect(panel).toBeVisible();
       expect((await panel.boundingBox())!.y).toBe(bar);
-      await expect(panel.getByRole('link')).toHaveCount(PAGES.length - 1);
+      await expect(panel.getByRole('link')).toHaveCount(NAV.length - 1);
       await expect(panel.locator('a[aria-current="page"]')).toHaveAttribute('href', pagePath(locale, 'infrastructure'));
       const axe = await new AxeBuilder({ page }).include('.site-header').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
       expect(axe.violations.map((v) => v.id), `${locale} menu panel`).toEqual([]);
@@ -233,4 +233,41 @@ test.describe('light and dark: the hero, page heads, waqf panel and footer chang
     await page.goto('/en/community/');
     await expect.poll(() => seen[0]).toBe('dark');
   });
+});
+
+test('the system design diagrams: titled, described, one visible variant per viewport, no sideways scroll', async ({ page }) => {
+  for (const locale of LOCALES) {
+    for (const slug of ['system-design', 'system-design/video-pipeline'] as const) {
+      await page.goto(pagePath(locale, slug));
+      const wide = page.locator('svg.dg-wide');
+      const narrow = page.locator('svg.dg-narrow');
+      await expect(wide).toHaveCount(1);
+      await expect(narrow).toHaveCount(1);
+      for (const dg of await [wide, narrow]) {
+        await expect(dg).toHaveAttribute('role', 'img');
+        await expect(dg.locator('title')).toHaveText(/\S/);
+        await expect(dg.locator('desc')).toHaveText(/\S/);
+      }
+      // text is text, never baked into paths
+      expect(await page.locator('svg.dg text').count()).toBeGreaterThan(10);
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await expect(wide).toBeVisible();
+      await expect(narrow).toBeHidden();
+      await page.setViewportSize({ width: 390, height: 844 });
+      await expect(narrow).toBeVisible();
+      await expect(wide).toBeHidden();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${locale} ${slug} no sideways scroll`).toBe(true);
+      const axe = await new AxeBuilder({ page }).include('.dg-figure').withTags(['wcag2a', 'wcag2aa']).analyze();
+      expect(axe.violations.map((v) => v.id)).toEqual([]);
+    }
+  }
+});
+
+test('the system design hub links into the pipeline page in the same language', async ({ page }) => {
+  // the copy holds a relative href; what matters is where it resolves from each hub
+  await page.goto('/en/system-design/');
+  expect(await page.locator('.dg-next a').evaluate((a) => new URL(a.href).pathname)).toBe('/en/system-design/video-pipeline/');
+  await page.goto('/ar/system-design/');
+  expect(await page.locator('.dg-next a').evaluate((a) => new URL(a.href).pathname)).toBe('/ar/system-design/video-pipeline/');
+  await expect(page.locator('.dg-next a')).toContainText('مسار المرئيات');
 });
