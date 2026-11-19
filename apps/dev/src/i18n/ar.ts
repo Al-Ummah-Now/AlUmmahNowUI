@@ -3,6 +3,7 @@
  * terms («مرئي / مرئيات» for video, «المقاطع القصيرة» for Shorts, «اشترك» for subscribe).
  */
 import { WIKI, GH, VIDEOS, WWW, STATUS_PAGE } from '../lib/links.ts';
+import { diagramsAr } from './diagrams.ar.ts';
 import type { Item, Strings } from './en.ts';
 
 export const ar: Strings = {
@@ -1197,4 +1198,5 @@ export const ar: Strings = {
     home: 'اذهب إلى الصفحة الرئيسية',
     other: 'Home page in English',
   },
+  diagrams: diagramsAr,
 };

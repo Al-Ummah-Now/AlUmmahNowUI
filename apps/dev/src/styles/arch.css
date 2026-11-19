@@ -1,0 +1,656 @@
+/*
+ * System design diagrams (src/lib/arch). Light: the reference-architecture look (style sample 5) —
+ * white canvas, dark labels, blue dashed account boundary, thin grey group boxes. Dark: the neon look
+ * (sample 8) — night canvas with a faint dot grid, glowing wires, cyan boundary.
+ * One colour per flow type; the legend under each diagram names them.
+ */
+.an {
+  --an-canvas: #ffffff;
+  --an-dot: transparent;
+  --an-ink: #18212b;
+  --an-muted: #4a5664;
+  --an-node: transparent;
+  --an-node-line: transparent;
+  --an-group: #f6f8fa;
+  --an-group-line: #a7b1bc;
+  --an-boundary: #2f6fd8;
+  --an-boundary-fill: rgb(47 111 216 / 0.035);
+  --an-tag-bg: #ffffff;
+  --an-label-bg: rgb(255 255 255 / 0.94);
+  --an-request: #1f6feb;
+  --an-media: #a33ad6;
+  --an-delivery: #0d8a54;
+  --an-async: #c56a00;
+  --an-control: #6a7380;
+  --an-mono: #000000;
+  --an-glow: 0;
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: var(--an-w);
+  margin-inline: auto;
+  direction: ltr;
+  font-family: var(--font-sans);
+}
+html[data-mode='dark'] .an {
+  --an-canvas: #071824;
+  --an-dot: rgb(120 200 255 / 0.12);
+  --an-ink: #e9f6fc;
+  --an-muted: #a6c2d0;
+  --an-node: rgb(18 52 72 / 0.55);
+  --an-node-line: rgb(90 200 255 / 0.22);
+  --an-group: rgb(14 43 61 / 0.55);
+  --an-group-line: rgb(90 200 255 / 0.35);
+  --an-boundary: #39d0ff;
+  --an-boundary-fill: rgb(57 208 255 / 0.03);
+  --an-tag-bg: #0b2433;
+  --an-label-bg: rgb(7 24 36 / 0.92);
+  --an-request: #39d0ff;
+  --an-media: #e27dff;
+  --an-delivery: #3fe39a;
+  --an-async: #ffb547;
+  --an-control: #8ea6b6;
+  --an-mono: #ffffff;
+  --an-glow: 1;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-mode='light']) .an {
+    --an-canvas: #071824;
+    --an-dot: rgb(120 200 255 / 0.12);
+    --an-ink: #e9f6fc;
+    --an-muted: #a6c2d0;
+    --an-node: rgb(18 52 72 / 0.55);
+    --an-node-line: rgb(90 200 255 / 0.22);
+    --an-group: rgb(14 43 61 / 0.55);
+    --an-group-line: rgb(90 200 255 / 0.35);
+    --an-boundary: #39d0ff;
+    --an-boundary-fill: rgb(57 208 255 / 0.03);
+    --an-tag-bg: #0b2433;
+    --an-label-bg: rgb(7 24 36 / 0.92);
+    --an-request: #39d0ff;
+    --an-media: #e27dff;
+    --an-delivery: #3fe39a;
+    --an-async: #ffb547;
+    --an-control: #8ea6b6;
+    --an-mono: #ffffff;
+    --an-glow: 1;
+  }
+}
+
+.an .an-canvas {
+  fill: var(--an-canvas);
+  stroke: color-mix(in srgb, var(--an-group-line) 60%, transparent);
+  stroke-width: 1;
+}
+.an text {
+  fill: var(--an-ink);
+}
+.an .an-name {
+  font-weight: 700;
+  fill: var(--an-ink);
+}
+.an .an-role {
+  fill: var(--an-muted);
+}
+.an .an-node-box {
+  fill: var(--an-node);
+  stroke: var(--an-node-line);
+  stroke-width: 1;
+}
+
+/* icons: brand marks keep their own colours; Cloudflare product marks in Cloudflare orange (as on
+   developers.cloudflare.com); Lucide in the ink; black-only marks follow the ink so they read in dark */
+.an .an-ic-cf {
+  fill: #f6821f;
+  color: #f6821f;
+}
+.an .an-ic-lucide {
+  color: var(--an-ink);
+}
+.an .an-ic-mono {
+  fill: var(--an-mono);
+}
+
+/* groups */
+.an .an-group-group .an-group-box {
+  fill: var(--an-group);
+  stroke: var(--an-group-line);
+  stroke-width: 1.1;
+}
+.an .an-group-lane .an-group-box {
+  fill: none;
+  stroke: var(--an-group-line);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+}
+.an .an-group-boundary .an-group-box {
+  fill: var(--an-boundary-fill);
+  stroke: var(--an-boundary);
+  stroke-width: 1.6;
+  stroke-dasharray: 7 5;
+}
+.an .an-group-platform .an-group-box {
+  fill: color-mix(in srgb, var(--an-accent, var(--an-boundary)) 5%, transparent);
+  stroke: var(--an-accent, var(--an-boundary));
+  stroke-width: 2;
+}
+.an .an-tag {
+  fill: var(--an-tag-bg);
+  stroke: var(--an-boundary);
+  stroke-width: 1.4;
+}
+.an .an-group-platform .an-tag {
+  stroke: var(--an-accent, var(--an-boundary));
+}
+.an .an-tag-text {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.an .an-group-label {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.an .an-group-caption {
+  font-size: 11px;
+  font-style: italic;
+  fill: var(--an-muted);
+}
+
+/* wires: one colour per flow */
+.an .an-f-request {
+  --f: var(--an-request);
+}
+.an .an-f-media {
+  --f: var(--an-media);
+}
+.an .an-f-delivery {
+  --f: var(--an-delivery);
+}
+.an .an-f-async {
+  --f: var(--an-async);
+}
+.an .an-f-control {
+  --f: var(--an-control);
+}
+.an .an-edge {
+  fill: none;
+  stroke: var(--f);
+  stroke-width: 1.7;
+  stroke-linejoin: round;
+}
+.an .an-edge.an-f-control {
+  stroke-dasharray: 6 5;
+}
+.an .an-mk path {
+  fill: var(--f);
+}
+.an .an-elabel-bg {
+  fill: var(--an-label-bg);
+}
+.an .an-elabel text {
+  fill: color-mix(in srgb, var(--f) 55%, var(--an-ink));
+  font-weight: 600;
+}
+.an .an-badge circle {
+  fill: var(--f);
+  stroke: var(--an-canvas);
+  stroke-width: 2;
+}
+.an .an-badge text {
+  fill: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+}
+html[data-mode='dark'] .an .an-badge text {
+  fill: #04121b;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-mode='light']) .an .an-badge text {
+    fill: #04121b;
+  }
+}
+
+/* motion */
+.an .an-pulse,
+.an .an-comet {
+  fill: var(--f);
+}
+.an .an-pulse {
+  filter: drop-shadow(0 0 3px var(--f));
+}
+.an .an-comet {
+  filter: drop-shadow(0 0 5px var(--f)) drop-shadow(0 0 2px var(--f));
+}
+.an .an-march {
+  fill: none;
+  stroke: var(--f);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 1.5 13;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 2.5px var(--f));
+  animation: an-march 0.9s linear infinite;
+}
+.an .an-lit {
+  fill: none;
+  stroke: var(--f);
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px var(--f));
+  opacity: 0.85;
+}
+.an .an-ring {
+  fill: none;
+  stroke: var(--f);
+  stroke-width: 2;
+}
+@keyframes an-march {
+  to {
+    stroke-dashoffset: -14.5;
+  }
+}
+/* neon: wires glow in dark */
+html[data-mode='dark'] .an .an-edge {
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--f) 70%, transparent));
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-mode='light']) .an .an-edge {
+    filter: drop-shadow(0 0 2px color-mix(in srgb, var(--f) 70%, transparent));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .an .an-motion {
+    display: none;
+  }
+}
+
+/* figure: a diagram may be wider than the text column, up to the viewport */
+.an-figure {
+  margin: 0;
+  display: grid;
+  gap: 14px;
+}
+.an-frame {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--edge);
+}
+.an-frame .an {
+  border-radius: 0;
+}
+.an-wide {
+  display: block;
+}
+.an-narrow {
+  display: none;
+}
+@media (max-width: 760px) {
+  .an-wide {
+    display: none;
+  }
+  .an-narrow {
+    display: block;
+  }
+}
+.an-bleed {
+  width: min(100vw - 32px, 1400px);
+  margin-inline: calc(50% - min(50vw - 16px, 700px));
+}
+.an-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  color: var(--muted);
+  justify-content: center;
+}
+.an-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.an-legend .an-sw {
+  width: 26px;
+  height: 0;
+  border-top: 2.5px solid var(--sw);
+  border-radius: 2px;
+  position: relative;
+}
+.an-legend .an-sw::after {
+  content: '';
+  position: absolute;
+  inset-inline-end: -2px;
+  top: -5.5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sw);
+  box-shadow: 0 0 6px var(--sw);
+}
+.an-legend .an-sw-dash {
+  border-top-style: dashed;
+}
+.an-legend .an-sw-dash::after {
+  display: none;
+}
+.an-legend .an-sw-step {
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg);
+  font-weight: 800;
+  font-size: 0.75rem;
+  display: inline-grid;
+  place-items: center;
+}
+.an-legend .an-sw-step::after {
+  display: none;
+}
+.an-legend-wrap {
+  --sw-request: #1f6feb;
+  --sw-media: #a33ad6;
+  --sw-delivery: #0d8a54;
+  --sw-async: #c56a00;
+  --sw-control: #6a7380;
+}
+html[data-mode='dark'] .an-legend-wrap {
+  --sw-request: #39d0ff;
+  --sw-media: #e27dff;
+  --sw-delivery: #3fe39a;
+  --sw-async: #ffb547;
+  --sw-control: #8ea6b6;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-mode='light']) .an-legend-wrap {
+    --sw-request: #39d0ff;
+    --sw-media: #e27dff;
+    --sw-delivery: #3fe39a;
+    --sw-async: #ffb547;
+    --sw-control: #8ea6b6;
+  }
+}
+/* a vendor wordmark sits on white in both modes: it is drawn for a light background */
+.an .an-tag-logo {
+  fill: #ffffff;
+}
+
+/* isometric hero (samples 6 + 7) */
+.an-iso {
+  --iso-top: #ffffff;
+  --iso-l: #dfe9f3;
+  --iso-r: #c4d4e4;
+  --iso-edge: #9fb4c8;
+  --iso-plat: #f3f8fc;
+  --iso-plat-l: #d9e6f1;
+  --iso-plat-r: #c6d7e7;
+  --iso-grid: rgb(47 111 216 / 0.07);
+  --iso-tile: #ffffff;
+  --iso-tile-line: #d3dee8;
+}
+html[data-mode='dark'] .an-iso {
+  --iso-top: #1c4c66;
+  --iso-l: #133a50;
+  --iso-r: #0d2c3e;
+  --iso-edge: rgb(90 210 255 / 0.55);
+  --iso-plat: #0c2a3b;
+  --iso-plat-l: #0a2231;
+  --iso-plat-r: #071a26;
+  --iso-grid: rgb(90 210 255 / 0.07);
+  --iso-tile: #0f3347;
+  --iso-tile-line: rgb(90 210 255 / 0.35);
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-mode='light']) .an-iso {
+    --iso-top: #1c4c66;
+    --iso-l: #133a50;
+    --iso-r: #0d2c3e;
+    --iso-edge: rgb(90 210 255 / 0.55);
+    --iso-plat: #0c2a3b;
+    --iso-plat-l: #0a2231;
+    --iso-plat-r: #071a26;
+    --iso-grid: rgb(90 210 255 / 0.07);
+    --iso-tile: #0f3347;
+    --iso-tile-line: rgb(90 210 255 / 0.35);
+  }
+}
+.an-iso .an-iso-gridline {
+  fill: none;
+  stroke: var(--iso-grid);
+  stroke-width: 1;
+}
+.an-iso .an-iso-floor {
+  stroke: none;
+}
+.an-iso .an-iso-top {
+  fill: color-mix(in srgb, var(--an-accent) 6%, var(--iso-plat));
+  stroke: var(--an-accent);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+}
+.an-iso .an-iso-side-l {
+  fill: color-mix(in srgb, var(--an-accent) 10%, var(--iso-plat-l));
+  stroke: var(--an-accent);
+  stroke-width: 1.2;
+}
+.an-iso .an-iso-side-r {
+  fill: color-mix(in srgb, var(--an-accent) 10%, var(--iso-plat-r));
+  stroke: var(--an-accent);
+  stroke-width: 1.2;
+}
+.an-iso .an-iso-dashed .an-iso-top {
+  stroke-dasharray: 8 6;
+  fill: none;
+}
+.an-iso .an-iso-dashed .an-iso-side-l,
+.an-iso .an-iso-dashed .an-iso-side-r {
+  display: none;
+}
+.an-iso .an-iso-tag .an-tag {
+  stroke: var(--an-accent);
+  stroke-width: 1.6;
+}
+.an-iso .an-iso-tagpin {
+  stroke: var(--an-accent);
+  stroke-width: 1.4;
+}
+.an-iso .an-iso-hit {
+  fill: transparent;
+}
+.an-iso .an-iso-face-t {
+  fill: var(--iso-top);
+  stroke: var(--iso-edge);
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+.an-iso .an-iso-face-l {
+  fill: var(--iso-l);
+  stroke: var(--iso-edge);
+  stroke-width: 1;
+}
+.an-iso .an-iso-face-r {
+  fill: var(--iso-r);
+  stroke: var(--iso-edge);
+  stroke-width: 1;
+}
+.an-iso .an-tone-cf .an-iso-face-t {
+  fill: color-mix(in srgb, #f6821f 10%, var(--iso-top));
+}
+.an-iso .an-tone-cf .an-iso-face-l {
+  fill: color-mix(in srgb, #f6821f 18%, var(--iso-l));
+}
+.an-iso .an-tone-cf .an-iso-face-r {
+  fill: color-mix(in srgb, #f6821f 24%, var(--iso-r));
+}
+.an-iso .an-tone-bunny .an-iso-face-t {
+  fill: color-mix(in srgb, #f29b1d 10%, var(--iso-top));
+}
+.an-iso .an-tone-bunny .an-iso-face-l {
+  fill: color-mix(in srgb, #f29b1d 18%, var(--iso-l));
+}
+.an-iso .an-tone-bunny .an-iso-face-r {
+  fill: color-mix(in srgb, #f29b1d 24%, var(--iso-r));
+}
+.an-iso .an-iso-stem {
+  stroke: var(--iso-edge);
+  stroke-width: 1.2;
+  stroke-dasharray: 2 3;
+}
+.an-iso .an-iso-tile {
+  fill: var(--iso-tile);
+  stroke: var(--iso-tile-line);
+  stroke-width: 1;
+  filter: drop-shadow(0 4px 6px rgb(16 40 70 / 0.18));
+}
+.an-iso .an-pipe-tube {
+  fill: none;
+  stroke: var(--f);
+  stroke-width: 11;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.22;
+}
+.an-iso .an-pipe {
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.an-iso .an-pulse-big {
+  filter: drop-shadow(0 0 5px var(--f));
+}
+.an-iso .an-iso-label {
+  paint-order: stroke;
+  stroke: var(--iso-plat);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+/* hand-drawn explainers (sample 1) */
+@font-face {
+  font-family: 'Kalam';
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/kalam-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Kalam';
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/kalam-latin-700-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Aref Ruqaa';
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/aref-ruqaa-arabic-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Aref Ruqaa';
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/aref-ruqaa-arabic-700-normal.woff2') format('woff2');
+}
+.an-sketch {
+  --sk-paper: #fffdf8;
+  --sk-ink: #24303c;
+  --sk-yellow: #ffe680;
+  --sk-blue: #bcd8ff;
+  --sk-orange: #ffd2a6;
+  --sk-green: #bfeccb;
+  --sk-pink: #ffc9d6;
+  --sk-mark-o: 0.75;
+}
+html[data-mode='dark'] .an-sketch {
+  --sk-paper: #0d1c26;
+  --sk-ink: #e8eef2;
+  --sk-yellow: #b38f12;
+  --sk-blue: #2f5f9a;
+  --sk-orange: #a3561a;
+  --sk-green: #2b7a47;
+  --sk-pink: #8f3a55;
+  --sk-mark-o: 0.55;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-mode='light']) .an-sketch {
+    --sk-paper: #0d1c26;
+    --sk-ink: #e8eef2;
+    --sk-yellow: #b38f12;
+    --sk-blue: #2f5f9a;
+    --sk-orange: #a3561a;
+    --sk-green: #2b7a47;
+    --sk-pink: #8f3a55;
+    --sk-mark-o: 0.55;
+  }
+}
+.an-sketch .an-paper {
+  fill: var(--sk-paper);
+}
+.an-sketch text {
+  fill: var(--sk-ink);
+}
+.an-sketch .an-hand {
+  font-family: 'Kalam', 'Comic Sans MS', var(--font-sans);
+}
+.an-sketch .an-hand-ar {
+  font-family: 'Aref Ruqaa', 'Kalam', var(--font-arabic, serif);
+}
+.an-sketch .an-sk-title {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.an-sketch .an-sk-side {
+  font-size: 17px;
+  fill: color-mix(in srgb, var(--sk-ink) 75%, transparent);
+}
+.an-sketch .an-sk-name {
+  font-size: 19px;
+  font-weight: 700;
+}
+.an-sketch .an-sk-note {
+  font-size: 15px;
+}
+.an-sketch .an-sk-tag text {
+  font-size: 15px;
+  font-weight: 700;
+}
+.an-sketch .an-sk-line,
+.an-sketch .an-sk-cloud,
+.an-sketch .an-sk-arrow,
+.an-sketch .an-sk-head {
+  fill: none;
+  stroke: var(--sk-ink);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.an-sketch .an-sk-cloud {
+  stroke-width: 1.8;
+  opacity: 0.8;
+}
+.an-sketch .an-sk-arrow {
+  stroke-width: 2;
+}
+.an-sketch .an-sk-dashed {
+  stroke-dasharray: 7 7;
+}
+.an-sketch .an-sk-mark {
+  fill: var(--tone);
+  opacity: var(--sk-mark-o);
+}
+.an-sketch .an-sk-hit {
+  fill: transparent;
+}
+.an-sketch .an-sk-yellow { --tone: var(--sk-yellow); }
+.an-sketch .an-sk-blue { --tone: var(--sk-blue); }
+.an-sketch .an-sk-orange { --tone: var(--sk-orange); }
+.an-sketch .an-sk-green { --tone: var(--sk-green); }
+.an-sketch .an-sk-pink { --tone: var(--sk-pink); }
+.an-sketch .an-sk-dot {
+  fill: #e8590c;
+  filter: drop-shadow(0 0 3px #ff922b);
+}

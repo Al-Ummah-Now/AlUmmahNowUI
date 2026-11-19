@@ -2,61 +2,26 @@
 import Base from '../../../layouts/Base.astro';
 import PageHero from '../../../components/PageHero.astro';
 import ItemGrid from '../../../components/ItemGrid.astro';
+import ArchFigure from '../../../components/ArchFigure.astro';
 import { strings } from '../../../i18n';
-import { dir, type Locale } from '../../../lib/pages';
+import type { Locale } from '../../../lib/pages';
 import { localePaths } from '../../../lib/static-paths';
-import IsometricHero from '../../../components/diagrams/IsometricHero.astro';
-import Reference from '../../../components/diagrams/Reference.astro';
-import { refOverviewNarrow, refOverviewWide } from '../../../lib/diagrams/referenceOverview';
 
 export const getStaticPaths = localePaths;
 const locale = Astro.params.lang as Locale;
 const t = strings(locale);
 const p = t.systemDesign;
-const rw = refOverviewWide(t.showcase.reference);
-const rn = refOverviewNarrow(t.showcase.reference);
-const rtl = dir(locale) === 'rtl';
 ---
 <Base locale={locale} slug="system-design" title={p.title} description={p.description}>
   <PageHero title={p.heroTitle} lead={p.heroLead} />
-  <section class="band" aria-labelledby="iso-h">
+  <section class="band an-hero-band" aria-label={t.diagrams.hero.title}>
     <div class="wrap">
-      <figure class="dg-figure dg-figure-hero">
-        <div class="panel">
-          <div class="dg-wide-only"><IsometricHero title={t.showcase.iso.title} desc={t.showcase.iso.desc} rtl={rtl} labels={t.showcase.iso} variant="wide" /></div>
-          <div class="dg-narrow-only"><IsometricHero title={t.showcase.iso.title} desc={t.showcase.iso.desc} rtl={rtl} labels={t.showcase.iso} variant="narrow" /></div>
-        </div>
-      </figure>
+      <ArchFigure id="hero" locale={locale} />
     </div>
   </section>
   <section class="band band-raised" aria-labelledby="diagram-h">
     <div class="wrap">
-      <h2 id="diagram-h" class="h2">{p.diagramTitle}</h2>
-      <p class="section-lead">{p.diagramLead}</p>
-      <figure class="dg-figure">
-        <div class="panel">
-          <Reference spec={rw} rtl={rtl} variant="wide" />
-          <Reference spec={rn} rtl={rtl} variant="narrow" />
-        </div>
-        <p class="rf-legend" aria-label="legend">
-          <span class="rf-legend-item"><span class="rf-legend-dot rf-legend-dot-request"></span>{t.showcase.legend.requests}</span>
-          <span class="rf-legend-item"><span class="rf-legend-dot rf-legend-dot-upload"></span>{t.showcase.legend.upload}</span>
-          <span class="rf-legend-item"><span class="rf-legend-dot rf-legend-dot-response"></span>{t.showcase.legend.response}</span>
-          <span class="rf-legend-item"><span class="rf-legend-dash"></span>{t.showcase.legend.control}</span>
-          <span class="rf-legend-item"><span class="rf-legend-step">1</span>{t.showcase.legend.steps}</span>
-        </p>
-        <figcaption class="dg-legend" aria-labelledby="legend-h">
-          <h3 id="legend-h" class="dg-legend-title">{p.legendTitle}</h3>
-          <dl class="dg-legend-list">
-            {p.legend.map((x) => (
-              <div class="dg-legend-item">
-                <dt>{x.term}</dt>
-                <dd>{x.body}</dd>
-              </div>
-            ))}
-          </dl>
-        </figcaption>
-      </figure>
+      <ArchFigure id="overview" locale={locale} title={p.diagramTitle} lead={p.diagramLead} headingId="diagram-h" />
     </div>
   </section>
   <section class="band" aria-labelledby="zones-h">
