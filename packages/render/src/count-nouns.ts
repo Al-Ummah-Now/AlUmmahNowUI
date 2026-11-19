@@ -31,6 +31,11 @@ export function formatInteger(locale: string, n: number): string {
   return new Intl.NumberFormat(isArabic(locale) ? 'ar-u-nu-arab' : 'en', { maximumFractionDigits: 0 }).format(n);
 }
 
+/** Any 0–9 in a formatted string (a duration "2:05") as ٠–٩ in Arabic; English unchanged. */
+export function localDigits(locale: string, text: string): string {
+  return isArabic(locale) ? text.replace(/[0-9]/g, (d) => String.fromCharCode(0x0660 + Number(d))) : text;
+}
+
 /** A count with its noun in the locale's language and digits; see the module note. */
 export function formatCountNoun(locale: string, count: number | string | null | undefined, noun: CountNoun): string {
   const n = Math.max(0, Math.floor(Number(count) || 0));
