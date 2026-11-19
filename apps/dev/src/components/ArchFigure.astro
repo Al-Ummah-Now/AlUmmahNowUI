@@ -61,9 +61,9 @@ const uid = `${id}-${headingId ?? 'fig'}`;
       <h3 class="an-compare-title">{dg.costs.compare}</h3>
       <ul role="list">
         {compareRows.map((row) => (
-          <li class={`an-compare-row an-compare-${row.lane}`} data-compare={row.lane} data-usd={JSON.stringify(totals[row.lane])} style={`--fill:${(first(row.lane) / most) * 100}%`}>
+          <li class={`an-compare-row an-compare-${row.lane}`} data-compare={row.lane} data-usd={JSON.stringify(totals[row.lane])} >
             <span class="an-compare-label">{row.label}</span>
-            <span class="an-compare-bar" aria-hidden="true"><span /></span>
+            <progress class="an-compare-bar" max="1000" value={Math.round((first(row.lane) / most) * 1000)} aria-hidden="true" />
             <output>{formatUsd(locale, first(row.lane))}</output>
           </li>
         ))}
@@ -74,7 +74,7 @@ const uid = `${id}-${headingId ?? 'fig'}`;
   {(flows.length > 0 || d.steps) && (
     <ul class="an-legend an-legend-wrap" aria-label={lg.title}>
       {flows.map((f) => (
-        <li><span class:list={['an-sw', f === 'control' && 'an-sw-dash']} style={`--sw: var(--sw-${f})`} aria-hidden="true" />{lg[f]}</li>
+        <li><span class:list={['an-sw', `an-sw-f-${f}`, f === 'control' && 'an-sw-dash']} aria-hidden="true" />{lg[f]}</li>
       ))}
       {d.steps && id !== 'costs' && <li><span class="an-sw an-sw-step" aria-hidden="true">{locale === 'ar' ? '١' : '1'}</span>{lg.steps}</li>}
     </ul>

@@ -8,7 +8,7 @@
  * gate (e2e/diagram-gate.spec.ts).
  */
 import { esc, hasArabic, textWidth } from './text.ts';
-import { r, symbol, symId, useIcon, type IconId } from './icons.ts';
+import { accentClass, r, symbol, symId, useIcon, type IconId } from './icons.ts';
 import { formatUsd } from './cost.ts';
 import { G, Router, intersects, polyLength, roundedPath, sideDir, simplify, type Endpoint, type Pt, type Rect, type Side } from './route.ts';
 
@@ -472,7 +472,7 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   };
   const out: string[] = [];
   out.push(
-    `<svg class="an an-arch" data-diagram="${spec.id}" data-variant="${opts.variant}" data-cycle="${f4(T)}" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-labelledby="${prefix}-t ${prefix}-d" style="--an-w:${W}px">`,
+    `<svg class="an an-arch" data-diagram="${spec.id}" data-variant="${opts.variant}" data-cycle="${f4(T)}" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-labelledby="${prefix}-t ${prefix}-d">`,
     `<title id="${prefix}-t">${esc(spec.title)}</title><desc id="${prefix}-d">${esc(spec.desc)}</desc>`,
     '<defs>',
     ...icons.map((i) => symbol(prefix, i)),
@@ -486,12 +486,11 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   for (const gb of [...groups.values()].sort((a, b) => b.depth - a.depth)) {
     const { g, box, label } = gb;
     const kind = g.kind ?? 'group';
-    const st = g.accent ? ` style="--an-accent:${g.accent}"` : '';
     const deep = (id: string): string[] => {
       const gg = groups.get(id)?.g;
       return gg ? gg.members.flatMap(deep) : [id];
     };
-    out.push(`<g class="an-group an-group-${kind}" data-group="${g.id}" data-members="${deep(g.id).join(' ')}"${st}>`);
+    out.push(`<g class="an-group an-group-${kind}${g.accent ? ` ${accentClass(g.accent)}` : ''}" data-group="${g.id}" data-members="${deep(g.id).join(' ')}">`);
     out.push(`<rect class="an-group-box" x="${r(box.x)}" y="${r(box.y)}" width="${r(box.w)}" height="${r(box.h)}" rx="${kind === 'group' ? 10 : 16}"/>`);
     if (kind === 'boundary' || kind === 'platform') {
       if (g.tagLogo) {
@@ -573,7 +572,7 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
       let data = '';
       if (l.kind === 'meter' && nb.n.meter) data = ` data-meter data-lane="${nb.n.meter.lane}" data-win="${meterWin(nb.n.id).map(f4).join(',')}" data-usd="${esc(JSON.stringify(nb.n.meter.usd))}"`;
       if (l.kind === 'total' && nb.n.total) data = ` data-total="${nb.n.total.lane}" data-usd="${esc(JSON.stringify(nb.n.total.usd))}"`;
-      out.push(`<text class="${cls}" x="${r(nb.cx)}" y="${r(l.y)}" text-anchor="middle" style="font-size:${l.size}px"${hasArabic(l.text) ? ' direction="rtl"' : ''}${data}>${esc(l.text)}</text>`);
+      out.push(`<text class="${cls}" x="${r(nb.cx)}" y="${r(l.y)}" text-anchor="middle" font-size="${l.size}"${hasArabic(l.text) ? ' direction="rtl"' : ''}${data}>${esc(l.text)}</text>`);
     }
     out.push('</g>');
   }
@@ -582,7 +581,7 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   // labels and badges on top
   out.push('<g class="an-labels">');
   for (const l of labels) {
-    out.push(`<g class="an-elabel an-f-${l.rt.e.flow}"><rect class="an-elabel-bg" x="${r(l.rect.x)}" y="${r(l.rect.y)}" width="${r(l.rect.w)}" height="${l.rect.h}" rx="${l.rect.h / 2}"/><text x="${r(l.rect.x + l.rect.w / 2)}" y="${r(l.rect.y + 12.5)}" text-anchor="middle" style="font-size:${LS}px"${hasArabic(l.text) ? ' direction="rtl"' : ''}>${esc(l.text)}</text></g>`);
+    out.push(`<g class="an-elabel an-f-${l.rt.e.flow}"><rect class="an-elabel-bg" x="${r(l.rect.x)}" y="${r(l.rect.y)}" width="${r(l.rect.w)}" height="${l.rect.h}" rx="${l.rect.h / 2}"/><text x="${r(l.rect.x + l.rect.w / 2)}" y="${r(l.rect.y + 12.5)}" text-anchor="middle" font-size="${LS}"${hasArabic(l.text) ? ' direction="rtl"' : ''}>${esc(l.text)}</text></g>`);
   }
   for (const b of badges) {
     out.push(`<g class="an-badge an-f-${b.rt.e.flow}"><circle cx="${r(b.c.x)}" cy="${r(b.c.y)}" r="${BR}"/><text x="${r(b.c.x)}" y="${r(b.c.y + 4)}" text-anchor="middle">${new Intl.NumberFormat(opts.locale === 'ar' ? 'ar-u-nu-arab' : 'en').format(b.n)}</text></g>`);

@@ -6,7 +6,7 @@
  * hold, and the viewBox is fitted to the drawing. Same icon symbols and data-* gate hooks as arch.ts.
  */
 import type { diagramsEn } from '../../i18n/diagrams.en.ts';
-import { r, symbol, symId, useIcon } from './icons.ts';
+import { accentClass, r, symbol, symId, useIcon } from './icons.ts';
 import { esc, hasArabic, textWidth } from './text.ts';
 import type { Flow } from './arch.ts';
 
@@ -203,7 +203,7 @@ export function renderIso(c: Copy, opts: { rtl: boolean; variant: string }): str
   const o: string[] = [];
   const g = 28;
   o.push(
-    `<svg class="an an-iso" data-diagram="hero" data-variant="${opts.variant}" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-labelledby="${prefix}-t ${prefix}-d" style="--an-w:${W}px">`,
+    `<svg class="an an-iso" data-diagram="hero" data-variant="${opts.variant}" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-labelledby="${prefix}-t ${prefix}-d">`,
     `<title id="${prefix}-t">${esc(c.title)}</title><desc id="${prefix}-d">${esc(c.desc)}</desc><defs>${icons.map((i) => symbol(prefix, i)).join('')}`,
     `<filter id="${prefix}-soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4"/></filter>`,
     ...(['cf', 'bunny', 'prov', 'plain'] as const).map((t) => `<linearGradient id="${prefix}-cyl-${t}" class="an-tone-${t}" x1="0" x2="1" y1="0" y2="0"><stop offset="0" class="an-cyl-a"/><stop offset="0.55" class="an-cyl-b"/><stop offset="1" class="an-cyl-c"/></linearGradient>`),
@@ -220,7 +220,7 @@ export function renderIso(c: Copy, opts: { rtl: boolean; variant: string }): str
     const cc = P(p.x + p.w, p.y + p.d);
     const d = P(p.x, p.y + p.d);
     const low = (q: [number, number]): [number, number] => [q[0], q[1] + T];
-    o.push(`<g class="an-iso-plat${p.dashed ? ' an-iso-dashed' : ''}" data-group="${p.id}" style="--an-accent:${p.accent}">`);
+    o.push(`<g class="an-iso-plat ${accentClass(p.accent)}${p.dashed ? ' an-iso-dashed' : ''}" data-group="${p.id}">`);
     o.push(`<polygon class="an-iso-side-l" points="${pts([d, cc, low(cc), low(d)])}"/><polygon class="an-iso-side-r" points="${pts([b, cc, low(cc), low(b)])}"/><polygon class="an-iso-top" points="${pts([a, b, cc, d])}"/>`);
     o.push('</g>');
     // the tag hangs off the platform's outer (left, or right in Arabic) corner
@@ -229,7 +229,7 @@ export function renderIso(c: Copy, opts: { rtl: boolean; variant: string }): str
     const tx = opts.rtl ? corner[0] + 10 : corner[0] - 10 - tw;
     const ty = corner[1] - 34;
     const pin = opts.rtl ? tx : tx + tw;
-    tags.push(`<g data-tag="${p.id}" class="an-iso-tag" style="--an-accent:${p.accent}"><path class="an-iso-tagpin" d="M${r(pin)} ${r(ty + 14)} L${r(corner[0])} ${r(corner[1])}"/><rect class="an-tag${p.tagLogo ? ' an-tag-logo' : ''}" x="${r(tx)}" y="${r(ty)}" width="${r(tw)}" height="28" rx="8"/>`);
+    tags.push(`<g data-tag="${p.id}" class="an-iso-tag ${accentClass(p.accent)}"><path class="an-iso-tagpin" d="M${r(pin)} ${r(ty + 14)} L${r(corner[0])} ${r(corner[1])}"/><rect class="an-tag${p.tagLogo ? ' an-tag-logo' : ''}" x="${r(tx)}" y="${r(ty)}" width="${r(tw)}" height="28" rx="8"/>`);
     if (p.tagLogo) tags.push(`<use data-icon="${p.tagLogo.id}" href="#${symId(prefix, p.tagLogo.id)}" x="${r(tx + 12)}" y="${r(ty + 5)}" width="${p.tagLogo.w}" height="${p.tagLogo.h}"><title>${esc(p.label)}</title></use>`);
     else {
       if (p.tag) tags.push(useIcon(prefix, p.tag, opts.rtl ? tx + tw - 28 : tx + 10, ty + 5, 18));
@@ -316,7 +316,7 @@ export function renderIso(c: Copy, opts: { rtl: boolean; variant: string }): str
     o.push(`<ellipse class="an-iso-icon-shadow" cx="${r(tc[0] + (opts.rtl ? -2 : 2))}" cy="${r(tc[1] + 3)}" rx="${r(IS * 0.42)}" ry="${r(IS * 0.16)}"/>`);
     o.push(useIcon(prefix, b.icon, ix, iy, IS));
     o.push(`<rect class="an-iso-pill" x="${r(px0)}" y="${r(py0)}" width="${r(pw)}" height="22" rx="11"/>`);
-    o.push(`<text class="an-name" x="${r(tc[0])}" y="${r(py0 + 15.5)}" text-anchor="middle" style="font-size:12.5px"${hasArabic(b.label) ? ' direction="rtl"' : ''}>${esc(b.label)}</text>`);
+    o.push(`<text class="an-name" x="${r(tc[0])}" y="${r(py0 + 15.5)}" text-anchor="middle" font-size="12.5"${hasArabic(b.label) ? ' direction="rtl"' : ''}>${esc(b.label)}</text>`);
     o.push('</g>');
   }
   o.push('</g>');
@@ -337,7 +337,7 @@ export function renderIso(c: Copy, opts: { rtl: boolean; variant: string }): str
     if (pp.labelSeg != null) bi = pp.labelSeg + 1;
     const m = [(q[bi]![0] + q[bi - 1]![0]) / 2, (q[bi]![1] + q[bi - 1]![1]) / 2];
     const lw = textWidth(pp.label, 11.5, true) + 16;
-    o.push(`<g class="an-elabel an-f-${pp.flow}"><rect class="an-elabel-bg an-pipe-label" x="${r(m[0]! - lw / 2)}" y="${r(m[1]! - 10)}" width="${r(lw)}" height="20" rx="10"/><text x="${r(m[0]!)}" y="${r(m[1]! + 4)}" text-anchor="middle" style="font-size:11.5px"${hasArabic(pp.label) ? ' direction="rtl"' : ''}>${esc(pp.label)}</text></g>`);
+    o.push(`<g class="an-elabel an-f-${pp.flow}"><rect class="an-elabel-bg an-pipe-label" x="${r(m[0]! - lw / 2)}" y="${r(m[1]! - 10)}" width="${r(lw)}" height="20" rx="10"/><text x="${r(m[0]!)}" y="${r(m[1]! + 4)}" text-anchor="middle" font-size="11.5"${hasArabic(pp.label) ? ' direction="rtl"' : ''}>${esc(pp.label)}</text></g>`);
   }
   o.push('</g></svg>');
   return o.join('');

@@ -25,6 +25,20 @@ const DIST = join(import.meta.dirname, '../dist');
 mkdirSync(out, { recursive: true });
 
 const TYPES: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.woff2': 'font/woff2', '.json': 'application/json', '.xml': 'application/xml' };
+/** The site's own headers (dist/_headers "/*" block), so captures run under the production CSP. */
+const SITE_HEADERS: Record<string, string> = {};
+{
+  const lines = existsSync(join(DIST, '_headers')) ? readFileSync(join(DIST, '_headers'), 'utf8').split('\n') : [];
+  let inAll = false;
+  for (const line of lines) {
+    if (/^\S/.test(line)) inAll = line.trim() === '/*';
+    else if (inAll && line.includes(':')) {
+      const i = line.indexOf(':');
+      SITE_HEADERS[line.slice(0, i).trim()] = line.slice(i + 1).trim();
+    }
+  }
+  if (!SITE_HEADERS['Content-Security-Policy']) throw new Error('dist/_headers has no CSP: build first');
+}
 const server = createServer((req, res) => {
   const p = decodeURIComponent((req.url ?? '/').split('?')[0]);
   let f = join(DIST, p);
@@ -34,7 +48,7 @@ const server = createServer((req, res) => {
     res.end();
     return;
   }
-  res.writeHead(200, { 'content-type': TYPES[extname(f)] ?? 'application/octet-stream' });
+  res.writeHead(200, { ...SITE_HEADERS, 'content-type': TYPES[extname(f)] ?? 'application/octet-stream' });
   res.end(readFileSync(f));
 });
 await new Promise<void>((ok) => server.listen(0, '127.0.0.1', ok));
@@ -52,6 +66,10 @@ for (const slug of PAGES)
         const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: vp.dsf, colorScheme: mode, reducedMotion: 'no-preference' });
         await ctx.addInitScript((m) => localStorage.setItem('aun_mode', m), mode);
         const page = await ctx.newPage();
+        const cspViolations: string[] = [];
+        page.on('console', (m) => {
+          if (/Content Security Policy/i.test(m.text())) cspViolations.push(m.text().slice(0, 200));
+        });
         await page.goto(`${base}/${lang}/system-design/${slug}`);
         await page.evaluate(() => document.fonts.ready);
         // freeze motion at a mid-flow instant so frames show pulses in flight
@@ -68,6 +86,7 @@ for (const slug of PAGES)
         });
         await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => ok(null)))));
         const found = await page.evaluate(gateInBrowser);
+        for (const v of cspViolations.splice(0)) found.push(`CSP blocked: ${v}`);
         for (const d of found) defects.push(`${name(slug)} ${lang} ${mode} ${w}: ${d}`);
         const tag = `${name(slug)}-${mode}-${w}-${lang}`;
         const H = await page.evaluate(() => document.scrollingElement!.scrollHeight);

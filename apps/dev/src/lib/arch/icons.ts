@@ -73,7 +73,18 @@ export function symbol(prefix: string, id: IconId): string {
 /** A <use> of an icon at (x, y) with a square box of `size`. */
 export function useIcon(prefix: string, id: IconId, x: number, y: number, size: number): string {
   const fill = iconFill(id);
-  return `<use data-icon="${id}" class="${iconClass(id)}" href="#${symId(prefix, id)}" x="${r(x)}" y="${r(y)}" width="${size}" height="${size}"${fill ? ` style="fill:${fill}"` : ''}/>`;
+  return `<use data-icon="${id}" class="${iconClass(id)}" href="#${symId(prefix, id)}" x="${r(x)}" y="${r(y)}" width="${size}" height="${size}"${fill ? ` fill="${fill}"` : ''}/>`;
 }
 
 export const r = (n: number) => Math.round(n * 10) / 10;
+
+/**
+ * Platform outline colours as classes (arch.css), never inline styles: the site's CSP is
+ * `style-src 'self'`, which drops style attributes. A new accent must be added here and in arch.css.
+ */
+const ACCENTS: Record<string, string> = { '#f29b1d': 'bunny', '#f6821f': 'cf', 'var(--an-boundary)': 'blue', 'var(--an-ink)': 'ink' };
+export function accentClass(accent: string): string {
+  const k = ACCENTS[accent];
+  if (!k) throw new Error(`diagram accent without a class: ${accent}`);
+  return `an-accent-${k}`;
+}

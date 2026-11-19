@@ -17,12 +17,18 @@ for (const lang of ['en', 'ar'])
       test(`diagrams: /${lang}/system-design/${slug} (${mode})`, async ({ page }) => {
         await page.emulateMedia({ colorScheme: mode, reducedMotion: 'reduce' });
         await page.addInitScript((m) => localStorage.setItem('aun_mode', m), mode);
+        // the site's CSP (style-src 'self') drops inline styles: a diagram must never need one
+        const csp: string[] = [];
+        page.on('console', (m) => {
+          if (/Content Security Policy/i.test(m.text())) csp.push(m.text());
+        });
         await page.goto(`/${lang}/system-design/${slug}`);
         await page.evaluate(() => document.fonts.ready);
         const visible = await page.locator('svg.an').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).length);
         expect(visible, 'diagrams on the page').toBeGreaterThanOrEqual(MIN_DIAGRAMS);
         const defects = await page.evaluate(gateInBrowser);
         expect(defects, defects.join('\n')).toEqual([]);
+        expect(csp, csp.join('\n')).toEqual([]);
         // no horizontal scroll at any width
         const overflow = await page.evaluate(() => document.scrollingElement!.scrollWidth - window.innerWidth);
         expect(overflow).toBeLessThanOrEqual(0);
