@@ -35,7 +35,7 @@ export function diagram(id: DiagramId, locale: 'en' | 'ar'): Rendered {
     }
     case 'costs': {
       const o = costs(c.costs, locale);
-      return { wide: renderArch(o.spec, o.wide, ro('wide')), narrow: renderArch(o.spec, o.narrow, ro('narrow')), flows: flowsIn(o.spec.edges, o.narrow.edges), steps: true };
+      return { wide: renderArch(o.spec, o.wide, ro('wide')), narrow: renderArch(o.spec, o.narrow, ro('narrow')), flows: flowsIn(o.spec.edges, o.narrow.edges).filter((f) => f !== 'control'), steps: true };
     }
     case 'hero':
       return { wide: renderIso(c.hero, { rtl, variant: 'wide' }), narrow: renderIso(c.hero, { rtl, variant: 'narrow' }), flows: ['request', 'media', 'delivery'], steps: false };
