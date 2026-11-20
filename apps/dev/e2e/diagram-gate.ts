@@ -194,9 +194,18 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
         if (hit(near, box, 0) && !inside(near, box, 0)) out.push(`${name}: text "${t.textContent}" is within ${d} px of the border of group ${g.dataset.group}`);
       }
     }
+    // a wire starts and ends at a tile's edge, never inside it
+    for (const p of svg.querySelectorAll<SVGPathElement>('[data-edge]')) {
+      const len = p.getTotalLength();
+      for (const [which, pt] of [['starts', p.getPointAtLength(0)], ['ends', p.getPointAtLength(len)]] as const)
+        for (const [id, nbx] of nodeBox)
+          if (pt.x > nbx.x + 2 && pt.x < nbx.x + nbx.w - 2 && pt.y > nbx.y + 2 && pt.y < nbx.y + nbx.h - 2) out.push(`${name}: edge ${p.dataset.from}→${p.dataset.to} ${which} inside tile ${id}`);
+    }
     // a step badge (its whole circle) stays off every group border: it may sit on its own wire only
     for (const badge of svg.querySelectorAll<SVGGElement>('.an-badge')) {
       const bc = bb(badge);
+      // and 6 px clear of every tile's border
+      for (const [id, nbx] of nodeBox) if (hit(grow(bc, CLEAR - 0.5), nbx, 0)) out.push(`${name}: step badge "${badge.textContent}" is within ${CLEAR} px of tile ${id}`);
       for (const g of svg.querySelectorAll<SVGGElement>('[data-group]')) {
         const gr = g.querySelector<SVGGraphicsElement>(':scope > rect');
         if (!gr) continue;

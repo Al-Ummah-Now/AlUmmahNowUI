@@ -287,19 +287,18 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   };
   const snap = (v: number) => Math.round(v / G) * G;
   const endpoint = (id: string, side: Side, along?: number): Endpoint => {
-    const { rect, isNode, anchorY, icon } = rectOf(id);
+    const { rect, isNode, anchorY } = rectOf(id);
     const m = isNode ? M + 2 : 6;
     if (side === 'e' || side === 'w') {
       const y = snap(along ?? anchorY);
-      // wires reach the icon itself (as in the reference style), not the invisible label box
-      const near = icon && y >= icon.y - 4 && y <= icon.y + icon.h + 4;
-      const px = near ? (side === 'e' ? icon.x + icon.w + 6 : icon.x - 6) : side === 'e' ? rect.x + rect.w : rect.x;
+      // the wire ends at the tile's edge (wires are drawn over tiles, so reaching in to the icon would cross the tile)
+      const px = side === 'e' ? rect.x + rect.w : rect.x;
       const bx = side === 'e' ? rect.x + rect.w : rect.x;
       const sx = side === 'e' ? Math.ceil((bx + m) / G) * G : Math.floor((bx - m) / G) * G;
       return { port: { x: px, y }, side, stub: { x: sx, y } };
     }
     const x = snap(along ?? rect.x + rect.w / 2);
-    const py = side === 's' ? rect.y + rect.h : icon ? icon.y - 5 : rect.y;
+    const py = side === 's' ? rect.y + rect.h : rect.y;
     const sy = side === 's' ? Math.ceil((py + m) / G) * G : Math.floor((rect.y - m) / G) * G;
     return { port: { x, y: py }, side, stub: { x, y: sy } };
   };
@@ -438,7 +437,7 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
         const c = pointAt(rt.pts, d);
         const q = { x: c.x - BR, y: c.y - BR, w: 2 * BR, h: 2 * BR };
         // never on a tile, a title or another wire; among the rest, the farthest from any border
-        if (obstacles.some((o) => intersects(q, o, 0)) || placed.some((o) => intersects(q, o, 3)) || others.some((o) => intersects(q, o, 1))) continue;
+        if (obstacles.some((o) => intersects(q, o, CLEAR)) || placed.some((o) => intersects(q, o, 3)) || others.some((o) => intersects(q, o, 1))) continue;
         const k = clearance(c);
         if (k > far) {
           far = k;
@@ -452,6 +451,8 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   }
 
   const labels: { rt: Routed; rect: Rect; text: string }[] = [];
+  /** each group's title row, edge to edge: a wire's label never sits beside another group's title */
+  const titleRows: Rect[] = [...groups.values()].map((gb) => ({ x: gb.box.x, y: gb.box.y, w: gb.box.w, h: gb.label.y + gb.label.h - gb.box.y + 4 }));
   const LS = 11;
   for (const rt of routed) {
     if (!rt.e.label) continue;
@@ -480,7 +481,14 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     }
     // never on a wire or a group's border: a label always sits beside its line
     for (const c of cands) c.wires.push(...borders);
-    let hit = cands.find((c) => free(c.q, c.wires));
+    // first choice: outside every group the wire doesn't run inside (a wire between two groups is labelled in
+    // the gap between them, not inside one of them), and never in a group's title row
+    const ends = [rt.e.from, rt.e.to].map((id) => nodes.get(id)?.box ?? groups.get(id)?.box).filter(Boolean) as Rect[];
+    const within = (b: Rect, g: Rect) => b.x >= g.x && b.y >= g.y && b.x + b.w <= g.x + g.w && b.y + b.h <= g.y + g.h;
+    const foreign = [...groups.values()].filter((gb) => !(ends.length === 2 && ends.every((b) => b !== gb.box && within(b, gb.box)))).map((gb) => gb.box);
+    let hit = cands.find((c) => free(c.q, c.wires) && !titleRows.some((t) => intersects(c.q, t, 4)) && !foreign.some((g) => intersects(c.q, g, 4)));
+    hit ??= cands.find((c) => free(c.q, c.wires) && !titleRows.some((t) => intersects(c.q, t, 4)));
+    hit ??= cands.find((c) => free(c.q, c.wires));
     if (!hit) {
       // last resort: the nearest free spot around the wire's middle, still clear of every node and label
       // last resort: the nearest free spot beside any point of the wire, still clear of every node, line and label

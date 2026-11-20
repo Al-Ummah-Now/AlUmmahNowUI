@@ -36,11 +36,11 @@ export function overview(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
       node('media', 'cloudflare/workers', [2.3, 3]),
       node('container', 'cloudflare/containers', [3.3, 3]),
       node('slots', 'cloudflare/durable-objects', [4.3, 3]),
-      { ...node('workersAi', 'cloudflare/workers-ai', [5.62, 2.5]), rate: [aiRateLine(cc, locale)], meter: { lane: 'ai', usd: aiChecksUsd() } },
-      node('r2', 'cloudflare/r2', [6.85, 0]),
-      node('d1', 'cloudflare/d1', [6.85, 1]),
-      node('kv', 'cloudflare/kv', [6.85, 2]),
-      node('queues', 'cloudflare/queues', [6.85, 3]),
+      { ...node('workersAi', 'cloudflare/workers-ai', [5.85, 2.5]), rate: [aiRateLine(cc, locale)], meter: { lane: 'ai', usd: aiChecksUsd() } },
+      node('r2', 'cloudflare/r2', [7.15, 0]),
+      node('d1', 'cloudflare/d1', [7.15, 1]),
+      node('kv', 'cloudflare/kv', [7.15, 2]),
+      node('queues', 'cloudflare/queues', [7.15, 3]),
       node('logs', 'cloudflare/logs', [2.3, 4.15]),
       node('analytics', 'cloudflare/analytics', [3.3, 4.15]),
       node('secrets', 'cloudflare/secrets-store', [4.3, 4.15]),
@@ -48,10 +48,10 @@ export function overview(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
       node('bunnyCdn', 'brand/bunny-cdn', [0, 2.35]),
       node('bunnyStream', 'brand/bunny-stream', [0, 3.35]),
       node('ci', 'simple-icons/githubactions', [0, 4.5]),
-      node('qf', 'lucide/book-open', [8.15, 0.5]),
-      node('resend', 'simple-icons/resend', [8.15, 1.5]),
-      node('push', 'lucide/bell', [8.15, 2.5]),
-      node('google', 'simple-icons/google', [8.15, 3.5]),
+      node('qf', 'lucide/book-open', [8.45, 0.5]),
+      node('resend', 'simple-icons/resend', [8.45, 1.5]),
+      node('push', 'lucide/bell', [8.45, 2.5]),
+      node('google', 'simple-icons/google', [8.45, 3.5]),
     ],
     groups: [
       { id: 'clients', label: c.group.clients, members: ['browsers', 'apps'] },
@@ -88,7 +88,8 @@ export function overview(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
     { from: 'async', to: 'ops', flow: 'control', label: e.logs, fromSide: 's', toSide: 'n' },
   ] satisfies ArchEdge[];
 
-  const wide: ArchLayout = { colW: 168, rowH: 176 };
+  // Arabic group titles take a taller line: more room between stacked groups, so the wire between them reads
+  const wide: ArchLayout = { colW: 168, rowH: locale === 'ar' ? 200 : 186 };
 
   // phone: two columns, the same groups stacked in reading order
   const at = stack([
