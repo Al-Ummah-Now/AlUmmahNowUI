@@ -14,12 +14,12 @@ export const scalingAr: typeof scalingEn = {
       sockets: { name: 'sockets:<n>', role: '{N8} افتراضيًا · {N64} أقصى' },
       topics: { name: 'topic:<channel>', role: 'الأجزاء المشتركة' },
       views: { name: 'views:<id>:<n>', role: '{N4} أجزاء لكل مرئي' },
-      videoJson: { name: 'JSON المرئي', role: 'R2 · مقارنة الوسم' },
+      videoJson: { name: 'JSON المرئي', role: 'R2 · كتابة مشروطة' },
       queue: { name: 'طابور التحويل', role: '{N10} في آن لكل بيئة' },
       slots: { name: 'TranscodeSlots', role: 'كائن واحد' },
       container: { name: 'Transcoder', role: '{N3371} في الأكثر' },
     },
-    edge: { req: 'الطلبات', socket: 'مقبس', broadcast: 'بث', view: 'مشاهدة', cas: 'مقارنة · كل {N10} ث أقصى', job: 'مهمة تحويل', acquire: 'خانة', start: 'بدء' },
+    edge: { req: 'الطلبات', socket: 'مقبس', broadcast: 'بث', view: 'مشاهدة', cas: 'كتابة مشروطة · كل {N10} ث أقصى', job: 'مهمة تحويل', acquire: 'خانة', start: 'بدء' },
   },
   slot: {
     title: 'التحويل يأخذ خانة',
@@ -45,7 +45,7 @@ export const scalingAr: typeof scalingEn = {
     around: 'كل عامل يعمل نسخًا كثيرة في آن واحد',
     node: {
       blind: { title: 'كاتبون عمي', note: 'قراءة، تعديل، كتابة' },
-      cas: { title: 'مقارنة الوسم ثم التبديل', note: 'كتابات R2 بشرط، وإعادة' },
+      cas: { title: 'المقارنة ثم التبديل', note: 'كتابة فقط إن لم يتغيّر، ثم إعادة' },
       shards: { title: 'عدّادات مجزّأة', note: '{N4} أجزاء لكل مرئي' },
       upsert: { title: 'upsert بالدفعات', note: 'D1 · حتى {N500} صف للعبارة' },
       sockets: { title: 'أجزاء المقابس', note: 'لا كائن عامًّا واحدًا' },
