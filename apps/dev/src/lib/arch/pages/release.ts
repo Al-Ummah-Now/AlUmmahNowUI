@@ -44,7 +44,7 @@ const train: Builder = (d) => {
         { from: 'zero', to: 'full', flow: 'request', label: e.promote, step: 5, fromSide: 'e', toSide: 'w' },
         { from: 'full', to: 'media', flow: 'media', label: e.media, step: 6, fromSide: 'e', toSide: 'w' },
         { from: 'full', to: 'rollback', flow: 'control', label: e.fail, step: 7, fromSide: 's', toSide: 'w' },
-        { from: 'media', to: 'rollback', flow: 'control', step: 7, fromSide: 's', toSide: 'e' },
+        { from: 'media', to: 'rollback', flow: 'control', fromSide: 's', toSide: 'e' },
       ],
     },
     wide: { colW: 240, rowH: 160, pad: 56, iconSize: 46, nameSize: 14.5, roleSize: 12.5 },
@@ -58,7 +58,7 @@ const train: Builder = (d) => {
         [['stageE2E', 'secrets'], 1.95],
         [['localE2E'], 1.05],
         [['zero', 'full'], 2.05],
-        [['media', 'rollback'], 1.25],
+        [['media', 'rollback'], 1.9],
       ]),
       edges: [
         { from: 'tag', to: 'build', flow: 'request', label: e.build, step: 1, fromSide: 'e', toSide: 'w' },
@@ -68,8 +68,8 @@ const train: Builder = (d) => {
         { from: 'gates', to: 'zero', flow: 'request', label: e.pass, step: 4, fromSide: 's', toSide: 'n' },
         { from: 'zero', to: 'full', flow: 'request', label: e.promote, step: 5, fromSide: 'e', toSide: 'w' },
         { from: 'full', to: 'media', flow: 'media', label: e.media, step: 6, fromSide: 's', toSide: 'n' },
-        { from: 'full', to: 'rollback', flow: 'control', label: e.fail, step: 7, fromSide: 'e', toSide: 'e' },
-        { from: 'media', to: 'rollback', flow: 'control', step: 7, fromSide: 'e', toSide: 'w' },
+        { from: 'full', to: 'rollback', flow: 'control', label: e.fail, step: 7, fromSide: 's', toSide: 'n' },
+        { from: 'media', to: 'rollback', flow: 'control', fromSide: 'e', toSide: 'w' },
       ],
     },
   };

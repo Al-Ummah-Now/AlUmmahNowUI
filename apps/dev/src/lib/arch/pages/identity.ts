@@ -179,7 +179,7 @@ const roles: Builder = (d) => {
       edges: [
         { from: 'siteRoles', to: 'token', fromSide: 's', toSide: 'n', tag: t.issued, tone: 'blue' },
         { from: 'token', to: 'transfer', fromSide: 's', toSide: 'n' },
-        { from: 'transfer', to: 'record', fromSide: 's', toSide: 'n', tag: t.owner, tone: 'yellow' },
+        { from: 'transfer', to: 'record', fromSide: 's', toSide: 'n' },
         { from: 'channelRoles', to: 'record', fromSide: 'n', toSide: 's', tag: t.stored, tone: 'green' },
         { from: 'channelRoles', to: 'can', fromSide: 's', toSide: 'n' },
         { from: 'channelRoles', to: 'token', fromSide: 'w', toSide: 'w', bend: -46, dashed: true, tone: 'pink' },

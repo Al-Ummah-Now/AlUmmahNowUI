@@ -111,7 +111,8 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
   const groupTop = PAD + (keyMode ? keyH + 12 : 0);
 
   // participants: one tile per column, names wrapped to the tile
-  const tileW = layout.colW - (keyMode ? 8 : 14);
+  // tiles leave room inside their column, so a boundary on the column edges never touches them
+  const tileW = layout.colW - (keyMode ? 16 : 20);
   const heads = spec.actors.map((a) => ({ a, name: keyMode ? [] : wrap(a.name, NS, tileW - 12), role: a.role && !keyMode ? wrap(a.role, RS, tileW - 12) : [] }));
   const headH = keyMode ? 8 + S + 4 + NS + 6 : Math.max(...heads.map((h) => 8 + S + 6 + h.name.length * (NS + LG) + h.role.length * (RS + LG) + 6));
   const headY = groupTop + tagH;
@@ -185,8 +186,8 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
   out.push('<g class="an-groups">');
   for (const g of groups) {
     const cs = g.members.map((m) => col.get(m)!);
-    const x0 = PAD + layout.colW * Math.min(...cs) + 2;
-    const x1 = PAD + layout.colW * (Math.max(...cs) + 1) - 2;
+    const x0 = PAD + layout.colW * Math.min(...cs);
+    const x1 = PAD + layout.colW * (Math.max(...cs) + 1);
     const bx = opts.rtl ? W - x1 : x0;
     const bw = x1 - x0;
     out.push(`<g class="an-group an-group-boundary" data-group="${g.id}" data-members="${g.members.join(' ')}">`);

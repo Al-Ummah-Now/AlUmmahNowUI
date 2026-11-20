@@ -194,10 +194,22 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
         if (hit(near, box, 0) && !inside(near, box, 0)) out.push(`${name}: text "${t.textContent}" is within ${d} px of the border of group ${g.dataset.group}`);
       }
     }
-    // a wire's label (not a step badge, which marks its wire) keeps 6 px from every line
+    // a step badge (its whole circle) stays off every group border: it may sit on its own wire only
+    for (const badge of svg.querySelectorAll<SVGGElement>('.an-badge')) {
+      const bc = bb(badge);
+      for (const g of svg.querySelectorAll<SVGGElement>('[data-group]')) {
+        const gr = g.querySelector<SVGGraphicsElement>(':scope > rect');
+        if (!gr) continue;
+        const box = bb(gr);
+        const near = grow(bc, 1.5);
+        if (hit(near, box, 0) && !inside(near, box, 0)) out.push(`${name}: step badge "${badge.textContent}" sits on the border of group ${g.dataset.group}`);
+      }
+    }
+    // a wire's label (not a step badge, which marks its wire) keeps 6 px from every line and every tile
     for (const { t, b } of tb) {
       if (!t.closest('[data-for]') || t.closest('.an-badge')) continue;
       const near = grow(b, CLEAR - 0.5);
+      for (const [id, nbx] of nodeBox) if (hit(near, nbx, 0)) out.push(`${name}: label "${t.textContent}" is within ${CLEAR} px of tile ${id}`);
       for (const p of svg.querySelectorAll<SVGPathElement>('[data-edge]')) {
         const len = p.getTotalLength();
         for (let d = 0; d <= len; d += 2) {

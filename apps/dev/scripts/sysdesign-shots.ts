@@ -76,7 +76,8 @@ for (const slug of PAGES)
   for (const lang of LANGS)
     for (const mode of ['dark', 'light'] as const)
       for (const [w, vp] of Object.entries(WIDTHS)) {
-        const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: vp.dsf, colorScheme: mode, reducedMotion: 'no-preference' });
+        const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: vp.dsf, colorScheme: mode, reducedMotion: 'reduce' });
+        // stills show the final state with no moving dots over the arrowheads; recordings use their own context
         await ctx.addInitScript((m) => localStorage.setItem('aun_mode', m), mode);
         const page = await ctx.newPage();
         const cspViolations: string[] = [];
@@ -137,7 +138,9 @@ for (const slug of PAGES)
             host.id = 'shot-host';
             host.setAttribute('dir', 'ltr');
             for (const [k, v] of Object.entries({ position: 'fixed', inset: '0', 'z-index': '2147483647', padding: '24px', background: getComputedStyle(document.body).backgroundColor, overflow: 'hidden' })) host.style.setProperty(k, v);
-            host.append(el.cloneNode(true));
+            // the copy gets its own ids: otherwise its markers and symbols point at the original's, which a
+            // bigger viewport may hide (its layout switches), and arrowheads would vanish from the shot
+            host.innerHTML = el.outerHTML.replace(/\bid="/g, 'id="shot-').replace(/url\(#/g, 'url(#shot-').replace(/href="#/g, 'href="#shot-').replace(/aria-labelledby="([^"]*)"/g, (_m, ids: string) => `aria-labelledby="${ids.split(' ').map((i) => `shot-${i}`).join(' ')}"`);
             document.body.append(host);
           });
           const vp = page.viewportSize()!;
@@ -145,6 +148,12 @@ for (const slug of PAGES)
           await page.locator('#shot-host svg').screenshot({ path: join(out, `${tag}-diagram-${id}.png`) });
           await page.evaluate(() => document.getElementById('shot-host')?.remove());
           await page.setViewportSize(vp);
+          // let the sticky header settle after the resize (a stale band above it otherwise lands in the next frame)
+          await page.evaluate(() => new Promise<void>((res) => {
+            window.scrollBy(0, 1);
+            window.scrollBy(0, -1);
+            requestAnimationFrame(() => requestAnimationFrame(() => res()));
+          }));
         }
         await page.evaluate((h) => window.scrollTo(0, h), H);
         if (!ONLY) await page.screenshot({ path: join(out, `${tag}-frame-${figs + 2}-end.png`) });
