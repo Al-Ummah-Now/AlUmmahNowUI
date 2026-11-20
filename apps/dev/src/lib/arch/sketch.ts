@@ -249,15 +249,15 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
     const tw = textWidth(e.tag, 15, true) + 18;
     const th = 26;
     let best: Box | null = null;
-    for (const t of [e.tagAt ?? 0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8]) {
+    for (const t of [e.tagAt ?? 0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8, 0.12, 0.88]) {
       const p = at(c, t);
       const q2 = at(c, Math.min(1, t + 0.01));
       const dl = Math.hypot(q2[0] - p[0], q2[1] - p[1]) || 1;
       const n: [number, number] = [-(q2[1] - p[1]) / dl, (q2[0] - p[0]) / dl];
       const off = Math.abs(n[0]) * (tw / 2) + Math.abs(n[1]) * (th / 2) + 8;
-      for (const s of [1, -1]) {
-        const cx = p[0] + n[0] * off * s;
-        const cy = p[1] + n[1] * off * s;
+      for (const [s, k] of [[1, 1], [-1, 1], [1, 1.7], [-1, 1.7], [1, 2.5], [-1, 2.5]] as const) {
+        const cx = p[0] + n[0] * off * k * s;
+        const cy = p[1] + n[1] * off * k * s;
         const q = { x: cx - tw / 2, y: cy - th / 2, w: tw, h: th };
         if (q.x < 8 || q.y < 60 || q.x + q.w > W - 8 || q.y + q.h > Hc - 8) continue;
         if (samples.some((pt) => hits(q, pt, 4))) continue;

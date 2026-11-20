@@ -81,8 +81,11 @@ function wrap(s: string, size: number, max: number, code = false): string[] {
   if (width(s) <= max) return [s];
   const out: string[] = [];
   let line = '';
-  for (const w of s.split(' ')) {
-    const next = line ? `${line} ${w}` : w;
+  // a path longer than the line breaks after a '/', never in the middle of a name
+  const words = s.split(' ').flatMap((w) => (code && width(w) > max ? w.split(/(?<=[/.(])/) : [w]));
+  for (const w of words) {
+    const glue = code && /[/.(]$/.test(line) ? '' : ' ';
+    const next = line ? `${line}${glue}${w}` : w;
     if (line && width(next) > max) {
       out.push(line);
       line = w;
@@ -110,7 +113,7 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
   // participants: one tile per column, names wrapped to the tile
   const tileW = layout.colW - (keyMode ? 8 : 14);
   const heads = spec.actors.map((a) => ({ a, name: keyMode ? [] : wrap(a.name, NS, tileW - 12), role: a.role && !keyMode ? wrap(a.role, RS, tileW - 12) : [] }));
-  const headH = keyMode ? 8 + S + 8 : Math.max(...heads.map((h) => 8 + S + 6 + h.name.length * (NS + LG) + h.role.length * (RS + LG) + 6));
+  const headH = keyMode ? 8 + S + 4 + NS + 6 : Math.max(...heads.map((h) => 8 + S + 6 + h.name.length * (NS + LG) + h.role.length * (RS + LG) + 6));
   const headY = groupTop + tagH;
   const baseW = PAD * 2 + layout.colW * spec.actors.length;
   const cx = (id: string) => PAD + layout.colW * (col.get(id)! + 0.5);
@@ -155,7 +158,7 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
     W = Math.max(W, lx + Math.max(...lines.map((l) => textWidth(l, LS)), ...code.map(codeW), 0) + PAD);
     y = ay + Math.max(layout.rowH - blockH - 10, self ? 34 : 16);
   }
-  if (keyMode) W = Math.max(W, ...spec.actors.map((x) => 2 * PAD + 8 + 22 + 10 + textWidth(x.name, NS, true) + 10 + (x.role ? textWidth(x.role, RS) : 0) + 14));
+  if (keyMode) W = Math.max(W, ...spec.actors.map((x) => 2 * PAD + 30 + 22 + 10 + textWidth(x.name, NS, true) + 10 + (x.role ? textWidth(x.role, RS) : 0) + 14));
   const H = y + PAD - 6;
   W = Math.ceil(W);
   const mx = (x: number) => (opts.rtl ? W - x : x);
@@ -187,7 +190,8 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
     const bx = opts.rtl ? W - x1 : x0;
     const bw = x1 - x0;
     out.push(`<g class="an-group an-group-boundary" data-group="${g.id}" data-members="${g.members.join(' ')}">`);
-    out.push(`<rect class="an-group-box" x="${r(bx)}" y="${r(groupTop - 6)}" width="${r(bw)}" height="${r(H - 12 - (groupTop - 6))}" rx="16"/>`);
+    // around the participants' tiles only: message labels below cross several lanes and must never sit on a border
+    out.push(`<rect class="an-group-box" x="${r(bx)}" y="${r(groupTop - 6)}" width="${r(bw)}" height="${r(headY + headH + 8 - (groupTop - 6))}" rx="16"/>`);
     const tw = Math.min(textWidth(g.label, 12, true) + (g.tag ? 44 : 24), bw - 12);
     const tx = opts.rtl ? bx + bw - 6 - tw : bx + 6;
     out.push(`<g data-tag="${g.id}"><rect class="an-tag" x="${r(tx)}" y="${r(groupTop + 2)}" width="${r(tw)}" height="24" rx="12"/>`);
@@ -265,8 +269,10 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
       const KS = 22;
       out.push(`<g class="an-node an-seq-key" data-node="key-${a.id}">`);
       out.push(`<rect class="an-node-box" x="${r(PAD)}" y="${r(y0)}" width="${r(W - 2 * PAD)}" height="${KR - 6}" rx="8"/>`);
-      out.push(useIcon(prefix, a.icon, opts.rtl ? W - PAD - 8 - KS : PAD + 8, y0 + 3, KS));
-      const nx = PAD + 8 + KS + 10;
+      // the lane's number, repeated under its icon below: two lanes with the same kind of icon stay apart
+      out.push(`<text class="an-seq-n" x="${r(mx(PAD + 16))}" y="${r(y0 + 19)}" text-anchor="middle" font-size="${NS}">${formatNumber(i + 1, opts.locale)}</text>`);
+      out.push(useIcon(prefix, a.icon, opts.rtl ? W - PAD - 30 - KS : PAD + 30, y0 + 3, KS));
+      const nx = PAD + 30 + KS + 10;
       const nw = textWidth(a.name, NS, true);
       out.push(`<text class="an-name" x="${r(mx(nx))}" y="${r(y0 + 19)}" ${atStart(a.name)} font-size="${NS}">${esc(a.name)}</text>`);
       if (a.role) out.push(`<text class="an-role" x="${r(mx(nx + nw + 10))}" y="${r(y0 + 19)}" ${atStart(a.role)} font-size="${RS}">${esc(a.role)}</text>`);
@@ -278,6 +284,7 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
     out.push(`<g class="an-node" data-node="${h.a.id}">`);
     out.push(`<rect class="an-node-box" x="${r(bx)}" y="${r(headY)}" width="${r(tileW)}" height="${r(headH)}" rx="10"/>`);
     out.push(useIcon(prefix, h.a.icon, x - S / 2, headY + 8, S));
+    if (keyMode) out.push(`<text class="an-seq-n" x="${r(x)}" y="${r(headY + 8 + S + 4 + NS - 1)}" text-anchor="middle" font-size="${NS}">${formatNumber(col.get(h.a.id)! + 1, opts.locale)}</text>`);
     let ty = headY + 8 + S + 6;
     for (const l of h.name) {
       ty += NS + LG;

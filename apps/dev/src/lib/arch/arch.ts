@@ -147,11 +147,12 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   // 1. nodes on the grid
   const nodes = new Map<string, NodeBox>();
   const rolesOf = (n: ArchNode) => (n.role ? (Array.isArray(n.role) ? n.role : [n.role]) : []);
-  const RT = RS - 0.5;
+  // never under 11 px: diagrams are drawn at natural size
+  const RT = Math.max(11, RS - 0.5);
   // the gap between a tile's lines: Arabic is set in Noto Naskh, whose line box is taller than Latin's
   // (and taller still on Linux), so Arabic tiles get more room between lines
   const lgOf = (_n: ArchNode) => (opts.locale === 'ar' ? 6 : 3);
-  const FS = RS - 0.5;
+  const FS = Math.max(11, RS - 0.5);
   /** code type: every glyph about 0.6 em */
   const codeW = (x: string) => [...x].length * FS * 0.62;
   const nodeW = (n: ArchNode) =>
@@ -399,12 +400,19 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   const inCanvas = (q: Rect) => q.x >= 4 && q.y >= 4 && q.x + q.w <= W - 4 && q.y + q.h <= H - 4;
   const free = (q: Rect, wires: Rect[]) => inCanvas(q) && !obstacles.some((o) => intersects(q, o, 3)) && !placed.some((o) => intersects(q, o, 3)) && !wires.some((o) => intersects(q, o, 1));
 
+  // each group's outline as four thin strips: a label may sit inside or outside a group, never on its edge
+  const borders: Rect[] = [...groups.values()].flatMap(({ box: b }) => [
+    { x: b.x - 1, y: b.y - 1, w: b.w + 2, h: 2 },
+    { x: b.x - 1, y: b.y + b.h - 1, w: b.w + 2, h: 2 },
+    { x: b.x - 1, y: b.y - 1, w: 2, h: b.h + 2 },
+    { x: b.x + b.w - 1, y: b.y - 1, w: 2, h: b.h + 2 },
+  ]);
   const badges: { rt: Routed; c: Pt; n: number; at: number }[] = [];
   const BR = 11;
   for (const rt of routed) {
     if (rt.e.step == null || spec.badges === false) continue;
     let best: { c: Pt; at: number } | null = null;
-    const others = routed.filter((x) => x !== rt).flatMap((x) => segRects(x));
+    const others = [...routed.filter((x) => x !== rt).flatMap((x) => segRects(x)), ...borders];
     for (let d = 22; d < rt.len - 22; d += 4) {
       const c = pointAt(rt.pts, d);
       const q = { x: c.x - BR, y: c.y - BR, w: 2 * BR, h: 2 * BR };
@@ -445,26 +453,21 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
         }
       }
     }
-    // on the wire, as a pill (the wire passes behind it)
-    for (const s of order) {
-      const horiz = s.a.y === s.b.y;
-      if ((horiz && s.len < lw + 20) || (!horiz && s.len < lh + 20)) continue;
-      for (const t of [0.5, 0.35, 0.65]) {
-        const p = { x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t };
-        cands.push({ q: { x: p.x - lw / 2, y: p.y - lh / 2, w: lw, h: lh }, wires: [...others, ...segRects(rt, s.i)] });
-      }
-    }
+    // never on a wire or a group's border: a label always sits beside its line
+    for (const c of cands) c.wires.push(...borders);
     let hit = cands.find((c) => free(c.q, c.wires));
     if (!hit) {
       // last resort: the nearest free spot around the wire's middle, still clear of every node and label
-      const mid = pointAt(rt.pts, rt.len / 2);
+      // last resort: the nearest free spot beside any point of the wire, still clear of every node, line and label
       const own = segRects(rt);
-      for (let rad = 8; rad < 90 && !hit; rad += 6)
-        for (let k = 0; k < 16 && !hit; k++) {
-          const a = (k / 16) * Math.PI * 2;
-          const q = { x: mid.x + Math.cos(a) * rad - lw / 2, y: mid.y + Math.sin(a) * rad - lh / 2, w: lw, h: lh };
-          if (free(q, [...others, ...own])) hit = { q, wires: [] };
-        }
+      for (let rad = 8; rad < 130 && !hit; rad += 6)
+        for (const f of [0.5, 0.3, 0.7, 0.15, 0.85])
+          for (let k = 0; k < 24 && !hit; k++) {
+            const mid = pointAt(rt.pts, rt.len * f);
+            const a = (k / 24) * Math.PI * 2;
+            const q = { x: mid.x + Math.cos(a) * rad - lw / 2, y: mid.y + Math.sin(a) * rad - lh / 2, w: lw, h: lh };
+            if (free(q, [...others, ...own, ...borders])) hit = { q, wires: [] };
+          }
     }
     if (!hit) {
       // on a phone a margin wire may have no room for its words: the step badge and the page text carry them
@@ -606,7 +609,7 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   // labels and badges on top
   out.push('<g class="an-labels">');
   for (const l of labels) {
-    out.push(`<g class="an-elabel an-f-${l.rt.e.flow}" data-for="${l.rt.id}" data-covers><rect class="an-elabel-bg" x="${r(l.rect.x)}" y="${r(l.rect.y)}" width="${r(l.rect.w)}" height="${l.rect.h}" rx="${l.rect.h / 2}"/><text x="${r(l.rect.x + l.rect.w / 2)}" y="${r(l.rect.y + 12.5)}" text-anchor="middle" font-size="${LS}"${hasArabic(l.text) ? ' direction="rtl"' : ''}>${esc(l.text)}</text></g>`);
+    out.push(`<g class="an-elabel an-f-${l.rt.e.flow}" data-for="${l.rt.id}"><rect class="an-elabel-bg" x="${r(l.rect.x)}" y="${r(l.rect.y)}" width="${r(l.rect.w)}" height="${l.rect.h}" rx="${l.rect.h / 2}"/><text x="${r(l.rect.x + l.rect.w / 2)}" y="${r(l.rect.y + 12.5)}" text-anchor="middle" font-size="${LS}"${hasArabic(l.text) ? ' direction="rtl"' : ''}>${esc(l.text)}</text></g>`);
   }
   for (const b of badges) {
     out.push(`<g class="an-badge an-f-${b.rt.e.flow}" data-for="${b.rt.id}" data-covers><circle cx="${r(b.c.x)}" cy="${r(b.c.y)}" r="${BR}"/><text x="${r(b.c.x)}" y="${r(b.c.y + 4)}" text-anchor="middle">${formatNumber(b.n, opts.locale ?? 'en')}</text></g>`);

@@ -10,7 +10,7 @@ export const costAr: typeof costEn = {
     node: {
       cron: { name: 'المشغّلات المجدولة', role: 'كل ساعة · كل يوم' },
       worker: { name: 'cost-monitor', role: 'يخطّط المهام' },
-      jobs: { name: 'al-ummah-cost-jobs', role: 'إعادة · رسائل ميتة' },
+      jobs: { name: 'al-ummah-cost-jobs', role: 'إعادة · رسائل فاشلة' },
       graphql: { name: 'Cloudflare GraphQL', role: 'استعلام لكل تشغيل' },
       d1: { name: 'al-ummah-now-costs', role: 'صفوف كل ساعة ويوم' },
       api: { name: 'admin-api', role: 'فحص التنبيهات' },

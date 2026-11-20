@@ -4,10 +4,12 @@ import Rich from './Rich.astro';
 interface Props {
   title: string;
   lead: string;
+  /** a System design page: the text lines up with the column beside the section nav */
+  section?: boolean;
 }
-const { title, lead } = Astro.props;
+const { title, lead, section = false } = Astro.props;
 ---
-<section class="page-hero night" aria-labelledby="page-title">
+<section class:list={['page-hero night', section && 'page-hero-sd']} aria-labelledby="page-title">
   <div class="wrap">
     <div class="page-hero-text">
       <h1 id="page-title" class="display">{title}</h1>

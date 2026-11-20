@@ -29,3 +29,10 @@ const entries = sdEntries(locale, t);
     ))}
   </ol>
 </nav>
+<script>
+  // a long list scrolls inside the sticky column: start with the current page in view
+  // (only the list scrolls, never the page)
+  const nav = document.querySelector<HTMLElement>('.sd-nav');
+  const current = nav?.querySelector<HTMLElement>('a[aria-current="page"]');
+  if (nav && current && nav.scrollHeight > nav.clientHeight) nav.scrollTop = current.offsetTop - nav.clientHeight / 2;
+</script>

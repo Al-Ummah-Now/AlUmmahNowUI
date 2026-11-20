@@ -39,12 +39,12 @@ const sha = REGISTRY.source.sha === 'local' ? 'local' : REGISTRY.source.sha.slic
       <h2 id="features-h" class="h2">{f.title}</h2>
       <p class="lead registry-lead">{f.lead}</p>
       <div class="registry">
-        {STATUSES.map((s) => {
+        {STATUSES.filter((s): s is 'live' | 'ready' => s === 'live' || s === 'ready').map((s) => {
           const list = FEATURES.filter((x) => x.status === s);
           return list.length > 0 && (
             <section class="registry-group" aria-labelledby={`registry-${s}`}>
               <h3 id={`registry-${s}`} class="registry-title"><StatusChip status={s} label={t.status[s]} /></h3>
-              <ul class="registry-list" role="list">
+              <ul class="registry-list" role="list" data-no-expand>
                 {list.map((x) => {
                   const label = releaseLabel(x, f.before);
                   const href = releaseHref(x);

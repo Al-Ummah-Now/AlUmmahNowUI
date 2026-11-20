@@ -12,12 +12,11 @@ const base = { id: 'creator-tiers', name: { en: 'Creator tiers', ar: 'مستوي
 const reg = (...features: object[]) => ({ version: 1, features });
 
 describe('feature registry rules', () => {
-  it('has a ready status between live and rolling, labelled in both languages', () => {
+  it('labels only the statuses the site shows (live and ready), in both languages', () => {
     expect(STATUSES).toEqual(['live', 'ready', 'rolling', 'building', 'planned']);
-    for (const s of STATUSES) {
-      expect(en.status[s]).toBeTruthy();
-      expect(ar.status[s]).toBeTruthy();
-    }
+    // the site shows only what runs today: rolling, building and planned features never appear
+    expect(Object.keys(en.status)).toEqual(['live', 'ready']);
+    expect(Object.keys(ar.status)).toEqual(['live', 'ready']);
     expect(en.status.ready).toBe('Ready, not in use yet');
     expect(ar.status.ready).toBe('جاهز، لم يُستخدم بعد');
   });

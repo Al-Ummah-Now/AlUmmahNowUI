@@ -206,7 +206,7 @@ pin it to the sources below. Read at AlUmmahNow origin/main and AlUmmahNowWiki o
 | Workers AI | $0.011 per 1,000 neurons; first 10,000 neurons a day free | `AUN apps/processor/src/moderation/pricing.ts` (`USD_PER_NEURON`, citing developers.cloudflare.com/workers-ai/platform/pricing, checked 2026-11-08); admin-web `i18n/messages/en.ts:554` |
 | Moderation scan neurons | Gemma 4 translate + one Llama Guard 3 run + Gemma 4 extensions, prompt sizes 450 / 700, outputs 20 / 300: ≈ 83 neurons for the example's 300-token title and description | `AUN apps/processor/src/moderation/budget.ts:15-31` + `pricing.ts` (neurons per M tokens) |
 | Whisper transcription | $0.000513 per audio minute (`@cf/openai/whisper-large-v3-turbo`) | `pricing.ts`; `WIKI epics/AUN-VIDEO-REVIEW-pre-publication-review.md:93` |
-| Pre-publication review | about $0.075 per video-hour (frames, stage 2, Whisper, text) — rolling out | `WIKI epics/AUN-VIDEO-REVIEW-pre-publication-review.md` "Cost and latency" (lines 144-156) |
+| Pre-publication review | not in the cost model: rolling out, not in production (registry `video-review` rolling); the site shows only what runs today (owner, 2026-11-19) | registry |
 | Quran detection | no AI call: the transcript is matched in code against the synced Quran index | `AUN apps/processor/src/quran/review-matcher.ts:1-9` |
 | Thumbnails | R2 path: two FFmpeg stills inside the same container job (no extra line); Bunny makes its own | `AUN apps/media/container/ladder.mjs:150-151`, `server.mjs:524-525` |
 | Originals kept | $0.015 per GB-month, 30–90 days | R2 price above; api-videos vars `ORIGINALS_RETENTION_DAYS`/`ORIGINALS_MAX_DAYS` |
@@ -215,7 +215,7 @@ pin it to the sources below. Read at AlUmmahNow origin/main and AlUmmahNowWiki o
 Examples (not platform figures): one 10-minute video watched in full 1,000 times and kept a month; and
 the admin cost page's **small** (20 h uploaded, 2,000 viewer-hours) and **medium** (200 h, 50,000
 viewer-hours) presets, storage shown for the month after 12 months of uploads — `delivery/metrics.ts`
-`SCALES` and `projectMonthlyCost`. **Unknown, left out of totals:** the cost of keeping originals (the
+`SCALES` and `projectMonthlyCost`. **“Not in this example”, left out of totals:** the cost of keeping originals (the
 model doesn't track upload file sizes), and per-upload lines at scale (moderation scans, queue and slot
 requests: the presets give hours, not uploads). The site never quotes `lib/media/costs.ts`'s account or
 zone ids.
@@ -270,3 +270,8 @@ zone ids.
 - Current copy: `UI apps/dev/src/i18n/en.ts` (`technology`, `infrastructure`, `community`, `home` blocks) at `d5f838d`; rendered by `apps/dev/src/pages/[lang]/technology/index.astro` and `.../infrastructure/index.astro`.
 - Registry cross-check: `WIKI features/registry.json` at `efdf459` (statuses quoted in the audit).
 - Claim-by-claim verification references are inline in `SYSTEM-DESIGN-OUTLINE.md` §0.
+
+### Glossary and page rules (2026-11-19, round 2)
+
+- Abbreviations are spelled out where each page first uses them by `src/middleware.ts` with the list in `src/lib/glossary.ts`; the browser gate (`e2e/diagram-gate.ts`, run by `diagram-gate.spec.ts`, `site.spec.ts` and the capture script) fails a page that uses one before its meaning, and any plan wording.
+- The Workers AI meter on the design diagrams is moderation only (the check every upload gets); captions run when a creator asks, so they sit in the cost figure's shared lane, not under "every upload".

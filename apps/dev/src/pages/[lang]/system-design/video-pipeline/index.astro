@@ -14,7 +14,7 @@ const p = t.videoPipeline;
 const d = t.diagrams.pages.pipeline;
 ---
 <Base locale={locale} slug="system-design/video-pipeline" title={p.title} description={p.description}>
-  <PageHero title={p.heroTitle} lead={p.heroLead} />
+  <PageHero title={p.heroTitle} lead={p.heroLead} section />
   <SdShell locale={locale} slug="system-design/video-pipeline" t={t}>
     <SdDiagram id="vp-map" locale={locale} title={d.map.title} lead={d.map.lead} why={d.map.why} tradeoff={d.map.tradeoff} />
     <SdDiagram id="vp-upload" locale={locale} title={d.upload.title} lead={d.upload.lead} why={d.upload.why} tradeoff={d.upload.tradeoff} raised />

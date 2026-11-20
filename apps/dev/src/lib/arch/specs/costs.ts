@@ -32,7 +32,6 @@ const RATE_VALUES: Record<StageId, Record<string, { usd: number } | { n: number 
   moderation: { a: { usd: RATES.usdPerNeuron * 1000 }, k: { n: 1000 }, free: { n: RATES.freeNeuronsPerDay } },
   captions: { a: { usd: RATES.whisperPerMinute } },
   quran: {},
-  review: { a: { usd: RATES.reviewPerVideoHour } },
   bunnyEncode: {},
   bunnyStore: { a: { usd: RATES.bunnyStorageGbMonthPerRegion }, n: { n: RATES.bunnyRegions } },
   bunnyDeliver: { a: { usd: RATES.bunnyDeliveryGb } },
@@ -61,7 +60,6 @@ const ICON: Record<StageId, string> = {
   moderation: 'cloudflare/workers-ai',
   captions: 'lucide/scroll-text',
   quran: 'lucide/book-open',
-  review: 'lucide/shield-check',
   bunnyEncode: 'brand/bunny-stream',
   bunnyStore: 'brand/bunny-stream',
   bunnyDeliver: 'brand/bunny-cdn',
@@ -76,7 +74,7 @@ const ICON: Record<StageId, string> = {
 const LANES: Record<Lane, StageId[]> = {
   bunny: ['bunnyEncode', 'bunnyStore', 'bunnyDeliver'],
   r2: ['originals', 'queue', 'slots', 'transcode', 'renditions', 'r2Deliver'],
-  shared: ['moderation', 'captions', 'quran', 'review'],
+  shared: ['moderation', 'captions', 'quran'],
 };
 const TOTAL: Record<Lane, 'totalBunny' | 'totalR2' | 'totalShared'> = { bunny: 'totalBunny', r2: 'totalR2', shared: 'totalShared' };
 
@@ -150,7 +148,7 @@ export function costs(c: Copy, locale: 'en' | 'ar'): { spec: ArchSpec; wide: Arc
       [['renditions', 'r2Deliver'], 1.75],
       [['totalR2'], 1.75],
       [['moderation', 'captions'], 2.4],
-      [['quran', 'review'], 1.75],
+      [['quran'], 1.75],
       [['totalShared'], 1.75],
     ]),
     edges: [
@@ -168,18 +166,17 @@ export function costs(c: Copy, locale: 'en' | 'ar'): { spec: ArchSpec; wide: Arc
       { from: 'r2Deliver', to: 'totalR2', flow: 'control', step: 7, fromSide: 's', toSide: 'n' },
       { from: 'moderation', to: 'captions', flow: 'request', step: 2, fromSide: 'e', toSide: 'w' },
       { from: 'captions', to: 'quran', flow: 'request', step: 3, fromSide: 's', toSide: 'n' },
-      { from: 'quran', to: 'review', flow: 'request', step: 4, fromSide: 'e', toSide: 'w' },
-      { from: 'review', to: 'totalShared', flow: 'control', step: 5, fromSide: 's', toSide: 'n' },
+      { from: 'quran', to: 'totalShared', flow: 'control', step: 4, fromSide: 's', toSide: 'n' },
     ],
   };
   return { spec, wide, narrow };
 }
 
-/** The AI checks on one upload (moderation + captions + review), per example: the Workers AI meter in the design diagrams. */
+/** The AI check every upload gets (moderation), per example: the Workers AI meter in the design diagrams. Captions run only when a creator asks. */
 export function aiChecksUsd(): Record<string, number | null> {
   const table = costTable();
   const out: Record<string, number | null> = {};
-  for (const s of SCENARIOS) out[s.id] = (['moderation', 'captions', 'review'] as StageId[]).reduce((sum, st) => sum + (table[st][s.id] ?? 0), 0);
+  for (const s of SCENARIOS) out[s.id] = (['moderation'] as StageId[]).reduce((sum, st) => sum + (table[st][s.id] ?? 0), 0);
   return out;
 }
 /** The Workers AI price line, in the page's language. */
