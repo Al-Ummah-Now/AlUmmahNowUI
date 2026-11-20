@@ -32,7 +32,7 @@ export const aiEn = {
     group: { cf: 'Cloudflare account', models: 'Workers AI' },
     node: {
       api: { name: 'api-videos', role: 'comment · post · title' },
-      queue: { name: 'Moderation queue', role: 'retries · DLQ' },
+      queue: { name: 'Moderation queue', role: 'retries · dead letters' },
       processor: { name: 'processor', role: 'kill switch first' },
       budget: { name: 'ai_budget_daily', role: 'reserve → settle' },
       gemma: { name: '{tkGemma}', role: 'Arabic → English' },

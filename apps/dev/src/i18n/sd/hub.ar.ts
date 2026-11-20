@@ -10,15 +10,15 @@ export const hubAr: typeof hubEn = {
     around: 'المراقبة تحيط بكل شيء',
     node: {
       clients: { title: 'الناس والتطبيقات', note: 'متصفحات · تطبيقات · تضمين' },
-      edge: { title: 'حافة Cloudflare', note: 'CDN · Turnstile' },
+      edge: { title: 'حافة Cloudflare', note: 'تخزين مؤقت · فحص الروبوتات' },
       workers: { title: 'Workers', note: 'المواقع · الواجهات · الدخول' },
-      data: { title: 'المخازن والبيانات', note: 'KV · D1 · R2' },
+      data: { title: 'المخازن والبيانات', note: 'مخازن KV · D1 · R2' },
       ai: { title: 'Workers AI', note: 'الإشراف · النصوص المصاحبة' },
       queue: { title: 'Queues', note: 'إعادة · رسائل ميتة' },
       bg: { title: 'عمّال الخلفية', note: 'processor · scheduler' },
       container: { title: 'Containers', note: 'ترميز FFmpeg' },
     },
-    obs: { logs: 'السجلات', errors: 'الأخطاء', rum: 'RUM' },
+    obs: { logs: 'السجلات', errors: 'الأخطاء', rum: 'سرعة الصفحات لدى الزوار' },
     tag: { segments: 'مقاطع المرئيات', later: 'لاحقًا' },
   },
 };
