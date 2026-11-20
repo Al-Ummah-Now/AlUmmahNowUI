@@ -6,6 +6,12 @@
  * security headers are on, QA and stage say noindex (and production doesn't), / redirects to /en/,
  * an unknown path is a real 404, and robots.txt matches the environment. While the zone is not set
  * up (apps/dev/docs/DOMAIN.md) the host doesn't resolve: the smoke SKIPS with a notice.
+ *
+ * The smoke starts seconds after `wrangler deploy` returns, while the edge may still be picking up
+ * pages the deploy just uploaded: v2026.11.19.5's production smoke got one 404 on a page that was
+ * in the upload (its Arabic twin and every other new page answered 200). So a page that doesn't
+ * answer 200 is asked again until SETTLE_MS after the smoke began; a page that is really missing
+ * still fails, and scripts/check-dist.ts already proved the build has every page before deploy.
  */
 import { resolve4 } from 'node:dns/promises';
 import { ENVIRONMENTS, PRODUCTION_ORIGIN, parseEnvArg, type EnvName } from '../environments.ts';
@@ -22,6 +28,10 @@ try {
   process.stdout.write(`::notice::SKIP dev smoke: ${host} does not resolve yet (apps/dev/docs/DOMAIN.md)\n`);
   process.exit(0);
 }
+
+const SETTLE_MS = 90_000;
+const RETRY_MS = 5_000;
+const startedAt = Date.now();
 
 const failures: string[] = [];
 const check = (ok: boolean, what: string) => {
@@ -45,7 +55,13 @@ async function get(path: string, redirect: RequestRedirect = 'follow') {
 for (const locale of LOCALES) {
   for (const slug of PAGES) {
     const path = pagePath(locale, slug);
-    const res = await get(path);
+    let res = await get(path);
+    while (res.status !== 200 && Date.now() - startedAt < SETTLE_MS) {
+      process.stdout.write(`wait  ${path} answered ${res.status}; asking again in ${RETRY_MS / 1000} s (new deploy still reaching the edge?)\n`);
+      await res.body?.cancel();
+      await new Promise((r) => setTimeout(r, RETRY_MS));
+      res = await get(path);
+    }
     const html = await res.text();
     check(res.status === 200, `${path} 200 (got ${res.status})`);
     check(html.includes(`<html lang="${locale}" dir="${dir(locale)}"`), `${path} lang=${locale} dir=${dir(locale)}`);
