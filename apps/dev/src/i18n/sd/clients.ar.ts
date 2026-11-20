@@ -4,7 +4,7 @@ import type { clientsEn } from './clients.en.ts';
 export const clientsAr: typeof clientsEn = {
   map: {
     title: 'كل عميل ومن يخاطب',
-    lead: 'المتصفحات تصل إلى الموقع العام وموقع المرئيات والإدارة، وكلها تعمل على Workers. والتطبيقات الأصلية قيد التطوير: كل منها يربط نواة Rust نفسها، وهي تخاطب api-videos وخدمة تسجيل الدخول. وأداة الاستيراد بالجملة ترفع مباشرة إلى R2 وBunny.',
+    lead: 'المتصفحات تصل إلى الموقع العام وموقع المرئيات والإدارة، وكلها تعمل على Workers. والتطبيقات الأصلية قيد التطوير: كل منها يربط نواة Rust نفسها، وهي تخاطب api-videos وخدمة تسجيل الدخول. وأداة الاستيراد بالجملة ترفع مباشرة إلى تخزين R2 وBunny.',
     desc: 'على جانب، المتصفحات والمشغّلات المضمَّنة في مواقع أخرى تصل إلى أربعة مواقع في حساب Cloudflare: www على Astro، وموقع المرئيات والإدارة على Next.js، وخدمة الروابط القصيرة على alummahnow.link. وتوصلها روابط الخدمات إلى الواجهات البرمجية: api-videos وadmin-api ومُصدِر auth الذي يمنح كل تطبيق دخولًا موحّدًا. وتحفظ api-videos الوسائط في R2. وفي الأسفل التطبيقات الأصلية، قيد التطوير وليست في أي متجر بعد، لأجهزة Apple وAndroid وWindows وLinux والتلفاز، وكلها تربط AlUmmahNowCore، نواة Rust المشتركة، التي تستدعي api-videos بعميل مولَّد من وثيقة OpenAPI الخاصة بها وتسجّل الدخول عبر مُصدِر auth. وعلى الجانب الآخر أداة الاستيراد بالجملة AlUmmahNowTools ترفع إلى R2 وإلى Bunny Stream.',
     group: { web: 'الويب', cf: 'حساب Cloudflare', sites: 'مواقع على Workers', apis: 'الواجهات وتسجيل الدخول', native: 'التطبيقات الأصلية · قيد التطوير', bunny: 'bunny.net' },
     caption: { native: 'تطبيقا المشاهدة والاستوديو · ليست في المتاجر' },
@@ -18,7 +18,7 @@ export const clientsAr: typeof clientsEn = {
       apiVideos: { name: 'api-videos', role: 'videos.api' },
       adminApi: { name: 'admin-api', role: 'admin.api' },
       auth: { name: 'auth', role: 'دخول موحّد' },
-      r2: { name: 'R2', role: 'الوسائط والأصول' },
+      r2: { name: 'تخزين R2', role: 'الوسائط والأصول' },
       apple: { name: 'Apple', role: 'iPhone · iPad · Mac' },
       android: { name: 'Android', role: 'هاتف · لوحي · Auto' },
       desktop: { name: 'سطح المكتب', role: 'Windows · Linux' },

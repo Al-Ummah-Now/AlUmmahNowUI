@@ -20,12 +20,12 @@ export const realtimeEn = {
       views: { name: 'views:<id>:<n>', role: '{N4} shards per video' },
       record: { name: 'R2 videos', role: 'the video record' },
     },
-    edge: { socket: '/ws', limit: 'limit', shard: 'random shard', post: 'POST /broadcast', broadcast: 'broadcast', admin: 'admin:*', forward: 'only holders', paced: 'paced', counter: 'VIEW_COUNTER', flush: 'CAS flush' },
+    edge: { socket: '/ws', limit: 'limit', shard: 'random shard', post: 'POST /broadcast', broadcast: 'broadcast', admin: 'admin:*', forward: 'only holders', paced: 'paced', counter: 'VIEW_COUNTER', flush: 'conditional write' },
   },
   views: {
     title: 'A view, counted exactly',
     lead: 'Counting views by reading the record, adding one and writing it back loses views under load. Instead each view goes to one of four counter shards, and the shards fold their totals into the record with a compare-and-swap.',
-    desc: 'Numbered steps for one view. 1: the player tells api-videos a view happened. 2: api-videos adds one on a counter object views:<id>:<n>, one of four shards picked at random; each shard keeps its own total and serialises its increments, so none are lost. 3: at most every ten seconds a shard writes its total into the video record in R2 with an etag compare-and-swap, merging by maximum, so a retry never counts twice; it rewrites again {N30} seconds and {N5} minutes later in case a blind writer hid it. 4: api-videos answers with the record’s count plus what the shards have not flushed yet. If the counter cannot be reached, api-videos adds one to the record itself with a compare-and-swap. A test sends {N1000} parallel views across the four shards and checks the exact count.',
+    desc: 'Numbered steps for one view. 1: the player tells api-videos a view happened. 2: api-videos adds one on a counter object views:<id>:<n>, one of four shards picked at random; each shard keeps its own total and serialises its increments, so none are lost. 3: at most every ten seconds a shard writes its total into the video record in R2 with a compare-and-swap on its version tag, merging by maximum, so a retry never counts twice; it rewrites again {N30} seconds and {N5} minutes later in case a blind writer hid it. 4: api-videos answers with the record’s count plus what the shards have not flushed yet. If the counter cannot be reached, api-videos adds one to the record itself with a compare-and-swap. A test sends {N1000} parallel views across the four shards and checks the exact count.',
     group: { cf: 'Cloudflare account', shards: 'views:<id>:<n>' },
     caption: { shards: '{N1000} parallel views → exact (test)' },
     node: {
@@ -37,7 +37,7 @@ export const realtimeEn = {
       v3: { name: 'shard {N3}', role: 'own total' },
       record: { name: 'R2 video record', role: 'base + shard totals' },
     },
-    edge: { view: 'view', inc: '+{N1} random shard', flush: 'CAS ≤ every {N10} s', answer: 'views + unflushed' },
+    edge: { view: 'view', inc: '+{N1} random shard', flush: 'conditional write ≤ {N10} s', answer: 'views + unflushed' },
   },
   sketch: {
     title: 'Shards that sleep, limits at the door',

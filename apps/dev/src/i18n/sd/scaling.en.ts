@@ -3,7 +3,7 @@ export const scalingEn = {
   copies: {
     title: 'Many copies at once',
     lead: 'Cloudflare runs every Worker as many copies in many places at the same time. Anything that must add up exactly gets a named owner: sockets and view counts live on named Durable Object shards, and transcodes wait for a slot under a hard ceiling.',
-    desc: 'Viewers and creators reach the Workers, which run as many isolates at once. Inside the Cloudflare account three groups show where many copies meet one truth. Realtime: sockets spread over shard objects named sockets:<n>, eight by default and sixty-four at most, and per-channel topic directories forward a broadcast only to shards with a subscriber. Counting: each view goes to one of four views:<videoId>:<shard> objects, which write back to the video JSON at most every ten seconds with an etag compare-and-swap. Transcoding: jobs wait on the transcode queue, consumed ten at a time per environment, take a slot from the single TranscodeSlots object and only then start a Transcoder container; production allows at most {N3371} containers.',
+    desc: 'Viewers and creators reach the Workers, which run as many isolates at once. Inside the Cloudflare account three groups show where many copies meet one truth. Realtime: sockets spread over shard objects named sockets:<n>, eight by default and sixty-four at most, and per-channel topic directories forward a broadcast only to shards with a subscriber. Counting: each view goes to one of four views:<videoId>:<shard> objects, which write back to the video JSON at most every ten seconds with a compare-and-swap on its version tag. Transcoding: jobs wait on the transcode queue, consumed ten at a time per environment, take a slot from the single TranscodeSlots object and only then start a Transcoder container; production allows at most {N3371} containers.',
     group: { cf: 'Cloudflare account', realtime: 'Realtime', counting: 'Counting', transcode: 'Transcoding' },
     caption: { realtime: 'a full shard sends you to the next', counting: 'a thousand parallel views count exactly', transcode: 'admin min–max under the ceiling' },
     node: {
@@ -12,12 +12,12 @@ export const scalingEn = {
       sockets: { name: 'sockets:<n>', role: '{N8} by default · {N64} max' },
       topics: { name: 'topic:<channel>', role: 'subscribed shards' },
       views: { name: 'views:<id>:<n>', role: '{N4} shards per video' },
-      videoJson: { name: 'Video JSON', role: 'R2 · etag CAS' },
+      videoJson: { name: 'Video JSON', role: 'R2 · conditional write' },
       queue: { name: 'Transcode queue', role: '{N10} at once per env' },
       slots: { name: 'TranscodeSlots', role: 'one object' },
       container: { name: 'Transcoder', role: 'at most {N3371}' },
     },
-    edge: { req: 'requests', socket: 'socket', broadcast: 'broadcast', view: 'view', cas: 'CAS · ≤ every {N10} s', job: 'transcode job', acquire: 'slot', start: 'start' },
+    edge: { req: 'requests', socket: 'socket', broadcast: 'broadcast', view: 'view', cas: 'conditional write · ≤ {N10} s', job: 'transcode job', acquire: 'slot', start: 'start' },
   },
   slot: {
     title: 'A transcode takes a slot',
@@ -38,12 +38,12 @@ export const scalingEn = {
   fixes: {
     title: 'Blind writers, and what replaced them',
     lead: 'An audit listed every place where code was only correct if exactly one copy ran: a read, a change and a blind write back, where the last copy wins and the others’ work is lost. Each class got a design that stays exact with any number of copies.',
-    desc: 'A hand-drawn sketch. In the middle, the defect: blind writers that read a record, change it and write it back without a condition, so the last copy wins. Around it the fixes: R2 writes that only succeed if the etag still matches, and retry; view counts on four Durable Object shards, where a thousand parallel views count exactly; analytics folded into D1 with one upsert per batch of up to {N500} rows; sockets spread over shard objects instead of one global object; rate limits on the Workers Rate Limiting binding instead of a racy KV counter; and the AI budget reserved in one conditional update before any call.',
+    desc: 'A hand-drawn sketch. In the middle, the defect: blind writers that read a record, change it and write it back without a condition, so the last copy wins. Around it the fixes: R2 writes that only succeed if the version tag still matches, and retry; view counts on four Durable Object shards, where a thousand parallel views count exactly; analytics folded into D1 with one upsert per batch of up to {N500} rows; sockets spread over shard objects instead of one global object; rate limits on the Workers Rate Limiting binding instead of a racy KV counter; and the AI budget reserved in one conditional update before any call.',
     heading: 'Blind writers, fixed',
     around: 'every Worker runs as many copies at once',
     node: {
       blind: { title: 'Blind writers', note: 'read, change, write back' },
-      cas: { title: 'Etag compare-and-swap', note: 'R2 writes onlyIf, retry' },
+      cas: { title: 'Compare-and-swap', note: 'write only if unchanged, retry' },
       shards: { title: 'Sharded counters', note: '{N4} view shards per video' },
       upsert: { title: 'Batched upserts', note: 'D1 · ≤ {N500} rows a statement' },
       sockets: { title: 'Socket shards', note: 'not one global object' },

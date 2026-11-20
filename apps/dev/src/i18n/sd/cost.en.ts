@@ -8,7 +8,7 @@ export const costEn = {
     node: {
       cron: { name: 'Cron triggers', role: 'hourly · daily' },
       worker: { name: 'cost-monitor', role: 'plans the jobs' },
-      jobs: { name: 'al-ummah-cost-jobs', role: 'retry · DLQ' },
+      jobs: { name: 'al-ummah-cost-jobs', role: 'retry · dead letters' },
       graphql: { name: 'Cloudflare GraphQL', role: 'one query per run' },
       d1: { name: 'al-ummah-now-costs', role: 'hourly and daily rows' },
       api: { name: 'admin-api', role: 'alert check' },
@@ -30,7 +30,7 @@ export const costEn = {
       budget: { title: 'Monthly budget', note: 'watched hourly' },
       containers: { title: 'Per-second containers', note: 'no rented servers' },
       logs: { title: 'Warn-only logs', note: 'no invocation logs' },
-      rum: { title: 'RUM, {N1} in {N20}', note: 'page loads sampled' },
+      rum: { title: 'Page-speed samples, {N1} in {N20}', note: 'from real visits' },
       originals: { title: 'Bounded originals', note: 'kept {N30}–{N90} days' },
       ai: { title: 'AI under caps', note: 'daily neuron budget' },
       tests: { title: 'Lean release tests', note: 'one clip transcoded' },

@@ -34,7 +34,7 @@ export const aiAr: typeof aiEn = {
     group: { cf: 'حساب Cloudflare', models: 'Workers AI' },
     node: {
       api: { name: 'api-videos', role: 'تعليق · منشور · عنوان' },
-      queue: { name: 'طابور المراجعة', role: 'إعادة المحاولة · DLQ' },
+      queue: { name: 'طابور المراجعة', role: 'إعادة المحاولة · الرسائل الميتة' },
       processor: { name: 'processor', role: 'مفتاح الإيقاف أولًا' },
       budget: { name: 'ai_budget_daily', role: 'حجز ← تسوية' },
       gemma: { name: '{tkGemma}', role: 'العربية ← الإنجليزية' },
