@@ -89,7 +89,7 @@ export function overview(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
   ] satisfies ArchEdge[];
 
   // Arabic group titles take a taller line: more room between stacked groups, so the wire between them reads
-  const wide: ArchLayout = { colW: 230, rowH: locale === 'ar' ? 200 : 186 };
+  const wide: ArchLayout = { colW: 230, rowH: locale === 'ar' ? 212 : 186 };
 
   // phone: two columns, the same groups stacked in reading order; each gap holds its wire's label beside the wire
   const at = stack([
@@ -128,8 +128,9 @@ export function overview(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
       { from: 'ai', to: 'data', flow: 'request', label: e.data, fromSide: 's', toSide: 'n' },
       { from: 'data', to: 'ops', flow: 'control', label: e.logs, fromSide: 's', toSide: 'n' },
       { from: 'cf', to: 'bunny', flow: 'media', label: e.upload, fromSide: 's', toSide: 'n' },
-      { from: 'cf', to: 'providers', flow: 'request', label: e.providers, fromSide: ['e', 'w'], toSide: ['e', 'w'] },
-      { from: 'ci', to: 'cf', flow: 'control', label: e.deploy, fromSide: ['e', 'w'], toSide: ['e', 'w'] },
+      // opposite margins in both languages: the providers wire on the start side, the deploy wire on the end side, never crossing
+      { from: 'cf', to: 'providers', flow: 'request', label: e.providers, fromSide: 'w', toSide: 'w' },
+      { from: 'ci', to: 'cf', flow: 'control', label: e.deploy, fromSide: 'e', toSide: 'e' },
     ],
   };
   return { spec, wide, narrow };

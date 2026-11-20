@@ -257,7 +257,10 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
       const len = a.getTotalLength();
       const tips = [...Array(9).keys()].flatMap((k) => [a.getPointAtLength(k * 2), a.getPointAtLength(Math.max(0, len - k * 2))]);
       for (const b of edges) {
-        if (b === a || b.dataset.from === a.dataset.from || b.dataset.to === a.dataset.to || b.dataset.from === a.dataset.to || b.dataset.to === a.dataset.from) continue;
+        // wires that share a tile meet at it by design; a shared group (a boundary) gives them no common port
+        const tile = (id?: string) => !!id && nodeBox.has(id);
+        const shared = [a.dataset.from, a.dataset.to].filter((id) => id === b.dataset.from || id === b.dataset.to);
+        if (b === a || shared.some(tile)) continue;
         if (tips.some((t) => pts(b).some((q) => Math.hypot(q.x - t.x, q.y - t.y) < 2.5))) {
           out.push(`${name}: wire ${b.dataset.from}→${b.dataset.to} crosses ${a.dataset.from}→${a.dataset.to} near its end`);
         }
@@ -347,6 +350,156 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
             break;
           }
         }
+      }
+    }
+    // contrast (WCAG 2.2): every text against what is drawn behind it (a badge's circle, a label's pill, a
+    // tile, else the canvas) at 4.5:1 (3:1 from 18.66 px bold / 24 px), and every wire against the canvas at 3:1
+    {
+      const rgba = (s: string): [number, number, number, number] | null => {
+        const m = /rgba?\(([^)]+)\)/.exec(s);
+        if (!m) return null;
+        const p = m[1]!.split(/[ ,/]+/).filter(Boolean).map(Number);
+        return [p[0]!, p[1]!, p[2]!, p.length > 3 ? p[3]! : 1];
+      };
+      const over = (top: [number, number, number, number], under: [number, number, number]): [number, number, number] => [0, 1, 2].map((i) => top[i]! * top[3] + under[i]! * (1 - top[3])) as [number, number, number];
+      const lum = (c: [number, number, number]) => {
+        const ch = c.map((v) => {
+          const x = v / 255;
+          return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * ch[0]! + 0.7152 * ch[1]! + 0.0722 * ch[2]!;
+      };
+      const ratio = (a: [number, number, number], b: [number, number, number]) => {
+        const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
+        return (x! + 0.05) / (y! + 0.05);
+      };
+      const paint = (el: Element, prop: 'fill' | 'stroke') => {
+        const cs = getComputedStyle(el);
+        const c = rgba(prop === 'fill' ? cs.fill : cs.stroke);
+        if (!c) return null;
+        let op = parseFloat(prop === 'fill' ? cs.fillOpacity : cs.strokeOpacity) * parseFloat(cs.opacity);
+        for (let a: Element | null = el.parentElement; a && a !== svg; a = a.parentElement) op *= parseFloat(getComputedStyle(a).opacity);
+        c[3] *= op;
+        return c;
+      };
+      const canvasEl = svg.querySelector('.an-canvas');
+      const canvas: [number, number, number] = (canvasEl && (() => {
+        const c = paint(canvasEl, 'fill');
+        return c ? over(c, [255, 255, 255]) : null;
+      })()) || [255, 255, 255];
+      for (const { t, b } of tb) {
+        const fg = paint(t, 'fill');
+        if (!fg) continue;
+        // the nearest filled shape drawn before the text that holds its centre: its own sibling first, then up the tree
+        const cx = b.x + b.w / 2;
+        const cy = b.y + b.h / 2;
+        let bg: [number, number, number] = canvas;
+        search: for (let el: Element | null = t; el && el !== svg; el = el.parentElement) {
+          for (let s = el.previousElementSibling; s; s = s.previousElementSibling) {
+            if (!/^(rect|circle|ellipse|path|polygon)$/.test(s.tagName) || s.classList.contains('an-canvas') || s.classList.contains('an-iso-floor')) continue;
+            const f = paint(s, 'fill');
+            if (!f || f[3] === 0) continue;
+            const sb = bb(s as SVGGraphicsElement);
+            if (cx >= sb.x && cx <= sb.x + sb.w && cy >= sb.y && cy <= sb.y + sb.h) {
+              bg = over(f, canvas);
+              break search;
+            }
+          }
+        }
+        const cs = getComputedStyle(t);
+        const px = parseFloat(cs.fontSize);
+        const large = px >= 24 || (px >= 18.66 && Number(cs.fontWeight) >= 700);
+        const need = large ? 3 : 4.5;
+        const r2 = ratio(over(fg, bg), bg);
+        if (r2 < need - 0.005) out.push(`${name}: text "${(t.textContent ?? '').slice(0, 40)}" has contrast ${r2.toFixed(2)}:1 on its background (min ${need}:1)`);
+      }
+      for (const p of edges) {
+        const st = paint(p, 'stroke');
+        if (!st) continue;
+        const r2 = ratio(over(st, canvas), canvas);
+        if (r2 < 2.995) out.push(`${name}: wire ${p.dataset.from}→${p.dataset.to} has contrast ${r2.toFixed(2)}:1 on the canvas (min 3:1)`);
+      }
+    }
+    // a step badge never touches a label (its pill or its words) or another badge: 3 px clear
+    {
+      const badges = [...svg.querySelectorAll<SVGGElement>('.an-badge')];
+      const labels = [...svg.querySelectorAll<SVGGElement>('[data-for]:not(.an-badge)')];
+      for (const badge of badges) {
+        const bc = grow(bb(badge.querySelector('circle') ?? badge), 3);
+        for (const lab of labels) if (hit(bc, bb(lab), 0)) out.push(`${name}: step badge "${badge.textContent}" touches the label "${(lab.textContent ?? '').slice(0, 40)}"`);
+        for (const other of badges) if (other !== badge && hit(bc, bb(other.querySelector('circle') ?? other), 0)) out.push(`${name}: step badge "${badge.textContent}" touches badge "${other.textContent}"`);
+      }
+    }
+    // sequence figures (desktop): a message's words stay over its own arrow, never across another
+    // participant's lifeline beyond the arrow's ends (a self-call stays short of the next lifeline).
+    // On a phone the words take a full-width row above the arrow by design, so only wide layouts are measured.
+    if (svg.dataset.variant === 'wide') {
+      const lifelines = [...svg.querySelectorAll<SVGPathElement>('.an-lifeline')].map((l) => l.getPointAtLength(0).x);
+      for (const lab of svg.querySelectorAll<SVGGElement>('.an-seq-text[data-for]')) {
+        const own = edges.find((p) => p.id === lab.dataset.for);
+        if (!own) continue;
+        const a = own.getPointAtLength(0).x;
+        const z = own.getPointAtLength(own.getTotalLength()).x;
+        const lo = Math.min(a, z) - 2;
+        const hi = Math.max(a, z) + 2;
+        const words = [...lab.querySelectorAll<SVGTextElement>('text')].map((t) => bb(t));
+        const x0 = Math.min(...words.map((w) => w.x));
+        const x1 = Math.max(...words.map((w) => w.x + w.w));
+        for (const lx of lifelines) if ((lx < lo || lx > hi) && lx > x0 && lx < x1) out.push(`${name}: the words of "${(lab.textContent ?? '').slice(0, 40)}" run past their arrow across a lifeline`);
+      }
+    }
+    // a wire that leaves a group is labelled after it leaves: never inside the group it starts in when it ends
+    // outside it (in the gap between groups, not above the source's border). An account boundary is exempt:
+    // a wire entering the account is labelled inside it.
+    {
+      const groupEls = [...svg.querySelectorAll<SVGGElement>('[data-group]:not(.an-group-boundary)')].map((g) => ({ g, r: g.querySelector<SVGGraphicsElement>(':scope > rect') })).filter((x) => x.r);
+      for (const lab of svg.querySelectorAll<SVGGElement>('[data-for]:not(.an-badge)')) {
+        const own = edges.find((p) => p.id === lab.dataset.for || p.dataset.edge === lab.dataset.for);
+        if (!own) continue;
+        const lb = bb(lab);
+        const from = own.getPointAtLength(0);
+        const to = own.getPointAtLength(own.getTotalLength());
+        for (const { g, r: rr } of groupEls) {
+          const box = bb(rr!);
+          if (!inside(lb, box, 0)) continue;
+          const holds = (pt: DOMPoint) => pt.x >= box.x - 2 && pt.x <= box.x + box.w + 2 && pt.y >= box.y - 2 && pt.y <= box.y + box.h + 2;
+          if (holds(from) && !holds(to)) out.push(`${name}: label "${(lab.textContent ?? '').slice(0, 40)}" sits inside group ${g.dataset.group}, where its wire starts, not in the gap after it`);
+        }
+      }
+    }
+    // a wire ends straight: its last 12 px run in one direction (no hook or curl before the arrowhead)
+    for (const p of edges) {
+      const len = p.getTotalLength();
+      if (len < 30) continue;
+      const q0 = p.getPointAtLength(len - 12);
+      const q1 = p.getPointAtLength(len - 6);
+      const q2 = p.getPointAtLength(len);
+      const ang = (u: DOMPoint, v: DOMPoint) => Math.atan2(v.y - u.y, v.x - u.x);
+      let d = Math.abs(ang(q0, q1) - ang(q1, q2));
+      if (d > Math.PI) d = 2 * Math.PI - d;
+      if (!svg.classList.contains('an-sketch') && d > 0.35) out.push(`${name}: wire ${p.dataset.from}→${p.dataset.to} ends in a hook (its last 12 px turn)`);
+    }
+    // a sketch's handwritten title keeps 6 px from the cloud outline
+    {
+      const cloudEl = svg.querySelector<SVGPathElement>('.an-sk-cloud');
+      const title = svg.querySelector<SVGTextElement>('.an-sk-title');
+      if (cloudEl && title) {
+        const tbx = bb(title);
+        const gap = Math.min(...pts(cloudEl as unknown as SVGPathElement, 2).map((pt) => distToBox(pt, tbx)));
+        if (gap < 6) out.push(`${name}: the title "${title.textContent}" is ${Math.round(gap)} px from the cloud outline (min 6)`);
+      }
+    }
+    // a wide figure in a sideways-scroll box opens on its drawing, never on empty canvas: a tile shows
+    {
+      const box = svg.closest<HTMLElement>('.an-scroll');
+      if (box && box.scrollWidth > box.clientWidth + 1) {
+        const vr = box.getBoundingClientRect();
+        const seen = nodes.some((g) => {
+          const r2 = (g.querySelector('[data-box]') ?? g).getBoundingClientRect();
+          const w = Math.min(r2.right, vr.right) - Math.max(r2.left, vr.left);
+          return w >= Math.min(r2.width, vr.width) * 0.6;
+        });
+        if (!seen) out.push(`${name}: its scroll box opens on empty canvas (no tile in view)`);
       }
     }
     // groups nest or stand apart, never half-overlap; a node inside a group's box belongs to it

@@ -36,7 +36,8 @@ const map: Builder = (d, locale) => {
       ],
       groups: [
         { id: 'models', label: c.group.models, caption: c.caption.models, members: models },
-        { id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', members: ['api', 'queue', 'processor', 'd1', 'admin', 'cms', 'workersAi', 'models'] },
+        // the account tag at the far end: the people's wires enter api-videos straight, not round the tag
+        { id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', tagEnd: true, members: ['api', 'queue', 'processor', 'd1', 'admin', 'cms', 'workersAi', 'models'] },
       ],
       edges: [
         { from: 'users', to: 'api', flow: 'request', label: e.text, fromSide: 'e', toSide: 'w' },
@@ -75,7 +76,8 @@ const map: Builder = (d, locale) => {
       },
       edges: [
         { from: 'users', to: 'api', flow: 'request', label: e.text, fromSide: 's', toSide: 'n' },
-        { from: 'creator', to: 'api', flow: 'request', label: e.ask, fromSide: 'w', toSide: 'n' },
+        // both enter api-videos from above, side by side: no loop round the boundary tag
+        { from: 'creator', to: 'api', flow: 'request', label: e.ask, fromSide: 's', toSide: 'n' },
         { from: 'api', to: 'queue', flow: 'async', fromSide: 'e', toSide: 'w' },
         { from: 'queue', to: 'processor', flow: 'async', label: e.consume, fromSide: 's', toSide: 'n' },
         { from: 'processor', to: 'd1', flow: 'control', label: e.budget, fromSide: 'w', toSide: 'e' },
@@ -129,7 +131,8 @@ const scan: Builder = (d) => {
     },
     wide: { colW: 300, rowH: 160, pad: 40 },
     narrow: {
-      colW: 180,
+      // the reserve and settle wires run side by side: a wider gap between the columns gives each its badge
+      colW: 212,
       rowH: 100,
       iconSize: 34,
       pad: 44,
@@ -141,7 +144,8 @@ const scan: Builder = (d) => {
         { from: 'processor', to: 'gemma', flow: 'request', label: e.translate, step: 4, fromSide: 'e', toSide: 'e' },
         { from: 'processor', to: 'guard', flow: 'request', step: 5, fromSide: 'e', toSide: 'e' },
         { from: 'processor', to: 'ext', flow: 'request', label: e.ext, step: 6, fromSide: 'e', toSide: 'e' },
-        { from: 'processor', to: 'budget', flow: 'control', label: e.settle, step: 7, fromSide: 'w', toSide: 'e' },
+        // settle returns under the tiles: two wires side by side have no room for both step badges
+        { from: 'processor', to: 'budget', flow: 'control', label: e.settle, step: 7, fromSide: 's', toSide: 's' },
         { from: 'processor', to: 'signals', flow: 'async', label: e.decide, step: 8, fromSide: 's', toSide: 'n' },
         { from: 'signals', to: 'admin', flow: 'request', label: e.flag, step: 9, fromSide: 's', toSide: 'n' },
       ],
