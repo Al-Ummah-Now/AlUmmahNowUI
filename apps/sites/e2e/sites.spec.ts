@@ -417,6 +417,9 @@ test('a11y (WCAG 2.2 AA), header only: signed in with the account menu open', as
 test('a site page renders its blocks with the shared page-builder renderer, en and ar', async ({ page }, info) => {
   // The banner image is on the image host: answer it here (nothing leaves the machine).
   await page.route('https://images.alummahnow.net/e2e/banner.png', (route) => route.fulfill({ status: 200, contentType: 'image/png', body: stubImage(1) }));
+  // The video block embeds the videos site's player. Answer it here too: this test checks the block,
+  // and a live QA page inside the frame would make the axe result depend on whatever QA runs today.
+  await page.route(/\/embed\/v\//, (route) => route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: '<!doctype html><html lang="en"><head><title>Player</title></head><body></body></html>' }));
   await page.emulateMedia({ colorScheme: 'dark' });
 
   await page.goto(at(HOSTS.both, '/en/welcome/'));
