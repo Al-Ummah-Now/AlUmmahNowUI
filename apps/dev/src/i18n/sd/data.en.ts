@@ -13,7 +13,7 @@ export const dataEn = {
       comms: { name: 'al-ummah-now-comms', role: 'realtime Worker' },
       web: { name: 'videos web', role: 'the web app' },
       records: { name: 'Record buckets', role: 'one JSON per record' },
-      media: { name: 'Media buckets', role: 'pub · priv · originals' },
+      media: { name: 'Media buckets', role: 'public · private · originals' },
       system: { name: 'System buckets', role: 'archive · backups · child safety' },
       search: { name: 'search', role: 'full-text, per type' },
       notifications: { name: 'notifications', role: 'bell · dead letters' },

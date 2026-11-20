@@ -73,6 +73,8 @@ const RS = 11;
 const LS = 12.5;
 const CS = 11.5;
 const BR = 10;
+/** gap between a message's words and its arrow (the badge on the arrow has radius BR) */
+const LIFT = 17;
 const codeW = (s: string) => [...s].length * CS * 0.62;
 
 /** Greedy word wrap by the build-time width estimate. */
@@ -82,9 +84,9 @@ function wrap(s: string, size: number, max: number, code = false): string[] {
   const out: string[] = [];
   let line = '';
   // a path longer than the line breaks after a '/', never in the middle of a name
-  const words = s.split(' ').flatMap((w) => (code && width(w) > max ? w.split(/(?<=[/.(])/) : [w]));
+  const words = s.split(' ').flatMap((w) => (code && width(w) > max ? w.split(/(?<=[/.(?&])/) : [w]));
   for (const w of words) {
-    const glue = code && /[/.(]$/.test(line) ? '' : ' ';
+    const glue = code && /[/.(?&]$/.test(line) ? '' : ' ';
     const next = line ? `${line}${glue}${w}` : w;
     if (line && width(next) > max) {
       out.push(line);
@@ -147,15 +149,17 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
     const b = cx(s.to);
     const self = s.from === s.to;
     const lo = self ? a + 34 : Math.min(a, b) + BR + 8;
-    const span = self ? layout.colW * 1.6 : Math.abs(b - a) - BR - 20;
-    const max = layout.narrow ? baseW - 2 * PAD - 12 : Math.max(span, 230);
+    // desktop: the words stay over their own arrow (a self-call's words stop short of the next lifeline)
+    const span = self ? layout.colW - 34 - 14 : Math.abs(b - a) - BR - 20;
+    const max = layout.narrow ? baseW - 2 * PAD - 12 : span;
     const lines = wrap(s.label, LS, max);
     const code = s.code ? wrap(s.code, CS, max, true) : [];
     // on a phone the label starts by its arrow, moving toward the edge only as far as it must to fit
     const blockW = Math.max(...lines.map((l) => textWidth(l, LS)), ...code.map(codeW), 0);
     const lx = layout.narrow ? Math.max(PAD + 6, Math.min(lo, baseW - PAD - 6 - blockW)) : lo;
     const blockH = lines.length * (LS + LG) + code.length * (CS + LG + 1);
-    const ay = y + blockH + 10;
+    // the words end 17 px above their arrow: clear of the step badge on it
+    const ay = y + blockH + LIFT;
     if (!s.reply) n += 1;
     rows.push({ s, y: ay, lines, code, lx, n: s.reply ? undefined : n });
     W = Math.max(W, lx + Math.max(...lines.map((l) => textWidth(l, LS)), ...code.map(codeW), 0) + PAD);
@@ -309,7 +313,7 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
     const s = row.s;
     const id = ids.get(row)!;
     const blockH = row.lines.length * (LS + LG) + row.code.length * (CS + LG + 1);
-    const top = row.y - 10 - blockH;
+    const top = row.y - LIFT - blockH;
     const w = Math.max(...row.lines.map((l) => textWidth(l, LS)), ...row.code.map(codeW));
     const bx = opts.rtl ? W - row.lx - w : row.lx;
     out.push(`<g class="an-seq-text" data-for="${id}">`);

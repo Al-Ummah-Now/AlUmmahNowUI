@@ -15,7 +15,7 @@ export const dataAr: typeof dataEn = {
       comms: { name: 'al-ummah-now-comms', role: 'عامل الوقت الحقيقي' },
       web: { name: 'videos web', role: 'تطبيق الويب' },
       records: { name: 'حاويات السجلات', role: 'JSON واحد لكل سجل' },
-      media: { name: 'حاويات الوسائط', role: 'pub · priv · originals' },
+      media: { name: 'حاويات الوسائط', role: 'عام · خاص · الأصول' },
       system: { name: 'حاويات النظام', role: 'أرشيف · نسخ · حماية الأطفال' },
       search: { name: 'search', role: 'بحث نصي لكل نوع' },
       notifications: { name: 'notifications', role: 'الجرس · الرسائل الفاشلة' },

@@ -35,7 +35,9 @@ describe('sequence diagrams', () => {
   it('numbers requests, not replies, and writes calls in code type', () => {
     expect(wide.match(/class="an-badge/g)).toHaveLength(3);
     expect(wide).toContain('class="an-seq-code"');
-    expect(wide).toContain('POST /api/videos/upload/initiate');
+    // on desktop a call wraps within its arrow's span: read it back across its lines
+    const code = [...wide.matchAll(/class="an-seq-code"[^>]*>([^<]*)</g)].map((m) => m[1]).join('');
+    expect(code.replace(/\s/g, '')).toContain('POST/api/videos/upload/initiate');
     expect(wide).toContain('an-reply');
   });
 

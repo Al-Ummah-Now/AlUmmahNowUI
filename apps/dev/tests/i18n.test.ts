@@ -51,6 +51,10 @@ describe('copy', () => {
       if (s.length > 60 && /\. /.test(s)) expect(s, path).not.toMatch(/^(?:[a-z][a-z0-9]*[-_][a-z0-9_-]+|videos|processor|media|scheduler)\b/);
     }
   });
+  it('no shorthand a reader has to decode (AUDIT-2, round 6)', () => {
+    // "pub · priv" outside a code path: write "public · private" / «عام · خاص»
+    for (const [path, v] of [...strings(en), ...strings(ar)]) expect(v, path).not.toMatch(/\bpub\s*[·,]\s*priv\b|\bpub\b(?![|}/])/);
+  });
   it('no user, view or money figures', () => {
     const all = strings(en).map(([, s]) => s).join('\n');
     expect(all).not.toMatch(/\$\s?\d|\d+\s?(k|m)?\s?(users|viewers|subscribers|views)\b/i);
