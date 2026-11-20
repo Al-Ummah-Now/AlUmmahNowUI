@@ -207,16 +207,22 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     if (!rects.length) continue;
     const big = g.kind === 'boundary' || g.kind === 'platform';
     const pad = g.pad ?? (big ? 18 : 12);
-    const top = big ? 44 : 30;
-    const bottom = g.caption ? 26 : pad;
+    // room for the title above the members, clear of the border (Arabic line boxes are taller)
+    const top = big ? 58 : opts.locale === 'ar' ? 42 : 34;
+    // a caption sits along the bottom, clear of the border (Arabic line boxes are taller)
+    const bottom = g.caption ? (opts.locale === 'ar' ? 34 : 28) : pad;
     const x0 = Math.min(...rects.map((q) => q.x)) - pad;
     const y0 = Math.min(...rects.map((q) => q.y)) - top;
-    const x1 = Math.max(...rects.map((q) => q.x + q.w)) + pad;
+    let x1 = Math.max(...rects.map((q) => q.x + q.w)) + pad;
     const y1 = Math.max(...rects.map((q) => q.y + q.h)) + bottom;
-    const box = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
     const lw = g.tagLogo ? g.tagLogo.w + 24 : big ? textWidth(g.label, 12.5, true) + (g.tag ? 30 : 0) + 20 : textWidth(g.label, 12.5, true) + 4;
-    const label = big ? { x: box.x + 14, y: box.y - 13, w: lw, h: 26 } : { x: box.x + 10, y: box.y + 7, w: lw, h: 17 };
-    const caption = g.caption ? { x: box.x + 10, y: box.y + box.h - 21, w: textWidth(g.caption, 11) + 4, h: 15 } : undefined;
+    // a boundary's tag sits inside its box, clear of the border (never on it)
+    // a group is at least as wide as its title, with 6 px clear of each border
+    const need = Math.max(lw + (big ? 28 : 20) + 12, g.caption ? textWidth(g.caption, 11) + 4 + 32 : 0);
+    if (x1 - x0 < need) x1 = x0 + need;
+    const box = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    const label = big ? { x: box.x + 14, y: box.y + 8, w: lw, h: 26 } : { x: box.x + 10, y: box.y + (opts.locale === 'ar' ? 15 : 10), w: lw, h: 17 };
+    const caption = g.caption ? { x: box.x + 10, y: box.y + box.h - (opts.locale === 'ar' ? 27 : 23), w: textWidth(g.caption, 11) + 4, h: 15 } : undefined;
     groups.set(g.id, { g, box, depth: depthOf(g), label, caption });
   }
 
@@ -398,7 +404,9 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
       return [{ x: Math.min(p.x, q.x) - 1, y: Math.min(p.y, q.y) - 1, w: Math.abs(p.x - q.x) + 2, h: Math.abs(p.y - q.y) + 2 }];
     });
   const inCanvas = (q: Rect) => q.x >= 4 && q.y >= 4 && q.x + q.w <= W - 4 && q.y + q.h <= H - 4;
-  const free = (q: Rect, wires: Rect[]) => inCanvas(q) && !obstacles.some((o) => intersects(q, o, 3)) && !placed.some((o) => intersects(q, o, 3)) && !wires.some((o) => intersects(q, o, 1));
+  // labels and badges keep 6 px from every line and group border
+  const CLEAR = 6;
+  const free = (q: Rect, wires: Rect[]) => inCanvas(q) && !obstacles.some((o) => intersects(q, o, 3)) && !placed.some((o) => intersects(q, o, 3)) && !wires.some((o) => intersects(q, o, CLEAR));
 
   // each group's outline as four thin strips: a label may sit inside or outside a group, never on its edge
   const borders: Rect[] = [...groups.values()].flatMap(({ box: b }) => [
@@ -421,7 +429,24 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
         break;
       }
     }
-    const fb = best ?? { c: pointAt(rt.pts, rt.len / 2), at: rt.len / 2 };
+    // no spot clear of everything: the point of the wire farthest from any group border
+    const clearance = (c: Pt) => Math.min(999, ...borders.map((o) => Math.hypot(Math.max(o.x - c.x, 0, c.x - (o.x + o.w)), Math.max(o.y - c.y, 0, c.y - (o.y + o.h)))));
+    let fb = best;
+    if (!fb) {
+      let far = -1;
+      for (let d = 14; d < rt.len - 14; d += 2) {
+        const c = pointAt(rt.pts, d);
+        const q = { x: c.x - BR, y: c.y - BR, w: 2 * BR, h: 2 * BR };
+        // never on a tile, a title or another wire; among the rest, the farthest from any border
+        if (obstacles.some((o) => intersects(q, o, 3)) || placed.some((o) => intersects(q, o, 3)) || others.some((o) => intersects(q, o, 1))) continue;
+        const k = clearance(c);
+        if (k > far) {
+          far = k;
+          fb = { c, at: d };
+        }
+      }
+      fb ??= { c: pointAt(rt.pts, rt.len / 2), at: rt.len / 2 };
+    }
     placed.push({ x: fb.c.x - BR, y: fb.c.y - BR, w: 2 * BR, h: 2 * BR });
     badges.push({ rt, c: fb.c, n: rt.e.step, at: fb.at });
   }
@@ -444,11 +469,11 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
         if (!horiz && s.len < 14) continue;
         const own = segRects(rt);
         if (horiz) {
-          cands.push({ q: { x: p.x - lw / 2, y: p.y - 4 - lh, w: lw, h: lh }, wires: [...others, ...own] });
-          cands.push({ q: { x: p.x - lw / 2, y: p.y + 4, w: lw, h: lh }, wires: [...others, ...own] });
+          cands.push({ q: { x: p.x - lw / 2, y: p.y - CLEAR - 2 - lh, w: lw, h: lh }, wires: [...others, ...own] });
+          cands.push({ q: { x: p.x - lw / 2, y: p.y + CLEAR + 2, w: lw, h: lh }, wires: [...others, ...own] });
         } else {
-          const right = { x: p.x + 5, y: p.y - lh / 2, w: lw, h: lh };
-          const left = { x: p.x - 5 - lw, y: p.y - lh / 2, w: lw, h: lh };
+          const right = { x: p.x + CLEAR + 2, y: p.y - lh / 2, w: lw, h: lh };
+          const left = { x: p.x - CLEAR - 2 - lw, y: p.y - lh / 2, w: lw, h: lh };
           for (const q of opts.rtl ? [left, right] : [right, left]) cands.push({ q, wires: [...others, ...own] });
         }
       }
@@ -541,48 +566,7 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   out.push('</g>');
 
   // wires
-  out.push('<g class="an-edges">');
-  for (const rt of routed) {
-    const d = roundedPath(rt.pts);
-    const a0 = rt.pts[0]!;
-    const a1 = rt.pts[rt.pts.length - 1]!;
-    const direct = Math.abs(a1.x - a0.x) + Math.abs(a1.y - a0.y);
-    out.push(`<path id="${rt.id}" data-edge="${rt.id}" data-direct="${r(direct)}" data-from="${rt.e.from}" data-to="${rt.e.to}" class="an-edge an-f-${rt.e.flow}" d="${d}" marker-end="url(#${prefix}-mk-${rt.e.flow})"/>`);
-  }
-  out.push('</g>');
-
-  // motion: hidden entirely under prefers-reduced-motion (arch.css)
-  out.push('<g class="an-motion" aria-hidden="true">');
-  for (const rt of routed) {
-    const d = roundedPath(rt.pts);
-    if (rt.e.stream || rt.e.flow === 'delivery') out.push(`<path class="an-march an-f-${rt.e.flow}" d="${d}"/>`);
-    if (spec.motion === 'steps' && rt.e.step != null) {
-      const a = ((rt.e.step - 1) * HOP) / T;
-      const b = (rt.e.step * HOP) / T;
-      const kt = `0;${f4(a)};${f4(b)};1`;
-      out.push(
-        `<path class="an-lit an-f-${rt.e.flow}" d="${d}" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"><animate attributeName="stroke-dashoffset" values="1;1;0;0" keyTimes="${kt}" dur="${T}s" repeatCount="indefinite"/></path>`,
-        `<circle class="an-comet an-f-${rt.e.flow}" r="5" opacity="0"><animateMotion dur="${T}s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="${kt}" calcMode="linear"><mpath href="#${rt.id}"/></animateMotion><animate attributeName="opacity" values="0;1;0" keyTimes="0;${f4(a)};${f4(Math.min(b + 0.01, 0.999))}" calcMode="discrete" dur="${T}s" repeatCount="indefinite"/></circle>`,
-      );
-    } else {
-      const dur = Math.max(1.8, rt.len / 95);
-      for (const k of [0, 0.5]) {
-        out.push(`<circle class="an-pulse an-f-${rt.e.flow}" r="3.6"><animateMotion dur="${f4(dur)}s" begin="-${f4(dur * k)}s" repeatCount="indefinite"><mpath href="#${rt.id}"/></animateMotion></circle>`);
-      }
-    }
-  }
-  if (spec.motion === 'steps') {
-    for (const b of badges) {
-      const a = ((b.n - 1) * HOP) / T;
-      const e2 = Math.min((b.n * HOP) / T, 0.999);
-      out.push(
-        `<circle class="an-ring an-f-${b.rt.e.flow}" cx="${r(b.c.x)}" cy="${r(b.c.y)}" r="${BR}" opacity="0"><animate attributeName="r" values="${BR};${BR};${BR + 9};${BR + 9}" keyTimes="0;${f4(a)};${f4(e2)};1" dur="${T}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0.9;0;0" keyTimes="0;${f4(a)};${f4(e2)};1" dur="${T}s" repeatCount="indefinite"/></circle>`,
-      );
-    }
-  }
-  out.push('</g>');
-
-  // nodes
+  // nodes, then the wires over them: an arrowhead is never hidden under a tile, in either mode
   out.push('<g class="an-nodes">');
   for (const nb of nodes.values()) {
     const { box } = nb;
@@ -603,6 +587,47 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
       out.push(`<text class="${cls}" x="${r(nb.cx)}" y="${r(l.y)}" text-anchor="middle" font-size="${l.size}"${hasArabic(l.text) ? ' direction="rtl"' : ''}${data}>${esc(l.text)}</text>`);
     }
     out.push('</g>');
+  }
+  out.push('</g>');
+
+  out.push('<g class="an-edges">');
+  for (const rt of routed) {
+    const d = roundedPath(rt.pts);
+    const a0 = rt.pts[0]!;
+    const a1 = rt.pts[rt.pts.length - 1]!;
+    const direct = Math.abs(a1.x - a0.x) + Math.abs(a1.y - a0.y);
+    out.push(`<path id="${rt.id}" data-edge="${rt.id}" data-direct="${r(direct)}" data-from="${rt.e.from}" data-to="${rt.e.to}" class="an-edge an-f-${rt.e.flow}" d="${d}" marker-end="url(#${prefix}-mk-${rt.e.flow})"/>`);
+  }
+  out.push('</g>');
+
+  // motion: hidden entirely under prefers-reduced-motion (arch.css)
+  out.push('<g class="an-motion" aria-hidden="true">');
+  for (const rt of routed) {
+    const d = roundedPath(rt.pts);
+    // marching light only where a figure asks for a stream: a dashed line means control, nothing else
+    if (rt.e.stream) out.push(`<path class="an-march an-f-${rt.e.flow}" d="${d}"/>`);
+    if (spec.motion === 'steps' && rt.e.step != null) {
+      const a = ((rt.e.step - 1) * HOP) / T;
+      const b = (rt.e.step * HOP) / T;
+      const kt = `0;${f4(a)};${f4(b)};1`;
+      // a control wire stays dashed: no solid lit trace over it, only the comet
+      if (rt.e.flow !== 'control') out.push(`<path class="an-lit an-f-${rt.e.flow}" d="${d}" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"><animate attributeName="stroke-dashoffset" values="1;1;0;0" keyTimes="${kt}" dur="${T}s" repeatCount="indefinite"/></path>`);
+      out.push(`<circle class="an-comet an-f-${rt.e.flow}" r="5" opacity="0"><animateMotion dur="${T}s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="${kt}" calcMode="linear"><mpath href="#${rt.id}"/></animateMotion><animate attributeName="opacity" values="0;1;0" keyTimes="0;${f4(a)};${f4(Math.min(b + 0.01, 0.999))}" calcMode="discrete" dur="${T}s" repeatCount="indefinite"/></circle>`);
+    } else {
+      const dur = Math.max(1.8, rt.len / 95);
+      for (const k of [0, 0.5]) {
+        out.push(`<circle class="an-pulse an-f-${rt.e.flow}" r="3.6"><animateMotion dur="${f4(dur)}s" begin="-${f4(dur * k)}s" repeatCount="indefinite"><mpath href="#${rt.id}"/></animateMotion></circle>`);
+      }
+    }
+  }
+  if (spec.motion === 'steps') {
+    for (const b of badges) {
+      const a = ((b.n - 1) * HOP) / T;
+      const e2 = Math.min((b.n * HOP) / T, 0.999);
+      out.push(
+        `<circle class="an-ring an-f-${b.rt.e.flow}" cx="${r(b.c.x)}" cy="${r(b.c.y)}" r="${BR}" opacity="0"><animate attributeName="r" values="${BR};${BR};${BR + 9};${BR + 9}" keyTimes="0;${f4(a)};${f4(e2)};1" dur="${T}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0.9;0;0" keyTimes="0;${f4(a)};${f4(e2)};1" dur="${T}s" repeatCount="indefinite"/></circle>`,
+      );
+    }
   }
   out.push('</g>');
 

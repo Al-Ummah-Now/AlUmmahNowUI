@@ -10,8 +10,9 @@ import { formatMoney } from '../../../../packages/render/src/format.ts';
 const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
 const lang = document.documentElement.lang === 'ar' ? 'ar' : 'en';
 function fmt(usd: number, scale: number): string {
-  if (scale > 0 && scale < 0.0001) return usd > 0 ? `< ${fmt(0.0001, 0.0001)}` : fmt(0, 0.0001);
-  const digits = scale === 0 ? 2 : scale < 0.01 ? 4 : scale < 1 ? 3 : 2;
+  if (scale > 0 && scale < 0.0001) return usd > 0 ? `${lang === 'ar' ? 'أقل من ' : '< '}${fmt(0.0001, 0.0001)}` : fmt(0, 0.0001);
+  // the same precision as the page (src/lib/arch/cost.ts formatUsd): 4 decimals, whole cents from $100
+  const digits = scale >= 100 ? 2 : 4;
   return formatMoney(usd, 'USD', lang, { ...(lang === 'en' ? { currencyDisplay: 'narrowSymbol' } : {}), minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
@@ -44,7 +45,8 @@ function paint(svg: SVGSVGElement, final: boolean): Record<string, number> {
     const v = usd * p;
     m.textContent = fmt(v, usd);
     const lane = m.dataset.lane ?? '';
-    sums[lane] = (sums[lane] ?? 0) + v;
+    // add the amount as shown (4 decimals; whole cents from $100), so the total is the sum the reader sees
+    sums[lane] = (sums[lane] ?? 0) + (Math.abs(v) >= 100 ? Math.round(v * 100) / 100 : Math.round(v * 1e4) / 1e4);
   }
   for (const t of svg.querySelectorAll<SVGTextElement>('[data-total]')) {
     const lane = t.dataset.total ?? '';

@@ -4,7 +4,7 @@
  * sourced); meters tick as the flow reaches each stage and every lane keeps a running total.
  */
 import { stack, type ArchEdge, type ArchLayout, type ArchNode, type ArchSpec } from '../arch.ts';
-import { ASSUMED, LANE_OF, RATES, SCENARIOS, costTable, money, type MoneyOptions, type Lane, type StageId } from '../cost.ts';
+import { ASSUMED, LANE_OF, RATES, SCENARIOS, asShown, costTable, money, type MoneyOptions, type Lane, type StageId } from '../cost.ts';
 import { formatNumber } from '../../../../../../packages/render/src/format.ts';
 import type { diagramsEn } from '../../../i18n/diagrams.en.ts';
 
@@ -82,7 +82,7 @@ export function costs(c: Copy, locale: 'en' | 'ar'): { spec: ArchSpec; wide: Arc
   const table = costTable();
   const laneTotal = (lane: Lane) => {
     const out: Record<string, number | null> = {};
-    for (const s of SCENARIOS) out[s.id] = (Object.keys(LANE_OF) as StageId[]).filter((st) => LANE_OF[st] === lane).reduce((sum, st) => sum + (table[st][s.id] ?? 0), 0);
+    for (const s of SCENARIOS) out[s.id] = (Object.keys(LANE_OF) as StageId[]).filter((st) => LANE_OF[st] === lane).reduce((sum, st) => sum + asShown(table[st][s.id] ?? 0), 0);
     return out;
   };
   const stageNode = (st: StageId, at: [number, number]): ArchNode => ({
@@ -96,8 +96,9 @@ export function costs(c: Copy, locale: 'en' | 'ar'): { spec: ArchSpec; wide: Arc
   });
   const totalNode = (lane: Lane, at: [number, number]): ArchNode => ({ id: TOTAL[lane], icon: 'lucide/receipt', name: c.node[TOTAL[lane]].name, role: c.node[TOTAL[lane]].role, total: { lane, usd: laneTotal(lane) }, at });
 
-  const nodes: ArchNode[] = [stageNode('upload', [0, 1.2])];
-  const rows: Record<Lane, number> = { bunny: 0, r2: 1.2, shared: 2.4 };
+  // the Cloudflare boundary's title sits inside its top: room between it and the Bunny lane above
+  const nodes: ArchNode[] = [stageNode('upload', [0, 1.4])];
+  const rows: Record<Lane, number> = { bunny: 0, r2: 1.4, shared: 2.6 };
   for (const lane of ['bunny', 'r2', 'shared'] as Lane[]) {
     LANES[lane].forEach((st, i) => nodes.push(stageNode(st, [1.2 + i, rows[lane]])));
     nodes.push(totalNode(lane, [1.2 + LANES[lane].length + 0.15, rows[lane]]));
@@ -188,7 +189,7 @@ export function laneTotals(): Record<Lane, Record<string, number>> {
   const out = {} as Record<Lane, Record<string, number>>;
   for (const lane of ['bunny', 'r2', 'shared'] as Lane[]) {
     out[lane] = {};
-    for (const s of SCENARIOS) out[lane][s.id] = (Object.keys(LANE_OF) as StageId[]).filter((st) => LANE_OF[st] === lane).reduce((sum, st) => sum + (table[st][s.id] ?? 0), 0);
+    for (const s of SCENARIOS) out[lane][s.id] = (Object.keys(LANE_OF) as StageId[]).filter((st) => LANE_OF[st] === lane).reduce((sum, st) => sum + asShown(table[st][s.id] ?? 0), 0);
   }
   return out;
 }

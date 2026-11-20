@@ -58,14 +58,19 @@ export function expandAbbreviations(html: string, locale: 'en' | 'ar', label: st
             else if (t2 === '</text>') inSvgText = false;
             else if (inSvgText && !t2.startsWith('<')) {
               const text = decode(t2);
-              for (const term of GLOSSARY) if (!seen.has(term.abbr) && !used.includes(term) && termPattern(term.abbr).test(text)) used.push(term);
+              for (const term of GLOSSARY)
+                if (!seen.has(term.abbr) && !used.some((u) => u === term || u.abbr === term.same || u.same === term.abbr) && termPattern(term.abbr).test(text)) used.push(term);
             }
           }
           if (used.length) {
             const list = used.map((t) => `${t.abbr}: ${meaning(t)}`).join(locale === 'ar' ? '؛ ' : '; ');
             const line = `${label} ${list}.`;
             out.push(`<p class="an-terms">${line.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</p>`);
-            for (const t of used) seen.add(t.abbr);
+            for (const t of used) {
+              seen.add(t.abbr);
+              if (t.same) seen.add(t.same);
+              for (const t2 of GLOSSARY) if (t2.same === t.abbr) seen.add(t2.abbr);
+            }
             recent = (recent + ' ' + line).slice(-NEAR);
           }
         }
@@ -88,6 +93,10 @@ export function expandAbbreviations(html: string, locale: 'en' | 'ar', label: st
       const m = re.exec(text);
       if (!m) continue;
       seen.add(term.abbr);
+      if (term.same) seen.add(term.same);
+      for (const t2 of GLOSSARY) if (t2.same === term.abbr) seen.add(t2.abbr);
+      // already in parentheses after its own explanation ("… dead-letter queue (DLQ)"): never a second bracket
+      if (/\(\s*$/.test(text.slice(0, m.index))) continue;
       const before = recent + plain.slice(0, plain.indexOf(term.abbr));
       if (said(term, before.slice(-NEAR)) || said(term, upcoming)) continue;
       // already followed by its own parenthesis (e.g. "TUS (resumable uploads)"): leave it

@@ -325,9 +325,10 @@ html[data-mode='dark'] .an .an-edge {
 }
 .an-scroll-hint {
   margin: 0;
-  font-size: 0.875rem;
-  color: var(--muted);
-  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--link, currentColor);
+  text-align: start;
 }
 .an .an-canvas {
   stroke: var(--edge, #d0d7de);
@@ -394,7 +395,10 @@ html[data-mode='dark'] .an .an-edge {
   box-shadow: 0 0 6px var(--sw);
 }
 .an-legend .an-sw-dash {
-  border-top-style: dashed;
+  /* dashed, like the control wires it stands for */
+  border-top: 0;
+  height: 2.5px;
+  background: repeating-linear-gradient(90deg, var(--sw) 0 5px, transparent 5px 9px);
 }
 .an-legend .an-sw-dash::after {
   display: none;
@@ -658,7 +662,8 @@ html[data-mode='dark'] .an-sketch {
   font-family: 'Kalam', 'Comic Sans MS', var(--font-sans);
 }
 .an-sketch .an-hand-ar {
-  font-family: 'Aref Ruqaa', 'Kalam', var(--font-arabic, serif);
+  /* a text face whose letters join cleanly: the hand-drawn faces merged Arabic letters */
+  font-family: 'Noto Naskh Arabic', var(--font-arabic, serif);
 }
 .an-sketch .an-sk-title {
   font-size: 30px;
@@ -1016,7 +1021,8 @@ html[data-mode='dark'] .an-iso .an-iso-shadow {
   font-style: italic;
 }
 .an .an-edge.an-reply {
-  stroke-dasharray: 6 4;
+  /* a reply: solid and fainter (dashed means control everywhere) */
+  stroke-opacity: 0.6;
 }
 
 /* under a figure, for developers: why, the trade-off, the sources */

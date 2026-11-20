@@ -300,9 +300,9 @@ const model: Builder = (d) => {
       ],
       groups: [],
       edges: [
-        { from: 'record', to: 'jobs', flow: 'control', label: e.job, fromSide: 'e', toSide: 'w' },
+        { from: 'record', to: 'jobs', flow: 'request', label: e.job, fromSide: 'e', toSide: 'w' },
         { from: 'record', to: 'renditions', flow: 'media', label: e.rev, fromSide: 's', toSide: 'n' },
-        { from: 'origRows', to: 'originals', flow: 'control', label: e.original, fromSide: 'e', toSide: 'w' },
+        { from: 'origRows', to: 'originals', flow: 'request', label: e.original, fromSide: 'e', toSide: 'w' },
       ],
     },
     wide: { colW: 250, rowH: 150 },
@@ -322,8 +322,8 @@ const model: Builder = (d) => {
       ),
       edges: [
         { from: 'record', to: 'renditions', flow: 'media', label: e.rev, fromSide: 's', toSide: 'n' },
-        { from: 'record', to: 'jobs', flow: 'control', label: e.job, fromSide: 'e', toSide: 'e' },
-        { from: 'origRows', to: 'originals', flow: 'control', label: e.original, fromSide: 's', toSide: 'n' },
+        { from: 'record', to: 'jobs', flow: 'request', label: e.job, fromSide: 'e', toSide: 'e' },
+        { from: 'origRows', to: 'originals', flow: 'request', label: e.original, fromSide: 's', toSide: 'n' },
       ],
     },
   };

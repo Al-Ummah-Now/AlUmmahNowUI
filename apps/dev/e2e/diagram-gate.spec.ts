@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { gateInBrowser } from './diagram-gate';
-import { GLOSSARY, NEAR } from '../src/lib/glossary';
+import { GATE_GLOSSARY, NEAR } from '../src/lib/glossary';
 
 /**
  * The diagram quality gate (docs/SYSTEM-DESIGN-OUTLINE.md): on every System design page, in both
@@ -27,7 +27,7 @@ for (const lang of ['en', 'ar'])
         await page.evaluate(() => document.fonts.ready);
         const visible = await page.locator('svg.an').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).length);
         expect(visible, 'diagrams on the page').toBeGreaterThanOrEqual(MIN_DIAGRAMS);
-        const defects = await page.evaluate(gateInBrowser, { glossary: GLOSSARY, near: NEAR });
+        const defects = await page.evaluate(gateInBrowser, { glossary: GATE_GLOSSARY(), near: NEAR });
         expect(defects, defects.join('\n')).toEqual([]);
         expect(csp, csp.join('\n')).toEqual([]);
         // no horizontal scroll at any width
