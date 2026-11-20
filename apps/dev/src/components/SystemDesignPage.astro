@@ -26,7 +26,7 @@ interface Props {
 const { locale, slug, t, block } = Astro.props;
 ---
 <Base locale={locale} slug={slug} title={block.title} description={block.description}>
-  <PageHero title={block.heroTitle} lead={block.heroLead} />
+  <PageHero title={block.heroTitle} lead={block.heroLead} section />
   <SdShell locale={locale} slug={slug} t={t}>
     <slot />
     {block.stages.length > 0 && (

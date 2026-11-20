@@ -10,10 +10,48 @@
  *  - groups that half-overlap, or a node inside a group it doesn't belong to;
  *  - a wire that runs through any text, unless it is that wire's own label drawn on an opaque pill
  *    (labels carry data-for=<edge id>, plus data-covers when their background hides the wire).
+ *  - a label rendered under 11 px (diagrams are drawn at natural size and scroll, never shrink);
+ *  - text sitting across a group's border;
+ *  - Arabic text whose Latin runs (names, paths) aren't isolated, so the bidi algorithm may reorder them;
+ * and, for the page around them (pass the glossary from src/lib/glossary.ts):
+ *  - plan wording ("in development", «قيد التطوير» …): the site shows only what runs today;
+ *  - an abbreviation whose meaning isn't spelled out where the page first uses it.
  * Only visible diagrams are checked (the wide/narrow twin that CSS hides is skipped).
  */
-export function gateInBrowser(): string[] {
+export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar: string }[]; near?: number } = {}): string[] {
+  const glossary = opts.glossary ?? [];
+  const near = opts.near ?? 220;
   const out: string[] = [];
+  const ar = document.documentElement.lang === 'ar';
+  // page text in reading order: <main> only, no navigation, headings, scripts or a drawing's title/desc
+  {
+    const SKIP = 'nav,[data-no-expand],h1,h2,h3,h4,h5,h6,script,style,title,desc,button,label,legend,code';
+    const parts: string[] = [];
+    const main = document.querySelector('main');
+    if (main) {
+      const walk = document.createTreeWalker(main, NodeFilter.SHOW_TEXT);
+      for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+        const el = n.parentElement;
+        if (!el || el.closest(SKIP) || !el.getClientRects().length) continue;
+        parts.push(n.textContent ?? '');
+      }
+    }
+    const text = parts.join(' ').replace(/\s+/g, ' ');
+    const plan = ar ? /قيد التطوير|قيد الطرح|قيد الإطلاق|مخطط له|قريبًا|ندرس|نخطط/ : /\b(in development|rolling out|planned|coming soon|we are (exploring|considering|studying|planning))\b/i;
+    const pm = plan.exec(text);
+    if (pm) out.push(`page: plan wording "${pm[0]}"`);
+    for (const t of glossary) {
+      // same rule as src/lib/glossary.ts termPattern: names like "Workers AI" or "JSON Web Token" aren't uses
+      const re = new RegExp(`(?<![\\w\\-./@])${t.abbr === 'AI' ? '(?<!Workers )' : ''}${t.abbr}(?![\\w\\-])${t.abbr === 'JSON' ? '(?! Web Token)' : ''}`);
+      const m = re.exec(text);
+      if (!m) continue;
+      const meaning = (ar ? t.ar : t.en).toLowerCase();
+      const around = text.slice(Math.max(0, m.index - near), m.index + t.abbr.length + near).toLowerCase();
+      // explained in the copy's own words, in parentheses right after it, counts too
+      const explained = /^\s*\(/.test(text.slice(m.index + t.abbr.length));
+      if (!around.includes(meaning) && !explained) out.push(`page: "${t.abbr}" is used before it is spelled out ("${text.slice(Math.max(0, m.index - 40), m.index + 40)}")`);
+    }
+  }
   const svgs = [...document.querySelectorAll<SVGSVGElement>('svg.an')].filter((s) => s.getBoundingClientRect().width > 0 && getComputedStyle(s).display !== 'none');
   type B = { x: number; y: number; w: number; h: number };
   const bb = (el: SVGGraphicsElement): B => {
@@ -69,6 +107,14 @@ export function gateInBrowser(): string[] {
     }
     const texts = [...svg.querySelectorAll<SVGTextElement>('text')].filter((t) => !t.closest('.an-motion') && t.textContent?.trim());
     const tb = texts.map((t) => ({ t, b: bb(t) }));
+    for (const { t } of tb) {
+      // drawn at natural size: every label at least 11 px on screen
+      const px = parseFloat(getComputedStyle(t).fontSize) * scale;
+      if (px < 10.9) out.push(`${name}: text "${t.textContent}" renders at ${px.toFixed(1)} px (min 11)`);
+      // Arabic with Latin runs: each run isolated (LRI … PDI)
+      const raw = t.textContent ?? '';
+      if (/[\u0600-\u06ff]/.test(raw) && /[A-Za-z]/.test(raw.replace(/\u2066[^\u2069]*\u2069/g, ''))) out.push(`${name}: Arabic text "${raw}" has a Latin run that isn't isolated`);
+    }
     for (const { t, b } of tb) if (!inside(b, view)) out.push(`${name}: text "${t.textContent}" outside the viewBox`);
     for (let i = 0; i < tb.length; i++)
       for (let j = i + 1; j < tb.length; j++)
@@ -114,6 +160,17 @@ export function gateInBrowser(): string[] {
       if (direct >= 0 && len > direct * 1.45 + 140) out.push(`${name}: edge ${p.dataset.from}→${p.dataset.to} takes a detour (${Math.round(len)} vs ${Math.round(direct)} direct)`);
       const b = bb(p);
       if (!inside(b, view, 1)) out.push(`${name}: edge ${p.dataset.from}→${p.dataset.to} leaves the viewBox`);
+    }
+    // text never sits across a group's border (a group's own tag and title are part of it)
+    for (const g of svg.querySelectorAll<SVGGElement>('[data-group]')) {
+      // rectangles only: an isometric platform's polygon has no meaningful bounding box
+      const gr = g.querySelector<SVGGraphicsElement>(':scope > rect');
+      if (!gr) continue;
+      const box = bb(gr);
+      for (const { t, b } of tb) {
+        if (g.contains(t)) continue;
+        if (hit(b, box, 1) && !inside(b, box, 1)) out.push(`${name}: text "${t.textContent}" sits on the border of group ${g.dataset.group}`);
+      }
     }
     // groups nest or stand apart, never half-overlap; a node inside a group's box belongs to it
     const groups = [...svg.querySelectorAll<SVGGElement>('[data-group]')]

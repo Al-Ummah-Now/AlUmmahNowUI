@@ -31,7 +31,7 @@ export const dataEn = {
       abuse: { name: 'al_ummah_now_abuse', role: 'abuse counters' },
       authEvents: { name: 'auth_events', role: 'sign-in events' },
     },
-    edge: { records: 'records · conditional writes', search: 'search rows', rows: 'notifications', revoke: 'revocations', sockets: 'shards', vitals: 'page speed' },
+    edge: { records: 'records', search: 'search rows', rows: 'notifications', revoke: 'revocations', sockets: 'shards', vitals: 'page speed' },
   },
   write: {
     title: 'One write, followed through',

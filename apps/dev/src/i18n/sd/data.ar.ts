@@ -33,7 +33,7 @@ export const dataAr: typeof dataEn = {
       abuse: { name: 'al_ummah_now_abuse', role: 'عدّادات الإساءة' },
       authEvents: { name: 'auth_events', role: 'أحداث الدخول' },
     },
-    edge: { records: 'السجلات · كتابة مشروطة', search: 'صفوف البحث', rows: 'الإشعارات', revoke: 'الإبطالات', sockets: 'الأجزاء', vitals: 'سرعة الصفحات' },
+    edge: { records: 'السجلات', search: 'صفوف البحث', rows: 'الإشعارات', revoke: 'الإبطالات', sockets: 'الأجزاء', vitals: 'سرعة الصفحات' },
   },
   write: {
     title: 'كتابة واحدة من أولها إلى آخرها',

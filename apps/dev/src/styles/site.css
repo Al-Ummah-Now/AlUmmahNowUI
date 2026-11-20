@@ -2071,9 +2071,14 @@ html:not([data-mode='light']) .pi-invert-dark svg {
   }
   .sd-nav {
     position: sticky;
-    top: 92px;
-    max-height: calc(100vh - 110px);
+    top: 96px;
+    max-height: calc(100vh - 116px);
     overflow-y: auto;
+  }
+  /* the hero's text starts where the column beside the nav starts */
+  .page-hero-sd .wrap {
+    max-width: calc(var(--wrap) + 232px);
+    padding-inline-start: calc(232px + var(--gutter));
   }
   .sd-nav ol {
     flex-direction: column;
@@ -2083,7 +2088,8 @@ html:not([data-mode='light']) .pi-invert-dark svg {
   .sd-nav a {
     display: flex;
     width: 100%;
-    padding: 7px 12px;
+    padding: 4px 10px;
+    font-size: 0.875rem;
     border-color: transparent;
     border-radius: 8px;
     background: transparent;

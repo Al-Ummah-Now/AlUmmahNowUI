@@ -10,6 +10,7 @@ import { renderIso } from './iso.ts';
 import { renderSketch, renderSketchSpec } from './sketch.ts';
 import { PAGE_BUILDERS } from './pages/index.ts';
 import { renderSeq, seqFlows } from './seq.ts';
+import { finishBidi } from './text.ts';
 import { strings } from '../../i18n/index.ts';
 
 export type DiagramId = string;
@@ -18,10 +19,20 @@ export interface Rendered {
   wide: string;
   narrow: string;
   flows: string[];
+  /** the flow kinds each layout actually draws (one legend per layout) */
+  flowsWide?: string[];
+  flowsNarrow?: string[];
   steps: boolean;
 }
 
+/** Every diagram, in either language, with Arabic text set right to left and its Latin runs isolated. */
 export function diagram(id: DiagramId, locale: 'en' | 'ar'): Rendered {
+  const r = build(id, locale);
+  const drawn = (svg: string) => r.flows.filter((f) => svg.includes(`class="an-edge an-f-${f}`));
+  return { ...r, wide: finishBidi(r.wide), narrow: finishBidi(r.narrow), flowsWide: drawn(r.wide), flowsNarrow: drawn(r.narrow) };
+}
+
+function build(id: DiagramId, locale: 'en' | 'ar'): Rendered {
   // through strings(): {N…} numbers and {tk…} names are filled for the language
   const c = strings(locale).diagrams;
   const rtl = locale === 'ar';
