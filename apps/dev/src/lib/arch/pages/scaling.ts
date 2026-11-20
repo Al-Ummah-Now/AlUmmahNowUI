@@ -18,13 +18,13 @@ const copies: Builder = (d) => {
       nodes: [
         node('users', 'lucide/users', n.users, [0, 1.35]),
         node('workers', 'cloudflare/workers', n.workers, [1.3, 1.35]),
-        node('sockets', 'cloudflare/durable-objects', n.sockets, [2.65, 0]),
-        node('topics', 'cloudflare/durable-objects', n.topics, [4.1, 0]),
-        node('views', 'cloudflare/durable-objects', n.views, [2.65, 1.35]),
-        node('videoJson', 'cloudflare/r2', n.videoJson, [4.1, 1.35]),
-        node('queue', 'cloudflare/queues', n.queue, [2.65, 2.7]),
+        node('sockets', 'cloudflare/durable-objects', n.sockets, [3.15, 0]),
+        node('topics', 'cloudflare/durable-objects', n.topics, [4.35, 0]),
+        node('views', 'cloudflare/durable-objects', n.views, [3.15, 1.35]),
+        node('videoJson', 'cloudflare/r2', n.videoJson, [4.35, 1.35]),
+        node('queue', 'cloudflare/queues', n.queue, [2.9, 2.7]),
         node('container', 'cloudflare/containers', n.container, [4.1, 2.7]),
-        node('slots', 'cloudflare/durable-objects', n.slots, [2.65, 3.7]),
+        node('slots', 'cloudflare/durable-objects', n.slots, [2.9, 3.7]),
       ],
       groups: [
         { id: 'realtime', label: c.group.realtime, caption: c.caption.realtime, members: ['sockets', 'topics'] },
@@ -43,7 +43,7 @@ const copies: Builder = (d) => {
         { from: 'queue', to: 'container', flow: 'media', label: e.start, fromSide: 'e', toSide: 'w' },
       ],
     },
-    wide: { colW: 200, rowH: 160, pad: 36 },
+    wide: { colW: 300, rowH: 160, pad: 36 },
     narrow: {
       colW: 180,
       rowH: 100,

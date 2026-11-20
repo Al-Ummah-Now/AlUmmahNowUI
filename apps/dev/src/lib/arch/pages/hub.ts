@@ -59,7 +59,8 @@ const pattern: Builder = (d) => {
         { from: 'bg', to: 'data', fromSide: 'e', toSide: 'e', bend: 44 },
         { from: 'bg', to: 'ai', fromSide: 's', toSide: 'n' },
         { from: 'bg', to: 'container', fromSide: 'w', toSide: 'w', bend: 44 },
-        { from: 'data', to: 'edge', fromSide: 'e', toSide: 'e', bend: 70 },
+        // a short bend: a wide one ran along the cloud's outline
+        { from: 'data', to: 'edge', fromSide: 'e', toSide: 'e', bend: 20 },
       ],
     },
   };

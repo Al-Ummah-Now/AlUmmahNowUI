@@ -51,6 +51,17 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
     const plan = ar ? /قيد التطوير|قيد الطرح|قيد الإطلاق|مخطط له|قريبًا|ندرس|نخطط/ : /\b(in development|rolling out|planned|coming soon|we are (exploring|considering|studying|planning))\b/i;
     const pm = plan.exec(text);
     if (pm) out.push(`page: plan wording "${pm[0]}"`);
+    // prose (not figures): no sentence opens with a lowercase code name (api-videos, videos, al-ummah-now-media …);
+    // a host name (videos.alummahnow.net) heading a card is a name, not a sentence
+    if (!ar) {
+      const prose = parts.filter((p) => !p.frame).map((p) => p.s).join(' ');
+      const lc = /(?:^|[.!?]\s+)((?:[a-z][a-z0-9]*[-_][a-z0-9_-]+)|videos|processor|media|scheduler|auth|realtime)\b(?!\.[a-z])/.exec(prose);
+      if (lc) out.push(`page: a sentence starts with the code name "${lc[1]}"`);
+    }
+    // banned wording: one term per thing (a slot is «خانة متاحة», a bot check is «فحص الروبوتات»)
+    const banned = ar ? /خانة شاغرة|البوتات/ : null;
+    const bm = banned?.exec(text);
+    if (bm) out.push(`page: banned wording "${bm[0]}"`);
     for (const t of glossary) {
       // the pattern is src/lib/glossary.ts termPattern, passed in
       // singular and plural are one term (API / APIs): its first use is the earlier of either
@@ -193,6 +204,114 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
         const near = grow(b, d - 0.5);
         if (hit(near, box, 0) && !inside(near, box, 0)) out.push(`${name}: text "${t.textContent}" is within ${d} px of the border of group ${g.dataset.group}`);
       }
+    }
+    const edges = [...svg.querySelectorAll<SVGPathElement>('[data-edge]')];
+    const samplesOf = new Map<SVGPathElement, DOMPoint[]>();
+    const pts = (p: SVGPathElement, step = 3) => {
+      if (!samplesOf.has(p)) {
+        const len = p.getTotalLength();
+        const list: DOMPoint[] = [];
+        for (let d = 0; d <= len; d += step) list.push(p.getPointAtLength(d));
+        list.push(p.getPointAtLength(len));
+        samplesOf.set(p, list);
+      }
+      return samplesOf.get(p)!;
+    };
+    const distToBox = (pt: DOMPoint, q: B) => Math.hypot(Math.max(q.x - pt.x, 0, pt.x - (q.x + q.w)), Math.max(q.y - pt.y, 0, pt.y - (q.y + q.h)));
+    // a wire's label sits by its own wire: no more than 24 px from it
+    for (const lab of svg.querySelectorAll<SVGGElement>('[data-for]:not(.an-badge)')) {
+      const id = lab.getAttribute('data-for') ?? '';
+      const own = edges.find((p) => p.id === id || p.dataset.edge === id || `${svg.dataset.diagram}-${svg.dataset.variant}-${p.dataset.edge}` === id);
+      if (!own) continue;
+      const lb = bb(lab);
+      const gap = Math.min(...pts(own).map((pt) => distToBox(pt, lb)));
+      if (gap > 24) out.push(`${name}: label "${lab.textContent}" is ${Math.round(gap)} px from its wire (max 24)`);
+    }
+    // no wire label in any group's title row (edge to edge, down to the title's bottom)
+    for (const g of svg.querySelectorAll<SVGGElement>('[data-group]')) {
+      const gr = g.querySelector<SVGGraphicsElement>(':scope > rect');
+      const title = g.querySelector<SVGGraphicsElement>('.an-group-label, [data-tag] rect');
+      if (!gr || !title) continue;
+      const box = bb(gr);
+      const tb2 = bb(title);
+      const row = { x: box.x, y: box.y, w: box.w, h: tb2.y + tb2.h - box.y + 4 };
+      for (const lab of svg.querySelectorAll<SVGGElement>('[data-for]:not(.an-badge)')) if (hit(bb(lab), row, 0)) out.push(`${name}: label "${lab.textContent}" sits in the title row of group ${g.dataset.group}`);
+    }
+    // group boxes keep 6 px apart: never on (or hugging) another group's border, nested or side by side
+    {
+      const rects = [...svg.querySelectorAll<SVGGElement>('[data-group]')].map((g) => ({ id: g.dataset.group!, el: g.querySelector<SVGGraphicsElement>(':scope > rect') })).filter((x) => x.el).map((x) => ({ id: x.id, b: bb(x.el!) }));
+      for (let i = 0; i < rects.length; i++)
+        for (let j = i + 1; j < rects.length; j++) {
+          const a = rects[i]!.b;
+          const c = rects[j]!.b;
+          const nested = inside(a, c, 0.5) || inside(c, a, 0.5);
+          if (nested) {
+            const [inn, out2] = inside(a, c, 0.5) ? [a, c] : [c, a];
+            const gapIn = Math.min(inn.x - out2.x, inn.y - out2.y, out2.x + out2.w - (inn.x + inn.w), out2.y + out2.h - (inn.y + inn.h));
+            if (gapIn < 6) out.push(`${name}: group ${rects[i]!.id} lies within ${Math.max(0, Math.round(gapIn))} px of group ${rects[j]!.id}'s border`);
+          } else if (hit(grow(a, 6), c, 0)) out.push(`${name}: groups ${rects[i]!.id} and ${rects[j]!.id} are less than 6 px apart`);
+        }
+    }
+    // no wire crosses another within 16 px of either one's end (an arrowhead must read clearly)
+    for (const a of edges) {
+      const len = a.getTotalLength();
+      const tips = [...Array(9).keys()].flatMap((k) => [a.getPointAtLength(k * 2), a.getPointAtLength(Math.max(0, len - k * 2))]);
+      for (const b of edges) {
+        if (b === a || b.dataset.from === a.dataset.from || b.dataset.to === a.dataset.to || b.dataset.from === a.dataset.to || b.dataset.to === a.dataset.from) continue;
+        if (tips.some((t) => pts(b).some((q) => Math.hypot(q.x - t.x, q.y - t.y) < 2.5))) {
+          out.push(`${name}: wire ${b.dataset.from}→${b.dataset.to} crosses ${a.dataset.from}→${a.dataset.to} near its end`);
+        }
+      }
+    }
+    // isometric hero: a pipe's glow stays clear of every pill, and pills keep 6 px from platform edges
+    if (svg.classList.contains('an-iso')) {
+      const pillEls = [...svg.querySelectorAll<SVGGraphicsElement>('rect.an-iso-pill, rect.an-tag, rect.an-pipe-label')];
+      const pills = pillEls.map((el) => bb(el));
+      const pillName = (k: number) => (pillEls[k]!.parentElement?.textContent ?? '').trim().slice(0, 40);
+      for (const tube of svg.querySelectorAll<SVGPathElement>('.an-pipe-tube')) {
+        const half = parseFloat(getComputedStyle(tube).strokeWidth) / 2 + 3;
+        pills.forEach((pb, k) => {
+          if (pts(tube, 4).some((pt) => distToBox(pt, pb) < half)) out.push(`${name}: a pipe's glow touches the pill "${pillName(k)}"`);
+        });
+      }
+      for (const poly of svg.querySelectorAll<SVGPolygonElement>('[data-group] polygon')) {
+        const P = [...poly.points];
+        for (let k = 0; k < P.length; k++) {
+          const p0 = P[k]!;
+          const p1 = P[(k + 1) % P.length]!;
+          const n = Math.ceil(Math.hypot(p1.x - p0.x, p1.y - p0.y) / 2);
+          pills.forEach((pb, k) => {
+            for (let s = 0; s <= n; s++) {
+              const pt = new DOMPoint(p0.x + ((p1.x - p0.x) * s) / n, p0.y + ((p1.y - p0.y) * s) / n);
+              if (distToBox(pt, pb) < 6) {
+                out.push(`${name}: the pill "${pillName(k)}" lies within 6 px of the edge of platform ${poly.closest<SVGGElement>('[data-group]')?.dataset.group}`);
+                break;
+              }
+            }
+          });
+        }
+      }
+    }
+    // a hand-drawn sketch: no wire runs along the cloud outline (6 px clear)
+    const cloud = svg.querySelector<SVGPathElement>('.an-sk-cloud');
+    if (cloud) {
+      const cl = pts(cloud as unknown as SVGPathElement, 4);
+      for (const p of edges) {
+        const run = pts(p).filter((pt) => cl.some((q) => Math.hypot(q.x - pt.x, q.y - pt.y) < 6)).length;
+        if (run > 3) out.push(`${name}: wire ${p.dataset.from}→${p.dataset.to} runs along the cloud outline (${run * 3} px)`);
+      }
+    }
+    // line style follows the legend: dashed means control, and every control wire is dashed
+    for (const p of edges) {
+      if (svg.classList.contains('an-sketch') || svg.classList.contains('an-iso')) continue;
+      const dashed = (getComputedStyle(p).strokeDasharray || 'none') !== 'none';
+      const control = p.classList.contains('an-f-control');
+      if (dashed !== control) out.push(`${name}: wire ${p.dataset.from}→${p.dataset.to} is ${dashed ? 'dashed' : 'solid'} but ${control ? 'is' : "isn't"} control`);
+    }
+    // Arabic ranges read as words or isolated: never a bare «٣٦٠p–١٠٨٠p» or «٣٠–٩٠» the bidi algorithm can reverse
+    for (const { t } of tb) {
+      const raw = t.textContent ?? '';
+      if (/[\u0600-\u06ff]/.test(raw) && /[٠-٩]+[A-Za-z]*\s*[–-]\s*[٠-٩]+/.test(raw.replace(/[\u2066\u2069]/g, ''))) out.push(`${name}: Arabic text "${raw}" has a bare range that may read reversed`);
     }
     // a wire starts and ends at a tile's edge, never inside it
     for (const p of svg.querySelectorAll<SVGPathElement>('[data-edge]')) {

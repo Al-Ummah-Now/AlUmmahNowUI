@@ -65,6 +65,7 @@ const uid = `${id}-${headingId ?? 'fig'}`;
           <li><span class:list={['an-sw', `an-sw-f-${f}`, f === 'control' && 'an-sw-dash']} aria-hidden="true" />{lg[f]}</li>
         ))}
         {d.steps && id !== 'costs' && <li><span class="an-sw an-sw-step" aria-hidden="true">{formatNumber(1, locale)}</span>{lg.steps}</li>}
+        {d.lifelines && <li><span class="an-sw an-sw-life" aria-hidden="true" />{lg.lifeline}</li>}
       </ul>
     )
   ))}
