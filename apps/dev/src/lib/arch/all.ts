@@ -19,6 +19,8 @@ export interface Rendered {
   wide: string;
   narrow: string;
   flows: string[];
+  /** a sequence diagram: the legend names its dashed lifelines */
+  lifelines?: boolean;
   /** the flow kinds each layout actually draws (one legend per layout) */
   flowsWide?: string[];
   flowsNarrow?: string[];
@@ -28,7 +30,7 @@ export interface Rendered {
 /** Every diagram, in either language, with Arabic text set right to left and its Latin runs isolated. */
 export function diagram(id: DiagramId, locale: 'en' | 'ar'): Rendered {
   const r = build(id, locale);
-  const drawn = (svg: string) => r.flows.filter((f) => svg.includes(`class="an-edge an-f-${f}`));
+  const drawn = (svg: string) => r.flows.filter((f) => new RegExp(`class="an-edge[^"]*\\ban-f-${f}\\b`).test(svg));
   return { ...r, wide: finishBidi(r.wide), narrow: finishBidi(r.narrow), flowsWide: drawn(r.wide), flowsNarrow: drawn(r.narrow) };
 }
 
@@ -40,7 +42,7 @@ function build(id: DiagramId, locale: 'en' | 'ar'): Rendered {
   const page = PAGE_BUILDERS[id];
   if (page) {
     const b = page(c, locale);
-    if (b.kind === 'seq') return { wide: renderSeq(b.spec, b.wide, { rtl, variant: 'wide', locale }), narrow: renderSeq(b.spec, { ...b.narrow, narrow: true }, { rtl, variant: 'narrow', locale }), flows: seqFlows(b.spec), steps: true };
+    if (b.kind === 'seq') return { wide: renderSeq(b.spec, b.wide, { rtl, variant: 'wide', locale }), narrow: renderSeq(b.spec, { ...b.narrow, narrow: true }, { rtl, variant: 'narrow', locale }), flows: seqFlows(b.spec), steps: true, lifelines: true };
     if (b.kind === 'sketch') return { wide: renderSketchSpec(b.spec, b.wide, { rtl, variant: 'wide' }), narrow: renderSketchSpec(b.spec, b.narrow, { rtl, variant: 'narrow' }), flows: [], steps: false };
     return { wide: renderArch(b.spec, b.wide, ro('wide')), narrow: renderArch(b.spec, b.narrow, ro('narrow')), flows: flowsIn(b.spec.edges, b.narrow.edges), steps: b.spec.motion === 'steps' && b.spec.badges !== false };
   }

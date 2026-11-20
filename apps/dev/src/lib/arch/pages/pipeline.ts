@@ -243,14 +243,15 @@ const queues: Builder = (d) => {
         { from: 'transcode', to: 'media', flow: 'async', fromSide: 'e', toSide: 'w' },
         { from: 'check', to: 'apiC', flow: 'async', fromSide: 'e', toSide: 'w' },
         { from: 'events', to: 'processor', flow: 'async', fromSide: 'e', toSide: 'w' },
-        { from: 'media', to: 'transcode', flow: 'control', label: e.wait, fromSide: 'n', toSide: 'n' },
+        // "no free slot" is written on the media Worker's tile: the loop back to the queue carries no label
+        { from: 'media', to: 'transcode', flow: 'control', fromSide: 'n', toSide: 'n' },
         { from: 'media', to: 'tdlq', flow: 'async', label: e.giveUp, fromSide: 'e', toSide: 'w' },
         { from: 'apiC', to: 'dlq', flow: 'async', fromSide: 'e', toSide: 'w' },
         { from: 'processor', to: 'dlq', flow: 'async', label: e.giveUp, fromSide: 'e', toSide: 'w' },
         { from: 'dlq', to: 'processor', flow: 'async', label: e.read, fromSide: 's', toSide: 's' },
       ],
     },
-    wide: { colW: 200, rowH: 120, pad: 44 },
+    wide: { colW: 240, rowH: 120, pad: 44 },
     narrow: {
       colW: 186,
       rowH: 104,
@@ -267,7 +268,8 @@ const queues: Builder = (d) => {
         { from: 'api', to: 'transcode', flow: 'async', label: e.send, fromSide: 's', toSide: 'n' },
         { from: 'api', to: 'check', flow: 'async', fromSide: 's', toSide: 'n' },
         { from: 'api', to: 'events', flow: 'async', fromSide: 'w', toSide: 'w' },
-        { from: 'sweep', to: 'transcode', flow: 'control', label: e.requeue, fromSide: 's', toSide: 'e' },
+        // down the gap between the columns, not along the queues group's top border
+        { from: 'sweep', to: 'transcode', flow: 'control', label: e.requeue, fromSide: 'w', toSide: 'e' },
         { from: 'transcode', to: 'media', flow: 'async', fromSide: 's', toSide: 'n' },
         { from: 'check', to: 'apiC', flow: 'async', fromSide: 's', toSide: 'n' },
         { from: 'events', to: 'processor', flow: 'async', fromSide: 's', toSide: 'n' },

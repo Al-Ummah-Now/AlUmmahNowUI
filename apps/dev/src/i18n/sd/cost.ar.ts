@@ -33,7 +33,7 @@ export const costAr: typeof costEn = {
       containers: { title: 'حاويات بالثانية', note: 'لا خوادم مستأجَرة' },
       logs: { title: 'سجلات التحذير فقط', note: 'بلا سجلات استدعاء' },
       rum: { title: 'عيّنات سرعة الصفحات، {N1} من {N20}', note: 'من زيارات حقيقية' },
-      originals: { title: 'أصول محدودة', note: 'تُحفظ {N30}–{N90} يومًا' },
+      originals: { title: 'أصول محدودة', note: 'تُحفظ من {N30} إلى {N90} يومًا' },
       ai: { title: 'ذكاء تحت سقف', note: 'ميزانية يومية' },
       tests: { title: 'اختبارات خفيفة', note: 'مقطع واحد يُرمَّز' },
       dev: { title: 'موقع مطوّرين ثابت', note: 'لا يكلّف وهو خامل' },

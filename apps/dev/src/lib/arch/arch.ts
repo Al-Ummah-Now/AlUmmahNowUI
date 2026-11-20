@@ -88,6 +88,9 @@ export interface ArchSpec {
   hop?: number;
   /** false: no numbered badges (parallel lanes that share step timing) */
   badges?: boolean;
+  /** a wire label with no legal spot (beside its wire, clear of borders, tiles and title rows) is left out
+   * instead of failing the build: only for figures whose page text carries the same facts */
+  dropTightLabels?: boolean;
 }
 
 interface NodeBox {
@@ -381,6 +384,25 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     const step = Math.min(2 * G, Math.max(G, Math.floor((span - 2 * G) / Math.max(1, list.length) / G) * G));
     list.forEach((s2, j) => along.set(`${s2.edge}|${s2.end}`, centre + (j - (list.length - 1) / 2) * step));
   }
+  // a lone wire on a side lines up with its other end's spread port when that fits on its tile: a straight wire, no jog
+  // (wide layouts only: a phone column's tight lanes can turn the moved port into a detour)
+  if (opts.variant === 'wide') edgesSpec.forEach((e, i) => {
+    for (const [end, other] of [['from', 'to'], ['to', 'from']] as const) {
+      const id = end === 'from' ? e.from : e.to;
+      const side = end === 'from' ? chosen[i]!.fromSide : chosen[i]!.toSide;
+      const otherSide = other === 'from' ? chosen[i]!.fromSide : chosen[i]!.toSide;
+      const otherId = other === 'from' ? e.from : e.to;
+      const { rect, isNode } = rectOf(id);
+      if (!isNode || (slots.get(`${id}|${side}`)?.length ?? 0) !== 1 || (slots.get(`${otherId}|${otherSide}`)?.length ?? 0) < 2) continue;
+      const vertical = side === 'e' || side === 'w';
+      if (vertical !== (otherSide === 'e' || otherSide === 'w')) continue;
+      const v = along.get(`${i}|${other}`);
+      if (v == null) continue;
+      const lo = (vertical ? rect.y : rect.x) + G;
+      const hi = (vertical ? rect.y + rect.h : rect.x + rect.w) - G;
+      if (v >= lo && v <= hi) along.set(`${i}|${end}`, v);
+    }
+  });
 
   // pass 2: fixed ports, committed in order so wires keep apart
   const routed: Routed[] = edgesSpec.map((e, i) => {
@@ -414,6 +436,71 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     { x: b.x - 1, y: b.y - 1, w: 2, h: b.h + 2 },
     { x: b.x + b.w - 1, y: b.y - 1, w: 2, h: b.h + 2 },
   ]);
+  const labels: { rt: Routed; rect: Rect; text: string }[] = [];
+  /** each group's title row, edge to edge: a wire's label never sits beside another group's title */
+  const titleRows: Rect[] = [...groups.values()].map((gb) => ({ x: gb.box.x, y: gb.box.y, w: gb.box.w, h: gb.label.y + gb.label.h - gb.box.y + 4 }));
+  const LS = 11;
+  for (const rt of routed) {
+    if (!rt.e.label) continue;
+    const lw = textWidth(rt.e.label, LS) + 10;
+    const lh = 17;
+    const segs = rt.pts.slice(1).map((p, i) => ({ a: rt.pts[i]!, b: p, i, len: Math.abs(p.x - rt.pts[i]!.x) + Math.abs(p.y - rt.pts[i]!.y) }));
+    const order = [...segs].sort((p, q) => q.len - p.len);
+    const others = routed.filter((x) => x !== rt).flatMap((x) => segRects(x));
+    const cands: { q: Rect; wires: Rect[] }[] = [];
+    for (const s of order) {
+      const horiz = s.a.y === s.b.y;
+      // middle first, then outwards: a short segment may hold a label that overhangs its ends
+      for (const t of [0.5, 0.38, 0.62, 0.26, 0.74, 0.14, 0.86, 0.05, 0.95, 0.2, 0.8, 0.32, 0.68, 0.44, 0.56]) {
+        const p = { x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t };
+        if (!horiz && s.len < 10) continue;
+        const own = segRects(rt);
+        // 8, 12 or 16 px from the wire: still within 24 px of it, with more room to clear neighbours
+        for (const off of [CLEAR + 2, CLEAR + 6, CLEAR + 10]) {
+          if (horiz) {
+            cands.push({ q: { x: p.x - lw / 2, y: p.y - off - lh, w: lw, h: lh }, wires: [...others, ...own] });
+            cands.push({ q: { x: p.x - lw / 2, y: p.y + off, w: lw, h: lh }, wires: [...others, ...own] });
+          } else {
+            const right = { x: p.x + off, y: p.y - lh / 2, w: lw, h: lh };
+            const left = { x: p.x - off - lw, y: p.y - lh / 2, w: lw, h: lh };
+            for (const q of opts.rtl ? [left, right] : [right, left]) cands.push({ q, wires: [...others, ...own] });
+          }
+        }
+      }
+    }
+    // never on a wire or a group's border: a label always sits beside its line
+    for (const c of cands) c.wires.push(...borders);
+    // first choice: outside every group the wire doesn't run inside (a wire between two groups is labelled in
+    // the gap between them, not inside one of them), and never in a group's title row
+    const ends = [rt.e.from, rt.e.to].map((id) => nodes.get(id)?.box ?? groups.get(id)?.box).filter(Boolean) as Rect[];
+    const within = (b: Rect, g: Rect) => b.x >= g.x && b.y >= g.y && b.x + b.w <= g.x + g.w && b.y + b.h <= g.y + g.h;
+    const foreign = [...groups.values()].filter((gb) => !(ends.length === 2 && ends.every((b) => b !== gb.box && within(b, gb.box)))).map((gb) => gb.box);
+    let hit = cands.find((c) => free(c.q, c.wires) && !titleRows.some((t) => intersects(c.q, t, 4)) && !foreign.some((g) => intersects(c.q, g, 4)));
+    hit ??= cands.find((c) => free(c.q, c.wires) && !titleRows.some((t) => intersects(c.q, t, 4)));
+    if (!hit) {
+      // last resort: the nearest free spot around the wire's middle, still clear of every node and label
+      // last resort: the nearest free spot beside any point of the wire, still clear of every node, line and label
+      const own = segRects(rt);
+      // a label stays within 24 px of its wire, and never in a group's title row
+      for (let rad = 8; rad <= 24 && !hit; rad += 4)
+        for (const f of [0.5, 0.3, 0.7, 0.15, 0.85])
+          for (let k = 0; k < 24 && !hit; k++) {
+            const mid = pointAt(rt.pts, rt.len * f);
+            const a = (k / 24) * Math.PI * 2;
+            const q = { x: mid.x + Math.cos(a) * rad - lw / 2, y: mid.y + Math.sin(a) * rad - lh / 2, w: lw, h: lh };
+            if (free(q, [...others, ...own, ...borders]) && !titleRows.some((t) => intersects(q, t, 4))) hit = { q, wires: [] };
+          }
+    }
+    if (!hit) {
+      // on a phone a margin wire may have no room for its words: the step badge and the page text carry them
+      if (opts.variant === 'narrow' || spec.dropTightLabels) continue;
+      throw new Error(`${spec.id}/${opts.variant}: no room for the label "${rt.e.label}" (${rt.e.from} → ${rt.e.to})`);
+    }
+    const q = hit.q;
+    placed.push(q);
+    labels.push({ rt, rect: q, text: rt.e.label });
+  }
+
   const badges: { rt: Routed; c: Pt; n: number; at: number }[] = [];
   const BR = 11;
   for (const rt of routed) {
@@ -448,68 +535,6 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     }
     placed.push({ x: fb.c.x - BR, y: fb.c.y - BR, w: 2 * BR, h: 2 * BR });
     badges.push({ rt, c: fb.c, n: rt.e.step, at: fb.at });
-  }
-
-  const labels: { rt: Routed; rect: Rect; text: string }[] = [];
-  /** each group's title row, edge to edge: a wire's label never sits beside another group's title */
-  const titleRows: Rect[] = [...groups.values()].map((gb) => ({ x: gb.box.x, y: gb.box.y, w: gb.box.w, h: gb.label.y + gb.label.h - gb.box.y + 4 }));
-  const LS = 11;
-  for (const rt of routed) {
-    if (!rt.e.label) continue;
-    const lw = textWidth(rt.e.label, LS) + 10;
-    const lh = 17;
-    const segs = rt.pts.slice(1).map((p, i) => ({ a: rt.pts[i]!, b: p, i, len: Math.abs(p.x - rt.pts[i]!.x) + Math.abs(p.y - rt.pts[i]!.y) }));
-    const order = [...segs].sort((p, q) => q.len - p.len);
-    const others = routed.filter((x) => x !== rt).flatMap((x) => segRects(x));
-    const cands: { q: Rect; wires: Rect[] }[] = [];
-    for (const s of order) {
-      const horiz = s.a.y === s.b.y;
-      for (const t of [0.5, 0.38, 0.62, 0.26, 0.74, 0.14, 0.86]) {
-        const p = { x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t };
-        if (horiz && s.len < lw + 16) continue;
-        if (!horiz && s.len < 14) continue;
-        const own = segRects(rt);
-        if (horiz) {
-          cands.push({ q: { x: p.x - lw / 2, y: p.y - CLEAR - 2 - lh, w: lw, h: lh }, wires: [...others, ...own] });
-          cands.push({ q: { x: p.x - lw / 2, y: p.y + CLEAR + 2, w: lw, h: lh }, wires: [...others, ...own] });
-        } else {
-          const right = { x: p.x + CLEAR + 2, y: p.y - lh / 2, w: lw, h: lh };
-          const left = { x: p.x - CLEAR - 2 - lw, y: p.y - lh / 2, w: lw, h: lh };
-          for (const q of opts.rtl ? [left, right] : [right, left]) cands.push({ q, wires: [...others, ...own] });
-        }
-      }
-    }
-    // never on a wire or a group's border: a label always sits beside its line
-    for (const c of cands) c.wires.push(...borders);
-    // first choice: outside every group the wire doesn't run inside (a wire between two groups is labelled in
-    // the gap between them, not inside one of them), and never in a group's title row
-    const ends = [rt.e.from, rt.e.to].map((id) => nodes.get(id)?.box ?? groups.get(id)?.box).filter(Boolean) as Rect[];
-    const within = (b: Rect, g: Rect) => b.x >= g.x && b.y >= g.y && b.x + b.w <= g.x + g.w && b.y + b.h <= g.y + g.h;
-    const foreign = [...groups.values()].filter((gb) => !(ends.length === 2 && ends.every((b) => b !== gb.box && within(b, gb.box)))).map((gb) => gb.box);
-    let hit = cands.find((c) => free(c.q, c.wires) && !titleRows.some((t) => intersects(c.q, t, 4)) && !foreign.some((g) => intersects(c.q, g, 4)));
-    hit ??= cands.find((c) => free(c.q, c.wires) && !titleRows.some((t) => intersects(c.q, t, 4)));
-    hit ??= cands.find((c) => free(c.q, c.wires));
-    if (!hit) {
-      // last resort: the nearest free spot around the wire's middle, still clear of every node and label
-      // last resort: the nearest free spot beside any point of the wire, still clear of every node, line and label
-      const own = segRects(rt);
-      for (let rad = 8; rad < 130 && !hit; rad += 6)
-        for (const f of [0.5, 0.3, 0.7, 0.15, 0.85])
-          for (let k = 0; k < 24 && !hit; k++) {
-            const mid = pointAt(rt.pts, rt.len * f);
-            const a = (k / 24) * Math.PI * 2;
-            const q = { x: mid.x + Math.cos(a) * rad - lw / 2, y: mid.y + Math.sin(a) * rad - lh / 2, w: lw, h: lh };
-            if (free(q, [...others, ...own, ...borders])) hit = { q, wires: [] };
-          }
-    }
-    if (!hit) {
-      // on a phone a margin wire may have no room for its words: the step badge and the page text carry them
-      if (opts.variant === 'narrow') continue;
-      throw new Error(`${spec.id}/${opts.variant}: no room for the label "${rt.e.label}" (${rt.e.from} → ${rt.e.to})`);
-    }
-    const q = hit.q;
-    placed.push(q);
-    labels.push({ rt, rect: q, text: rt.e.label });
   }
 
   // 6. render

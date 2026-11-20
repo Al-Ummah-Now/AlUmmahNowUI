@@ -26,7 +26,7 @@ export function pipeline(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
     { from: 'media', to: 'container', flow: 'media', label: e.start, step: 9, fromSide: 'e', toSide: 'w' },
     { from: 'originals', to: 'container', flow: 'media', label: e.read, step: 10, fromSide: 'e', toSide: 'n' },
     { from: 'container', to: 'renditions', flow: 'media', label: e.write, step: 11, fromSide: 'e', toSide: 'w' },
-    { from: 'player', to: 'apiVideos', flow: 'request', label: e.ask, step: 12, fromSide: 's', toSide: 's' },
+    { from: 'player', to: 'apiVideos', flow: 'request', label: e.ask, step: 12, fromSide: 'n', toSide: 'n' },
     { from: 'renditions', to: 'cdn', flow: 'delivery', label: e.cdnOut, fromSide: 'n', toSide: 's' },
     { from: 'bunny', to: 'bunnyCdn', flow: 'delivery', label: e.bunnyOut, fromSide: 'e', toSide: 'w' },
     { from: 'cdn', to: 'player', flow: 'delivery', label: e.r2, step: 13, fromSide: 'e', toSide: 'w' },
@@ -39,20 +39,20 @@ export function pipeline(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
     motion: 'steps',
     hop: 0.85,
     nodes: [
-      node('creator', 'lucide/user', [0, 1]),
+      node('creator', 'lucide/user', [-0.3, 1]),
       node('apiVideos', 'cloudflare/workers', [1.15, 1]),
       node('bunny', 'brand/bunny-stream', [2.4, -0.32]),
-      node('bunnyCdn', 'brand/bunny-cdn', [5.8, -0.32]),
+      node('bunnyCdn', 'brand/bunny-cdn', [6.05, -0.32]),
       node('originals', 'cloudflare/r2', [2.4, 1]),
       node('queue', 'cloudflare/queues', [2.4, 2.15]),
       node('media', 'cloudflare/workers', [3.55, 2.15]),
       node('slots', 'cloudflare/durable-objects', [3.55, 3.2]),
       node('container', 'cloudflare/containers', [4.7, 2.15]),
-      node('renditions', 'cloudflare/r2', [5.8, 2.15]),
-      node('cdn', 'cloudflare/cache', [5.8, 1.05]),
-      node('player', 'lucide/play', [7.05, 1.05]),
+      node('renditions', 'cloudflare/r2', [6.05, 2.15]),
+      node('cdn', 'cloudflare/cache', [6.05, 1.05]),
+      node('player', 'lucide/play', [7.35, 1.05]),
       node('processor', 'cloudflare/workers', [1.15, 4.45]),
-      { ...node('workersAi', 'cloudflare/workers-ai', [2.4, 4.45]), rate: [aiRateLine(cc, locale)], meter: { lane: 'ai', usd: aiChecksUsd() } },
+      { ...node('workersAi', 'cloudflare/workers-ai', [2.7, 4.45]), rate: [aiRateLine(cc, locale)], meter: { lane: 'ai', usd: aiChecksUsd() } },
       node('dlq', 'cloudflare/queues', [2.4, 3.3]),
     ],
     groups: [
@@ -62,7 +62,7 @@ export function pipeline(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
     ],
     edges,
   };
-  const wide: ArchLayout = { colW: 190, rowH: 160 };
+  const wide: ArchLayout = { colW: 230, rowH: 160 };
   const narrow: ArchLayout = {
     colW: 180,
     rowH: 100,

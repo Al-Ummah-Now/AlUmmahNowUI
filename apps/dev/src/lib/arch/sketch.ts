@@ -147,15 +147,22 @@ export interface SketchLayout {
 
 const NODE_H = 124;
 
-export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: { rtl: boolean; variant: string }): string {
+/**
+ * `extra` widens the margins (screen left and right) so every curve stays inside the cloud: the first pass
+ * measures how far the curves bow out and, when one would run along the outline, draws again with the room.
+ */
+export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: { rtl: boolean; variant: string }, extra = { l: 0, r: 0 }): string {
   const spec = layout.edges ? { ...spec0, edges: layout.edges } : spec0;
   const prefix = `${spec.id}-${opts.variant}`;
   const pen = new Pen(prefix);
   const side = 22; // the margin the rotated side note lives in
   const mx = 64 + (spec.around ? side : 0);
+  // margins in drawing order (before the Arabic mirror): A is the start side, B the end side
+  const mxA = mx + (opts.rtl ? extra.r : extra.l);
+  const mxB = mx + (opts.rtl ? extra.l : extra.r);
   const top = 96 + (layout.topGap ?? 0);
   const rows = Math.max(...spec.nodes.map((n) => (layout.at?.[n.id] ?? n.at)[1])) + 1;
-  const W = Math.round(layout.cols * layout.colW + 2 * mx);
+  const W = Math.round(layout.cols * layout.colW + mxA + mxB);
   const footY = top + rows * layout.rowH + 10 + (layout.footGap ?? 0);
   const Hc = Math.round(footY + (spec.foot?.length ? 142 : 20) + 40);
   const mirror = (x: number) => (opts.rtl ? W - x : x);
@@ -164,16 +171,16 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
   const box = new Map<string, { x: number; y: number; w: number; h: number }>();
   for (const n of spec.nodes) {
     const [c, r0] = layout.at?.[n.id] ?? n.at;
-    const x = mx + c * layout.colW + (layout.colW - layout.nodeW) / 2;
+    const x = mxA + c * layout.colW + (layout.colW - layout.nodeW) / 2;
     const y = top + r0 * layout.rowH + (layout.rowH - NODE_H) / 2;
     box.set(n.id, { x: opts.rtl ? W - x - layout.nodeW : x, y, w: layout.nodeW, h: NODE_H });
   }
   const foot = spec.foot ?? [];
-  const footW = (W - 2 * mx) / Math.max(1, foot.length);
+  const footW = (W - mxA - mxB) / Math.max(1, foot.length);
   // a title wider than its slot wraps to two lines (the hand-drawn face is wide)
   const footLines = new Map<string, string[]>();
   foot.forEach((f, i) => {
-    const cx = mx + footW * (i + 0.5);
+    const cx = mxA + footW * (i + 0.5);
     const room = footW - 16;
     const words = f.title.split(' ');
     let lines = [f.title];
@@ -234,7 +241,16 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
     (1 - t) * (1 - t) * c.a[1] + 2 * (1 - t) * t * c.ctrl[1] + t * t * c.b[1],
   ];
   const samples = curves.flatMap((c) => Array.from({ length: 61 }, (_, k) => at(c, k / 60)));
+  // the cloud keeps the base margin; extra room goes between it and the tiles
   const cloudBox = spec.around ? { x: mx - 20, y: 74, w: W - 2 * mx + 40, h: Hc - 74 - 28 } : null;
+  if (cloudBox && extra.l === 0 && extra.r === 0) {
+    // the outline's bumps bow outward only, so 22 px inside its rectangle keeps a curve clear of it
+    const CL = 22;
+    const xs = samples.map((p) => p[0]);
+    const needL = Math.ceil(Math.max(0, cloudBox.x + CL - Math.min(...xs)));
+    const needR = Math.ceil(Math.max(0, Math.max(...xs) - (cloudBox.x + cloudBox.w - CL)));
+    if (needL || needR) return renderSketchSpec(spec0, layout, opts, { l: needL, r: needR });
+  }
   const BAND = 16;
   const cloudBand: { x: number; y: number; w: number; h: number }[] = cloudBox
     ? [
@@ -261,21 +277,22 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
     const tw = textWidth(e.tag, 15, true) + 18;
     const th = 26;
     let best: Box | null = null;
-    for (const t of [e.tagAt ?? 0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8, 0.12, 0.88]) {
+    for (const t of [e.tagAt ?? 0.5, 0.45, 0.55, 0.4, 0.6, 0.35, 0.65, 0.3, 0.7, 0.25, 0.75, 0.2, 0.8, 0.15, 0.85, 0.1, 0.9]) {
       const p = at(c, t);
       const q2 = at(c, Math.min(1, t + 0.01));
       const dl = Math.hypot(q2[0] - p[0], q2[1] - p[1]) || 1;
       const n: [number, number] = [-(q2[1] - p[1]) / dl, (q2[0] - p[0]) / dl];
-      const off = Math.abs(n[0]) * (tw / 2) + Math.abs(n[1]) * (th / 2) + 8;
-      for (const [s, k] of [[1, 1], [-1, 1], [1, 1.7], [-1, 1.7], [1, 2.5], [-1, 2.5], [1, 3.3], [-1, 3.3]] as const) {
-        const cx = p[0] + n[0] * off * k * s;
-        const cy = p[1] + n[1] * off * k * s;
+      // 8 to 20 px between the tag and its curve: beside it, never far from it (the gate allows 24)
+      const half = Math.abs(n[0]) * (tw / 2) + Math.abs(n[1]) * (th / 2);
+      for (const [s, gap] of [[1, 8], [-1, 8], [1, 14], [-1, 14], [1, 20], [-1, 20]] as const) {
+        const cx = p[0] + n[0] * (half + gap) * s;
+        const cy = p[1] + n[1] * (half + gap) * s;
         const q = { x: cx - tw / 2, y: cy - th / 2, w: tw, h: th };
         if (q.x < 8 || q.y < 60 || q.x + q.w > W - 8 || q.y + q.h > Hc - 8) continue;
         if (samples.some((pt) => hits(q, pt, 5))) continue;
         // never on the cloud's bumpy outline: keep clear of a band around its edges
         if (cloudBand.some((e) => overlaps(q, e, 0))) continue;
-        if (nodeBoxes.some((nb) => overlaps(q, nb, 6)) || placedTags.some((pb) => overlaps(q, pb, 6))) continue;
+        if (nodeBoxes.some((nb) => overlaps(q, { x: nb.x - 4, y: nb.y - 4, w: nb.w + 12, h: nb.h + 12 }, 6)) || placedTags.some((pb) => overlaps(q, pb, 6))) continue;
         best = q;
         break;
       }
