@@ -1,0 +1,21 @@
+---
+/** Previous and next page of the System design section, at the bottom of each page. */
+import type { Locale, PageSlug } from '../lib/pages';
+import type { Strings } from '../i18n';
+import { sdEntries } from '../lib/sd-nav';
+
+interface Props {
+  locale: Locale;
+  slug: PageSlug;
+  t: Strings;
+}
+const { locale, slug, t } = Astro.props;
+const entries = sdEntries(locale, t);
+const i = entries.findIndex((e) => e.slug === slug);
+const prev = i > 0 ? entries[i - 1] : undefined;
+const next = i < entries.length - 1 ? entries[i + 1] : undefined;
+---
+<nav class="sd-pager" aria-label={t.sdNav.pager}>
+  {prev ? <a class="sd-pager-prev" href={prev.href} rel="prev"><span class="sd-pager-dir">{t.sdNav.prev}</span><span class="sd-pager-title">{prev.title}</span></a> : <span />}
+  {next && <a class="sd-pager-next" href={next.href} rel="next"><span class="sd-pager-dir">{t.sdNav.next}</span><span class="sd-pager-title">{next.title}</span></a>}
+</nav>

@@ -114,7 +114,11 @@ for (const slug of PAGES)
           await fig.evaluate((el) => el.scrollIntoView({ block: 'start' }));
           await page.evaluate(() => window.scrollBy(0, -72));
           await page.screenshot({ path: join(out, `${tag}-frame-${i + 2}-diagram-${i + 1}.png`) });
+          // the sticky site header would sit over a tall diagram's top: unpin it for the element shot
+          // (a CSSOM change, which the page's CSP allows)
+          await page.evaluate(() => document.querySelectorAll<HTMLElement>('header').forEach((h) => h.style.setProperty('position', 'static')));
           await svg.screenshot({ path: join(out, `${tag}-diagram-${id}.png`) });
+          await page.evaluate(() => document.querySelectorAll<HTMLElement>('header').forEach((h) => h.style.removeProperty('position')));
         }
         await page.evaluate((h) => window.scrollTo(0, h), H);
         if (!ONLY) await page.screenshot({ path: join(out, `${tag}-frame-${figs + 2}-end.png`) });

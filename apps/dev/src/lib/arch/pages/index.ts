@@ -11,6 +11,7 @@ import { builders as scaling } from './scaling.ts';
 import { builders as clients } from './clients.ts';
 import { builders as release } from './release.ts';
 import { builders as hub } from './hub.ts';
+import { builders as pipeline } from './pipeline.ts';
 
 export const PAGE_BUILDERS: Record<string, Builder> = {
   ...delivery,
@@ -24,4 +25,5 @@ export const PAGE_BUILDERS: Record<string, Builder> = {
   ...clients,
   ...release,
   ...hub,
+  ...pipeline,
 };

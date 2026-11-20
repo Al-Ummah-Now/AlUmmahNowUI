@@ -1,0 +1,20 @@
+---
+/**
+ * A sentence with inline links: `[label](https://…)` becomes a link, everything else stays text.
+ * For the few places a developer would click through to a repo or a doc page; never a citation list.
+ */
+interface Props {
+  text: string;
+}
+const { text } = Astro.props;
+const parts: ({ t: string } | { label: string; href: string })[] = [];
+const re = /\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g;
+let last = 0;
+for (const m of text.matchAll(re)) {
+  if (m.index! > last) parts.push({ t: text.slice(last, m.index) });
+  parts.push({ label: m[1]!, href: m[2]! });
+  last = m.index! + m[0].length;
+}
+if (last < text.length) parts.push({ t: text.slice(last) });
+---
+{parts.map((p) => ('t' in p ? p.t : <a href={p.href} rel="external">{p.label}</a>))}

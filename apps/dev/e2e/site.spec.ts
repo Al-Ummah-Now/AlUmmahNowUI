@@ -66,7 +66,7 @@ test('Light / Dark: www’s icon button, saved per device, applied before paint 
   await expect(toggle).toHaveAccessibleName('Switch to light mode');
   await expect(toggle.locator('svg.lucide-sun')).toBeVisible();
   await expect(toggle).toBeFocused();
-  await page.goto('/ar/waqf/');
+  await page.goto('/ar/contact/');
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
   await expect(page.getByTestId('theme-toggle')).toHaveAccessibleName('التبديل إلى الوضع الفاتح');
 });
@@ -168,7 +168,7 @@ test('the home page lists as live today only what the registry says is live; rea
   }
 });
 
-test.describe('light and dark: the hero, page heads, waqf panel and footer change with the mode', () => {
+test.describe('light and dark: the hero, page heads and footer change with the mode', () => {
   const bg = (page: import('@playwright/test').Page, sel: string) =>
     page.locator(sel).first().evaluate((el) => {
       const s = getComputedStyle(el);
@@ -181,7 +181,7 @@ test.describe('light and dark: the hero, page heads, waqf panel and footer chang
       await page.emulateMedia({ colorScheme: scheme });
       await page.goto('/en/');
       await expect(page.locator('html')).not.toHaveAttribute('data-mode', /./);
-      for (const sel of ['.hero', '.waqf-teaser', '.site-footer']) {
+      for (const sel of ['.hero', '.site-footer']) {
         const v = await bg(page, sel);
         if (scheme === 'dark') expect(v, sel).toMatch(DARK_BLUE);
         else expect(v, sel).not.toMatch(DARK_BLUE);
@@ -208,7 +208,7 @@ test.describe('light and dark: the hero, page heads, waqf panel and footer chang
     await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
     expect(await bg(page, '.hero')).toBe(after);
     // the saved choice wins over the device on another page, from the first paint
-    await page.goto('/ar/waqf/');
+    await page.goto('/ar/contact/');
     expect(await bg(page, '.page-hero')).not.toMatch(DARK_BLUE);
     await page.getByTestId('theme-toggle').click();
     await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');

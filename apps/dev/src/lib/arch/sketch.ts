@@ -155,7 +155,7 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
   const rows = Math.max(...spec.nodes.map((n) => (layout.at?.[n.id] ?? n.at)[1])) + 1;
   const W = Math.round(layout.cols * layout.colW + 2 * mx);
   const footY = top + rows * layout.rowH + 10 + (layout.footGap ?? 0);
-  const Hc = Math.round(footY + (spec.foot?.length ? 120 : 20) + 40);
+  const Hc = Math.round(footY + (spec.foot?.length ? 142 : 20) + 40);
   const mirror = (x: number) => (opts.rtl ? W - x : x);
   const ar = hasArabic(spec.heading);
   const fam = ar ? 'an-hand-ar' : 'an-hand';
@@ -168,10 +168,20 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
   }
   const foot = spec.foot ?? [];
   const footW = (W - 2 * mx) / Math.max(1, foot.length);
+  // a title wider than its slot wraps to two lines (the hand-drawn face is wide)
+  const footLines = new Map<string, string[]>();
   foot.forEach((f, i) => {
     const cx = mx + footW * (i + 0.5);
-    const tw = Math.max(64, textWidth(f.title, 16, true) + 12);
-    box.set(f.id, { x: mirror(cx) - tw / 2, y: footY, w: tw, h: 92 });
+    const room = footW - 16;
+    const words = f.title.split(' ');
+    let lines = [f.title];
+    if (textWidth(f.title, 18, true) > room && words.length > 1) {
+      const half = Math.ceil(words.length / 2);
+      lines = [words.slice(0, half).join(' '), words.slice(half).join(' ')];
+    }
+    footLines.set(f.id, lines);
+    const tw = Math.max(64, ...lines.map((l) => textWidth(l, 16, true) + 12));
+    box.set(f.id, { x: mirror(cx) - tw / 2, y: footY, w: tw, h: 92 + (lines.length - 1) * 30 });
   });
   const anchor = (id: string, sd: 'n' | 'e' | 's' | 'w' | undefined, other: { x: number; y: number; w: number; h: number }): [number, number] => {
     const b = box.get(id)!;
@@ -283,7 +293,8 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
     const b = box.get(f.id)!;
     o.push(`<g class="an-node an-sk-obs" data-node="${f.id}"><rect data-box class="an-sk-hit" x="${r(b.x)}" y="${r(b.y - 4)}" width="${r(b.w)}" height="${b.h}"/>`);
     o.push(useIcon(prefix, f.icon, b.x + b.w / 2 - 20, b.y, 40));
-    o.push(`<text class="an-sk-name ${fam}" x="${r(b.x + b.w / 2)}" y="${r(b.y + 62)}" text-anchor="middle"${hasArabic(f.title) ? ' direction="rtl"' : ''}>${esc(f.title)}</text></g>`);
+    (footLines.get(f.id) ?? [f.title]).forEach((l, k) => o.push(`<text class="an-sk-name ${fam}" x="${r(b.x + b.w / 2)}" y="${r(b.y + 62 + k * 30)}" text-anchor="middle"${hasArabic(l) ? ' direction="rtl"' : ''}>${esc(l)}</text>`));
+    o.push('</g>');
   }
   o.push(`</g><g class="an-labels">${tags.join('')}</g></svg>`);
   return o.join('');

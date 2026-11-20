@@ -23,6 +23,8 @@ export interface ArchNode {
   role?: string | string[];
   /** grid position (column, row) — fractions allowed */
   at: [number, number];
+  /** field rows (a table's columns, a message's fields): code type, aligned to the start edge under a rule */
+  list?: string[];
   /** price lines (sourced rates), under the role */
   rate?: string[];
   /** a cost meter: final USD per scenario (null = unknown); it ticks while the flow reaches this node */
@@ -94,7 +96,9 @@ interface NodeBox {
   cy: number;
   box: Rect;
   icon: { x: number; y: number; s: number };
-  lines: { text: string; y: number; size: number; bold: boolean; kind?: 'rate' | 'meter' | 'total' }[];
+  lines: { text: string; y: number; size: number; bold: boolean; kind?: 'rate' | 'meter' | 'total' | 'field' }[];
+  /** y of the rule above the field rows */
+  rule?: number;
 }
 interface GroupBox {
   g: ArchGroup;
@@ -147,8 +151,11 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   // the gap between a tile's lines: Arabic is set in Noto Naskh, whose line box is taller than Latin's
   // (and taller still on Linux), so Arabic tiles get more room between lines
   const lgOf = (_n: ArchNode) => (opts.locale === 'ar' ? 6 : 3);
+  const FS = RS - 0.5;
+  /** code type: every glyph about 0.6 em */
+  const codeW = (x: string) => [...x].length * FS * 0.62;
   const nodeW = (n: ArchNode) =>
-    Math.max(S + 20, textWidth(n.name, NS, true) + 16, ...rolesOf(n).map((x) => textWidth(x, RS) + 16), ...(n.rate ?? []).map((x) => textWidth(x, RT) + 16), n.meter ? moneyWidest(opts, n.meter.usd) + 18 : 0, n.total ? moneyWidest(opts, n.total.usd) + 18 : 0);
+    Math.max(S + 20, ...(n.list ?? []).map((x) => codeW(x) + 26), textWidth(n.name, NS, true) + 16, ...rolesOf(n).map((x) => textWidth(x, RS) + 16), ...(n.rate ?? []).map((x) => textWidth(x, RT) + 16), n.meter ? moneyWidest(opts, n.meter.usd) + 18 : 0, n.total ? moneyWidest(opts, n.total.usd) + 18 : 0);
   const widest = Math.max(...spec.nodes.map(nodeW));
   // a column always leaves a wire channel between neighbouring tiles
   layout = { ...layout, colW: Math.max(layout.colW, Math.ceil(widest + 46)) };
@@ -157,7 +164,7 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   const nodeH = (n: ArchNode) => {
     const roles = n.role ? (Array.isArray(n.role) ? n.role : [n.role]) : [];
     const LG = lgOf(n);
-    return 8 + S + 7 + NS + LG + roles.length * (RS + LG) + (n.rate ?? []).length * (RT + LG) + (n.meter || n.total ? MS + 3 + LG : 0) + 6;
+    return 8 + S + 7 + NS + LG + roles.length * (RS + LG) + (n.rate ?? []).length * (RT + LG + 2) + (n.meter || n.total ? MS + 3 + LG : 0) + (n.list?.length ? 9 + n.list.length * (FS + LG + 2) : 0) + 6;
   };
   // per row (same grid y): tiles side by side share a height
   const rowOf = (n: ArchNode) => (layout.at?.[n.id] ?? n.at)[1];
@@ -177,11 +184,16 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     roles.forEach((x, i) => lines.push({ text: x, y: box.y + 8 + S + 7 + NS + LG + (i + 1) * (RS + LG) - LG, size: RS, bold: false }));
     let ly = box.y + 8 + S + 7 + NS + LG + roles.length * (RS + LG);
     rates.forEach((x) => {
-      ly += RT + LG;
+      ly += RT + LG + 2;
       lines.push({ text: x, y: ly - 3, size: RT, bold: false, kind: 'rate' });
     });
     if (money0) lines.push({ text: money(opts, money0.usd[opts.scenario ?? 'one']), y: ly + MS + LG, size: MS, bold: true, kind: n.meter ? 'meter' : 'total' });
-    nodes.set(n.id, { n, cx, cy, box, icon: { x: cx - S / 2, y: box.y + 8, s: S }, lines });
+    let rule: number | undefined;
+    if (n.list?.length) {
+      rule = ly + 5;
+      n.list.forEach((x, i) => lines.push({ text: x, y: ly + 9 + (i + 1) * (FS + LG + 2) - LG - 1, size: FS, bold: false, kind: 'field' }));
+    }
+    nodes.set(n.id, { n, cx, cy, box, icon: { x: cx - S / 2, y: box.y + 8, s: S }, lines, rule });
   }
 
   // 2. groups around their members (inner first)
@@ -226,6 +238,7 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     nb.cy += oy;
     nb.icon = { ...nb.icon, x: nb.cx - nb.icon.s / 2, y: nb.icon.y + oy };
     nb.lines = nb.lines.map((l) => ({ ...l, y: l.y + oy }));
+    if (nb.rule !== undefined) nb.rule += oy;
   }
   for (const gb of groups.values()) {
     gb.box = { ...gb.box, x: mx(gb.box.x, gb.box.w), y: gb.box.y + oy };
@@ -573,7 +586,13 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     out.push(`<g class="an-node" data-node="${nb.n.id}">`);
     out.push(`<rect class="an-node-box" x="${r(box.x)}" y="${r(box.y)}" width="${r(box.w)}" height="${r(box.h)}" rx="10"/>`);
     out.push(useIcon(prefix, nb.n.icon, nb.icon.x, nb.icon.y, nb.icon.s));
+    if (nb.rule !== undefined) out.push(`<path class="an-field-rule" d="M${r(box.x + 10)} ${r(nb.rule)} H${r(box.x + box.w - 10)}"/>`);
     for (const l of nb.lines) {
+      if (l.kind === 'field') {
+        // identifiers read left to right in both languages; on an Arabic page the column hugs the right edge
+        out.push(`<text class="an-field" x="${r(opts.rtl ? box.x + box.w - 13 : box.x + 13)}" y="${r(l.y)}" text-anchor="${opts.rtl ? 'end' : 'start'}" direction="ltr" font-size="${l.size}">${esc(l.text)}</text>`);
+        continue;
+      }
       const cls = l.kind === 'rate' ? 'an-rate' : l.kind === 'meter' ? 'an-meter' : l.kind === 'total' ? 'an-total' : l.bold ? 'an-name' : 'an-role';
       let data = '';
       if (l.kind === 'meter' && nb.n.meter) data = ` data-meter data-lane="${nb.n.meter.lane}" data-win="${meterWin(nb.n.id).map(f4).join(',')}" data-usd="${esc(JSON.stringify(nb.n.meter.usd))}"`;

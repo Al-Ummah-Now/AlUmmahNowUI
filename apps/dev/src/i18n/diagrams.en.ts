@@ -14,8 +14,11 @@ import { scalingEn } from './sd/scaling.en.ts';
 import { clientsEn } from './sd/clients.en.ts';
 import { releaseEn } from './sd/release.en.ts';
 import { hubEn } from './sd/hub.en.ts';
+import { pipelineEn } from './sd/pipeline.en.ts';
 
 export const diagramsEn = {
+  why: 'Why it is built this way:',
+  tradeoff: 'What it costs:',
   legend: {
     title: 'Reading the diagram',
     request: 'requests',
@@ -150,16 +153,16 @@ export const diagramsEn = {
   hero: {
     title: 'Al Ummah Now, from above',
     desc: 'An isometric view of the platform: people and their devices on the left, the Cloudflare account in the middle with Workers, Containers, R2, D1, KV, Queues and Workers AI on it, bunny.net beside it, and the providers we call on the right. Glowing connectors carry requests, uploads and playback between them.',
-    platform: { cfCompute: 'Cloudflare · compute', cfData: 'Cloudflare · data', people: 'People and apps', cf: 'Cloudflare', bunny: 'bunny.net', providers: 'Providers' },
+    platform: { cfCompute: 'Cloudflare · compute', cfData: 'Cloudflare · files, SQL, key-value', people: 'People and apps', cf: 'Cloudflare', bunny: 'bunny.net', providers: 'Providers' },
     node: {
       browser: 'Browsers',
       phone: 'Apps',
       tv: 'TVs',
       workers: 'Workers',
       containers: 'Containers',
-      r2: 'R2 storage',
-      d1: 'D1 databases',
-      kv: 'KV store',
+      r2: 'R2',
+      d1: 'D1',
+      kv: 'KV',
       queues: 'Queues',
       ai: 'Workers AI',
       cdn: 'Cloudflare CDN',
@@ -254,5 +257,6 @@ export const diagramsEn = {
     clients: clientsEn,
     release: releaseEn,
     hub: hubEn,
+    pipeline: pipelineEn,
   },
 };
