@@ -53,8 +53,9 @@
   --an-label-bg: rgb(255 255 255 / 0.94);
   --an-request: #1f6feb;
   --an-media: #a33ad6;
-  --an-delivery: #0d8a54;
-  --an-async: #c56a00;
+  /* light orange and green are dark enough for a white step number (≥ 4.5:1) */
+  --an-delivery: #0b7a4a;
+  --an-async: #a85a00;
   --an-control: #6a7380;
   --an-mono: #000000;
   --an-glow: 0;
@@ -421,8 +422,8 @@ html[data-mode='dark'] .an .an-edge {
 .an-legend-wrap {
   --sw-request: #1f6feb;
   --sw-media: #a33ad6;
-  --sw-delivery: #0d8a54;
-  --sw-async: #c56a00;
+  --sw-delivery: #0b7a4a;
+  --sw-async: #a85a00;
   --sw-control: #6a7380;
 }
 html[data-mode='dark'] .an-legend-wrap {
@@ -1037,8 +1038,8 @@ html[data-mode='dark'] .an-iso .an-iso-shadow {
   font-style: italic;
 }
 .an .an-edge.an-reply {
-  /* a reply: solid and fainter (dashed means control everywhere) */
-  stroke-opacity: 0.6;
+  /* a reply: solid and fainter (dashed means control everywhere), still 3:1 on the light canvas */
+  stroke-opacity: 0.8;
 }
 
 /* under a figure, for developers: why, the trade-off, the sources */

@@ -160,7 +160,9 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
   // margins in drawing order (before the Arabic mirror): A is the start side, B the end side
   const mxA = mx + (opts.rtl ? extra.r : extra.l);
   const mxB = mx + (opts.rtl ? extra.l : extra.r);
-  const top = 96 + (layout.topGap ?? 0);
+  // the cloud starts below the handwritten title, with its outward bumps 6 px clear of the title's letters
+  const CT = 92;
+  const top = CT + 22 + (layout.topGap ?? 0);
   const rows = Math.max(...spec.nodes.map((n) => (layout.at?.[n.id] ?? n.at)[1])) + 1;
   const W = Math.round(layout.cols * layout.colW + mxA + mxB);
   const footY = top + rows * layout.rowH + 10 + (layout.footGap ?? 0);
@@ -214,11 +216,11 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
     `<rect class="an-canvas an-paper" width="${W}" height="${Hc}" rx="18"/>`,
   );
   if (spec.around) {
-    let cloud = pen.cloud(mx - 20, 74, W - 2 * mx + 40, Hc - 74 - 28);
+    let cloud = pen.cloud(mx - 20, CT, W - 2 * mx + 40, Hc - CT - 28);
     if (opts.rtl) cloud = cloud.replace(/([MQL ])(-?[\d.]+) (-?[\d.]+)/g, (_m, p, x, y) => `${p}${r(W - Number(x))} ${y}`);
     o.push(`<g class="an-groups"><path class="an-sk-cloud" d="${cloud}"/></g>`);
     const sx = opts.rtl ? W - side - 6 : side + 6;
-    const sy = (74 + Hc - 28) / 2;
+    const sy = (CT + Hc - 28) / 2;
     o.push(`<text class="an-sk-side ${fam}" x="${sx}" y="${r(sy)}" text-anchor="middle" transform="rotate(${opts.rtl ? 90 : -90} ${sx} ${r(sy)})"${ar ? ' direction="rtl"' : ''}>${esc(spec.around)}</text>`);
   }
   o.push(`<g data-node-label="heading"><text class="an-sk-title ${fam}" x="${r(W / 2)}" y="52" text-anchor="middle"${ar ? ' direction="rtl"' : ''}>${esc(spec.heading)}</text></g>`);
@@ -242,7 +244,7 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
   ];
   const samples = curves.flatMap((c) => Array.from({ length: 61 }, (_, k) => at(c, k / 60)));
   // the cloud keeps the base margin; extra room goes between it and the tiles
-  const cloudBox = spec.around ? { x: mx - 20, y: 74, w: W - 2 * mx + 40, h: Hc - 74 - 28 } : null;
+  const cloudBox = spec.around ? { x: mx - 20, y: CT, w: W - 2 * mx + 40, h: Hc - CT - 28 } : null;
   if (cloudBox && extra.l === 0 && extra.r === 0) {
     // the outline's bumps bow outward only, so 22 px inside its rectangle keeps a curve clear of it
     const CL = 22;
