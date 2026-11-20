@@ -205,6 +205,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Build has every page the release smoke expects (en + ar)
+        run: npm run check:dist
+
       - name: Dry-run (production, stage, qa)
         run: |
           npx wrangler deploy --dry-run -c wrangler.jsonc

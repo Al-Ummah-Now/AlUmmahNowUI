@@ -17,6 +17,7 @@
     "test": "vitest run",
     "e2e": "playwright test",
     "screenshots": "node --experimental-strip-types --no-warnings scripts/screenshots.ts",
+    "check:dist": "node --experimental-strip-types --no-warnings scripts/check-dist.ts",
     "check:config": "node --experimental-strip-types --no-warnings scripts/check-wrangler-config.ts",
     "zone:check": "node --experimental-strip-types --no-warnings scripts/release/zone-check.ts",
     "release:smoke": "node --experimental-strip-types --no-warnings scripts/release/smoke.ts"
