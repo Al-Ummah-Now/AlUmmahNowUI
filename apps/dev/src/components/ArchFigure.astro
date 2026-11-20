@@ -57,6 +57,17 @@ const uid = `${id}-${headingId ?? 'fig'}`;
       ))}
     </fieldset>
   )}
+  {/* the key above the figure: a tall drawing is read top to bottom, so the reader knows the lines first */}
+  {[['an-legend-wide', (d.flowsWide ?? flows) as (keyof typeof lg)[]], ['an-legend-narrow', (d.flowsNarrow ?? flows) as (keyof typeof lg)[]]].map(([cls, fl]) => (
+    ((fl as string[]).length > 0 || d.steps) && (
+      <ul class={`an-legend an-legend-wrap ${cls}`} aria-label={lg.title}>
+        {(fl as (keyof typeof lg)[]).map((f) => (
+          <li><span class:list={['an-sw', `an-sw-f-${f}`, f === 'control' && 'an-sw-dash']} aria-hidden="true" />{lg[f]}</li>
+        ))}
+        {d.steps && id !== 'costs' && <li><span class="an-sw an-sw-step" aria-hidden="true">{formatNumber(1, locale)}</span>{lg.steps}</li>}
+      </ul>
+    )
+  ))}
   <div class:list={['an-frame', bleed && 'an-bleed']}>
     {/* natural size, never shrunk: a figure wider than the column scrolls sideways (with a hint) */}
     <p class="an-scroll-hint" hidden>{lg.scroll}</p>
@@ -78,16 +89,6 @@ const uid = `${id}-${headingId ?? 'fig'}`;
       <p class="an-compare-note">{dg.costs.note}</p>
     </section>
   )}
-  {[['an-legend-wide', (d.flowsWide ?? flows) as (keyof typeof lg)[]], ['an-legend-narrow', (d.flowsNarrow ?? flows) as (keyof typeof lg)[]]].map(([cls, fl]) => (
-    ((fl as string[]).length > 0 || d.steps) && (
-      <ul class={`an-legend an-legend-wrap ${cls}`} aria-label={lg.title}>
-        {(fl as (keyof typeof lg)[]).map((f) => (
-          <li><span class:list={['an-sw', `an-sw-f-${f}`, f === 'control' && 'an-sw-dash']} aria-hidden="true" />{lg[f]}</li>
-        ))}
-        {d.steps && id !== 'costs' && <li><span class="an-sw an-sw-step" aria-hidden="true">{formatNumber(1, locale)}</span>{lg.steps}</li>}
-      </ul>
-    )
-  ))}
   {(why || tradeoff) && (
     <div class="an-notes-text">
       {why && <p><strong>{dg.why}</strong> <Rich text={why} /></p>}

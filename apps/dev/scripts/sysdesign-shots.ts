@@ -137,15 +137,23 @@ for (const slug of PAGES)
             const host = document.createElement('div');
             host.id = 'shot-host';
             host.setAttribute('dir', 'ltr');
-            for (const [k, v] of Object.entries({ position: 'fixed', inset: '0', 'z-index': '2147483647', padding: '24px', background: getComputedStyle(document.body).backgroundColor, overflow: 'hidden' })) host.style.setProperty(k, v);
+            for (const [k, v] of Object.entries({ position: 'fixed', top: '0', left: '0', 'z-index': '2147483647', padding: '20px 24px 24px', display: 'grid', gap: '14px', width: 'max-content', background: getComputedStyle(document.body).backgroundColor })) host.style.setProperty(k, v);
+            // the figure's own key, as the page shows it above the drawing
+            const legend = [...(el.closest('.an-figure')?.querySelectorAll<HTMLElement>('.an-legend') ?? [])].find((l) => getComputedStyle(l).display !== 'none');
+            if (legend) {
+              const key = legend.cloneNode(true) as HTMLElement;
+              key.setAttribute('dir', document.documentElement.dir || 'ltr');
+              key.style.setProperty('max-width', `${(el as SVGSVGElement).width.baseVal.value}px`);
+              host.append(key);
+            }
             // the copy gets its own ids: otherwise its markers and symbols point at the original's, which a
             // bigger viewport may hide (its layout switches), and arrowheads would vanish from the shot
-            host.innerHTML = el.outerHTML.replace(/\bid="/g, 'id="shot-').replace(/url\(#/g, 'url(#shot-').replace(/href="#/g, 'href="#shot-').replace(/aria-labelledby="([^"]*)"/g, (_m, ids: string) => `aria-labelledby="${ids.split(' ').map((i) => `shot-${i}`).join(' ')}"`);
+            host.insertAdjacentHTML('beforeend', el.outerHTML.replace(/\bid="/g, 'id="shot-').replace(/url\(#/g, 'url(#shot-').replace(/href="#/g, 'href="#shot-').replace(/aria-labelledby="([^"]*)"/g, (_m, ids: string) => `aria-labelledby="${ids.split(' ').map((i) => `shot-${i}`).join(' ')}"`));
             document.body.append(host);
           });
           const vp = page.viewportSize()!;
-          await page.setViewportSize({ width: Math.max(vp.width, Math.ceil(size.w) + 48), height: Math.max(vp.height, Math.ceil(size.h) + 48) });
-          await page.locator('#shot-host svg').screenshot({ path: join(out, `${tag}-diagram-${id}.png`) });
+          await page.setViewportSize({ width: Math.max(vp.width, Math.ceil(size.w) + 60), height: Math.max(vp.height, Math.ceil(size.h) + 200) });
+          await page.locator('#shot-host').screenshot({ path: join(out, `${tag}-diagram-${id}.png`) });
           await page.evaluate(() => document.getElementById('shot-host')?.remove());
           await page.setViewportSize(vp);
           // let the sticky header settle after the resize (a stale band above it otherwise lands in the next frame)

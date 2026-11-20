@@ -57,7 +57,7 @@ export function pipeline(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
     ],
     groups: [
       { id: 'transcode', label: c.lane.transcode, members: ['media', 'slots', 'container'] },
-      { id: 'cf', label: c.lane.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', tagEnd: true, members: ['apiVideos', 'originals', 'queue', 'transcode', 'renditions', 'cdn', 'processor', 'workersAi', 'dlq'] },
+      { id: 'cf', label: c.lane.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', tagEnd: true, pad: 34, members: ['apiVideos', 'originals', 'queue', 'transcode', 'renditions', 'cdn', 'processor', 'workersAi', 'dlq'] },
       { id: 'bunnyNet', label: c.lane.bunny, kind: 'platform', tagEnd: true, tagLogo: { id: 'brand/bunnynet-logo-dark', w: 66, h: 19 }, accent: '#f29b1d', members: ['bunny', 'bunnyCdn'] },
     ],
     edges,
