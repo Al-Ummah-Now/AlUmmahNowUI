@@ -17,6 +17,7 @@ import { hubEn } from './sd/hub.en.ts';
 import { pipelineEn } from './sd/pipeline.en.ts';
 
 export const diagramsEn = {
+  terms: 'In this figure:',
   why: 'Why it is built this way:',
   tradeoff: 'What it costs:',
   legend: {
@@ -25,7 +26,8 @@ export const diagramsEn = {
     media: 'uploads and media processing',
     delivery: 'playback delivery',
     async: 'queues and background jobs',
-    control: 'deploys, control and ops (dashed)',
+    control: 'control: deploys, leases, events, keys, retries and failures (dashed)',
+    scroll: 'Scroll sideways to see the whole figure',
     steps: 'steps fire in order',
   },
   overview: {
@@ -105,7 +107,7 @@ export const diagramsEn = {
   },
   pipeline: {
     title: 'The video pipeline, step by step',
-    desc: 'Ten numbered steps. 1: a creator uploads with a resumable upload (TUS) to api-videos. 2: the bytes go to Bunny Stream and, at the same time, to the R2 originals bucket. 3: api-videos queues a transcode job. 4: the media Worker takes it from the queue. 5: it asks TranscodeSlots for a slot. 6: it starts the Transcoder container. 7: the container reads the original. 8: it writes stream renditions (HLS) to the public or private R2 bucket. 9: the player asks api-videos where to play. 10: the video streams from R2 through the Cloudflare CDN, or from Bunny’s CDN.',
+    desc: 'Fourteen numbered steps. 1: a creator uploads with a resumable upload (TUS) to api-videos. 2: api-videos sends the bytes to Bunny Stream. 3: at the same time it copies them into the R2 originals bucket. 4: it sends an upload event to the processor. 5: the processor runs the AI checks on Workers AI. 6: api-videos queues a transcode job. 7: the media Worker takes it from the queue. 8: it asks TranscodeSlots for a slot. 9: it starts the Transcoder container. 10: the container reads the original. 11: it writes stream renditions (HLS) to the public or private R2 bucket. 12: the player asks api-videos where to play. 13: the video streams from R2 through the Cloudflare CDN, 14: or from Bunny’s CDN.',
     lane: {
       upload: 'Upload',
       bunny: 'bunny.net',
@@ -127,7 +129,7 @@ export const diagramsEn = {
       cdn: { name: 'Cloudflare CDN', role: 'edge cache' },
       processor: { name: 'processor', role: 'checks every upload' },
       workersAi: { name: 'Workers AI', role: 'moderation · captions' },
-      dlq: { name: 'Failed jobs', role: 'after {N8} retries' },
+      dlq: { name: 'Dead-letter queue', role: 'after {N8} retries' },
       player: { name: 'Player', role: 'web · apps · embeds' },
     },
     edge: {
@@ -198,23 +200,22 @@ export const diagramsEn = {
   },
   costs: {
     title: 'Both pipelines, and what each stage costs',
-    desc: 'Three lanes. Bunny Stream: encode with thumbnails, store in two regions, deliver from Bunny CDN. R2 on Cloudflare: keep the original, queue the job, take a TranscodeSlots slot, transcode with FFmpeg in a container, store the renditions in R2, deliver through the Cloudflare CDN. Checks that run on every upload whichever pipeline plays it: AI moderation, captions on request, Quran detection, the pre-publication review. Each stage shows its list price and, as the flow reaches it, its cost for the example chosen above; each lane keeps a running total.',
-    unknown: 'unknown',
-    lane: { shared: 'Checks on every upload', r2: 'R2 + Containers pipeline', bunny: 'Bunny Stream pipeline', cf: 'Cloudflare account' },
+    desc: 'Three lanes. Bunny Stream: encode with thumbnails, store in two regions, deliver from Bunny CDN. R2 on Cloudflare: keep the original, queue the job, take a TranscodeSlots slot, transcode with FFmpeg in a container, store the renditions in R2, deliver through the Cloudflare CDN. Shared by both pipelines: AI moderation on every upload, captions when a creator asks for them, and Quran detection on the transcript. Each stage shows its list price and, as the flow reaches it, its cost for the example chosen above; each lane keeps a running total.',
+    unknown: 'not in this example',
+    lane: { shared: 'Shared by both pipelines', r2: 'R2 + Containers pipeline', bunny: 'Bunny Stream pipeline', cf: 'Cloudflare account' },
     pick: 'Example',
     scenario: {
       one: 'One {m}-minute video, watched in full {n} times, kept a month',
       small: 'A small month: {h} hours uploaded, {vh} viewer-hours',
       medium: 'A medium month: {h} hours uploaded, {vh} viewer-hours',
     },
-    note: 'Prices are the list prices in our code and docs (sources below). Small and medium are the admin cost page’s presets, with storage shown for the month after a year of uploads at that rate. A line marked unknown depends on something the cost model doesn’t track, and is left out of the totals.',
+    note: 'Prices are the list prices in our code and docs (sources below). Small and medium are the admin cost page’s presets, with storage shown for the month after a year of uploads at that rate. A line marked “not in this example” depends on something the example doesn’t fix (the uploaded file’s size, or the number of uploads), and is left out of the totals.',
     compare: 'Where the money goes',
     node: {
       upload: { name: 'Upload', role: 'api-videos · resumable' },
       moderation: { name: 'AI moderation', role: 'Llama Guard + Gemma' },
       captions: { name: 'Captions', role: 'Whisper · on request' },
       quran: { name: 'Quran detection', role: 'on the transcript' },
-      review: { name: 'Review', role: 'pre-publication · rolling out' },
       bunnyEncode: { name: 'Encode', role: 'with thumbnails' },
       bunnyStore: { name: 'Store', role: 'Bunny Stream' },
       bunnyDeliver: { name: 'Deliver', role: 'Bunny CDN' },
@@ -226,14 +227,13 @@ export const diagramsEn = {
       r2Deliver: { name: 'Deliver', role: 'R2 + edge cache' },
       totalBunny: { name: 'Bunny total', role: 'this example' },
       totalR2: { name: 'R2 total', role: 'this example' },
-      totalShared: { name: 'Checks total', role: 'either pipeline' },
+      totalShared: { name: 'Shared total', role: 'either pipeline' },
     },
     rate: {
       upload: ['{a}/M requests'],
       moderation: ['{a}/{k} neurons', '{free}/day free'],
       captions: ['{a}/audio minute'],
       quran: ['no AI call'],
-      review: ['{a}/video-hour'],
       bunnyEncode: ['encoding free'],
       bunnyStore: ['{a}/GB-month', '× {n} regions'],
       bunnyDeliver: ['{a}/GB'],

@@ -44,9 +44,6 @@ export const en = {
   status: {
     live: 'Live',
     ready: 'Ready, not in use yet',
-    rolling: 'Built, rolling out',
-    building: 'In development',
-    planned: 'Planned',
   },
   common: {
     external: '(opens another site)',
@@ -438,8 +435,8 @@ export const en = {
         { title: 'Moderation: translate, guard, score', body: 'Text is translated to English ({tkGemma}) so {tkGuard} can read it, and Gemma scores the platform categories. Everything starts in shadow mode: policies live in a D1 database and an admin switches a category to enforce; only spam and charity-scam may hide, and religious-authenticity flags go to scholars only. Production runs it in shadow mode today.', feature: 'ai-moderation' },
         { title: 'The budget that bounds it', body: 'Before any call, the scan reserves its worst-case cost for today in one conditional update; afterwards it settles to what it really spent. The daily caps are settings — moderation and categorising each have one, and the Costs page shows the spend against them. Unit tests never call a model: they pass a mock binding.' },
         { title: 'Captions: Whisper plus the Quran layer', body: 'Transcription is a creator action. Whisper large-v3-turbo returns a draft; Quran passages are matched against the official text and rendered from it only after the creator confirms — an uncertain match shows a reference, never guessed text. Quran is never machine-translated or machine-spoken.', feature: 'transcripts' },
-        { title: 'Review before publication', body: 'For videos under pre-publication review, the transcoder also extracts frames (every two seconds plus scene cuts, capped) and the pipeline checks them with clef-flash for NSFW imagery and Whisper for the transcript. It can only hold the video for a person. Frames and transcripts are kept thirty days, signals twelve months. This is built and rolling out.', feature: 'video-review' },
-        { title: 'Categories, translation, writing help', body: 'Category suggestions run on {tkScout}; caption translation runs DeepSeek’s flash model on Workers AI, with DeepL as a measured paid alternative (in development); the CMS writing assist helps staff draft articles. Titles translate inline under the same AI budget.', feature: 'content-categories' },
+        { title: 'Review before publication', body: 'For videos under pre-publication review, the transcoder also extracts frames (every two seconds plus scene cuts, capped) and the pipeline checks them with clef-flash for NSFW imagery and Whisper for the transcript. It can only hold the video for a person. Frames and transcripts are kept thirty days, signals twelve months.', feature: 'video-review' },
+        { title: 'Categories, translation, writing help', body: 'Category suggestions run on {tkScout}; caption translation runs DeepSeek’s flash model on Workers AI; the CMS writing assist helps staff draft articles. Titles translate inline under the same AI budget.', feature: 'content-categories' },
         { title: 'Open weights only', body: 'The owner’s rule for review applies to AI generally: open-weight models only, hosted on Workers AI first, no proprietary model APIs — so behaviour and cost stay inspectable.' },
       ] as Item[],
     },
@@ -475,9 +472,9 @@ export const en = {
 
     clients: {
       title: 'Clients',
-      description: 'The clients of Al Ummah Now: the web apps in the browser, embeds on other sites, the native viewer and Studio apps in development on a shared Rust core, TV apps through the device grant, and the .NET bulk importer.',
+      description: 'The clients of Al Ummah Now: the web apps in the browser, embeds on other sites, TV apps through the device grant, and the .NET bulk importer.',
       heroTitle: 'Every screen, one API',
-      heroLead: 'Browsers get www, the videos site and the admin; other sites get the embeddable player. The native apps for phones, desktops and TVs are in development, on one shared Rust core, and none is in a public store yet.',
+      heroLead: 'Browsers get www, the videos site and the admin; other sites get the embeddable player. ',
       stagesTitle: 'The clients',
       stages: [
         { title: 'The web trio', body: 'www (Astro) for the public site and scholar sites, the videos site (Next.js on Workers) for watching and Studio, and the admin. All three are the same design system, both languages, light and dark.', feature: 'videos-site' },

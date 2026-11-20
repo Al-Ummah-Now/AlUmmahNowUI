@@ -42,8 +42,9 @@
   --an-dot: transparent;
   --an-ink: #18212b;
   --an-muted: #4a5664;
-  --an-node: transparent;
-  --an-node-line: transparent;
+  /* light mode: tiles get a soft fill and a border, like their dark counterparts */
+  --an-node: #f6f8fb;
+  --an-node-line: #c3ccd6;
   --an-group: #f6f8fa;
   --an-group-line: #a7b1bc;
   --an-boundary: #2f6fd8;
@@ -58,10 +59,10 @@
   --an-mono: #000000;
   --an-glow: 0;
   display: block;
-  /* the width attribute is the drawing's natural size; it shrinks to fit, never grows (no inline
-     styles: the site's CSP is style-src 'self') */
+  /* the width attribute is the drawing's natural size, and it is drawn at that size: never shrunk,
+     so no label renders under 11 px. A wider drawing scrolls sideways in its .an-scroll box. */
   width: auto;
-  max-width: 100%;
+  max-width: none;
   height: auto;
   margin-inline: auto;
   direction: ltr;
@@ -308,10 +309,29 @@ html[data-mode='dark'] .an .an-edge {
   gap: 14px;
 }
 .an-frame {
+  /* the drawing's own canvas is the card: no second frame around it */
+  display: grid;
+  gap: 6px;
+}
+.an-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
   border-radius: 20px;
-  overflow: hidden;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--edge);
+  scrollbar-width: thin;
+}
+.an-scroll:focus-visible {
+  outline: 2px solid var(--link, currentColor);
+  outline-offset: 2px;
+}
+.an-scroll-hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+  text-align: center;
+}
+.an .an-canvas {
+  stroke: var(--edge, #d0d7de);
+  stroke-width: 1;
 }
 .an-frame .an {
   border-radius: 0;
@@ -319,15 +339,20 @@ html[data-mode='dark'] .an .an-edge {
 .an-wide {
   display: block;
 }
-.an-narrow {
+.an-narrow,
+.an-legend.an-legend-narrow {
   display: none;
 }
 @media (max-width: 760px) {
-  .an-wide {
+  .an-wide,
+  .an-legend.an-legend-wide {
     display: none;
   }
   .an-narrow {
     display: block;
+  }
+  .an-legend.an-legend-narrow {
+    display: flex;
   }
 }
 .an-bleed {
@@ -1006,4 +1031,28 @@ html[data-mode='dark'] .an-iso .an-iso-shadow {
   fill: var(--an-canvas);
   fill-opacity: 1;
   stroke: none;
+}
+.an .an-seq-n {
+  fill: var(--an-ink);
+  font-weight: 700;
+}
+.an-terms {
+  margin: 0;
+  max-width: 72ch;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+/* Arabic joins its letters: no tracking in the hand-drawn face, or the letters collide */
+.an-sketch text[direction='rtl'] {
+  letter-spacing: 0;
+}
+/* the example picker: on a phone the choices stack at one width */
+@media (max-width: 760px) {
+  .an-scenarios {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .an-scenario {
+    display: flex;
+  }
 }

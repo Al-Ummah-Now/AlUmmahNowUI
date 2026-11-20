@@ -33,9 +33,9 @@ describe('copy', () => {
   });
   it('describes only what exists and runs today: no plans, no studies (owner, 2026-11-19)', () => {
     const all = strings(en).map(([, s]) => s).join('\n');
-    expect(all).not.toMatch(/\bwe are (exploring|studying|considering|planning)\b|\bcoming soon\b|\bwaqf\b|tax[- ]deductible|donate now/i);
+    expect(all).not.toMatch(/\bwe are (exploring|studying|considering|planning)\b|\bcoming soon\b|\bin development\b|\brolling out\b|\bplanned\b|\blater\b(?! in case)|\bwaqf\b|tax[- ]deductible|donate now/i);
     const allAr = strings(ar).map(([, s]) => s).join('\n');
-    expect(allAr).not.toMatch(/ندرس|نخطط|قريبًا|الوقف/);
+    expect(allAr).not.toMatch(/ندرس|نخطط|قريبًا|الوقف|قيد التطوير|قيد الطرح|قيد الإطلاق|لاحقًا|مخطط له/);
   });
   it('no user, view or money figures', () => {
     const all = strings(en).map(([, s]) => s).join('\n');

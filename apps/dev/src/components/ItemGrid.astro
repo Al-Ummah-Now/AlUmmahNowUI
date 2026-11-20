@@ -17,7 +17,7 @@ const items = all.filter((i) => !i.feature || ['live', 'ready'].includes(feature
     <li class="tile">
       <div class="tile-head">
         <h3 class="tile-title">{item.title}</h3>
-        {item.feature && <StatusChip status={feature(item.feature).status} label={t.status[feature(item.feature).status]} />}
+        {item.feature && <StatusChip status={feature(item.feature).status} label={t.status[feature(item.feature).status as 'live' | 'ready']} />}
       </div>
       <p class="tile-body">{item.body}</p>
     </li>

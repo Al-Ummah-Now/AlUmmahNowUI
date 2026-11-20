@@ -58,8 +58,10 @@ const uid = `${id}-${headingId ?? 'fig'}`;
     </fieldset>
   )}
   <div class:list={['an-frame', bleed && 'an-bleed']}>
-    <div class="an-wide" set:html={d.wide} />
-    <div class="an-narrow" set:html={d.narrow} />
+    {/* natural size, never shrunk: a figure wider than the column scrolls sideways (with a hint) */}
+    <div class="an-wide an-scroll" tabindex="0" role="region" aria-label={title ?? lg.title} set:html={d.wide} />
+    <div class="an-narrow an-scroll" tabindex="0" role="region" aria-label={title ?? lg.title} set:html={d.narrow} />
+    <p class="an-scroll-hint" hidden>{lg.scroll}</p>
   </div>
   {costs && (
     <section class="an-compare an-legend-wrap" aria-label={dg.costs.compare}>
@@ -76,14 +78,16 @@ const uid = `${id}-${headingId ?? 'fig'}`;
       <p class="an-compare-note">{dg.costs.note}</p>
     </section>
   )}
-  {(flows.length > 0 || d.steps) && (
-    <ul class="an-legend an-legend-wrap" aria-label={lg.title}>
-      {flows.map((f) => (
-        <li><span class:list={['an-sw', `an-sw-f-${f}`, f === 'control' && 'an-sw-dash']} aria-hidden="true" />{lg[f]}</li>
-      ))}
-      {d.steps && id !== 'costs' && <li><span class="an-sw an-sw-step" aria-hidden="true">{formatNumber(1, locale)}</span>{lg.steps}</li>}
-    </ul>
-  )}
+  {[['an-legend-wide', (d.flowsWide ?? flows) as (keyof typeof lg)[]], ['an-legend-narrow', (d.flowsNarrow ?? flows) as (keyof typeof lg)[]]].map(([cls, fl]) => (
+    ((fl as string[]).length > 0 || d.steps) && (
+      <ul class={`an-legend an-legend-wrap ${cls}`} aria-label={lg.title}>
+        {(fl as (keyof typeof lg)[]).map((f) => (
+          <li><span class:list={['an-sw', `an-sw-f-${f}`, f === 'control' && 'an-sw-dash']} aria-hidden="true" />{lg[f]}</li>
+        ))}
+        {d.steps && id !== 'costs' && <li><span class="an-sw an-sw-step" aria-hidden="true">{formatNumber(1, locale)}</span>{lg.steps}</li>}
+      </ul>
+    )
+  ))}
   {(why || tradeoff) && (
     <div class="an-notes-text">
       {why && <p><strong>{dg.why}</strong> <Rich text={why} /></p>}
@@ -93,4 +97,5 @@ const uid = `${id}-${headingId ?? 'fig'}`;
 </figure>
 <script>
   import '../scripts/meters.ts';
+  import '../scripts/figure-scroll.ts';
 </script>

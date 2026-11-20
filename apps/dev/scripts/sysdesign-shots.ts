@@ -15,6 +15,7 @@ import { extname, join, normalize, resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { chromium } from '@playwright/test';
 import { gateInBrowser } from '../e2e/diagram-gate.ts';
+import { GLOSSARY, NEAR } from '../src/lib/glossary.ts';
 
 const out = process.argv[2];
 if (!out) throw new Error('usage: sysdesign-shots.ts <outDir> [--pages=a/,b/] [--record]');
@@ -97,7 +98,7 @@ for (const slug of PAGES)
           }
         });
         await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => ok(null)))));
-        const found = await page.evaluate(gateInBrowser);
+        const found = await page.evaluate(gateInBrowser, { glossary: GLOSSARY, near: NEAR });
         for (const v of cspViolations.splice(0)) found.push(`CSP blocked: ${v}`);
         for (const d of found) defects.push(`${name(slug)} ${lang} ${mode} ${w}: ${d}`);
         const tag = `${name(slug)}-${mode}-${w}-${lang}`;
@@ -105,6 +106,19 @@ for (const slug of PAGES)
         // viewport frames: top, then each diagram centred, then the end
         await page.evaluate(() => window.scrollTo(0, 0));
         if (!ONLY) await page.screenshot({ path: join(out, `${tag}-frame-1-top.png`) });
+        // the hub's page list in full: as many viewport frames as it takes, each starting below the sticky header
+        if (!ONLY && (await page.locator('.sd-index').count())) {
+          const head = await page.evaluate(() => document.querySelector('header')?.getBoundingClientRect().height ?? 0);
+          const list = await page.locator('#pages-h').evaluate((el) => {
+            const sec = el.closest('section')!.getBoundingClientRect();
+            return { top: sec.top + window.scrollY, bottom: sec.bottom + window.scrollY };
+          });
+          const view = (page.viewportSize()?.height ?? 800) - head - 8;
+          for (let y = list.top - head - 8, k = 1; y < list.bottom - head; y += view, k++) {
+            await page.evaluate((top) => window.scrollTo(0, top), y);
+            await page.screenshot({ path: join(out, `${tag}-frame-1-pages-${k}.png`) });
+          }
+        }
         const figs = await page.locator('.an-figure').count();
         for (let i = 0; i < figs; i++) {
           const fig = page.locator('.an-figure').nth(i);
@@ -116,12 +130,24 @@ for (const slug of PAGES)
           await page.screenshot({ path: join(out, `${tag}-frame-${i + 2}-diagram-${i + 1}.png`) });
           // the sticky site header would sit over a tall diagram's top: unpin it for the element shot
           // (a CSSOM change, which the page's CSP allows)
-          await page.evaluate(() => document.querySelectorAll<HTMLElement>('header').forEach((h) => h.style.setProperty('position', 'static')));
+          // and a figure wider than its column scrolls in its box: let it out whole for the element shot
+          await page.evaluate(() => {
+            document.querySelectorAll<HTMLElement>('header').forEach((h) => h.style.setProperty('position', 'static'));
+            document.querySelectorAll<HTMLElement>('.an-scroll').forEach((b) => b.style.setProperty('overflow', 'visible'));
+          });
           await svg.screenshot({ path: join(out, `${tag}-diagram-${id}.png`) });
-          await page.evaluate(() => document.querySelectorAll<HTMLElement>('header').forEach((h) => h.style.removeProperty('position')));
+          await page.evaluate(() => {
+            document.querySelectorAll<HTMLElement>('header').forEach((h) => h.style.removeProperty('position'));
+            document.querySelectorAll<HTMLElement>('.an-scroll').forEach((b) => b.style.removeProperty('overflow'));
+          });
         }
         await page.evaluate((h) => window.scrollTo(0, h), H);
         if (!ONLY) await page.screenshot({ path: join(out, `${tag}-frame-${figs + 2}-end.png`) });
+        // the previous/next links, placed below the sticky header
+        if (!ONLY && (await page.locator('.sd-pager').count())) {
+          await page.locator('.sd-pager').evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - window.innerHeight / 2));
+          await page.screenshot({ path: join(out, `${tag}-frame-pager.png`) });
+        }
         await ctx.close();
       }
 
