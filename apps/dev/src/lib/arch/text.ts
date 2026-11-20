@@ -27,7 +27,8 @@ export const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
 const LRI = '⁦';
 const PDI = '⁩';
 /** A run of Latin script (identifiers, product names, paths) inside Arabic text: kept left to right as one unit. */
-const WORD = String.raw`[A-Za-z0-9<{(\[*$](?:[\w.\-/:<>{}()[\]|*?=+@#&$',]*[A-Za-z0-9>})\]*?$'_])?`;
+// a bracket starts a run only when Latin follows it: «(اختبار)» stays Arabic, «(api-videos)» stays whole
+const WORD = String.raw`(?:[A-Za-z0-9<{*$]|[(\[](?=[A-Za-z0-9<{]))(?:[\w.\-/:<>{}()[\]|*?=+@#&$',]*[A-Za-z0-9>})\]*?$'_])?`;
 const LATIN_RUN = new RegExp(`${WORD}(?: ${WORD})*`, 'g');
 
 /** Wrap every Latin run of an Arabic string in an isolate (LRI … PDI), so the bidi algorithm never reorders it. */

@@ -59,9 +59,9 @@ const uid = `${id}-${headingId ?? 'fig'}`;
   )}
   <div class:list={['an-frame', bleed && 'an-bleed']}>
     {/* natural size, never shrunk: a figure wider than the column scrolls sideways (with a hint) */}
+    <p class="an-scroll-hint" hidden>{lg.scroll}</p>
     <div class="an-wide an-scroll" tabindex="0" role="region" aria-label={title ?? lg.title} set:html={d.wide} />
     <div class="an-narrow an-scroll" tabindex="0" role="region" aria-label={title ?? lg.title} set:html={d.narrow} />
-    <p class="an-scroll-hint" hidden>{lg.scroll}</p>
   </div>
   {costs && (
     <section class="an-compare an-legend-wrap" aria-label={dg.costs.compare}>

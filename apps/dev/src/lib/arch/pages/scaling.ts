@@ -51,7 +51,7 @@ const copies: Builder = (d) => {
       pad: 44,
       at: stack([
         [['users'], 0],
-        [['workers'], 1.45],
+        [['workers'], 1.75],
         [['sockets', 'topics'], 2.3],
         [['views', 'videoJson'], 2.3],
         [['queue', 'container'], 2.3],

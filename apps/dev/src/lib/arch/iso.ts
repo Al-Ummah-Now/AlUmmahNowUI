@@ -335,9 +335,18 @@ export function renderIso(c: Copy, opts: { rtl: boolean; variant: string }): str
       }
     }
     if (pp.labelSeg != null) bi = pp.labelSeg + 1;
-    const m = [(q[bi]![0] + q[bi - 1]![0]) / 2, (q[bi]![1] + q[bi - 1]![1]) / 2];
+    const mid = [(q[bi]![0] + q[bi - 1]![0]) / 2, (q[bi]![1] + q[bi - 1]![1]) / 2];
     const lw = textWidth(pp.label, 11.5, true) + 16;
-    o.push(`<g class="an-elabel an-f-${pp.flow}" data-for="${prefix}-${pp.id}" data-covers><rect class="an-elabel-bg an-pipe-label" x="${r(m[0]! - lw / 2)}" y="${r(m[1]! - 10)}" width="${r(lw)}" height="20" rx="10"/><text x="${r(m[0]!)}" y="${r(m[1]! + 4)}" text-anchor="middle" font-size="11.5"${hasArabic(pp.label) ? ' direction="rtl"' : ''}>${esc(pp.label)}</text></g>`);
+    // beside its pipe, never on it: offset along the pipe's normal (upward side) until the pill clears it by 8 px
+    const dx = q[bi]![0] - q[bi - 1]![0];
+    const dy = q[bi]![1] - q[bi - 1]![1];
+    const len = Math.hypot(dx, dy) || 1;
+    let nx = -dy / len;
+    let ny = dx / len;
+    if (ny > 0 || (ny === 0 && nx > 0)) [nx, ny] = [-nx, -ny];
+    const off = Math.abs(nx) * (lw / 2) + Math.abs(ny) * 10 + 8;
+    const m = [mid[0]! + nx * off, mid[1]! + ny * off];
+    o.push(`<g class="an-elabel an-f-${pp.flow}" data-for="${prefix}-${pp.id}"><rect class="an-elabel-bg an-pipe-label" x="${r(m[0]! - lw / 2)}" y="${r(m[1]! - 10)}" width="${r(lw)}" height="20" rx="10"/><text x="${r(m[0]!)}" y="${r(m[1]! + 4)}" text-anchor="middle" font-size="11.5"${hasArabic(pp.label) ? ' direction="rtl"' : ''}>${esc(pp.label)}</text></g>`);
   }
   o.push('</g></svg>');
   return o.join('');

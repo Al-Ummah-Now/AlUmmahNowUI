@@ -15,7 +15,7 @@ import { extname, join, normalize, resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { chromium } from '@playwright/test';
 import { gateInBrowser } from '../e2e/diagram-gate.ts';
-import { GLOSSARY, NEAR } from '../src/lib/glossary.ts';
+import { GATE_GLOSSARY, NEAR } from '../src/lib/glossary.ts';
 
 const out = process.argv[2];
 if (!out) throw new Error('usage: sysdesign-shots.ts <outDir> [--pages=a/,b/] [--record]');
@@ -98,7 +98,7 @@ for (const slug of PAGES)
           }
         });
         await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => ok(null)))));
-        const found = await page.evaluate(gateInBrowser, { glossary: GLOSSARY, near: NEAR });
+        const found = await page.evaluate(gateInBrowser, { glossary: GATE_GLOSSARY(), near: NEAR });
         for (const v of cspViolations.splice(0)) found.push(`CSP blocked: ${v}`);
         for (const d of found) defects.push(`${name(slug)} ${lang} ${mode} ${w}: ${d}`);
         const tag = `${name(slug)}-${mode}-${w}-${lang}`;
@@ -128,18 +128,23 @@ for (const slug of PAGES)
           await fig.evaluate((el) => el.scrollIntoView({ block: 'start' }));
           await page.evaluate(() => window.scrollBy(0, -72));
           await page.screenshot({ path: join(out, `${tag}-frame-${i + 2}-diagram-${i + 1}.png`) });
-          // the sticky site header would sit over a tall diagram's top: unpin it for the element shot
-          // (a CSSOM change, which the page's CSP allows)
-          // and a figure wider than its column scrolls in its box: let it out whole for the element shot
-          await page.evaluate(() => {
-            document.querySelectorAll<HTMLElement>('header').forEach((h) => h.style.setProperty('position', 'static'));
-            document.querySelectorAll<HTMLElement>('.an-scroll').forEach((b) => b.style.setProperty('overflow', 'visible'));
+          // the figure alone and whole: a copy of the drawing at its natural size, over the page, in a
+          // viewport big enough to hold it (the page scrolls a wide figure, so an element shot would clip it)
+          const size = await svg.evaluate((el) => ({ w: (el as SVGSVGElement).width.baseVal.value, h: (el as SVGSVGElement).height.baseVal.value }));
+          // copy first: a bigger viewport may switch the page to its other layout
+          await svg.evaluate((el) => {
+            const host = document.createElement('div');
+            host.id = 'shot-host';
+            host.setAttribute('dir', 'ltr');
+            for (const [k, v] of Object.entries({ position: 'fixed', inset: '0', 'z-index': '2147483647', padding: '24px', background: getComputedStyle(document.body).backgroundColor, overflow: 'hidden' })) host.style.setProperty(k, v);
+            host.append(el.cloneNode(true));
+            document.body.append(host);
           });
-          await svg.screenshot({ path: join(out, `${tag}-diagram-${id}.png`) });
-          await page.evaluate(() => {
-            document.querySelectorAll<HTMLElement>('header').forEach((h) => h.style.removeProperty('position'));
-            document.querySelectorAll<HTMLElement>('.an-scroll').forEach((b) => b.style.removeProperty('overflow'));
-          });
+          const vp = page.viewportSize()!;
+          await page.setViewportSize({ width: Math.max(vp.width, Math.ceil(size.w) + 48), height: Math.max(vp.height, Math.ceil(size.h) + 48) });
+          await page.locator('#shot-host svg').screenshot({ path: join(out, `${tag}-diagram-${id}.png`) });
+          await page.evaluate(() => document.getElementById('shot-host')?.remove());
+          await page.setViewportSize(vp);
         }
         await page.evaluate((h) => window.scrollTo(0, h), H);
         if (!ONLY) await page.screenshot({ path: join(out, `${tag}-frame-${figs + 2}-end.png`) });
