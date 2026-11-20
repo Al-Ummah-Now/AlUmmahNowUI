@@ -254,8 +254,9 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
     const a0 = ((row.n - 1) * HOP) / T;
     const b0 = (row.n * HOP) / T;
     const kt = `0;${f4(a0)};${f4(b0)};1`;
+    // a control message stays dashed: no solid lit trace over it
+    if (s.flow !== 'control') out.push(`<path class="an-lit an-f-${s.flow}" d="${paths.get(row)}" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"><animate attributeName="stroke-dashoffset" values="1;1;0;0" keyTimes="${kt}" dur="${T}s" repeatCount="indefinite"/></path>`);
     out.push(
-      `<path class="an-lit an-f-${s.flow}" d="${paths.get(row)}" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"><animate attributeName="stroke-dashoffset" values="1;1;0;0" keyTimes="${kt}" dur="${T}s" repeatCount="indefinite"/></path>`,
       `<circle class="an-comet an-f-${s.flow}" r="5" opacity="0"><animateMotion dur="${T}s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="${kt}" calcMode="linear"><mpath href="#${id}"/></animateMotion><animate attributeName="opacity" values="0;1;0" keyTimes="0;${f4(a0)};${f4(Math.min(b0 + 0.01, 0.999))}" calcMode="discrete" dur="${T}s" repeatCount="indefinite"/></circle>`,
     );
   }

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { gateInBrowser } from './diagram-gate';
-import { GLOSSARY, NEAR } from '../src/lib/glossary';
+import { GATE_GLOSSARY, NEAR } from '../src/lib/glossary';
 import AxeBuilder from '@axe-core/playwright';
 import { LOCALES, NAV, PAGES, dir, pagePath } from '../src/lib/pages';
 
@@ -23,7 +23,7 @@ for (const locale of LOCALES) {
         const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
         expect(axe.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
         // every page: no plan wording, every abbreviation spelled out where the page first uses it
-        const rules = await page.evaluate(gateInBrowser, { glossary: GLOSSARY, near: NEAR });
+        const rules = await page.evaluate(gateInBrowser, { glossary: GATE_GLOSSARY(), near: NEAR });
         expect(rules, rules.join('\n')).toEqual([]);
         // No horizontal scroll, and nothing blocked by the CSP
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

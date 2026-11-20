@@ -24,3 +24,18 @@ describe('abbreviations are spelled out where a page first uses them', () => {
     expect(expandAbbreviations(page('<p>Models run on Workers AI.</p>'), 'en', 'x')).toContain('<p>Models run on Workers AI.</p>');
   });
 });
+
+describe('glossary inserts never garble a sentence', () => {
+  it('a term already in parentheses after its explanation gets no second bracket', () => {
+    const out = expandAbbreviations(page('<p>كل طابور له طابور للرسائل الفاشلة (DLQ) خاص به.</p>'), 'ar', 'x');
+    expect(out).toContain('طابور للرسائل الفاشلة (DLQ) خاص به.');
+    expect(out).not.toMatch(/\(DLQ \(/);
+    const en = expandAbbreviations(page('<p>Each queue has a dead-letter queue (DLQ).</p>'), 'en', 'x');
+    expect(en).toContain('a dead-letter queue (DLQ).');
+  });
+  it('API and APIs count as one term, and units in rates are named', () => {
+    const fig = '<div class="an-frame"><svg class="an"><text>APIs</text><text>api-videos · API</text><text>$0.015/GB-month</text><text>$4.50/M requests</text><text>$0.40/h</text></svg></div>';
+    const out = expandAbbreviations(page(fig), 'en', 'In this figure:');
+    expect(out).toContain('In this figure: APIs: application programming interfaces; GB: gigabytes; /M: per million; /h: per hour.');
+  });
+});

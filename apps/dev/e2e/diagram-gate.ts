@@ -18,7 +18,7 @@
  *  - an abbreviation whose meaning isn't spelled out where the page first uses it.
  * Only visible diagrams are checked (the wide/narrow twin that CSS hides is skipped).
  */
-export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar: string }[]; near?: number } = {}): string[] {
+export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar: string; re: string; same?: string }[]; near?: number } = {}): string[] {
   const glossary = opts.glossary ?? [];
   const near = opts.near ?? 220;
   const out: string[] = [];
@@ -26,30 +26,48 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
   // page text in reading order: <main> only, no navigation, headings, scripts or a drawing's title/desc
   {
     const SKIP = 'nav,[data-no-expand],h1,h2,h3,h4,h5,h6,script,style,title,desc,button,label,legend,code';
-    const parts: string[] = [];
+    // each piece of text, and the figure it is drawn in (if any)
+    const parts: { s: string; frame: Element | null }[] = [];
     const main = document.querySelector('main');
     if (main) {
       const walk = document.createTreeWalker(main, NodeFilter.SHOW_TEXT);
       for (let n = walk.nextNode(); n; n = walk.nextNode()) {
         const el = n.parentElement;
         if (!el || el.closest(SKIP) || !el.getClientRects().length) continue;
-        parts.push(n.textContent ?? '');
+        parts.push({ s: (n.textContent ?? '').replace(/\s+/g, ' '), frame: el.closest('.an-frame') });
       }
     }
-    const text = parts.join(' ').replace(/\s+/g, ' ');
+    const starts: number[] = [];
+    let text = '';
+    for (const p of parts) {
+      starts.push(text.length);
+      text += p.s + ' ';
+    }
+    const frameAt = (i: number) => {
+      let k = 0;
+      while (k + 1 < starts.length && starts[k + 1]! <= i) k++;
+      return parts[k]?.frame ?? null;
+    };
     const plan = ar ? /قيد التطوير|قيد الطرح|قيد الإطلاق|مخطط له|قريبًا|ندرس|نخطط/ : /\b(in development|rolling out|planned|coming soon|we are (exploring|considering|studying|planning))\b/i;
     const pm = plan.exec(text);
     if (pm) out.push(`page: plan wording "${pm[0]}"`);
     for (const t of glossary) {
-      // same rule as src/lib/glossary.ts termPattern: names like "Workers AI" or "JSON Web Token" aren't uses
-      const re = new RegExp(`(?<![\\w\\-./@])${t.abbr === 'AI' ? '(?<!Workers )' : ''}${t.abbr}(?![\\w\\-])${t.abbr === 'JSON' ? '(?! Web Token)' : ''}`);
-      const m = re.exec(text);
-      if (!m) continue;
-      const meaning = (ar ? t.ar : t.en).toLowerCase();
-      const around = text.slice(Math.max(0, m.index - near), m.index + t.abbr.length + near).toLowerCase();
-      // explained in the copy's own words, in parentheses right after it, counts too
-      const explained = /^\s*\(/.test(text.slice(m.index + t.abbr.length));
-      if (!around.includes(meaning) && !explained) out.push(`page: "${t.abbr}" is used before it is spelled out ("${text.slice(Math.max(0, m.index - 40), m.index + 40)}")`);
+      // the pattern is src/lib/glossary.ts termPattern, passed in
+      // singular and plural are one term (API / APIs): its first use is the earlier of either
+      const pair = glossary.filter((x) => x.abbr === t.same || x.same === t.abbr);
+      const found = [t, ...pair].map((x) => ({ x, m: new RegExp(x.re).exec(text) })).filter((f) => f.m).sort((p1, p2) => p1.m!.index - p2.m!.index)[0];
+      if (!found) continue;
+      const m = found.m!;
+      const used = found.x;
+      const meanings = [t, ...pair].map((x) => (ar ? x.ar : x.en).toLowerCase());
+      const meaning = meanings[0]!;
+      const around = text.slice(Math.max(0, m.index - near), m.index + used.abbr.length + near).toLowerCase();
+      // explained in the copy's own words: in parentheses right after it, or it is the parenthesis after its explanation
+      const explained = /^\s*\(/.test(text.slice(m.index + used.abbr.length)) || /\(\s*$/.test(text.slice(0, m.index));
+      // first used in a figure: that figure's "In this figure" line names it
+      const terms = frameAt(m.index)?.previousElementSibling;
+      const inFigure = !!terms?.matches('.an-terms') && meanings.some((mn) => (terms.textContent ?? '').toLowerCase().includes(mn));
+      if (!meanings.some((mn) => around.includes(mn)) && !explained && !inFigure && meaning) out.push(`page: "${used.abbr}" is used before it is spelled out ("${text.slice(Math.max(0, m.index - 40), m.index + 40)}")`);
     }
   }
   const svgs = [...document.querySelectorAll<SVGSVGElement>('svg.an')].filter((s) => s.getBoundingClientRect().width > 0 && getComputedStyle(s).display !== 'none');
@@ -161,15 +179,34 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
       const b = bb(p);
       if (!inside(b, view, 1)) out.push(`${name}: edge ${p.dataset.from}→${p.dataset.to} leaves the viewBox`);
     }
-    // text never sits across a group's border (a group's own tag and title are part of it)
+    // text keeps 6 px from every group border, its own group's tag and title included
+    const CLEAR = 6;
+    const grow = (b: B, d: number): B => ({ x: b.x - d, y: b.y - d, w: b.w + 2 * d, h: b.h + 2 * d });
     for (const g of svg.querySelectorAll<SVGGElement>('[data-group]')) {
       // rectangles only: an isometric platform's polygon has no meaningful bounding box
       const gr = g.querySelector<SVGGraphicsElement>(':scope > rect');
       if (!gr) continue;
       const box = bb(gr);
       for (const { t, b } of tb) {
-        if (g.contains(t)) continue;
-        if (hit(b, box, 1) && !inside(b, box, 1)) out.push(`${name}: text "${t.textContent}" sits on the border of group ${g.dataset.group}`);
+        // a step badge marks a point on its wire: it only has to stay off the border
+        const d = t.closest('.an-badge') ? 2 : CLEAR;
+        const near = grow(b, d - 0.5);
+        if (hit(near, box, 0) && !inside(near, box, 0)) out.push(`${name}: text "${t.textContent}" is within ${d} px of the border of group ${g.dataset.group}`);
+      }
+    }
+    // a wire's label (not a step badge, which marks its wire) keeps 6 px from every line
+    for (const { t, b } of tb) {
+      if (!t.closest('[data-for]') || t.closest('.an-badge')) continue;
+      const near = grow(b, CLEAR - 0.5);
+      for (const p of svg.querySelectorAll<SVGPathElement>('[data-edge]')) {
+        const len = p.getTotalLength();
+        for (let d = 0; d <= len; d += 2) {
+          const pt = p.getPointAtLength(d);
+          if (pt.x > near.x && pt.x < near.x + near.w && pt.y > near.y && pt.y < near.y + near.h) {
+            out.push(`${name}: label "${t.textContent}" is within ${CLEAR} px of the wire ${p.dataset.from}→${p.dataset.to}`);
+            break;
+          }
+        }
       }
     }
     // groups nest or stand apart, never half-overlap; a node inside a group's box belongs to it

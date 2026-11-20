@@ -15,7 +15,7 @@ export function pipeline(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
   const e = c.edge;
   const edges: ArchEdge[] = [
     { from: 'creator', to: 'apiVideos', flow: 'media', label: e.upload, step: 1, fromSide: 'e', toSide: 'w' },
-    { from: 'apiVideos', to: 'bunny', flow: 'media', label: e.encode, step: 2, fromSide: 'n', toSide: 'w' },
+    { from: 'apiVideos', to: 'bunny', flow: 'media', label: e.encode, step: 2, fromSide: 'n', toSide: ['w', 's'] },
     { from: 'apiVideos', to: 'originals', flow: 'media', label: e.tee, step: 3, fromSide: 'e', toSide: 'w' },
     { from: 'apiVideos', to: 'queue', flow: 'async', label: e.enqueue, step: 6, fromSide: 's', toSide: 'w' },
     { from: 'apiVideos', to: 'processor', flow: 'async', label: e.events, step: 4, fromSide: 's', toSide: 'n' },
@@ -41,8 +41,8 @@ export function pipeline(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
     nodes: [
       node('creator', 'lucide/user', [0, 1]),
       node('apiVideos', 'cloudflare/workers', [1.15, 1]),
-      node('bunny', 'brand/bunny-stream', [2.4, -0.18]),
-      node('bunnyCdn', 'brand/bunny-cdn', [5.8, -0.18]),
+      node('bunny', 'brand/bunny-stream', [2.4, -0.32]),
+      node('bunnyCdn', 'brand/bunny-cdn', [5.8, -0.32]),
       node('originals', 'cloudflare/r2', [2.4, 1]),
       node('queue', 'cloudflare/queues', [2.4, 2.15]),
       node('media', 'cloudflare/workers', [3.55, 2.15]),
@@ -57,8 +57,8 @@ export function pipeline(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
     ],
     groups: [
       { id: 'transcode', label: c.lane.transcode, members: ['media', 'slots', 'container'] },
-      { id: 'cf', label: c.lane.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', members: ['apiVideos', 'originals', 'queue', 'transcode', 'renditions', 'cdn', 'processor', 'workersAi', 'dlq'] },
-      { id: 'bunnyNet', label: c.lane.bunny, kind: 'platform', tagLogo: { id: 'brand/bunnynet-logo-dark', w: 66, h: 19 }, accent: '#f29b1d', members: ['bunny', 'bunnyCdn'] },
+      { id: 'cf', label: c.lane.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', tagEnd: true, members: ['apiVideos', 'originals', 'queue', 'transcode', 'renditions', 'cdn', 'processor', 'workersAi', 'dlq'] },
+      { id: 'bunnyNet', label: c.lane.bunny, kind: 'platform', tagEnd: true, tagLogo: { id: 'brand/bunnynet-logo-dark', w: 66, h: 19 }, accent: '#f29b1d', members: ['bunny', 'bunnyCdn'] },
     ],
     edges,
   };
@@ -80,7 +80,7 @@ export function pipeline(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
     ]),
     edges: [
       { from: 'creator', to: 'apiVideos', flow: 'media', label: e.upload, step: 1, fromSide: 's', toSide: 'n' },
-      { from: 'apiVideos', to: 'bunny', flow: 'media', label: e.encode, step: 2, fromSide: 'w', toSide: 'w' },
+      { from: 'apiVideos', to: 'bunny', flow: 'media', label: e.encode, step: 2, fromSide: 'n', toSide: 's' },
       { from: 'apiVideos', to: 'originals', flow: 'media', label: e.tee, step: 3, fromSide: 'e', toSide: 'w' },
       { from: 'apiVideos', to: 'processor', flow: 'async', step: 4, fromSide: 's', toSide: 'n' },
       { from: 'processor', to: 'workersAi', flow: 'request', label: e.ai, step: 5, fromSide: 'e', toSide: 'w' },
