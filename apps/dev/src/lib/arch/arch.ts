@@ -406,7 +406,7 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   const inCanvas = (q: Rect) => q.x >= 4 && q.y >= 4 && q.x + q.w <= W - 4 && q.y + q.h <= H - 4;
   // labels and badges keep 6 px from every line and group border
   const CLEAR = 6;
-  const free = (q: Rect, wires: Rect[]) => inCanvas(q) && !obstacles.some((o) => intersects(q, o, 3)) && !placed.some((o) => intersects(q, o, 3)) && !wires.some((o) => intersects(q, o, CLEAR));
+  const free = (q: Rect, wires: Rect[]) => inCanvas(q) && !obstacles.some((o) => intersects(q, o, CLEAR)) && !placed.some((o) => intersects(q, o, 3)) && !wires.some((o) => intersects(q, o, CLEAR));
 
   // each group's outline as four thin strips: a label may sit inside or outside a group, never on its edge
   const borders: Rect[] = [...groups.values()].flatMap(({ box: b }) => [
@@ -434,11 +434,11 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     let fb = best;
     if (!fb) {
       let far = -1;
-      for (let d = 14; d < rt.len - 14; d += 2) {
+      for (let d = 4; d < rt.len - 4; d += 2) {
         const c = pointAt(rt.pts, d);
         const q = { x: c.x - BR, y: c.y - BR, w: 2 * BR, h: 2 * BR };
         // never on a tile, a title or another wire; among the rest, the farthest from any border
-        if (obstacles.some((o) => intersects(q, o, 3)) || placed.some((o) => intersects(q, o, 3)) || others.some((o) => intersects(q, o, 1))) continue;
+        if (obstacles.some((o) => intersects(q, o, 0)) || placed.some((o) => intersects(q, o, 3)) || others.some((o) => intersects(q, o, 1))) continue;
         const k = clearance(c);
         if (k > far) {
           far = k;

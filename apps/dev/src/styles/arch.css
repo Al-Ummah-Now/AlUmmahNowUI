@@ -597,6 +597,20 @@ html[data-mode='dark'] .an-iso {
 
 /* hand-drawn explainers (sample 1) */
 @font-face {
+  font-family: 'Sketch Digits';
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/inter-latin-400-normal.woff2') format('woff2');
+  unicode-range: U+0030-0039;
+}
+@font-face {
+  font-family: 'Sketch Digits';
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/inter-latin-700-normal.woff2') format('woff2');
+  unicode-range: U+0030-0039;
+}
+@font-face {
   font-family: 'Kalam';
   font-weight: 400;
   font-display: swap;
@@ -659,7 +673,8 @@ html[data-mode='dark'] .an-sketch {
   fill: var(--sk-ink);
 }
 .an-sketch .an-hand {
-  font-family: 'Kalam', 'Comic Sans MS', var(--font-sans);
+  /* the hand face, with Inter's digits: Kalam draws 1 like I, so "D1" read as "DI" */
+  font-family: 'Sketch Digits', 'Kalam', 'Comic Sans MS', var(--font-sans);
 }
 .an-sketch .an-hand-ar {
   /* a text face whose letters join cleanly: the hand-drawn faces merged Arabic letters */

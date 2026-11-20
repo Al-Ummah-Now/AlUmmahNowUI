@@ -13,7 +13,7 @@ export const hubAr: typeof hubEn = {
       edge: { title: 'حافة Cloudflare', note: 'تخزين مؤقت · فحص الروبوتات' },
       workers: { title: 'Workers', note: 'المواقع · الواجهات · الدخول' },
       data: { title: 'المخازن والبيانات', note: 'مخازن KV · D1 · R2' },
-      ai: { title: 'Workers AI', note: 'الإشراف · النصوص المصاحبة' },
+      ai: { title: 'Workers AI', note: 'الإشراف على كل رفع' },
       queue: { title: 'الطوابير', note: 'إعادة · رسائل فاشلة' },
       bg: { title: 'عمّال الخلفية', note: 'المعالج والمجدوِل' },
       container: { title: 'الحاويات', note: 'ترميز FFmpeg' },

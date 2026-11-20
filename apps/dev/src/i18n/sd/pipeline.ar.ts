@@ -25,7 +25,7 @@ export const pipelineAr: typeof pipelineEn = {
       transcoder: { name: 'Transcoder', role: 'كائن وحاوية لكل مرئي' },
       renditions: { name: 'MEDIA, MEDIA_PRIVATE', role: 'النسخ في R2' },
     },
-    edge: { upload: 'رفع TUS', play: 'أي عنوان؟', binds: 'الروابط', tee: 'كل جزء', send: 'إرسال المهمة', consume: 'استهلاك', lease: 'حجز', start: 'تشغيل', write: 'كتابة', events: 'VIDEOS: الأحداث' },
+    edge: { upload: 'رفع TUS', play: 'أي عنوان؟', binds: 'الروابط', tee: 'كل جزء', send: 'إرسال المهمة', consume: 'استهلاك', lease: 'حجز', start: 'تشغيل', write: 'كتابة', events: 'أحداث عبر VIDEOS' },
   },
   upload: {
     title: 'الرفع خطوةً بخطوة',
@@ -129,7 +129,7 @@ export const pipelineAr: typeof pipelineEn = {
       tdlq: { name: 'al-ummah-now-transcode-dlq', role: 'بلا مستهلك' },
       dlq: { name: 'al-ummah-now-dlq', role: 'يقرؤه المعالج' },
     },
-    edge: { send: 'إرسال', requeue: 'إعادة إلى الطابور', consume: 'استهلاك', wait: 'لا مكان: من جديد بعد {N60} ثانية', giveUp: 'نفدت المحاولات', read: 'استهلاك' },
+    edge: { send: 'إرسال', requeue: 'إعادة إلى الطابور', consume: 'استهلاك', wait: 'لا خانة متاحة: من جديد بعد {N60} ثانية', giveUp: 'نفدت المحاولات', read: 'استهلاك' },
   },
   model: {
     title: 'مِمّ يتكوّن المرئي',

@@ -11,7 +11,7 @@ export const hubEn = {
       edge: { title: 'Cloudflare edge', note: 'cache · bot checks' },
       workers: { title: 'Workers', note: 'sites · APIs · sign-in' },
       data: { title: 'Cache and data', note: 'KV · D1 · R2 stores' },
-      ai: { title: 'Workers AI', note: 'moderation · captions' },
+      ai: { title: 'Workers AI', note: 'moderation of each upload' },
       queue: { title: 'Queues', note: 'retry · dead letters' },
       bg: { title: 'Background Workers', note: 'processor · scheduler' },
       container: { title: 'Containers', note: 'FFmpeg transcodes' },
