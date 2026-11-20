@@ -15,9 +15,12 @@ import { scalingAr } from './sd/scaling.ar.ts';
 import { clientsAr } from './sd/clients.ar.ts';
 import { releaseAr } from './sd/release.ar.ts';
 import { hubAr } from './sd/hub.ar.ts';
+import { pipelineAr } from './sd/pipeline.ar.ts';
 
 
 export const diagramsAr: typeof diagramsEn = {
+  why: 'لماذا بُني هكذا:',
+  tradeoff: 'وما ثمن ذلك:',
   legend: {
     title: 'قراءة المخطط',
     request: 'الطلبات',
@@ -152,16 +155,16 @@ export const diagramsAr: typeof diagramsEn = {
   hero: {
     title: 'الأمة الآن من الأعلى',
     desc: 'منظر متساوي القياس للمنصّة: الناس وأجهزتهم على جانب، وحساب Cloudflare في الوسط وعليه Workers وContainers وR2 وD1 وKV وQueues وWorkers AI، وbunny.net بجانبه، والمزوّدون على الجانب الآخر. وصلات مضيئة تحمل الطلبات والرفع والتشغيل بينها.',
-    platform: { cfCompute: 'Cloudflare · الحوسبة', cfData: 'Cloudflare · البيانات', people: 'الناس والتطبيقات', cf: 'Cloudflare', bunny: 'bunny.net', providers: 'المزوّدون' },
+    platform: { cfCompute: 'Cloudflare · الحوسبة', cfData: 'Cloudflare · ملفات وSQL ومفاتيح', people: 'الناس والتطبيقات', cf: 'Cloudflare', bunny: 'bunny.net', providers: 'المزوّدون' },
     node: {
       browser: 'المتصفحات',
       phone: 'التطبيقات',
       tv: 'التلفاز',
       workers: 'Workers',
       containers: 'Containers',
-      r2: 'تخزين R2',
-      d1: 'قواعد D1',
-      kv: 'مخزن KV',
+      r2: 'R2',
+      d1: 'D1',
+      kv: 'KV',
       queues: 'Queues',
       ai: 'Workers AI',
       cdn: 'Cloudflare CDN',
@@ -256,5 +259,6 @@ export const diagramsAr: typeof diagramsEn = {
     clients: clientsAr,
     release: releaseAr,
     hub: hubAr,
+    pipeline: pipelineAr,
   },
 };

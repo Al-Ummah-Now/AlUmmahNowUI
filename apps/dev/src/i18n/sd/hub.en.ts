@@ -16,7 +16,7 @@ export const hubEn = {
       bg: { title: 'Background Workers', note: 'processor · scheduler' },
       container: { title: 'Containers', note: 'FFmpeg transcodes' },
     },
-    obs: { logs: 'Logs', errors: 'Errors', rum: 'Page speed (real visits)' },
+    obs: { logs: 'Logs', errors: 'Errors', rum: 'Visitor page speed' },
     tag: { segments: 'video segments', later: 'later' },
   },
 };

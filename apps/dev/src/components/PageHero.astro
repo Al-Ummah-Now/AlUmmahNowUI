@@ -1,5 +1,6 @@
 ---
 /** The night band at the top of every inner page: title and lead. */
+import Rich from './Rich.astro';
 interface Props {
   title: string;
   lead: string;
@@ -10,7 +11,7 @@ const { title, lead } = Astro.props;
   <div class="wrap">
     <div class="page-hero-text">
       <h1 id="page-title" class="display">{title}</h1>
-      <p class="lead">{lead}</p>
+      <p class="lead"><Rich text={lead} /></p>
       <slot />
     </div>
   </div>

@@ -31,7 +31,6 @@ export const PAGES = [
   'system-design/clients',
   'system-design/release',
   'open-source',
-  'waqf',
   'contact',
 ] as const;
 export type PageSlug = (typeof PAGES)[number];
@@ -40,7 +39,7 @@ export type SystemDesignSubpage = Extract<PageSlug, `system-design/${string}`>;
 export const SYSTEM_DESIGN = PAGES.filter((p): p is SystemDesignSubpage => p.startsWith('system-design/'));
 
 /** What the header and the footer list: the top-level pages, not the section's subpages. */
-export const NAV = ['', 'community', 'technology', 'infrastructure', 'system-design', 'open-source', 'waqf', 'contact'] as const;
+export const NAV = ['', 'community', 'technology', 'infrastructure', 'system-design', 'open-source', 'contact'] as const;
 export type NavSlug = (typeof NAV)[number];
 
 export const pagePath = (locale: Locale, slug: PageSlug): string => (slug ? `/${locale}/${slug}/` : `/${locale}/`);

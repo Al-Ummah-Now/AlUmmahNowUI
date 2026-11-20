@@ -31,10 +31,11 @@ describe('copy', () => {
   it('Arabic uses «مرئي» for video, never «فيديو» (wiki glossary)', () => {
     for (const [p, s] of strings(ar)) expect(s, p).not.toMatch(/فيديو/);
   });
-  it('waqf is a direction, never a claim (wiki AUN-DEV-SITE wording rules)', () => {
+  it('describes only what exists and runs today: no plans, no studies (owner, 2026-11-19)', () => {
     const all = strings(en).map(([, s]) => s).join('\n');
-    expect(all).not.toMatch(/\bis a (registered )?(waqf|charity)\b/i);
-    expect(all).not.toMatch(/tax[- ]deductible|donate now/i);
+    expect(all).not.toMatch(/\bwe are (exploring|studying|considering|planning)\b|\bcoming soon\b|\bwaqf\b|tax[- ]deductible|donate now/i);
+    const allAr = strings(ar).map(([, s]) => s).join('\n');
+    expect(allAr).not.toMatch(/ندرس|نخطط|قريبًا|الوقف/);
   });
   it('no user, view or money figures', () => {
     const all = strings(en).map(([, s]) => s).join('\n');
