@@ -148,10 +148,12 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
     const self = s.from === s.to;
     const lo = self ? a + 34 : Math.min(a, b) + BR + 8;
     const span = self ? layout.colW * 1.6 : Math.abs(b - a) - BR - 20;
-    const lx = layout.narrow ? PAD + 6 : lo;
     const max = layout.narrow ? baseW - 2 * PAD - 12 : Math.max(span, 230);
     const lines = wrap(s.label, LS, max);
     const code = s.code ? wrap(s.code, CS, max, true) : [];
+    // on a phone the label starts by its arrow, moving toward the edge only as far as it must to fit
+    const blockW = Math.max(...lines.map((l) => textWidth(l, LS)), ...code.map(codeW), 0);
+    const lx = layout.narrow ? Math.max(PAD + 6, Math.min(lo, baseW - PAD - 6 - blockW)) : lo;
     const blockH = lines.length * (LS + LG) + code.length * (CS + LG + 1);
     const ay = y + blockH + 10;
     if (!s.reply) n += 1;

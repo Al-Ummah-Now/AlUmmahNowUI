@@ -37,6 +37,20 @@ describe('copy', () => {
     const allAr = strings(ar).map(([, s]) => s).join('\n');
     expect(allAr).not.toMatch(/ندرس|نخطط|قريبًا|الوقف|قيد التطوير|قيد الطرح|قيد الإطلاق|لاحقًا|مخطط له/);
   });
+  it('one term per thing, and no sentence opens with a lowercase code name (AUDIT-2, round 5)', () => {
+    const allAr = strings(ar).map(([, s]) => s).join('\n');
+    expect(allAr).not.toMatch(/خانة شاغرة|البوتات/);
+    // a range of rungs in Arabic reads as words («من ٣٦٠p إلى ١٠٨٠p»), never a dash the bidi algorithm can reverse
+    expect(allAr).not.toMatch(/\{tkRung\w+\}\s*[–-]\s*\{tkRung/);
+    // and so does any other range: «من ٣٠ إلى ٩٠ يومًا», never «٣٠–٩٠»
+    expect(allAr).not.toMatch(/\}\s*[–-]\s*\{|\d\s*–\s*\d/);
+    // prose only: a tile's name (api-videos) is a label, not a sentence
+    const lc = /(?:[.!?]\s+)(?:[a-z][a-z0-9]*[-_][a-z0-9_-]+|videos|processor|media|scheduler)\b/;
+    for (const [path, s] of strings(en)) {
+      expect(s, path).not.toMatch(lc);
+      if (s.length > 60 && /\. /.test(s)) expect(s, path).not.toMatch(/^(?:[a-z][a-z0-9]*[-_][a-z0-9_-]+|videos|processor|media|scheduler)\b/);
+    }
+  });
   it('no user, view or money figures', () => {
     const all = strings(en).map(([, s]) => s).join('\n');
     expect(all).not.toMatch(/\$\s?\d|\d+\s?(k|m)?\s?(users|viewers|subscribers|views)\b/i);

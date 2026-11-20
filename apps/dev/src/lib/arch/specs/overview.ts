@@ -18,10 +18,10 @@ export function overview(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
     desc: c.desc,
     motion: 'pulses',
     nodes: [
-      node('browsers', 'lucide/browser', [0, 0]),
-      node('apps', 'lucide/smartphone', [0, 1]),
-      node('cdn', 'cloudflare/cache', [1.15, 0]),
-      node('turnstile', 'cloudflare/turnstile', [1.15, 1]),
+      node('browsers', 'lucide/browser', [-0.3, 0]),
+      node('apps', 'lucide/smartphone', [-0.3, 1]),
+      node('cdn', 'cloudflare/cache', [1.0, 0]),
+      node('turnstile', 'cloudflare/turnstile', [1.0, 1]),
       node('www', 'simple-icons/astro', [2.3, 0]),
       node('videos', 'simple-icons/nextjs', [3.3, 0]),
       node('adminWeb', 'simple-icons/nextjs', [4.3, 0]),
@@ -45,13 +45,13 @@ export function overview(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
       node('analytics', 'cloudflare/analytics', [3.3, 4.15]),
       node('secrets', 'cloudflare/secrets-store', [4.3, 4.15]),
       node('status', 'cloudflare/workers', [5.3, 4.15]),
-      node('bunnyCdn', 'brand/bunny-cdn', [0, 2.35]),
-      node('bunnyStream', 'brand/bunny-stream', [0, 3.35]),
-      node('ci', 'simple-icons/githubactions', [0, 4.5]),
-      node('qf', 'lucide/book-open', [8.45, 0.5]),
-      node('resend', 'simple-icons/resend', [8.45, 1.5]),
-      node('push', 'lucide/bell', [8.45, 2.5]),
-      node('google', 'simple-icons/google', [8.45, 3.5]),
+      node('bunnyCdn', 'brand/bunny-cdn', [-0.3, 2.35]),
+      node('bunnyStream', 'brand/bunny-stream', [-0.3, 3.35]),
+      node('ci', 'simple-icons/githubactions', [-0.75, 4.5]),
+      node('qf', 'lucide/book-open', [8.85, 0.5]),
+      node('resend', 'simple-icons/resend', [8.85, 1.5]),
+      node('push', 'lucide/bell', [8.85, 2.5]),
+      node('google', 'simple-icons/google', [8.85, 3.5]),
     ],
     groups: [
       { id: 'clients', label: c.group.clients, members: ['browsers', 'apps'] },
@@ -89,17 +89,17 @@ export function overview(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
   ] satisfies ArchEdge[];
 
   // Arabic group titles take a taller line: more room between stacked groups, so the wire between them reads
-  const wide: ArchLayout = { colW: 168, rowH: locale === 'ar' ? 200 : 186 };
+  const wide: ArchLayout = { colW: 230, rowH: locale === 'ar' ? 200 : 186 };
 
-  // phone: two columns, the same groups stacked in reading order
+  // phone: two columns, the same groups stacked in reading order; each gap holds its wire's label beside the wire
   const at = stack([
     [['browsers', 'apps'], 0],
-    [['cdn', 'turnstile'], 2.05],
+    [['cdn', 'turnstile'], 2.5],
     [['www', 'videos'], 1.8],
     [['adminWeb', 'cms'], 1.05],
-    [['apiVideos', 'adminApi'], 1.95],
+    [['apiVideos', 'adminApi'], 2.3],
     [['auth', 'realtime'], 1.05],
-    [['processor', 'scheduler'], 1.95],
+    [['processor', 'scheduler'], 2.3],
     [['costMonitor', 'media'], 1.05],
     [['container', 'slots'], 1.05],
     [['workersAi'], 2.5],

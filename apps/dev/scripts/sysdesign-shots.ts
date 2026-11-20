@@ -14,6 +14,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { chromium } from '@playwright/test';
+import sharp from 'sharp';
 import { gateInBrowser } from '../e2e/diagram-gate.ts';
 import { GATE_GLOSSARY, NEAR } from '../src/lib/glossary.ts';
 
@@ -137,11 +138,20 @@ for (const slug of PAGES)
             const host = document.createElement('div');
             host.id = 'shot-host';
             host.setAttribute('dir', 'ltr');
-            for (const [k, v] of Object.entries({ position: 'fixed', top: '0', left: '0', 'z-index': '2147483647', padding: '20px 24px 24px', display: 'grid', gap: '14px', width: 'max-content', background: getComputedStyle(document.body).backgroundColor })) host.style.setProperty(k, v);
+            // an opaque backdrop in the page's own colour under the capture, so nothing of the page can show at its edges
+            const paint = [getComputedStyle(document.body).backgroundColor, getComputedStyle(document.documentElement).backgroundColor].find((c) => !/rgba\(.*,\s*0\)$|transparent/.test(c)) ?? '#ffffff';
+            const backdrop = document.createElement('div');
+            backdrop.id = 'shot-backdrop';
+            for (const [k, v] of Object.entries({ position: 'fixed', inset: '0', 'z-index': '2147483646', background: paint })) backdrop.style.setProperty(k, v);
+            document.body.append(backdrop);
+            for (const [k, v] of Object.entries({ position: 'fixed', top: '0', left: '0', 'z-index': '2147483647', padding: '20px 24px 24px', display: 'grid', gap: '14px', width: 'max-content', background: paint })) host.style.setProperty(k, v);
             // the figure's own key, as the page shows it above the drawing
             const legend = [...(el.closest('.an-figure')?.querySelectorAll<HTMLElement>('.an-legend') ?? [])].find((l) => getComputedStyle(l).display !== 'none');
             if (legend) {
               const key = legend.cloneNode(true) as HTMLElement;
+              // the layout classes would hide it at the capture's (wider) viewport
+              key.classList.remove('an-legend-wide', 'an-legend-narrow');
+              key.style.setProperty('display', 'flex');
               key.setAttribute('dir', document.documentElement.dir || 'ltr');
               key.style.setProperty('max-width', `${(el as SVGSVGElement).width.baseVal.value}px`);
               host.append(key);
@@ -152,9 +162,46 @@ for (const slug of PAGES)
             document.body.append(host);
           });
           const vp = page.viewportSize()!;
-          await page.setViewportSize({ width: Math.max(vp.width, Math.ceil(size.w) + 60), height: Math.max(vp.height, Math.ceil(size.h) + 200) });
-          await page.locator('#shot-host').screenshot({ path: join(out, `${tag}-diagram-${id}.png`) });
-          await page.evaluate(() => document.getElementById('shot-host')?.remove());
+          // a viewport that holds the whole capture (legend + drawing + padding), with room to spare
+          const hostSize = await page.evaluate(() => {
+            const r = document.getElementById('shot-host')!.getBoundingClientRect();
+            return { w: Math.ceil(r.width), h: Math.ceil(r.height) };
+          });
+          await page.setViewportSize({ width: Math.max(vp.width, hostSize.w + 40, Math.ceil(size.w) + 60), height: Math.max(vp.height, hostSize.h + 80) });
+          // the capture holds the figure only: its legend when the figure has one, and nothing from the page
+          // around it (every point along its edges belongs to the capture itself)
+          const capture = await page.evaluate(() => {
+            const host = document.getElementById('shot-host')!;
+            const problems: string[] = [];
+            if (Number((getComputedStyle(host).backgroundColor.match(/[\d.]+/g) ?? [])[3] ?? 1) < 1) problems.push('capture background is see-through');
+            const r = host.getBoundingClientRect();
+            if (r.bottom > innerHeight || r.right > innerWidth) problems.push('the capture is larger than the viewport (the page shows below it)');
+            for (const [x, y] of [...[0.05, 0.3, 0.5, 0.7, 0.95].map((f) => [r.left + r.width * f, r.bottom - 1]), [r.left + 1, r.top + r.height / 2], [r.right - 1, r.top + r.height / 2]] as [number, number][]) {
+              const el = document.elementFromPoint(x, y);
+              if (el && el !== host && !host.contains(el)) problems.push(`pixels from outside the figure at the capture's edge (${el.tagName.toLowerCase()})`);
+            }
+            return problems;
+          });
+          const legendHad = await svg.evaluate((el) => [...(el.closest('.an-figure')?.querySelectorAll('.an-legend li') ?? [])].length > 0);
+          // visible, not merely present: a hidden legend in the capture is as good as none
+          const legendShot = await page.locator('#shot-host .an-legend li:visible').count();
+          if (legendHad && !legendShot) capture.push('standalone capture is missing its legend');
+          for (const c of capture) defects.push(`${name(slug)} ${lang} ${mode} ${w}: ${id} capture: ${c}`);
+          const png = await page.locator('#shot-host').screenshot({ path: join(out, `${tag}-diagram-${id}.png`) });
+          // the capture's padding is plain background: its bottom rows and right column must be that colour only
+          // (a row of the page below showing through fails the capture)
+          const bg = await page.evaluate(() => (getComputedStyle(document.getElementById('shot-host')!).backgroundColor.match(/\d+/g) ?? []).slice(0, 3).map(Number));
+          const { data, info } = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+          const off = (x: number, y: number) => (y * info.width + x) * info.channels;
+          const differs = (x: number, y: number) => [0, 1, 2].some((c) => Math.abs(data[off(x, y) + c]! - (bg[c] ?? 0)) > 12);
+          let edge = false;
+          for (let y = info.height - 4; y < info.height && !edge; y++) for (let x = 0; x < info.width && !edge; x += 2) edge = differs(x, y);
+          for (let y = 0; y < info.height && !edge; y += 2) edge = differs(info.width - 2, y);
+          if (edge) defects.push(`${name(slug)} ${lang} ${mode} ${w}: ${id} capture: pixels along its edge aren't the figure's background (something outside the figure shows)`);
+          await page.evaluate(() => {
+            document.getElementById('shot-host')?.remove();
+            document.getElementById('shot-backdrop')?.remove();
+          });
           await page.setViewportSize(vp);
           // let the sticky header settle after the resize (a stale band above it otherwise lands in the next frame)
           await page.evaluate(() => new Promise<void>((res) => {

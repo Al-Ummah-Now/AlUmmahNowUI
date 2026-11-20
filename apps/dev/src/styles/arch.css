@@ -864,11 +864,12 @@ html[data-mode='dark'] .an-sketch {
   --line-t: #9db8ea;
 }
 .an-iso .an-tone-plain {
-  --top: #ffffff;
-  --l: #dde7f0;
-  --r: #b9cadb;
+  /* a tinted top with a firm outline: a white top vanished on the light page */
+  --top: #eef3f8;
+  --l: #d3dfea;
+  --r: #b0c3d6;
   --rim: #ffffff;
-  --line-t: #c9d6e2;
+  --line-t: #8fa6bc;
 }
 html[data-mode='dark'] .an-iso .an-tone-plain {
   --top: #e9f2f8;
@@ -1026,10 +1027,10 @@ html[data-mode='dark'] .an-iso .an-iso-shadow {
   font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
 }
 .an .an-seq-note-box {
+  /* solid: dashed lines mean control wires (and a participant's lifeline, which the legend names) */
   fill: var(--an-canvas);
   stroke: var(--an-muted);
   stroke-opacity: 0.45;
-  stroke-dasharray: 3 3;
 }
 .an .an-seq-note {
   fill: var(--an-muted);
@@ -1076,4 +1077,14 @@ html[data-mode='dark'] .an-iso .an-iso-shadow {
   .an-scenario {
     display: flex;
   }
+}
+
+.an-legend .an-sw-life {
+  width: 0;
+  height: 16px;
+  border-top: 0;
+  border-inline-start: 2px dashed var(--muted);
+}
+.an-legend .an-sw-life::after {
+  display: none;
 }

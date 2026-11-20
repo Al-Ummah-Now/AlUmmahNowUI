@@ -101,7 +101,10 @@ export function expandAbbreviations(html: string, locale: 'en' | 'ar', label: st
       if (said(term, before.slice(-NEAR)) || said(term, upcoming)) continue;
       // already followed by its own parenthesis (e.g. "TUS (resumable uploads)"): leave it
       if (/^\s*\(/.test(text.slice(m.index + term.abbr.length))) continue;
-      const at = m.index + term.abbr.length;
+      let at = m.index + term.abbr.length;
+      // "R2 storage" → "R2 storage (…)", not "R2 (… object storage) storage": a word the meaning already says goes first
+      const next = /^ ([A-Za-z\u0600-\u06ff]+)/.exec(text.slice(at));
+      if (next && meaning(term).toLowerCase().includes(next[1]!.toLowerCase())) at += next[0].length;
       text = `${text.slice(0, at)} (${meaning(term)})${text.slice(at)}`;
     }
     out.push(text);

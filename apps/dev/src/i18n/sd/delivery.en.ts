@@ -3,7 +3,7 @@ export const deliveryEn = {
   rails: {
     title: 'Three rails to the viewer',
     lead: 'Public videos stream from R2 through the CDN without running any code. Private and unlisted ones go through the media Worker, which checks a token carried in the path. Bunny’s CDN serves its own copies. The API decides which rail a play takes and signs the address.',
-    desc: 'Viewers on the left ask api-videos for a play address. Three rails lead back to them: R2’s public bucket through its custom domain and a Cache Rule; R2’s private bucket through the media Worker with a token in the path and an edge cache keyed by object; and Bunny Stream’s library through Bunny’s token-signed CDN. api-videos purges the CDN when a video’s visibility changes.',
+    desc: 'Viewers on the left ask api-videos for a play address. Three rails lead back to them: R2’s public bucket through its custom domain and a Cache Rule; R2’s private bucket through the media Worker with a token in the path and an edge cache keyed by object; and Bunny Stream’s library through Bunny’s token-signed CDN. The api-videos Worker purges the CDN when a video’s visibility changes.',
     group: { cf: 'Cloudflare account', pub: 'Public rail', priv: 'Private rail', bunny: 'bunny.net' },
     caption: { pub: 'segments {N1} year · playlists {N10} s', priv: 'token in the path · one copy per object' },
     node: {
@@ -35,7 +35,7 @@ export const deliveryEn = {
   caches: {
     title: 'Small caches, big savings',
     lead: 'Inside the API, a few short-lived caches keep thousands of requests from becoming thousands of reads, and keep sign-in working when a database is slow.',
-    desc: 'A hand-drawn sketch. api-videos in the middle: it reads the delivery settings from a 30-second cache, the issuer’s public keys from an edge cache with the last good copy kept, and token revocations from a KV copy. It signs every playback address on the way out and never stores one. Share images stay on our own domain, and MP4 downloads are rate-limited per IP. All cache rules ship as code with every release.',
+    desc: 'A hand-drawn sketch. The api-videos Worker in the middle: it reads the delivery settings from a 30-second cache, the issuer’s public keys from an edge cache with the last good copy kept, and token revocations from a KV copy. It signs every playback address on the way out and never stores one. Share images stay on our own domain, and MP4 downloads are rate-limited per IP. All cache rules ship as code with every release.',
     heading: 'Small caches, big savings',
     around: 'cache rules ship as code with every release',
     node: {

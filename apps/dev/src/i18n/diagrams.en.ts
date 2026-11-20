@@ -26,9 +26,10 @@ export const diagramsEn = {
     media: 'uploads and media processing',
     delivery: 'playback delivery',
     async: 'queues and background jobs',
-    control: 'control: deploys, leases, events and retries (dashed)',
+    control: 'control: deploys, leases, status reports and retries (dashed)',
     scroll: 'Wider than the page: scroll sideways to see all of it →',
     steps: 'steps fire in order',
+    lifeline: 'dashed vertical line: a participant’s timeline',
   },
   overview: {
     title: 'Al Ummah Now reference architecture',
@@ -85,7 +86,7 @@ export const diagramsEn = {
       qf: { name: 'Quran Foundation', role: 'official text' },
       resend: { name: 'Resend', role: 'email' },
       push: { name: 'Push services', role: 'Apple · Google · Windows' },
-      google: { name: 'Google', role: 'Move from YouTube' },
+      google: { name: 'Google', role: 'move from YouTube' },
       ci: { name: 'GitHub Actions', role: 'release.yml' },
     },
     edge: {
@@ -133,7 +134,7 @@ export const diagramsEn = {
       player: { name: 'Player', role: 'web · apps · embeds' },
     },
     edge: {
-      events: 'events',
+      events: 'upload events',
       ai: 'AI checks',
       dlq: 'dead letters',
       upload: 'resumable upload',
