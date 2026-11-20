@@ -2055,7 +2055,7 @@ html:not([data-mode='light']) .pi-invert-dark svg {
 }
 .sd-nav-n {
   font-size: 0.78em;
-  opacity: 0.7;
+  font-weight: 400;
 }
 @media (min-width: 1100px) {
   .sd-shell {
