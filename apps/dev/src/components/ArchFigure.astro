@@ -11,6 +11,7 @@ import { laneTotals, scenarioLabels } from '../lib/arch/specs/costs';
 import { formatUsd } from '../lib/arch/cost';
 import { formatNumber } from '../../../../packages/render/src/format.ts';
 import { strings } from '../i18n';
+import Rich from './Rich.astro';
 import type { Locale } from '../lib/pages';
 
 interface Props {
@@ -22,8 +23,11 @@ interface Props {
   headingId?: string;
   /** show the example picker and the per-pipeline comparison */
   costs?: boolean;
+  /** for developers, under the figure: why it is built this way, and what that costs */
+  why?: string;
+  tradeoff?: string;
 }
-const { id, locale, title, lead, bleed = true, headingId, costs = false } = Astro.props;
+const { id, locale, title, lead, bleed = true, headingId, costs = false, why, tradeoff } = Astro.props;
 const d = diagram(id, locale);
 const dg = strings(locale).diagrams;
 const lg = dg.legend;
@@ -41,7 +45,7 @@ const uid = `${id}-${headingId ?? 'fig'}`;
 ---
 <figure class="an-figure" aria-labelledby={headingId} data-unknown-label={dg.costs.unknown}>
   {title && <h2 id={headingId} class="h2">{title}</h2>}
-  {lead && <p class="section-lead">{lead}</p>}
+  {lead && <p class="section-lead"><Rich text={lead} /></p>}
   {costs && (
     <fieldset class="an-scenarios">
       <legend>{dg.costs.pick}</legend>
@@ -79,6 +83,12 @@ const uid = `${id}-${headingId ?? 'fig'}`;
       ))}
       {d.steps && id !== 'costs' && <li><span class="an-sw an-sw-step" aria-hidden="true">{formatNumber(1, locale)}</span>{lg.steps}</li>}
     </ul>
+  )}
+  {(why || tradeoff) && (
+    <div class="an-notes-text">
+      {why && <p><strong>{dg.why}</strong> <Rich text={why} /></p>}
+      {tradeoff && <p><strong>{dg.tradeoff}</strong> <Rich text={tradeoff} /></p>}
+    </div>
   )}
 </figure>
 <script>

@@ -2,7 +2,6 @@
 import Base from '../../../layouts/Base.astro';
 import PageHero from '../../../components/PageHero.astro';
 import ItemGrid from '../../../components/ItemGrid.astro';
-import Sources from '../../../components/Sources.astro';
 import StatusChip from '../../../components/StatusChip.astro';
 import { WIKI } from '../../../lib/links';
 import { FEATURES, REGISTRY, releaseHref, releaseLabel, registrySourceHref } from '../../../lib/registry';
@@ -75,7 +74,6 @@ const sha = REGISTRY.source.sha === 'local' ? 'local' : REGISTRY.source.sha.slic
           <li class="principle">
             <h3 class="tile-title">{x.title}</h3>
             <p>{x.body}</p>
-            <Sources links={x.sources} label={t.common.source} plural={t.common.sources} />
           </li>
         ))}
       </ul>

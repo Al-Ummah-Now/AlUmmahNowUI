@@ -1,8 +1,8 @@
 ---
 import Base from '../../../../layouts/Base.astro';
 import PageHero from '../../../../components/PageHero.astro';
-import ItemGrid from '../../../../components/ItemGrid.astro';
-import ArchFigure from '../../../../components/ArchFigure.astro';
+import SdShell from '../../../../components/SdShell.astro';
+import SdDiagram from '../../../../components/SdDiagram.astro';
 import { strings } from '../../../../i18n';
 import type { Locale } from '../../../../lib/pages';
 import { localePaths } from '../../../../lib/static-paths';
@@ -11,28 +11,18 @@ export const getStaticPaths = localePaths;
 const locale = Astro.params.lang as Locale;
 const t = strings(locale);
 const p = t.videoPipeline;
+const d = t.diagrams.pages.pipeline;
 ---
 <Base locale={locale} slug="system-design/video-pipeline" title={p.title} description={p.description}>
   <PageHero title={p.heroTitle} lead={p.heroLead} />
-  <section class="band" aria-labelledby="logoflow-h">
-    <div class="wrap">
-      <ArchFigure id="pipeline" locale={locale} title={p.logoFlow.title} lead={p.diagramLead} headingId="logoflow-h" />
-    </div>
-  </section>
-  <section class="band band-raised" aria-labelledby="costs-h">
-    <div class="wrap">
-      <ArchFigure id="costs" locale={locale} title={t.diagrams.costs.title} headingId="costs-h" costs />
-    </div>
-  </section>
-  <section class="band" aria-labelledby="sketch-h">
-    <div class="wrap">
-      <ArchFigure id="sketch-play" locale={locale} title={t.diagrams.sketch.title} headingId="sketch-h" />
-    </div>
-  </section>
-  <section class="band" aria-labelledby="stages-h">
-    <div class="wrap">
-      <h2 id="stages-h" class="h2">{p.stagesTitle}</h2>
-      <ItemGrid items={p.stages} t={t} />
-    </div>
-  </section>
+  <SdShell locale={locale} slug="system-design/video-pipeline" t={t}>
+    <SdDiagram id="vp-map" locale={locale} title={d.map.title} lead={d.map.lead} why={d.map.why} tradeoff={d.map.tradeoff} />
+    <SdDiagram id="vp-upload" locale={locale} title={d.upload.title} lead={d.upload.lead} why={d.upload.why} tradeoff={d.upload.tradeoff} raised />
+    <SdDiagram id="vp-transcode" locale={locale} title={d.transcode.title} lead={d.transcode.lead} why={d.transcode.why} tradeoff={d.transcode.tradeoff} />
+    <SdDiagram id="pipeline" locale={locale} title={p.logoFlow.title} lead={p.diagramLead} raised />
+    <SdDiagram id="vp-queues" locale={locale} title={d.queues.title} lead={d.queues.lead} why={d.queues.why} tradeoff={d.queues.tradeoff} />
+    <SdDiagram id="vp-model" locale={locale} title={d.model.title} lead={d.model.lead} why={d.model.why} tradeoff={d.model.tradeoff} raised />
+    <SdDiagram id="vp-play" locale={locale} title={d.play.title} lead={d.play.lead} why={d.play.why} tradeoff={d.play.tradeoff} />
+    <SdDiagram id="costs" locale={locale} title={t.diagrams.costs.title} costs raised />
+  </SdShell>
 </Base>

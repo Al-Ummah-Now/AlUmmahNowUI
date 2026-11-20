@@ -1,0 +1,31 @@
+---
+/**
+ * The System design section's own navigation, on every page of it: a sticky list beside the page
+ * on wide screens, a wrapping list of links under the hero on narrower ones (nothing scrolls off).
+ */
+import type { Locale, PageSlug } from '../lib/pages';
+import type { Strings } from '../i18n';
+import { sdEntries } from '../lib/sd-nav';
+import { formatNumber } from '../../../../packages/render/src/format.ts';
+
+interface Props {
+  locale: Locale;
+  slug: PageSlug;
+  t: Strings;
+}
+const { locale, slug, t } = Astro.props;
+const entries = sdEntries(locale, t);
+---
+<nav class="sd-nav" aria-label={t.sdNav.label}>
+  <p class="sd-nav-title">{t.sdNav.label}</p>
+  <ol role="list">
+    {entries.map((e, i) => (
+      <li>
+        <a href={e.href} aria-current={e.slug === slug ? 'page' : undefined}>
+          <span class="sd-nav-n" aria-hidden="true">{formatNumber(i, locale)}</span>
+          <span>{e.title}</span>
+        </a>
+      </li>
+    ))}
+  </ol>
+</nav>

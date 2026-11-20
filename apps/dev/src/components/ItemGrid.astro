@@ -1,15 +1,16 @@
 ---
-/** Facts with a status label and their sources. The label comes only from the wiki's feature registry. */
+/** Facts with a status label. The label comes only from the wiki's feature registry. */
 import type { Item, Strings } from '../i18n';
 import { feature } from '../lib/registry';
 import StatusChip from './StatusChip.astro';
-import Sources from './Sources.astro';
 interface Props {
   items: Item[];
   t: Strings;
   cols?: 2 | 3;
 }
-const { items, t, cols = 2 } = Astro.props;
+const { items: all, t, cols = 2 } = Astro.props;
+// the site shows only what exists and runs today: a feature still being built, planned or rolling out stays off the page
+const items = all.filter((i) => !i.feature || ['live', 'ready'].includes(feature(i.feature).status));
 ---
 <ul class={`tiles tiles-${cols}`} role="list">
   {items.map((item) => (
@@ -19,7 +20,6 @@ const { items, t, cols = 2 } = Astro.props;
         {item.feature && <StatusChip status={feature(item.feature).status} label={t.status[feature(item.feature).status]} />}
       </div>
       <p class="tile-body">{item.body}</p>
-      <Sources links={item.sources} label={t.common.source} plural={t.common.sources} />
     </li>
   ))}
 </ul>

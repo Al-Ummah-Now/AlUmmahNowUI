@@ -1,0 +1,27 @@
+---
+/** Every System design page below its hero: the section nav beside (or above) the page, the pager after it. */
+import SdNav from './SdNav.astro';
+import SdPager from './SdPager.astro';
+import type { Locale, PageSlug } from '../lib/pages';
+import type { Strings } from '../i18n';
+
+interface Props {
+  locale: Locale;
+  slug: PageSlug;
+  t: Strings;
+}
+const { locale, slug, t } = Astro.props;
+---
+<div class:list={['sd-shell', slug === 'system-design' && 'sd-shell-hub']}>
+  <aside class="sd-aside">
+    <SdNav locale={locale} slug={slug} t={t} />
+  </aside>
+  <div class="sd-main">
+    <slot />
+    <div class="band">
+      <div class="wrap">
+        <SdPager locale={locale} slug={slug} t={t} />
+      </div>
+    </div>
+  </div>
+</div>
