@@ -112,7 +112,7 @@ export function costs(c: Copy, locale: 'en' | 'ar'): { spec: ArchSpec; wide: Arc
     for (let i = 1; i < chain.length; i++) {
       const last = i === chain.length - 1;
       const into = chain[i]!;
-      const flow = into === 'bunnyDeliver' || into === 'r2Deliver' ? 'delivery' : last ? 'control' : lane === 'shared' ? 'request' : into === 'queue' ? 'async' : flowOf[lane] === 'delivery' ? 'media' : 'media';
+      const flow = into === 'bunnyDeliver' || into === 'r2Deliver' ? 'delivery' : last ? (lane === 'shared' ? 'request' : 'media') : lane === 'shared' ? 'request' : into === 'queue' ? 'async' : flowOf[lane] === 'delivery' ? 'media' : 'media';
       edges.push({ from: chain[i - 1]!, to: into, flow, step: i + 1, fromSide: 'e', toSide: 'w' });
     }
   }
@@ -158,16 +158,16 @@ export function costs(c: Copy, locale: 'en' | 'ar'): { spec: ArchSpec; wide: Arc
       { from: 'upload', to: 'laneShared', flow: 'request', step: 1, fromSide: ['e', 'w'], toSide: ['e', 'w'] },
       { from: 'bunnyEncode', to: 'bunnyStore', flow: 'media', step: 2, fromSide: 'e', toSide: 'w' },
       { from: 'bunnyStore', to: 'bunnyDeliver', flow: 'delivery', step: 3, fromSide: 's', toSide: 'n' },
-      { from: 'bunnyDeliver', to: 'totalBunny', flow: 'control', step: 4, fromSide: 'e', toSide: 'w' },
+      { from: 'bunnyDeliver', to: 'totalBunny', flow: 'media', step: 4, fromSide: 'e', toSide: 'w' },
       { from: 'originals', to: 'queue', flow: 'async', step: 2, fromSide: 'e', toSide: 'w' },
       { from: 'queue', to: 'slots', flow: 'media', step: 3, fromSide: 's', toSide: 'n' },
       { from: 'slots', to: 'transcode', flow: 'media', step: 4, fromSide: 'e', toSide: 'w' },
       { from: 'transcode', to: 'renditions', flow: 'media', step: 5, fromSide: 's', toSide: 'n' },
       { from: 'renditions', to: 'r2Deliver', flow: 'delivery', step: 6, fromSide: 'e', toSide: 'w' },
-      { from: 'r2Deliver', to: 'totalR2', flow: 'control', step: 7, fromSide: 's', toSide: 'n' },
+      { from: 'r2Deliver', to: 'totalR2', flow: 'media', step: 7, fromSide: 's', toSide: 'n' },
       { from: 'moderation', to: 'captions', flow: 'request', step: 2, fromSide: 'e', toSide: 'w' },
       { from: 'captions', to: 'quran', flow: 'request', step: 3, fromSide: 's', toSide: 'n' },
-      { from: 'quran', to: 'totalShared', flow: 'control', step: 4, fromSide: 's', toSide: 'n' },
+      { from: 'quran', to: 'totalShared', flow: 'request', step: 4, fromSide: 's', toSide: 'n' },
     ],
   };
   return { spec, wide, narrow };

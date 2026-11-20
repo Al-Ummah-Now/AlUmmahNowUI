@@ -139,6 +139,8 @@ export interface SketchLayout {
   at?: Record<string, [number, number]>;
   /** extra room above the icon row along the bottom, for long curves */
   footGap?: number;
+  /** extra room above the first row (an arc over the top row carries its tag there) */
+  topGap?: number;
   /** wires for this width (a phone column needs different ones) */
   edges?: SketchEdge[];
 }
@@ -151,7 +153,7 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
   const pen = new Pen(prefix);
   const side = 22; // the margin the rotated side note lives in
   const mx = 64 + (spec.around ? side : 0);
-  const top = 96;
+  const top = 96 + (layout.topGap ?? 0);
   const rows = Math.max(...spec.nodes.map((n) => (layout.at?.[n.id] ?? n.at)[1])) + 1;
   const W = Math.round(layout.cols * layout.colW + 2 * mx);
   const footY = top + rows * layout.rowH + 10 + (layout.footGap ?? 0);
@@ -232,6 +234,16 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
     (1 - t) * (1 - t) * c.a[1] + 2 * (1 - t) * t * c.ctrl[1] + t * t * c.b[1],
   ];
   const samples = curves.flatMap((c) => Array.from({ length: 61 }, (_, k) => at(c, k / 60)));
+  const cloudBox = spec.around ? { x: mx - 20, y: 74, w: W - 2 * mx + 40, h: Hc - 74 - 28 } : null;
+  const BAND = 16;
+  const cloudBand: { x: number; y: number; w: number; h: number }[] = cloudBox
+    ? [
+        { x: cloudBox.x - BAND, y: cloudBox.y - BAND, w: cloudBox.w + 2 * BAND, h: 2 * BAND },
+        { x: cloudBox.x - BAND, y: cloudBox.y + cloudBox.h - BAND, w: cloudBox.w + 2 * BAND, h: 2 * BAND },
+        { x: cloudBox.x - BAND, y: cloudBox.y - BAND, w: 2 * BAND, h: cloudBox.h + 2 * BAND },
+        { x: cloudBox.x + cloudBox.w - BAND, y: cloudBox.y - BAND, w: 2 * BAND, h: cloudBox.h + 2 * BAND },
+      ]
+    : [];
   type Box = { x: number; y: number; w: number; h: number };
   const hits = (q: Box, p: [number, number], pad: number) => p[0] > q.x - pad && p[0] < q.x + q.w + pad && p[1] > q.y - pad && p[1] < q.y + q.h + pad;
   const overlaps = (q: Box, r2: Box, pad: number) => q.x < r2.x + r2.w + pad && r2.x < q.x + q.w + pad && q.y < r2.y + r2.h + pad && r2.y < q.y + q.h + pad;
@@ -255,12 +267,14 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
       const dl = Math.hypot(q2[0] - p[0], q2[1] - p[1]) || 1;
       const n: [number, number] = [-(q2[1] - p[1]) / dl, (q2[0] - p[0]) / dl];
       const off = Math.abs(n[0]) * (tw / 2) + Math.abs(n[1]) * (th / 2) + 8;
-      for (const [s, k] of [[1, 1], [-1, 1], [1, 1.7], [-1, 1.7], [1, 2.5], [-1, 2.5]] as const) {
+      for (const [s, k] of [[1, 1], [-1, 1], [1, 1.7], [-1, 1.7], [1, 2.5], [-1, 2.5], [1, 3.3], [-1, 3.3]] as const) {
         const cx = p[0] + n[0] * off * k * s;
         const cy = p[1] + n[1] * off * k * s;
         const q = { x: cx - tw / 2, y: cy - th / 2, w: tw, h: th };
         if (q.x < 8 || q.y < 60 || q.x + q.w > W - 8 || q.y + q.h > Hc - 8) continue;
-        if (samples.some((pt) => hits(q, pt, 4))) continue;
+        if (samples.some((pt) => hits(q, pt, 5))) continue;
+        // never on the cloud's bumpy outline: keep clear of a band around its edges
+        if (cloudBand.some((e) => overlaps(q, e, 0))) continue;
         if (nodeBoxes.some((nb) => overlaps(q, nb, 6)) || placedTags.some((pb) => overlaps(q, pb, 6))) continue;
         best = q;
         break;

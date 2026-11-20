@@ -36,13 +36,13 @@ const pattern: Builder = (d) => {
       { from: 'bg', to: 'data', fromSide: 'n', toSide: 's' },
       { from: 'bg', to: 'ai', fromSide: 'n', toSide: 's' },
       { from: 'bg', to: 'container', fromSide: 'e', toSide: 'w' },
-      { from: 'data', to: 'edge', fromSide: 'n', toSide: 'n', bend: 50, dashed: true, tag: c.tag.segments, tone: 'green' },
+      { from: 'data', to: 'edge', fromSide: 'n', toSide: 'n', bend: 50, tag: c.tag.segments, tone: 'green' },
     ],
   };
   return {
     kind: 'sketch',
     spec,
-    wide: { colW: 270, rowH: 210, nodeW: 220, cols: 5 },
+    wide: { colW: 270, rowH: 210, nodeW: 236, cols: 5, topGap: 44 },
     narrow: {
       colW: 300,
       rowH: 160,
@@ -53,12 +53,13 @@ const pattern: Builder = (d) => {
         { from: 'clients', to: 'edge', fromSide: 's', toSide: 'n' },
         { from: 'edge', to: 'workers', fromSide: 's', toSide: 'n' },
         { from: 'workers', to: 'data', fromSide: 's', toSide: 'n' },
-        { from: 'workers', to: 'queue', fromSide: 'w', toSide: 'w', bend: 44, tag: c.tag.later, tone: 'pink', tagAt: 0.5 },
+        // on a phone the single column leaves no room beside this curve inside the cloud: no tag here
+        { from: 'workers', to: 'queue', fromSide: 'w', toSide: 'w', bend: 44 },
         { from: 'queue', to: 'bg', fromSide: 's', toSide: 'n' },
         { from: 'bg', to: 'data', fromSide: 'e', toSide: 'e', bend: 44 },
         { from: 'bg', to: 'ai', fromSide: 's', toSide: 'n' },
         { from: 'bg', to: 'container', fromSide: 'w', toSide: 'w', bend: 44 },
-        { from: 'data', to: 'edge', fromSide: 'e', toSide: 'e', bend: 70, dashed: true },
+        { from: 'data', to: 'edge', fromSide: 'e', toSide: 'e', bend: 70 },
       ],
     },
   };
