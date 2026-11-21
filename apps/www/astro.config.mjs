@@ -9,10 +9,9 @@ export default defineConfig({
   output: 'server',
   trailingSlash: 'ignore',
   adapter: cloudflare({
-    // src/worker.ts wraps Astro: apex redirect, `/` locale redirect, HTML edge cache,
-    // security headers (applied to static assets too, see run_worker_first in wrangler.jsonc).
-    workerEntryPoint: { path: 'src/worker.ts' },
-    platformProxy: { enabled: true },
+    // wrangler.build.jsonc's main is src/worker.ts, which wraps Astro: apex redirect, `/` locale redirect,
+    // HTML edge cache, security headers (applied to static assets too, see run_worker_first in wrangler.jsonc).
+    configPath: 'wrangler.build.jsonc',
     imageService: 'passthrough',
   }),
   build: {
@@ -22,8 +21,7 @@ export default defineConfig({
   security: { checkOrigin: false },
   devToolbar: { enabled: false },
   vite: {
-    // @tailwindcss/vite is typed against Vite 7, Astro 5 bundles Vite 6; the plugin works with both
-    plugins: [/** @type {any} */ (tailwindcss())],
+    plugins: [tailwindcss()],
     build: {
       // CSP has no 'unsafe-inline': never inline scripts or assets as data: URIs
       assetsInlineLimit: 0,

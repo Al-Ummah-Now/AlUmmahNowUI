@@ -4,18 +4,20 @@ import { builtinContent } from '../content/fallback';
 import { strings } from '../i18n';
 import { cmsClient, createCmsDeps } from './cms';
 import type { NavItem, SiteResponse } from './cms-types';
+import { env as workerEnv } from 'cloudflare:workers';
 import { config, type WwwEnv } from './env';
 import { articlesPath, isLocale, type Locale } from './locale';
 import type { VideosDeps } from './videos';
 
 type Ctx = AstroGlobal | APIContext;
 
+/** The Worker's bindings (`cloudflare:workers`) and the request's ExecutionContext (Astro.locals.cfContext). */
 export function runtime(ctx: Ctx) {
-  const rt = ctx.locals.runtime;
-  const env = (rt?.env ?? {}) as WwwEnv;
+  const env = (workerEnv ?? {}) as WwwEnv;
+  const cfContext = ctx.locals.cfContext as { waitUntil(p: Promise<unknown>): void } | undefined;
   const waitUntil = (p: Promise<unknown>) => {
     try {
-      rt?.ctx?.waitUntil(p);
+      cfContext?.waitUntil(p);
     } catch {
       void p;
     }

@@ -2,7 +2,8 @@
 import type { AstroGlobal } from 'astro';
 import { isLocale, type Locale } from '../../../../packages/render/src/locale';
 import { channelUrl } from '../../../../packages/render/src/embeds';
-import { config, type Config, type SitesEnv } from './env';
+import { config, type Config } from './env';
+import { waitUntilFor, workerBindings } from './runtime';
 import { siteFromRequest } from './site';
 import { strings } from './i18n';
 import type { DataDeps } from './data';
@@ -21,9 +22,7 @@ export interface PageContext {
 
 /** null: no site (rendered outside the Worker) or a language the site doesn't serve → the page 404s. */
 export function pageContext(Astro: AstroGlobal): PageContext | null {
-  const runtime = (Astro.locals as { runtime?: { env?: SitesEnv; ctx?: { waitUntil(p: Promise<unknown>): void } } }).runtime;
-  const env = runtime?.env ?? {};
-  const cfg = config(env);
+  const cfg = config(workerBindings());
   const site = siteFromRequest(Astro.request);
   const locale = Astro.params.locale;
   if (!site || !isLocale(locale) || !site.site.locales.includes(locale)) return null;
@@ -38,7 +37,7 @@ export function pageContext(Astro: AstroGlobal): PageContext | null {
     data: {
       apiUrl: cfg.videosApiUrl,
       cache,
-      waitUntil: (p) => runtime?.ctx?.waitUntil(p),
+      waitUntil: waitUntilFor(Astro.locals),
       log: (message, d) => console.warn(JSON.stringify({ msg: message, ...d })),
     },
   };

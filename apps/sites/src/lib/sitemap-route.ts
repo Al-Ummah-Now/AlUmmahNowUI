@@ -1,15 +1,13 @@
 /** Shared by /sitemap.xml and /sitemaps/<file>.xml: the site, its origin and the data deps of this request. */
-import { config, type SitesEnv } from './env';
+import { config } from './env';
+import { waitUntilFor, workerBindings } from './runtime';
 import { siteFromRequest } from './site';
 import type { DataDeps } from './data';
 import type { SitemapResult } from './sitemap';
 import type { PublicSite } from './site-types';
 
-type Locals = { runtime?: { env?: SitesEnv; ctx?: { waitUntil(p: Promise<unknown>): void } } };
-
 export function sitemapRequest(request: Request, locals: unknown): { site: PublicSite; origin: string; deps: DataDeps } | null {
-  const runtime = (locals as Locals).runtime;
-  const cfg = config(runtime?.env ?? {});
+  const cfg = config(workerBindings());
   const site = siteFromRequest(request);
   if (!site) return null;
   return {
@@ -18,7 +16,7 @@ export function sitemapRequest(request: Request, locals: unknown): { site: Publi
     deps: {
       apiUrl: cfg.videosApiUrl,
       cache: typeof caches !== 'undefined' ? (caches as unknown as { default: Cache }).default : null,
-      waitUntil: (p: Promise<unknown>) => runtime?.ctx?.waitUntil(p),
+      waitUntil: waitUntilFor(locals),
       log: (message, data) => console.warn(JSON.stringify({ msg: message, ...data })),
     },
   };

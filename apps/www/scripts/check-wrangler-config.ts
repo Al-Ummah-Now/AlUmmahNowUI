@@ -40,9 +40,9 @@ interface WranglerConfig extends Block {
 
 export function checkWranglerConfig(config: WranglerConfig): string[] {
   const errors: string[] = [];
-  if (config.assets?.binding !== 'ASSETS' || config.assets?.directory !== './dist') errors.push('assets must be ./dist bound as ASSETS');
+  if (config.assets?.binding !== 'ASSETS' || config.assets?.directory !== './dist/client') errors.push('assets must be ./dist/client bound as ASSETS');
   if (config.assets?.run_worker_first !== true) errors.push('assets.run_worker_first must be true (apex redirect and security headers on every response)');
-  if (config.main !== './dist/_worker.js/index.js') errors.push('main must be ./dist/_worker.js/index.js (Astro cloudflare output)');
+  if (config.main !== './dist/server/entry.mjs') errors.push('main must be ./dist/server/entry.mjs (Astro cloudflare output)');
   const extra = Object.keys(config.env ?? {}).filter((e) => e !== 'qa' && e !== 'stage');
   if (extra.length) errors.push(`unexpected envs: ${extra.join(', ')} (production is the top level)`);
 

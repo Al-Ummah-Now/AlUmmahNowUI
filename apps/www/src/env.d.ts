@@ -1,6 +1,6 @@
 /// <reference types="astro/client" />
 
-type Runtime = import('@astrojs/cloudflare').Runtime<import('./lib/env').WwwEnv>;
+type Runtime = import('@astrojs/cloudflare').Runtime;
 
 declare namespace App {
   interface Locals extends Runtime {

@@ -1,10 +1,11 @@
 import type { APIRoute } from 'astro';
-import { config, type SitesEnv } from '../lib/env';
+import { config } from '../lib/env';
+import { workerBindings } from '../lib/runtime';
 import { siteFromRequest } from '../lib/site';
 
 /** Per host (§4.4): its own sitemap; test environments, sites in setup and previews are never crawled. */
-export const GET: APIRoute = ({ request, locals }) => {
-  const cfg = config((locals as { runtime?: { env?: SitesEnv } }).runtime?.env ?? {});
+export const GET: APIRoute = ({ request }) => {
+  const cfg = config(workerBindings());
   const site = siteFromRequest(request);
   if (!site) return new Response('Not found', { status: 404 });
   const open = cfg.isProduction && site.site.status === 'live' && !site.preview;

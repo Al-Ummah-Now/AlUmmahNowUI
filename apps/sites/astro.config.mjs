@@ -8,9 +8,9 @@ export default defineConfig({
   output: 'server',
   trailingSlash: 'ignore',
   adapter: cloudflare({
-    // src/worker.ts wraps Astro: host → site lookup, redirects, HTML edge cache, security headers
-    workerEntryPoint: { path: 'src/worker.ts' },
-    platformProxy: { enabled: true },
+    // wrangler.build.jsonc's main is src/worker.ts, which wraps Astro: host → site lookup, redirects,
+    // HTML edge cache, security headers
+    configPath: 'wrangler.build.jsonc',
     imageService: 'passthrough',
   }),
   build: {

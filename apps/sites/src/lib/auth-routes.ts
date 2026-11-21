@@ -28,18 +28,15 @@ import {
   type SiteSession,
 } from './auth';
 import { fetchOwnProfile, fetchProfile, mergeProfile } from '../../../../packages/render/src/profile-name';
-import { config, type Config, type SitesEnv } from './env';
+import { config, type Config } from './env';
 import { siteFromRequest } from './site';
+import { workerBindings } from './runtime';
 
 type Ctx = Pick<APIContext, 'request' | 'locals' | 'url'>;
 
 const noStore = { 'Cache-Control': 'private, no-store' };
 // Sign-in not configured (no valid SESSION_SECRET) or no such site: /auth/login and /auth/callback are 404
 // (owner rule: off = invisible; the header has no Sign in then, env.ts signIn).
-
-function envOf(ctx: Ctx): SitesEnv {
-  return (ctx.locals as { runtime?: { env?: SitesEnv } }).runtime?.env ?? {};
-}
 
 function redirect(location: string, cookies: string[] = [], status = 302): Response {
   const headers = new Headers({ Location: location, ...noStore });
@@ -54,13 +51,13 @@ function json(body: unknown, cookies: string[] = []): Response {
 }
 
 export async function readSession(ctx: Ctx): Promise<SiteSession | null> {
-  const secret = envOf(ctx).SESSION_SECRET;
+  const secret = workerBindings().SESSION_SECRET;
   if (!isValidSecret(secret)) return null;
   return unseal<SiteSession>(secret, readCookie(ctx.request.headers.get('Cookie'), SESSION_COOKIE));
 }
 
 export async function login(ctx: Ctx): Promise<Response> {
-  const env = envOf(ctx);
+  const env = workerBindings();
   const site = siteFromRequest(ctx.request);
   if (!site || !isValidSecret(env.SESSION_SECRET)) return new Response('Not found', { status: 404, headers: { 'Content-Type': 'text/plain; charset=utf-8', ...noStore } });
   const cfg = config(env);
@@ -75,7 +72,7 @@ export async function login(ctx: Ctx): Promise<Response> {
 }
 
 export async function callback(ctx: Ctx, fetcher: typeof fetch = fetch, getKey?: Parameters<typeof accountFromAccessToken>[2]): Promise<Response> {
-  const env = envOf(ctx);
+  const env = workerBindings();
   const site = siteFromRequest(ctx.request);
   const home = `/${site?.site.locales[0] ?? 'en'}/`;
   if (!site || !isValidSecret(env.SESSION_SECRET)) return new Response('Not found', { status: 404, headers: { 'Content-Type': 'text/plain; charset=utf-8', ...noStore } });
@@ -114,7 +111,7 @@ async function account(session: SiteSession, cfg: Config, fetcher: typeof fetch)
  * session); a session older than RECHECK_SEC is checked with auth first.
  */
 export async function me(ctx: Ctx, fetcher: typeof fetch = fetch): Promise<Response> {
-  const env = envOf(ctx);
+  const env = workerBindings();
   const session = await readSession(ctx);
   if (!session) return json({ signedIn: false }, readCookie(ctx.request.headers.get('Cookie'), SESSION_COOKIE) ? [clearCookie(SESSION_COOKIE), hintCookie(false)] : []);
   const cfg = config(env);
@@ -135,6 +132,6 @@ export async function logout(ctx: Ctx): Promise<Response> {
   if (ctx.request.method !== 'POST' || (origin && origin !== ctx.url.origin)) return new Response('Forbidden', { status: 403, headers: noStore });
   const form = await ctx.request.formData().catch(() => null);
   const back = safeReturnPath(form?.get('return')?.toString(), `/${site?.site.locales[0] ?? 'en'}/`);
-  const cfg = config(envOf(ctx));
+  const cfg = config(workerBindings());
   return redirect(logoutUrl(cfg, `${ctx.url.origin}${back}`), [clearCookie(SESSION_COOKIE), clearCookie(LOGIN_COOKIE), hintCookie(false)], 303);
 }

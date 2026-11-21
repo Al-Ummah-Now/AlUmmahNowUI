@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { generateKeyPair, SignJWT, exportJWK, createLocalJWKSet } from 'jose';
 import { isPreviewToken, lookupSite, normalizeHost, resetSiteMemo, siteFromRequest, SITE_HEADER, withSiteHeader } from '../src/lib/site';
 import { applySecurityHeaders, contentSecurityPolicy, isCacheableRequest, localeRedirect, siteCacheKey, suspendedRedirect, zoneRedirect } from '../src/lib/edge';
@@ -13,6 +13,7 @@ import { toSitePost, toSiteVideo } from '../src/lib/data';
 import { seal } from '../../../packages/render/src/session';
 import { displayLabel } from '../../../packages/render/src/profile-name';
 import { fixtureSite } from './fixtures';
+import { setTestEnv } from './stubs/cloudflare-workers';
 
 const kv = () => {
   const store = new Map<string, string>();
@@ -205,8 +206,10 @@ describe('sign-in (SS11): top-level redirect, host-only session, 5-minute re-che
   const env = { APP_ENV: 'qa', AUTH_URL: 'https://auth.qa.alummahnow.net', SITES_CLIENT_ID: 'sites-qa', SESSION_SECRET: SECRET };
   const ctx = (url: string, init: RequestInit = {}) => {
     const request = withSiteHeader(new Request(url, init), site);
-    return { request, url: new URL(url), locals: { runtime: { env } } } as never;
+    return { request, url: new URL(url), locals: {} } as never;
   };
+  beforeEach(() => setTestEnv(env));
+  afterAll(() => setTestEnv({}));
 
   it('cookies are host-only: never a Domain attribute', () => {
     for (const c of [cookie(SESSION_COOKIE, 'v', 10), clearCookie(SESSION_COOKIE), hintCookie(true)]) expect(c.toLowerCase()).not.toContain('domain=');
@@ -273,7 +276,8 @@ describe('sign-in (SS11): top-level redirect, host-only session, 5-minute re-che
   it('without a valid SESSION_SECRET, /auth/login and /auth/callback are 404 (no "not available" text)', async () => {
     for (const secret of [undefined, '', 'short']) {
       const off = { ...env, SESSION_SECRET: secret };
-      const offCtx = (url: string) => ({ request: withSiteHeader(new Request(url), site), url: new URL(url), locals: { runtime: { env: off } } }) as never;
+      setTestEnv(off);
+      const offCtx = (url: string) => ({ request: withSiteHeader(new Request(url), site), url: new URL(url), locals: {} }) as never;
       const start = await login(offCtx('https://mustafa-elbadry.qa.alummahnow.org/auth/login?return=%2Fen%2F'));
       expect(start.status).toBe(404);
       expect(await start.text()).not.toMatch(/not available|configured/i);
