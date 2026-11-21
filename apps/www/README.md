@@ -5,7 +5,7 @@ platform. It shows what the platform is, where to go next (videos, profile, sign
 editorial content (pages, articles, curated videos) written by staff in the CMS
 ([AlUmmahNowCMS](https://github.com/Al-Ummah-Now/AlUmmahNowCMS)).
 
-Astro 5 (SSR) on Cloudflare Workers, Tailwind 4, English and Arabic (RTL) throughout.
+Astro 7 (SSR) on Cloudflare Workers, Tailwind 4, English and Arabic (RTL) throughout.
 
 - Spec: [`docs/SPEC.md`](docs/SPEC.md). Plan: [`docs/PLAN.md`](docs/PLAN.md).
 - CMS contract consumed here: [`docs/CMS_PUBLIC_API.md`](docs/CMS_PUBLIC_API.md).
@@ -132,7 +132,7 @@ Node 22+.
 
 ```sh
 npm ci
-npm run dev          # astro dev on http://localhost:4321 (no edge wrapper)
+npm run dev          # astro dev on http://localhost:4321 (src/worker.ts in workerd, via the Cloudflare Vite plugin)
 npm run preview      # build output in wrangler dev on :4321, the real Worker (writes .dev.vars on first run)
 ```
 

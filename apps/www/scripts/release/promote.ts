@@ -257,7 +257,7 @@ if (isMain) {
   const env = parseEnvArg(argv, ['stage', 'production']) as ReleaseEnv;
   const message = argv.includes('--message') ? (argv[argv.indexOf('--message') + 1] ?? 'release') : `release ${process.env.GITHUB_SHA?.slice(0, 7) ?? 'local'}`;
   const root = resolve(fileURLToPath(new URL('../..', import.meta.url)));
-  if (!existsSync(join(root, 'dist/_worker.js/index.js'))) {
+  if (!existsSync(join(root, 'dist/server/entry.mjs'))) {
     process.stderr.write('dist/ is missing: run `npm run build` (or download the build artifact) first\n');
     process.exit(2);
   }

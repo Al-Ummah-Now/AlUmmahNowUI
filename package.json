@@ -13,5 +13,8 @@
   "scripts": {
     "check:committed-secrets": "node scripts/check-committed-secrets.mjs",
     "check:cookie-domains": "node scripts/check-cookie-domains.mjs"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
   }
 }

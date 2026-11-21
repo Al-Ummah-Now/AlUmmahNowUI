@@ -1,0 +1,12 @@
+// Build-time config for the Cloudflare Vite plugin (astro.config.mjs configPath): only the Worker
+// entry and runtime the build needs. Deploys never read this file: wrangler.jsonc (every env, its
+// bindings and routes) uploads the built Worker (dist/server) and assets (dist/client), so one build
+// still ships to QA, stage and production with `--env`.
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "al-ummah-now-www",
+  "main": "./src/worker.ts",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "binding": "ASSETS", "run_worker_first": true }
+}

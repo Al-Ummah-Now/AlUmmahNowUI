@@ -10,13 +10,16 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "al-ummah-now-sites",
-  "main": "./dist/_worker.js/index.js",
+  // The Worker `astro build` made (dist/server) and its static assets (dist/client). The build itself
+  // reads wrangler.build.jsonc; every deploy, dry run and `wrangler dev` passes `-c` (the Vite plugin
+  // leaves a .wrangler/deploy redirect that a bare `wrangler` would follow).
+  "main": "./dist/server/entry.mjs",
   "compatibility_date": "2025-09-01",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
   "preview_urls": false,
   "assets": {
-    "directory": "./dist",
+    "directory": "./dist/client",
     "binding": "ASSETS",
     // Every request goes through src/worker.ts (host lookup, security headers)
     "run_worker_first": true

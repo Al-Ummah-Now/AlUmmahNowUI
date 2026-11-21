@@ -23,7 +23,7 @@
     "release:smoke": "node --experimental-strip-types --no-warnings scripts/release/smoke.ts"
   },
   "dependencies": {
-    "astro": "5.18.2"
+    "astro": "7.4.13"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.12",

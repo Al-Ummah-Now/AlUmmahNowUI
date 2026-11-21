@@ -8,8 +8,8 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
-    "preview": "node --experimental-strip-types --no-warnings scripts/dev-vars.ts && wrangler dev --port ${WWW_PORT:-4321}",
+    "build": "astro build && node ../../scripts/clean-build.mjs",
+    "preview": "node --experimental-strip-types --no-warnings scripts/dev-vars.ts && wrangler dev -c wrangler.jsonc --port ${WWW_PORT:-4321}",
     "lint": "eslint .",
     "typecheck": "astro check && tsc --noEmit -p tsconfig.scripts.json",
     "test": "vitest run",
@@ -20,7 +20,7 @@
     "release:promote": "node --experimental-strip-types --no-warnings scripts/release/promote.ts",
     "release:smoke": "node --experimental-strip-types --no-warnings scripts/release/smoke.ts",
     "release:rollback": "node --experimental-strip-types --no-warnings scripts/release/rollback.ts",
-    "cf-typegen": "wrangler types --env-file .dev.vars.example --strict-vars=false",
+    "cf-typegen": "wrangler types -c wrangler.jsonc --env-file .dev.vars.example --strict-vars=false",
     "sync:fanous": "node --experimental-strip-types --no-warnings scripts/sync-fanous.ts",
     "check:fanous": "node --experimental-strip-types --no-warnings scripts/sync-fanous.ts --check",
     "sync:posts": "node --experimental-strip-types --no-warnings scripts/sync-posts.ts",
@@ -29,10 +29,10 @@
     "check:page-blocks": "node --experimental-strip-types --no-warnings scripts/sync-page-blocks.ts --check"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "12.6.13",
+    "@astrojs/cloudflare": "14.4.9",
     "@fontsource/noto-naskh-arabic": "5.3.0",
     "@tailwindcss/vite": "4.3.5",
-    "astro": "5.18.2",
+    "astro": "7.4.13",
     "jose": "6.2.15",
     "markdown-it": "15.0.3",
     "tailwindcss": "4.3.5"
