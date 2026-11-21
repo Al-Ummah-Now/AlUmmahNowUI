@@ -35,7 +35,8 @@ const year = formatYear(new Date().getUTCFullYear(), locale);
     </nav>
     <div class="footer-base">
       <p>{t.footer.rights.replace('{year}', year)}</p>
-      <p lang={locale === 'ar' ? 'en' : 'ar'}>{locale === 'ar' ? 'Al Ummah Now' : 'الأمة الآن'}</p>
+      {/* the English footer also names the site in Arabic; an Arabic page names it in Arabic only (owner, as on Apple #74) */}
+      {locale === 'en' && <p lang="ar">الأمة الآن</p>}
     </div>
   </div>
 </footer>

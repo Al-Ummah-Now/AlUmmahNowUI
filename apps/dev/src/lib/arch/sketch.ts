@@ -219,7 +219,8 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
     let cloud = pen.cloud(mx - 20, CT, W - 2 * mx + 40, Hc - CT - 28);
     if (opts.rtl) cloud = cloud.replace(/([MQL ])(-?[\d.]+) (-?[\d.]+)/g, (_m, p, x, y) => `${p}${r(W - Number(x))} ${y}`);
     o.push(`<g class="an-groups"><path class="an-sk-cloud" d="${cloud}"/></g>`);
-    const sx = opts.rtl ? W - side - 6 : side + 6;
+    // the side note sits 12 px or more inside the drawing's edge (a scroll box opens on it)
+    const sx = opts.rtl ? W - side - 12 : side + 12;
     const sy = (CT + Hc - 28) / 2;
     o.push(`<text class="an-sk-side ${fam}" x="${sx}" y="${r(sy)}" text-anchor="middle" transform="rotate(${opts.rtl ? 90 : -90} ${sx} ${r(sy)})"${ar ? ' direction="rtl"' : ''}>${esc(spec.around)}</text>`);
   }
@@ -238,6 +239,29 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
     const ny = (b[0] - a[0]) / len;
     return { e, i, a, b, ctrl: [(a[0] + b[0]) / 2 + nx * bend, (a[1] + b[1]) / 2 + ny * bend] };
   });
+  // two curves meeting at one point of a tile's side read as one line: spread them 12 px apart along the side
+  {
+    const ends = curves.flatMap((c) => [
+      { c, k: 'a' as const, id: c.e.from },
+      { c, k: 'b' as const, id: c.e.to },
+    ]);
+    const seen = new Set<object>();
+    for (const x of ends) {
+      if (seen.has(x)) continue;
+      const group = ends.filter((y) => !seen.has(y) && y.id === x.id && Math.hypot(y.c[y.k][0] - x.c[x.k][0], y.c[y.k][1] - x.c[x.k][1]) < 8);
+      group.forEach((y) => seen.add(y));
+      if (group.length < 2) continue;
+      const bx = box.get(x.id)!;
+      const p = x.c[x.k];
+      // the side the point is on: along a vertical side spread in y, along a horizontal one in x
+      const vertical = Math.abs(p[0] - bx.x) < 10 || Math.abs(p[0] - (bx.x + bx.w)) < 10;
+      group.forEach((y, j) => {
+        const off = (j - (group.length - 1) / 2) * 12;
+        const q = y.c[y.k];
+        y.c[y.k] = vertical ? [q[0], q[1] + off] : [q[0] + off, q[1]];
+      });
+    }
+  }
   const at = (c: Curve, t: number): [number, number] => [
     (1 - t) * (1 - t) * c.a[0] + 2 * (1 - t) * t * c.ctrl[0] + t * t * c.b[0],
     (1 - t) * (1 - t) * c.a[1] + 2 * (1 - t) * t * c.ctrl[1] + t * t * c.b[1],

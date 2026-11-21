@@ -18,7 +18,8 @@ interface Props {
 }
 const { locale, slug, title, description } = Astro.props;
 const t = strings(locale);
-const fullTitle = slug === '' ? `${t.meta.siteName} · ${t.meta.siteNameAlt}` : `${title} | ${t.meta.siteName}`;
+// an Arabic page names the site in Arabic only (owner, as on Apple #74); the English home title carries both names
+const fullTitle = slug === '' ? (locale === 'ar' ? t.meta.siteName : `${t.meta.siteName} · ${t.meta.siteNameAlt}`) : `${title} | ${t.meta.siteName}`;
 const { canonical, alternates } = headLinks(locale, slug);
 const ld = slug === '' ? jsonLd(locale, t.meta.siteName, t.meta.siteNameAlt, t.meta.description) : [];
 ---
