@@ -1,27 +1,30 @@
 /**
  * Diagrams render at their natural size and never shrink (labels stay readable). When the visible
  * layout is wider than its column it scrolls sideways; this shows the hint over it only then, and opens
- * the box on the drawing itself: the first tile in reading order (leftmost in English, rightmost in
- * Arabic) comes into view, never a stretch of empty canvas (the isometric hero has wide margins).
+ * the box on the drawing's start: the start-most piece of the drawing (a boundary, platform, tag, tile,
+ * label or sketch note) sits 24 px inside the box's start edge (left in English, right in Arabic). A
+ * figure that fits, or whose drawing already starts that far in, stays where it opens; the isometric
+ * hero's empty floor margin is skipped, and nothing of the drawing is ever hidden past the start edge.
  */
 const opened = new WeakSet<HTMLElement>();
+const CONTENT = '[data-group] > rect, [data-group] polygon, [data-tag] rect, .an-iso-tag rect, [data-node] [data-box], [data-node] .an-node-box, [data-for], .an-sk-cloud, .an-sk-side, .an-sk-title, .an-lifeline, .an-seq-note-box';
+const INSET = 24;
 
 function openOnContent(box: HTMLElement) {
   if (opened.has(box) || box.scrollWidth <= box.clientWidth + 1) return;
   opened.add(box);
-  const tiles = [...box.querySelectorAll<SVGGraphicsElement>('[data-node]')].map((g) => (g.querySelector('[data-box]') ?? g).getBoundingClientRect());
-  if (!tiles.length) return;
+  const parts = [...box.querySelectorAll<SVGGraphicsElement>(CONTENT)].filter((el) => !el.closest('.an-motion')).map((el) => el.getBoundingClientRect()).filter((r) => r.width || r.height);
+  if (!parts.length) return;
   const view = box.getBoundingClientRect();
   const rtl = getComputedStyle(box).direction === 'rtl';
-  const PAD = 16;
   // scrollBy with a measured delta works the same under every browser's RTL scrollLeft convention
   if (rtl) {
-    const right = Math.max(...tiles.map((t) => t.right));
-    const delta = right + PAD - view.right;
+    const start = Math.max(...parts.map((r) => r.right));
+    const delta = start + INSET - view.right;
     if (delta < 0) box.scrollBy({ left: delta, behavior: 'instant' as ScrollBehavior });
   } else {
-    const left = Math.min(...tiles.map((t) => t.left));
-    const delta = left - PAD - view.left;
+    const start = Math.min(...parts.map((r) => r.left));
+    const delta = start - INSET - view.left;
     if (delta > 0) box.scrollBy({ left: delta, behavior: 'instant' as ScrollBehavior });
   }
 }

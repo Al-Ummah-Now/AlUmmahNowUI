@@ -210,7 +210,29 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
 
   // lifelines
   out.push('<g class="an-lifelines">');
-  for (const a of spec.actors) out.push(`<path class="an-lifeline" d="M${r(mx(cx(a.id)))} ${r(headY + headH)} V${r(H - PAD + 4)}"/>`);
+  // a lifeline pauses behind a message's words, so the words never sit on a dashed line (a phone row runs
+  // wider than its arrow; on desktop the words stay over their own arrow)
+  const blocks = rows
+    .filter((row) => !isNote(row.s))
+    .map((row) => {
+      const blockH = row.lines.length * (LS + LG) + row.code.length * (CS + LG + 1);
+      const top = row.y - LIFT - blockH;
+      const w = Math.max(...row.lines.map((l) => textWidth(l, LS)), ...row.code.map(codeW));
+      const bx = opts.rtl ? W - row.lx - w : row.lx;
+      return { x0: bx - 6, x1: bx + w + 6, y0: top - 4, y1: top + blockH + 4 };
+    });
+  for (const a of spec.actors) {
+    const x = mx(cx(a.id));
+    const gaps = blocks.filter((b) => x > b.x0 && x < b.x1).sort((p, q) => p.y0 - q.y0);
+    let y0 = headY + headH;
+    const d: string[] = [];
+    for (const gp of gaps) {
+      if (gp.y0 > y0) d.push(`M${r(x)} ${r(y0)} V${r(gp.y0)}`);
+      y0 = Math.max(y0, gp.y1);
+    }
+    if (H - PAD + 4 > y0) d.push(`M${r(x)} ${r(y0)} V${r(H - PAD + 4)}`);
+    if (d.length) out.push(`<path class="an-lifeline" d="${d.join(' ')}"/>`);
+  }
   out.push('</g>');
 
   // notes (behind the messages)

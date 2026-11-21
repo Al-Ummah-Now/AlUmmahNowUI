@@ -93,7 +93,7 @@ const slot: Builder = (d) => {
         node('range', 'lucide/settings', n.range, [1.3, 2.55]),
       ],
       groups: [
-        { id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', tagEnd: true, members: ['api', 'queue', 'media', 'container', 'slots', 'r2', 'range'] },
+        { id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', tagEnd: true, pad: 48, members: ['api', 'queue', 'media', 'container', 'slots', 'r2', 'range'] },
       ],
       edges: [
         { from: 'api', to: 'queue', flow: 'async', label: e.enqueue, step: 1, fromSide: 'e', toSide: 'w' },

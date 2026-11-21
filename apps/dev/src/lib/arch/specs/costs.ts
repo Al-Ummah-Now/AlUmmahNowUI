@@ -128,7 +128,8 @@ export function costs(c: Copy, locale: 'en' | 'ar'): { spec: ArchSpec; wide: Arc
       { id: 'laneBunny', label: c.lane.bunny, kind: 'platform', tagLogo: { id: 'brand/bunnynet-logo-dark', w: 66, h: 19 }, accent: '#f29b1d', members: [...LANES.bunny, TOTAL.bunny] },
       { id: 'laneR2', label: c.lane.r2, members: [...LANES.r2, TOTAL.r2] },
       { id: 'laneShared', label: c.lane.shared, members: [...LANES.shared, TOTAL.shared] },
-      { id: 'cf', label: c.lane.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', members: ['upload', 'laneR2', 'laneShared'] },
+      // room inside the account for the upload's wire round the R2 lane: it stays inside
+      { id: 'cf', label: c.lane.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', pad: 40, members: ['upload', 'laneR2', 'laneShared'] },
     ],
     edges,
   };
