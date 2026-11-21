@@ -6,7 +6,7 @@ import { channelVideos } from '../../lib/data';
 import { alternates, canonicalUrl } from '../../lib/seo';
 
 const ctx = pageContext(Astro);
-if (!ctx) return new Response('Not found', { status: 404 });
+if (!ctx) return Astro.rewrite('/404');
 const { site, locale, t } = ctx;
 const cursor = Astro.url.searchParams.get('cursor');
 const page = await channelVideos(ctx.data, site.channel.id, { cursor, limit: 24 });
