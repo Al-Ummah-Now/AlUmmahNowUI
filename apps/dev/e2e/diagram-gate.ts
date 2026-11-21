@@ -502,6 +502,89 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
         if (!seen) out.push(`${name}: its scroll box opens on empty canvas (no tile in view)`);
       }
     }
+    // at the position its scroll box opens on, the drawing keeps 12 px from the box's start edge (nothing hidden
+    // past it, nothing touching it); a figure that fits keeps 12 px from both edges
+    {
+      const box = svg.closest<HTMLElement>('.an-scroll');
+      if (box) {
+        const vr = box.getBoundingClientRect();
+        const rtl = getComputedStyle(box).direction === 'rtl' || document.documentElement.dir === 'rtl';
+        const fits = box.scrollWidth <= box.clientWidth + 1;
+        const SEL = '[data-group] > rect, [data-group] polygon, [data-tag] rect, .an-iso-tag rect, [data-node] [data-box], [data-node] .an-node-box, [data-for], .an-sk-cloud, .an-sk-side, .an-sk-title, .an-lifeline, .an-seq-note-box';
+        const near: string[] = [];
+        for (const el of svg.querySelectorAll<SVGGraphicsElement>(SEL)) {
+          if (el.closest('.an-motion')) continue;
+          const r2 = el.getBoundingClientRect();
+          if (!r2.width && !r2.height) continue;
+          const startGap = rtl ? vr.right - r2.right : r2.left - vr.left;
+          const endGap = rtl ? r2.left - vr.left : vr.right - r2.right;
+          const what = el.closest('[data-group]')?.getAttribute('data-group') ?? el.closest('[data-node]')?.getAttribute('data-node') ?? el.closest('[data-tag]')?.getAttribute('data-tag') ?? (el.textContent ?? el.getAttribute('class') ?? '').trim().slice(0, 30);
+          if (startGap < 11.5) near.push(`${what} ${startGap < 0 ? 'hidden past' : `${Math.round(startGap)} px from`} the start edge`);
+          else if (fits && endGap < 11.5) near.push(`${what} ${Math.round(endGap)} px from the end edge`);
+        }
+        if (near.length) out.push(`${name}: at its opening scroll position, ${[...new Set(near)].slice(0, 3).join('; ')}`);
+      }
+    }
+    // a phone sequence figure: a message's words never sit over a lifeline (desktop wraps them within their arrow)
+    if (svg.classList.contains('an-seq') && svg.dataset.variant === 'narrow') {
+      const lines = [...svg.querySelectorAll<SVGPathElement>('.an-lifeline')];
+      for (const lab of svg.querySelectorAll<SVGGElement>('.an-seq-text[data-for]')) {
+        for (const t of lab.querySelectorAll<SVGTextElement>('text')) {
+          const w = bb(t);
+          if (lines.some((l) => pts(l, 2).some((pt) => pt.x > w.x - 2 && pt.x < w.x + w.w + 2 && pt.y > w.y && pt.y < w.y + w.h))) {
+            out.push(`${name}: the words "${(t.textContent ?? '').slice(0, 40)}" sit over a lifeline`);
+            break;
+          }
+        }
+      }
+    }
+    // a short wire runs straight to its end: no loop, ring or kink drawn on it (its length stays near its ends' distance)
+    for (const p of edges) {
+      // a self-call (a sequence step to itself) loops by design
+      if (svg.classList.contains('an-sketch') || svg.classList.contains('an-iso') || p.dataset.from === p.dataset.to) continue;
+      const a = p.getPointAtLength(0);
+      const len = p.getTotalLength();
+      const z = p.getPointAtLength(len);
+      const manhattan = Math.abs(z.x - a.x) + Math.abs(z.y - a.y);
+      if (manhattan < 160 && len > manhattan + 24) out.push(`${name}: the short wire ${p.dataset.from}→${p.dataset.to} loops (${Math.round(len)} px drawn for ${Math.round(manhattan)} px between its ends)`);
+    }
+    // a wire whose two ends lie inside an account boundary stays inside it
+    for (const g of svg.querySelectorAll<SVGGElement>('.an-group-boundary[data-group]')) {
+      const gr = g.querySelector<SVGGraphicsElement>(':scope > rect');
+      if (!gr) continue;
+      const box = bb(gr);
+      const inB = (pt: DOMPoint, tol: number) => pt.x >= box.x - tol && pt.x <= box.x + box.w + tol && pt.y >= box.y - tol && pt.y <= box.y + box.h + tol;
+      for (const p of edges) {
+        const len = p.getTotalLength();
+        if (!inB(p.getPointAtLength(0), 1) || !inB(p.getPointAtLength(len), 1)) continue;
+        if (pts(p).some((pt) => !inB(pt, 1))) out.push(`${name}: wire ${p.dataset.from}→${p.dataset.to} leaves the ${g.dataset.group} boundary although both its ends are inside`);
+      }
+    }
+    // a step badge keeps 6 px from every wire but its own
+    for (const badge of svg.querySelectorAll<SVGGElement>('.an-badge')) {
+      const c = bb(badge.querySelector('circle') ?? badge);
+      const cx = c.x + c.w / 2;
+      const cy = c.y + c.h / 2;
+      const rad = c.w / 2;
+      for (const p of edges) {
+        if (p.id === badge.dataset.for || p.dataset.edge === badge.dataset.for) continue;
+        const d = Math.min(...pts(p, 2).map((pt) => Math.hypot(pt.x - cx, pt.y - cy))) - rad;
+        if (d < 6) {
+          out.push(`${name}: step badge "${badge.textContent}" is ${Math.max(0, Math.round(d))} px from the wire ${p.dataset.from}→${p.dataset.to} (min 6)`);
+          break;
+        }
+      }
+    }
+    // hand-drawn curves: one curve's end and another's start stay 8 px apart, so two never read as one line
+    if (svg.classList.contains('an-sketch')) {
+      const ends = edges.map((p) => ({ p, a: p.getPointAtLength(0), z: p.getPointAtLength(p.getTotalLength()) }));
+      for (const x of ends)
+        for (const y of ends) {
+          if (x === y) continue;
+          const d = Math.hypot(x.z.x - y.a.x, x.z.y - y.a.y);
+          if (d < 8) out.push(`${name}: the curve ${x.p.dataset.from}→${x.p.dataset.to} ends ${Math.round(d)} px from where ${y.p.dataset.from}→${y.p.dataset.to} starts (min 8)`);
+        }
+    }
     // groups nest or stand apart, never half-overlap; a node inside a group's box belongs to it
     const groups = [...svg.querySelectorAll<SVGGElement>('[data-group]')]
       .map((g) => ({ id: g.dataset.group!, members: new Set((g.dataset.members ?? '').split(' ').filter(Boolean)), b: bb(g.querySelector<SVGGraphicsElement>('rect, polygon') ?? g) }))
@@ -517,6 +600,21 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
     // nothing clipped by the page: the svg fits its container
     const parent = svg.parentElement!;
     if (svg.getBoundingClientRect().right > parent.getBoundingClientRect().right + 1 && getComputedStyle(parent).overflowX !== 'auto') out.push(`${name}: svg wider than its container`);
+  }
+  // an Arabic page names the site in Arabic everywhere: header, footer, title, alt and label text (owner, Apple #74)
+  if (ar) {
+    const LATIN = /Al Ummah Now/;
+    const where: string[] = [];
+    if (LATIN.test(document.title)) where.push('the page title');
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+      const el = n.parentElement;
+      if (!el || !el.getClientRects().length || el.closest('script,style')) continue;
+      if (LATIN.test(n.textContent ?? '')) where.push(`text in <${el.tagName.toLowerCase()}${el.className ? ` class="${String(el.className).slice(0, 30)}"` : ''}>`);
+    }
+    for (const el of document.querySelectorAll('[alt], [aria-label], [title]'))
+      for (const at of ['alt', 'aria-label', 'title']) if (LATIN.test(el.getAttribute(at) ?? '')) where.push(`${at} on <${el.tagName.toLowerCase()}>`);
+    if (where.length) out.push(`page: the Arabic page names the site "Al Ummah Now" in Latin (${[...new Set(where)].slice(0, 4).join('; ')})`);
   }
   return [...new Set(out)];
 }

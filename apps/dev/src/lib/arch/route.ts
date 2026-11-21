@@ -129,8 +129,10 @@ export class Router {
   /**
    * Route from any start endpoint to any goal endpoint. Returns lattice points from the chosen
    * start stub to the chosen goal stub, plus which endpoints were used.
+   * `within`: a box the whole route stays inside (a wire between two things inside an account boundary
+   * never leaves the boundary).
    */
-  route(starts: Endpoint[], goals: Endpoint[], bend = 6): { pts: Pt[]; start: Endpoint; goal: Endpoint } | null {
+  route(starts: Endpoint[], goals: Endpoint[], bend = 6, within?: Rect): { pts: Pt[]; start: Endpoint; goal: Endpoint } | null {
     const { cols, rows } = this;
     const N = cols * rows * 4;
     const g = new Float64Array(N).fill(Infinity);
@@ -176,7 +178,10 @@ export class Router {
         for (const e of gl) {
           // arriving direction must point into the target: opposite of its side normal
           const want = (sideDir[e.side] + 2) & 3;
-          const total = cost + (d === want ? 0 : d === ((want + 2) & 3) ? bend * 2 : bend);
+          // never arriving backwards: a wire that overshoots its stub and doubles back to the port draws a hook
+          if (d === ((want + 2) & 3)) continue;
+          // arriving head-on is preferred: a sideways arrival turns at the stub, right before the arrowhead
+          const total = cost + (d === want ? 0 : bend * 3);
           if (total < endCost) {
             endCost = total;
             endState = st;
@@ -191,6 +196,7 @@ export class Router {
         if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) continue;
         const ni = this.idx(nc, nr);
         if (this.blocked[ni] && !goalAt.has(ni)) continue;
+        if (within && (nc * G < within.x || nc * G > within.x + within.w || nr * G < within.y || nr * G > within.y + within.h)) continue;
         const horiz = nd === 0 || nd === 2;
         let step = 1 + this.soft[ni]!;
         if (horiz ? this.useH[ni] : this.useV[ni]) step += 24;

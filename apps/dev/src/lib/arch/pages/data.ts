@@ -49,7 +49,8 @@ const stores: Builder = (d) => {
         { id: 'kv', label: c.group.kv, caption: c.caption.kv, members: ['revocations', 'appKv', 'sessions', 'feed'] },
         { id: 'do', label: c.group.do, members: ['sockets', 'views', 'transcoder', 'lock'] },
         { id: 'ae', label: c.group.ae, members: ['rum', 'abuse', 'authEvents'] },
-        { id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', members: ['workers', 'r2', 'd1', 'kv', 'do', 'ae'] },
+        // room inside the account for the margin wires: a wire between two stores stays inside it
+        { id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', pad: 64, members: ['workers', 'r2', 'd1', 'kv', 'do', 'ae'] },
       ],
       edges: [
         { from: 'apiVideos', to: 'r2', flow: 'request', label: e.records, fromSide: 's', toSide: 'n' },

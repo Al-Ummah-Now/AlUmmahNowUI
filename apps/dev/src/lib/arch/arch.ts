@@ -290,9 +290,11 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   };
   const snap = (v: number) => Math.round(v / G) * G;
   /** head: the arrowhead end, whose stub stands farther out so the wire arrives straight (12 px past its last corner) */
-  const endpoint = (id: string, side: Side, along?: number, head = false): Endpoint => {
+  // an arrowhead end ('far') stands 20+ px out, or in a tight gap ('mid') 14 px: either leaves 12 px of straight
+  // wire before the arrowhead (a corner there reads as a hook)
+  const endpoint = (id: string, side: Side, along?: number, head: boolean | 'mid' = false): Endpoint => {
     const { rect, isNode, anchorY } = rectOf(id);
-    const m = head ? (isNode ? 22 : 20) : isNode ? M + 2 : 6;
+    const m = head === 'mid' ? 14 : head ? (isNode ? 22 : 20) : isNode ? M + 2 : 6;
     if (side === 'e' || side === 'w') {
       const y = snap(along ?? anchorY);
       // the wire ends at the tile's edge (wires are drawn over tiles, so reaching in to the icon would cross the tile)
@@ -334,13 +336,29 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     }
     return at;
   };
+  // a wire between two things inside an account boundary stays inside it: the innermost boundary holding both
+  // ends, 4 px in from its border
+  const holdsBoth = (e: ArchEdge): Rect | undefined => {
+    const a = rectOf(e.from).rect;
+    const b = rectOf(e.to).rect;
+    const inR = (r2: Rect, o: Rect) => r2.x >= o.x && r2.y >= o.y && r2.x + r2.w <= o.x + o.w && r2.y + r2.h <= o.y + o.h;
+    const hold = [...groups.values()].filter((gb) => gb.g.kind === 'boundary' && gb.box !== a && gb.box !== b && inR(a, gb.box) && inR(b, gb.box)).sort((p, q) => p.box.w * p.box.h - q.box.w * q.box.h)[0];
+    return hold ? { x: hold.box.x + 4, y: hold.box.y + 4, w: hold.box.w - 8, h: hold.box.h - 8 } : undefined;
+  };
+  /**
+   * Try each candidate route inside the holding boundary first; only when none fits there, the same candidates
+   * anywhere. (Falling back per candidate let a far stub outside the boundary win over a near one inside it.)
+   */
+  const inThenOut = <T,>(e: ArchEdge, attempt: (within?: Rect) => T | null | undefined): T | null => {
+    const w = holdsBoth(e);
+    return (w && attempt(w)) || attempt() || null;
+  };
   // pass 1: pick a side for each end
   const chosen = edgesSpec.map((e) => {
     const starts = sidesOf(e.fromSide).map((s) => endpoint(e.from, s, facing(e.from, s, centreOf(e.to))));
     // the arrowhead end prefers a stub far enough out to arrive straight; a tight gap takes the near one
-    const res =
-      router.route(starts, sidesOf(e.toSide).map((s) => endpoint(e.to, s, facing(e.to, s, centreOf(e.from)), true)), 10) ??
-      router.route(starts, sidesOf(e.toSide).map((s) => endpoint(e.to, s, facing(e.to, s, centreOf(e.from)))), 10);
+    const goalsAt = (head: boolean | 'mid') => sidesOf(e.toSide).map((s) => endpoint(e.to, s, facing(e.to, s, centreOf(e.from)), head));
+    const res = inThenOut(e, (w) => router.route(starts, goalsAt(true), 10, w) ?? router.route(starts, goalsAt('mid'), 10, w) ?? router.route(starts, goalsAt(false), 10, w));
     if (!res) {
       const ss = sidesOf(e.fromSide).map((s) => endpoint(e.from, s));
       const gg = sidesOf(e.toSide).map((s) => endpoint(e.to, s));
@@ -409,12 +427,21 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   const routed: Routed[] = edgesSpec.map((e, i) => {
     const a = endpoint(e.from, chosen[i]!.fromSide, along.get(`${i}|from`));
     const b = endpoint(e.to, chosen[i]!.toSide, along.get(`${i}|to`), true);
-    const near = endpoint(e.to, chosen[i]!.toSide, along.get(`${i}|to`));
-    const res =
-      router.route([a], [b], 8) ??
-      router.route([a], [near], 8) ??
-      router.route(sidesOf(e.fromSide).map((s) => endpoint(e.from, s)), sidesOf(e.toSide).map((s) => endpoint(e.to, s, undefined, true)), 8) ??
-      router.route(sidesOf(e.fromSide).map((s) => endpoint(e.from, s)), sidesOf(e.toSide).map((s) => endpoint(e.to, s)), 8);
+    const near = endpoint(e.to, chosen[i]!.toSide, along.get(`${i}|to`), 'mid');
+    // the far stub gives a straight arrival, unless it makes the wire loop back in a tight gap: then the near one
+    // a loop: the far stub sits past where a tight gap lets the wire arrive, so it overshoots and comes back with
+    // extra corners. A wire round a margin has the same corners either way (an outer lane is only longer).
+    type R = NonNullable<ReturnType<Router['route']>>;
+    const turnsOf = (r: R) => simplify([r.start.port, ...r.pts, r.goal.port]).length;
+    const res = inThenOut(e, (w) => {
+      const far = router.route([a], [b], 8, w);
+      const close = router.route([a], [near], 8, w);
+      return (
+        (far && close ? (turnsOf(far) > turnsOf(close) + 1 ? close : far) : (far ?? close)) ??
+        router.route(sidesOf(e.fromSide).map((s) => endpoint(e.from, s)), sidesOf(e.toSide).map((s) => endpoint(e.to, s, undefined, true)), 8, w) ??
+        router.route(sidesOf(e.fromSide).map((s) => endpoint(e.from, s)), sidesOf(e.toSide).map((s) => endpoint(e.to, s)), 8, w)
+      );
+    });
     if (!res) throw new Error(`${spec.id}: no route ${e.from} → ${e.to}`);
     const pts = simplify([res.start.port, ...res.pts, res.goal.port]);
     router.commit(pts.slice(1, -1));
@@ -430,7 +457,8 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
       const q = rt.pts[i]!;
       return [{ x: Math.min(p.x, q.x) - 1, y: Math.min(p.y, q.y) - 1, w: Math.abs(p.x - q.x) + 2, h: Math.abs(p.y - q.y) + 2 }];
     });
-  const inCanvas = (q: Rect) => q.x >= 4 && q.y >= 4 && q.x + q.w <= W - 4 && q.y + q.h <= H - 4;
+  // labels and badges keep 12 px from the drawing's sides: a scroll box opens with nothing touching its edge
+  const inCanvas = (q: Rect) => q.x >= 12 && q.y >= 4 && q.x + q.w <= W - 12 && q.y + q.h <= H - 4;
   // labels and badges keep 6 px from every line and group border
   const CLEAR = 6;
   const free = (q: Rect, wires: Rect[]) => inCanvas(q) && !obstacles.some((o) => intersects(q, o, CLEAR)) && !placed.some((o) => intersects(q, o, 4)) && !wires.some((o) => intersects(q, o, CLEAR));
@@ -444,16 +472,30 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   ]);
   // step badges first, at their natural spot near each wire's start; labels then fit around them
   const badges: { rt: Routed; c: Pt; n: number; at: number }[] = [];
-  const BR = 11;
+  // radius 9: a badge on one of two wires spread 16 px apart still keeps 6 px from the other
+  const BR = 9;
   for (const rt of routed) {
     if (rt.e.step == null || spec.badges === false) continue;
     let best: { c: Pt; at: number } | null = null;
     const others = [...routed.filter((x) => x !== rt).flatMap((x) => segRects(x)), ...borders];
+    // the circle's own distance to every other wire (a square test lets a round badge sit 5 px from a line)
+    const segs = routed.filter((x) => x !== rt).flatMap((x) => x.pts.slice(1).map((p, i) => [x.pts[i]!, p] as const));
+    const wireDist = (c: Pt) =>
+      Math.min(
+        999,
+        ...segs.map(([a, b]) => {
+          const vx = b.x - a.x;
+          const vy = b.y - a.y;
+          const t = Math.max(0, Math.min(1, ((c.x - a.x) * vx + (c.y - a.y) * vy) / (vx * vx + vy * vy || 1)));
+          return Math.hypot(c.x - a.x - t * vx, c.y - a.y - t * vy);
+        }),
+      );
+    const WIRE = BR + 7;
     for (let d = 22; d < rt.len - 22; d += 4) {
       const c = pointAt(rt.pts, d);
       const q = { x: c.x - BR, y: c.y - BR, w: 2 * BR, h: 2 * BR };
-      // 5 px from every label and badge already placed
-      if (free(q, others) && !placed.some((o) => intersects(q, o, 5))) {
+      // 5 px from every label and badge already placed, 6 px (and a bit) from every other wire
+      if (free(q, others) && !placed.some((o) => intersects(q, o, 5)) && wireDist(c) >= WIRE) {
         best = { c, at: d };
         break;
       }
@@ -467,11 +509,25 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
         const c = pointAt(rt.pts, d);
         const q = { x: c.x - BR, y: c.y - BR, w: 2 * BR, h: 2 * BR };
         // never on a tile, a title or another wire; among the rest, the farthest from any border
-        if (obstacles.some((o) => intersects(q, o, CLEAR)) || placed.some((o) => intersects(q, o, 3)) || others.some((o) => intersects(q, o, 1))) continue;
+        if (obstacles.some((o) => intersects(q, o, CLEAR)) || placed.some((o) => intersects(q, o, 3)) || wireDist(c) < WIRE) continue;
         const k = clearance(c);
         if (k > far) {
           far = k;
           fb = { c, at: d };
+        }
+      }
+      // still nothing: the spot that keeps farthest from other wires and borders, never on a tile or another badge
+      if (!fb) {
+        let bestK = -Infinity;
+        for (let d = 4; d < rt.len - 4; d += 2) {
+          const c = pointAt(rt.pts, d);
+          const q = { x: c.x - BR, y: c.y - BR, w: 2 * BR, h: 2 * BR };
+          if (!inCanvas(q) || obstacles.some((o) => intersects(q, o, CLEAR)) || placed.some((o) => intersects(q, o, 4))) continue;
+          const k = Math.min(clearance(c), wireDist(c) - BR);
+          if (k > bestK) {
+            bestK = k;
+            fb = { c, at: d };
+          }
         }
       }
       fb ??= { c: pointAt(rt.pts, rt.len / 2), at: rt.len / 2 };

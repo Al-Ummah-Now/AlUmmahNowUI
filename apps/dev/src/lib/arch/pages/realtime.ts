@@ -35,7 +35,7 @@ const map: Builder = (d) => {
         { id: 'shards', label: c.group.shards, caption: c.caption.shards, members: ['s0', 's1', 'sn'] },
         { id: 'do', label: c.group.do, members: ['dir', 'coalescer', 'shards', 'views'] },
         { id: 'producers', label: c.group.producers, caption: c.caption.producers, members: ['apiVideos', 'processor'] },
-        { id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', members: ['limits', 'worker', 'do', 'producers', 'record'] },
+        { id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', pad: 48, members: ['limits', 'worker', 'do', 'producers', 'record'] },
       ],
       edges: [
         { from: 'clients', to: 'worker', flow: 'request', label: e.socket, fromSide: 'e', toSide: 'w' },

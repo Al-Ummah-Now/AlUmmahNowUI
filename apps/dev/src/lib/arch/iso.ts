@@ -52,6 +52,8 @@ interface SceneSpec {
   padFront?: number;
   /** platform positions scaled by this: room between platforms for tags, pills and pipes (default 1) */
   spread?: number;
+  /** where a platform's tag hangs: off its start corner (default) or its end corner, so a phone's scroll box opens on blocks, not a row of tags */
+  tagAt?: 'start' | 'end';
   size: number;
   platforms: PlatSpec[];
   pipes: PipeSpec[];
@@ -99,16 +101,18 @@ function sceneSpec(c: Copy, variant: string): SceneSpec {
     pad: 140,
     padFront: 72,
     spread: 1.2,
+    tagAt: 'end',
     size: 40,
     platforms: [
       { id: 'people', at: [0, 0], cols: 3, rows: 1, blocks: [b('browser', 'lucide/browser'), b('phone', 'lucide/smartphone'), b('tv', 'lucide/tv')], label: p.people, accent: 'var(--an-ink)', tone: 'plain', dashed: true },
-      { id: 'cf', at: [260, 200], cols: 2, rows: 2, blocks: [b('cdn', 'cloudflare/cache'), b('workers', 'cloudflare/workers', 40), b('ai', 'cloudflare/workers-ai'), b('containers', 'cloudflare/containers', 36)], label: p.cfCompute, tag: 'simple-icons/cloudflare', accent: '#f6821f', tone: 'cf' },
-      { id: 'cfData', at: [640, 580], cols: 2, rows: 2, blocks: [b('r2', 'cloudflare/r2'), b('d1', 'cloudflare/d1'), b('kv', 'cloudflare/kv'), b('queues', 'cloudflare/queues')], label: p.cfData, tag: 'simple-icons/cloudflare', accent: '#f6821f', tone: 'cf' },
-      { id: 'bunny', at: [1020, 960], cols: 2, rows: 1, blocks: [b('stream', 'brand/bunny-stream', 30), b('bunnyCdn', 'brand/bunny-cdn')], label: p.bunny, tagLogo: logo, accent: '#f29b1d', tone: 'bunny' },
-      { id: 'providers', at: [1330, 1240], cols: 3, rows: 1, blocks: [b('qf', 'lucide/book-open'), b('resend', 'simple-icons/resend'), b('github', 'simple-icons/github')], label: p.providers, accent: 'var(--an-boundary)', tone: 'prov' },
+      { id: 'cf', at: [260, 260], cols: 2, rows: 2, blocks: [b('cdn', 'cloudflare/cache'), b('workers', 'cloudflare/workers', 40), b('ai', 'cloudflare/workers-ai'), b('containers', 'cloudflare/containers', 36)], label: p.cfCompute, tag: 'simple-icons/cloudflare', accent: '#f6821f', tone: 'cf' },
+      { id: 'cfData', at: [640, 640], cols: 2, rows: 2, blocks: [b('r2', 'cloudflare/r2'), b('d1', 'cloudflare/d1'), b('kv', 'cloudflare/kv'), b('queues', 'cloudflare/queues')], label: p.cfData, tag: 'simple-icons/cloudflare', accent: '#f6821f', tone: 'cf' },
+      { id: 'bunny', at: [1020, 1020], cols: 2, rows: 1, blocks: [b('stream', 'brand/bunny-stream', 30), b('bunnyCdn', 'brand/bunny-cdn')], label: p.bunny, tagLogo: logo, accent: '#f29b1d', tone: 'bunny' },
+      { id: 'providers', at: [1330, 1300], cols: 3, rows: 1, blocks: [b('qf', 'lucide/book-open'), b('resend', 'simple-icons/resend'), b('github', 'simple-icons/github')], label: p.providers, accent: 'var(--an-boundary)', tone: 'prov' },
     ],
     pipes: [
-      { id: 'req', from: ['people', 'x1', 0.5], to: ['cf', 'y0', 250 / 282], flow: 'request', label: c.wire.requests },
+      // into the middle of the platform's back edge: its end corner carries the tag
+      { id: 'req', from: ['people', 'x1', 0.5], to: ['cf', 'y0', 0.5], flow: 'request', label: c.wire.requests },
       { id: 'data', from: ['cf', 'y1', 216 / 282], to: ['cfData', 'x0', 106 / 282], flow: 'request' },
       { id: 'up', from: ['cfData', 'y1', 216 / 282], to: ['bunny', 'x0', 0.45], flow: 'media', label: c.wire.upload },
       { id: 'api', from: ['bunny', 'y1', 216 / 282], to: ['providers', 'x0', 0.45], flow: 'request' },
@@ -196,8 +200,13 @@ export function renderIso(c: Copy, opts: { rtl: boolean; variant: string }): str
   }
   const tagW = (p: Plat) => (p.tagLogo ? p.tagLogo.w + 24 : textWidth(p.label, 13, true) + (p.tag ? 36 : 24));
   for (const p of plats) {
-    const l = Q(p.x, p.y + p.d);
-    add([l[0] - 14 - tagW(p), l[1] - 38]);
+    if (sc.tagAt === 'end') {
+      const l = Q(p.x + p.w, p.y);
+      add([l[0] + 18 + tagW(p), l[1] - 46]);
+    } else {
+      const l = Q(p.x, p.y + p.d);
+      add([l[0] - 14 - tagW(p), l[1] - 38]);
+    }
   }
   const M = 26;
   const ox = M - Math.min(...xs);
@@ -226,6 +235,8 @@ export function renderIso(c: Copy, opts: { rtl: boolean; variant: string }): str
   // platforms, back to front
   const tags: string[] = [];
   const polys: [number, number][][] = [];
+  /** each block's drawn box (shape, icon and name pill): a pipe's label keeps clear of it */
+  const blockBoxes: { x0: number; y0: number; x1: number; y1: number }[] = [];
   o.push('<g class="an-groups">');
   for (const p of [...plats].sort((a, b) => a.x + a.y - (b.x + b.y))) {
     const a = P(p.x, p.y);
@@ -237,12 +248,14 @@ export function renderIso(c: Copy, opts: { rtl: boolean; variant: string }): str
     o.push(`<g class="an-iso-plat ${accentClass(p.accent)}${p.dashed ? ' an-iso-dashed' : ''}" data-group="${p.id}">`);
     o.push(`<polygon class="an-iso-side-l" points="${pts([d, cc, low(cc), low(d)])}"/><polygon class="an-iso-side-r" points="${pts([b, cc, low(cc), low(b)])}"/><polygon class="an-iso-top" points="${pts([a, b, cc, d])}"/>`);
     o.push('</g>');
-    // the tag hangs off the platform's outer (left, or right in Arabic) corner
-    const corner = d;
+    // the tag hangs off the platform's start corner (left, or right in Arabic), or on a phone its end corner
+    const end = sc.tagAt === 'end';
+    const corner = end ? b : d;
     const tw = tagW(p);
-    const tx = opts.rtl ? corner[0] + 18 : corner[0] - 18 - tw;
+    // off the start corner it hangs outward (left in English); off the end corner, outward the other way
+    const tx = end ? (opts.rtl ? corner[0] - 18 - tw : corner[0] + 18) : opts.rtl ? corner[0] + 18 : corner[0] - 18 - tw;
     const ty = corner[1] - 46;
-    const pin = opts.rtl ? tx : tx + tw;
+    const pin = (opts.rtl ? !end : end) ? tx : tx + tw;
     tags.push(`<g data-tag="${p.id}" class="an-iso-tag ${accentClass(p.accent)}"><path class="an-iso-tagpin" d="M${r(pin)} ${r(ty + 14)} L${r(corner[0])} ${r(corner[1])}"/><rect class="an-tag${p.tagLogo ? ' an-tag-logo' : ''}" x="${r(tx)}" y="${r(ty)}" width="${r(tw)}" height="28" rx="8"/>`);
     if (p.tagLogo) tags.push(`<use data-icon="${p.tagLogo.id}" href="#${symId(prefix, p.tagLogo.id)}" x="${r(tx + 12)}" y="${r(ty + 5)}" width="${p.tagLogo.w}" height="${p.tagLogo.h}"><title>${esc(p.label)}</title></use>`);
     else {
@@ -324,6 +337,7 @@ export function renderIso(c: Copy, opts: { rtl: boolean; variant: string }): str
     const bx1 = Math.max(...xs, px0 + pw, ix + IS) + 3;
     const by0 = py0 - 3;
     const by1 = Math.max(...ys) + 3;
+    blockBoxes.push({ x0: bx0, y0: by0, x1: bx1, y1: by1 });
     o.push(`<g class="an-node an-iso-block an-tone-${b.tone} an-shape-${b.shape}" data-node="${b.id}">`);
     o.push(`<rect data-box class="an-iso-hit" x="${r(bx0)}" y="${r(by0)}" width="${r(bx1 - bx0)}" height="${r(by1 - by0)}"/>`);
     o.push(...shapes);
@@ -383,19 +397,34 @@ export function renderIso(c: Copy, opts: { rtl: boolean; variant: string }): str
       };
       for (const poly of polys) for (let i = 0; i < poly.length; i++) if (boxDist(poly[i]!, poly[(i + 1) % poly.length]!) < 8) return false;
       for (const { q: qq } of pipeD) for (let i = 1; i < qq.length; i++) if (boxDist(qq[i - 1]!, qq[i]!) < 11) return false;
-      return true;
+      if (blockBoxes.some((k) => bx[0]! < k.x1 + 6 && bx[1]! > k.x0 - 6 && by[0]! < k.y1 + 6 && by[1]! > k.y0 - 6)) return false;
+      // and it still reads as this pipe's label: within 22 px of the pipe (the gate allows 24)
+      let own = Infinity;
+      for (let i = 1; i < q.length; i++) own = Math.min(own, boxDist(q[i - 1]!, q[i]!));
+      return own <= 22;
     };
     let m = [(q[bi]![0] + q[bi - 1]![0]) / 2 + nx * off, (q[bi]![1] + q[bi - 1]![1]) / 2 + ny * off];
+    // the chosen segment first, then the pipe's other segments, longest first: a label never falls back onto a block
+    const segOrder = [bi, ...[...Array(q.length - 1).keys()].map((k) => k + 1).filter((k) => k !== bi).sort((u, v) => Math.hypot(q[v]![0] - q[v - 1]![0], q[v]![1] - q[v - 1]![1]) - Math.hypot(q[u]![0] - q[u - 1]![0], q[u]![1] - q[u - 1]![1]))];
     // 15 or 20 px from the pipe's centre line (the glow reaches 8.5; the gate allows 24), upper side first
-    found: for (const [side, extra] of [[1, 0], [1, 5], [-1, 0], [-1, 5]] as const)
-      for (const t of [0.5, 0.42, 0.58, 0.34, 0.66, 0.26, 0.74, 0.18, 0.82]) {
-        const cx = q[bi - 1]![0] + dx * t + nx * (off + extra) * side;
-        const cy = q[bi - 1]![1] + dy * t + ny * (off + extra) * side;
-        if (clear(cx, cy)) {
-          m = [cx, cy];
-          break found;
+    found: for (const k of segOrder) {
+      const sx = q[k]![0] - q[k - 1]![0];
+      const sy = q[k]![1] - q[k - 1]![1];
+      const sl = Math.hypot(sx, sy) || 1;
+      let ux = -sy / sl;
+      let uy = sx / sl;
+      if (uy > 0 || (uy === 0 && ux > 0)) [ux, uy] = [-ux, -uy];
+      const so = Math.abs(ux) * (lw / 2) + Math.abs(uy) * 10 + 15;
+      for (const [side, extra] of [[1, 0], [1, 3], [-1, 0], [-1, 3]] as const)
+        for (const t of [0.5, 0.44, 0.56, 0.38, 0.62, 0.32, 0.68, 0.26, 0.74, 0.2, 0.8, 0.14, 0.86, 0.08, 0.92]) {
+          const cx = q[k - 1]![0] + sx * t + ux * (so + extra) * side;
+          const cy = q[k - 1]![1] + sy * t + uy * (so + extra) * side;
+          if (clear(cx, cy)) {
+            m = [cx, cy];
+            break found;
+          }
         }
-      }
+    }
     o.push(`<g class="an-elabel an-f-${pp.flow}" data-for="${prefix}-${pp.id}"><rect class="an-elabel-bg an-pipe-label" x="${r(m[0]! - lw / 2)}" y="${r(m[1]! - 10)}" width="${r(lw)}" height="20" rx="10"/><text x="${r(m[0]!)}" y="${r(m[1]! + 4)}" text-anchor="middle" font-size="11.5"${hasArabic(pp.label) ? ' direction="rtl"' : ''}>${esc(pp.label)}</text></g>`);
   }
   o.push('</g></svg>');
