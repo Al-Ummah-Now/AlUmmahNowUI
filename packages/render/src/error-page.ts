@@ -7,6 +7,7 @@
  * Never a stack trace or a raw error message.
  */
 import { escapeHtml } from './html';
+import { formatNumber } from './format';
 import type { Locale } from './locale';
 
 export type ErrorCardKind = 'notFound' | 'gone' | 'server' | 'unavailable';
@@ -85,7 +86,7 @@ export const errorCardIcon = (name: ErrorCardIcon): string =>
 
 /** "Error 404" / «خطأ ٤٠٤» (Eastern Arabic digits in Arabic, never implicit 'ar'). */
 export function errorCodeLabel(locale: Locale, code: number): string {
-  const digits = new Intl.NumberFormat(locale === 'ar' ? 'ar-u-nu-arab' : 'en-US', { useGrouping: false }).format(code);
+  const digits = formatNumber(code, locale, { useGrouping: false });
   return ERROR_CARD_STRINGS[locale].errorCode.replace('{code}', digits);
 }
 
