@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { en } from '../src/i18n/en';
-import { countLabel, initCombobox, type ComboboxLabels } from '../src/scripts/search-combobox';
+import { countLabel, initCombobox, type ComboboxLabels, type ComboboxOptions } from '../src/scripts/search-combobox';
 import { addRecent, readRecent } from '../src/lib/search/recent';
 import type { SearchHit } from '../src/lib/search/suggest';
 import { hit, memoryStore } from './search-fixtures';
@@ -54,10 +54,10 @@ const HITS: SearchHit[] = [
 let form: HTMLFormElement;
 let input: HTMLInputElement;
 let store: ReturnType<typeof memoryStore>;
-let fetchHits: ReturnType<typeof vi.fn>;
-let fetchScholars: ReturnType<typeof vi.fn>;
-let navigate: ReturnType<typeof vi.fn>;
-let submit: ReturnType<typeof vi.fn>;
+let fetchHits: Mock<NonNullable<ComboboxOptions['fetchHits']>>;
+let fetchScholars: Mock<NonNullable<ComboboxOptions['fetchScholars']>>;
+let navigate: Mock<NonNullable<ComboboxOptions['navigate']>>;
+let submit: Mock<NonNullable<ComboboxOptions['submit']>>;
 let destroy: () => void;
 
 const key = (k: string) => input.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
