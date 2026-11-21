@@ -1,12 +1,12 @@
 ---
 /**
  * The shared shape of every System design subpage: the hero, the page's diagrams (ArchFigure, passed
- * as children — 3 to 5 per page, src/lib/arch), then the stage tiles with their registry statuses
- * and wiki sources.
+ * as children, src/lib/arch), then the stage tiles with their registry statuses.
  */
 import Base from '../layouts/Base.astro';
 import PageHero from './PageHero.astro';
 import ItemGrid from './ItemGrid.astro';
+import SdShell from './SdShell.astro';
 import type { Item, Strings } from '../i18n';
 import type { Locale, PageSlug } from '../lib/pages';
 
@@ -26,12 +26,16 @@ interface Props {
 const { locale, slug, t, block } = Astro.props;
 ---
 <Base locale={locale} slug={slug} title={block.title} description={block.description}>
-  <PageHero title={block.heroTitle} lead={block.heroLead} />
-  <slot />
-  <section class="band" aria-labelledby="stages-h">
-    <div class="wrap">
-      <h2 id="stages-h" class="h2">{block.stagesTitle}</h2>
-      <ItemGrid items={block.stages} t={t} />
-    </div>
-  </section>
+  <PageHero title={block.heroTitle} lead={block.heroLead} section />
+  <SdShell locale={locale} slug={slug} t={t}>
+    <slot />
+    {block.stages.length > 0 && (
+      <section class="band" aria-labelledby="stages-h">
+        <div class="wrap">
+          <h2 id="stages-h" class="h2">{block.stagesTitle}</h2>
+          <ItemGrid items={block.stages} t={t} />
+        </div>
+      </section>
+    )}
+  </SdShell>
 </Base>

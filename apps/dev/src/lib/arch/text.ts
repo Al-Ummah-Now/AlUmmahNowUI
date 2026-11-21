@@ -23,3 +23,39 @@ export function textWidth(s: string, size: number, bold = false): number {
 export const hasArabic = (s: string) => /[؀-ۿ]/.test(s);
 
 export const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+const LRI = '⁦';
+const PDI = '⁩';
+/** A run of Latin script (identifiers, product names, paths) inside Arabic text: kept left to right as one unit. */
+// a bracket starts a run only when Latin follows it: «(اختبار)» stays Arabic, «(api-videos)» stays whole
+const WORD = String.raw`(?:[A-Za-z0-9<{*$]|[(\[](?=[A-Za-z0-9<{]))(?:[\w.\-/:<>{}()[\]|*?=+@#&$',]*[A-Za-z0-9>})\]*?$'_])?`;
+// names joined by spaces or « · » are one run, so «KV · D1 · R2» keeps its order in Arabic
+const LATIN_RUN = new RegExp(`${WORD}(?:(?: · | )${WORD})*`, 'g');
+
+/** Wrap every Latin run of an Arabic string in an isolate (LRI … PDI), so the bidi algorithm never reorders it. */
+export function isolateLatin(s: string): string {
+  if (!hasArabic(s)) return s;
+  return s.replace(LATIN_RUN, (run) => `${LRI}${run}${PDI}`);
+}
+
+const unesc = (s: string) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+
+/**
+ * Last pass over a rendered diagram: every <text> holding Arabic is set right to left (its anchor
+ * flipped, so it stays where it was placed) and its Latin runs are isolated. The browser gate
+ * (e2e/diagram-gate.ts) fails on Arabic text whose Latin runs aren't isolated.
+ */
+export function finishBidi(svg: string): string {
+  return svg.replace(/<text([^>]*)>([^<]*)<\/text>/g, (m, attrs: string, body: string) => {
+    const raw = unesc(body);
+    if (!hasArabic(raw)) return m;
+    let a = attrs;
+    if (!/\sdirection=/.test(a)) {
+      // flip the anchor so the text keeps its place (no anchor means start: it grew rightwards from x)
+      if (/text-anchor=/.test(a)) a = a.replace(/text-anchor="(start|end)"/, (_x, v: string) => `text-anchor="${v === 'start' ? 'end' : 'start'}"`);
+      else a += ' text-anchor="end"';
+      a += ' direction="rtl"';
+    }
+    return `<text${a}>${esc(isolateLatin(raw))}</text>`;
+  });
+}

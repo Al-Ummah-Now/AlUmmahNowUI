@@ -23,6 +23,8 @@ export interface ArchNode {
   role?: string | string[];
   /** grid position (column, row) — fractions allowed */
   at: [number, number];
+  /** field rows (a table's columns, a message's fields): code type, aligned to the start edge under a rule */
+  list?: string[];
   /** price lines (sourced rates), under the role */
   rate?: string[];
   /** a cost meter: final USD per scenario (null = unknown); it ticks while the flow reaches this node */
@@ -86,6 +88,9 @@ export interface ArchSpec {
   hop?: number;
   /** false: no numbered badges (parallel lanes that share step timing) */
   badges?: boolean;
+  /** a wire label with no legal spot (beside its wire, clear of borders, tiles and title rows) is left out
+   * instead of failing the build: only for figures whose page text carries the same facts */
+  dropTightLabels?: boolean;
 }
 
 interface NodeBox {
@@ -94,7 +99,9 @@ interface NodeBox {
   cy: number;
   box: Rect;
   icon: { x: number; y: number; s: number };
-  lines: { text: string; y: number; size: number; bold: boolean; kind?: 'rate' | 'meter' | 'total' }[];
+  lines: { text: string; y: number; size: number; bold: boolean; kind?: 'rate' | 'meter' | 'total' | 'field' }[];
+  /** y of the rule above the field rows */
+  rule?: number;
 }
 interface GroupBox {
   g: ArchGroup;
@@ -143,12 +150,16 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   // 1. nodes on the grid
   const nodes = new Map<string, NodeBox>();
   const rolesOf = (n: ArchNode) => (n.role ? (Array.isArray(n.role) ? n.role : [n.role]) : []);
-  const RT = RS - 0.5;
+  // never under 11 px: diagrams are drawn at natural size
+  const RT = Math.max(11, RS - 0.5);
   // the gap between a tile's lines: Arabic is set in Noto Naskh, whose line box is taller than Latin's
   // (and taller still on Linux), so Arabic tiles get more room between lines
   const lgOf = (_n: ArchNode) => (opts.locale === 'ar' ? 6 : 3);
+  const FS = Math.max(11, RS - 0.5);
+  /** code type: every glyph about 0.6 em */
+  const codeW = (x: string) => [...x].length * FS * 0.62;
   const nodeW = (n: ArchNode) =>
-    Math.max(S + 20, textWidth(n.name, NS, true) + 16, ...rolesOf(n).map((x) => textWidth(x, RS) + 16), ...(n.rate ?? []).map((x) => textWidth(x, RT) + 16), n.meter ? moneyWidest(opts, n.meter.usd) + 18 : 0, n.total ? moneyWidest(opts, n.total.usd) + 18 : 0);
+    Math.max(S + 20, ...(n.list ?? []).map((x) => codeW(x) + 26), textWidth(n.name, NS, true) + 16, ...rolesOf(n).map((x) => textWidth(x, RS) + 16), ...(n.rate ?? []).map((x) => textWidth(x, RT) + 16), n.meter ? moneyWidest(opts, n.meter.usd) + 18 : 0, n.total ? moneyWidest(opts, n.total.usd) + 18 : 0);
   const widest = Math.max(...spec.nodes.map(nodeW));
   // a column always leaves a wire channel between neighbouring tiles
   layout = { ...layout, colW: Math.max(layout.colW, Math.ceil(widest + 46)) };
@@ -157,7 +168,7 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   const nodeH = (n: ArchNode) => {
     const roles = n.role ? (Array.isArray(n.role) ? n.role : [n.role]) : [];
     const LG = lgOf(n);
-    return 8 + S + 7 + NS + LG + roles.length * (RS + LG) + (n.rate ?? []).length * (RT + LG) + (n.meter || n.total ? MS + 3 + LG : 0) + 6;
+    return 8 + S + 7 + NS + LG + roles.length * (RS + LG) + (n.rate ?? []).length * (RT + LG + 2) + (n.meter || n.total ? MS + 3 + LG : 0) + (n.list?.length ? 9 + n.list.length * (FS + LG + 2) : 0) + 6;
   };
   // per row (same grid y): tiles side by side share a height
   const rowOf = (n: ArchNode) => (layout.at?.[n.id] ?? n.at)[1];
@@ -177,11 +188,16 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     roles.forEach((x, i) => lines.push({ text: x, y: box.y + 8 + S + 7 + NS + LG + (i + 1) * (RS + LG) - LG, size: RS, bold: false }));
     let ly = box.y + 8 + S + 7 + NS + LG + roles.length * (RS + LG);
     rates.forEach((x) => {
-      ly += RT + LG;
+      ly += RT + LG + 2;
       lines.push({ text: x, y: ly - 3, size: RT, bold: false, kind: 'rate' });
     });
     if (money0) lines.push({ text: money(opts, money0.usd[opts.scenario ?? 'one']), y: ly + MS + LG, size: MS, bold: true, kind: n.meter ? 'meter' : 'total' });
-    nodes.set(n.id, { n, cx, cy, box, icon: { x: cx - S / 2, y: box.y + 8, s: S }, lines });
+    let rule: number | undefined;
+    if (n.list?.length) {
+      rule = ly + 5;
+      n.list.forEach((x, i) => lines.push({ text: x, y: ly + 9 + (i + 1) * (FS + LG + 2) - LG - 1, size: FS, bold: false, kind: 'field' }));
+    }
+    nodes.set(n.id, { n, cx, cy, box, icon: { x: cx - S / 2, y: box.y + 8, s: S }, lines, rule });
   }
 
   // 2. groups around their members (inner first)
@@ -194,16 +210,22 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     if (!rects.length) continue;
     const big = g.kind === 'boundary' || g.kind === 'platform';
     const pad = g.pad ?? (big ? 18 : 12);
-    const top = big ? 44 : 30;
-    const bottom = g.caption ? 26 : pad;
+    // room for the title above the members, clear of the border (Arabic line boxes are taller)
+    const top = big ? 58 : opts.locale === 'ar' ? 42 : 34;
+    // a caption sits along the bottom, clear of the border (Arabic line boxes are taller)
+    const bottom = g.caption ? (opts.locale === 'ar' ? 34 : 28) : pad;
     const x0 = Math.min(...rects.map((q) => q.x)) - pad;
     const y0 = Math.min(...rects.map((q) => q.y)) - top;
-    const x1 = Math.max(...rects.map((q) => q.x + q.w)) + pad;
+    let x1 = Math.max(...rects.map((q) => q.x + q.w)) + pad;
     const y1 = Math.max(...rects.map((q) => q.y + q.h)) + bottom;
-    const box = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
     const lw = g.tagLogo ? g.tagLogo.w + 24 : big ? textWidth(g.label, 12.5, true) + (g.tag ? 30 : 0) + 20 : textWidth(g.label, 12.5, true) + 4;
-    const label = big ? { x: box.x + 14, y: box.y - 13, w: lw, h: 26 } : { x: box.x + 10, y: box.y + 7, w: lw, h: 17 };
-    const caption = g.caption ? { x: box.x + 10, y: box.y + box.h - 21, w: textWidth(g.caption, 11) + 4, h: 15 } : undefined;
+    // a boundary's tag sits inside its box, clear of the border (never on it)
+    // a group is at least as wide as its title, with 6 px clear of each border
+    const need = Math.max(lw + (big ? 28 : 20) + 12, g.caption ? textWidth(g.caption, 11) + 4 + 32 : 0);
+    if (x1 - x0 < need) x1 = x0 + need;
+    const box = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    const label = big ? { x: box.x + 14, y: box.y + 8, w: lw, h: 26 } : { x: box.x + 10, y: box.y + (opts.locale === 'ar' ? 15 : 10), w: lw, h: 17 };
+    const caption = g.caption ? { x: box.x + 10, y: box.y + box.h - (opts.locale === 'ar' ? 27 : 23), w: textWidth(g.caption, 11) + 4, h: 15 } : undefined;
     groups.set(g.id, { g, box, depth: depthOf(g), label, caption });
   }
 
@@ -226,6 +248,7 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     nb.cy += oy;
     nb.icon = { ...nb.icon, x: nb.cx - nb.icon.s / 2, y: nb.icon.y + oy };
     nb.lines = nb.lines.map((l) => ({ ...l, y: l.y + oy }));
+    if (nb.rule !== undefined) nb.rule += oy;
   }
   for (const gb of groups.values()) {
     gb.box = { ...gb.box, x: mx(gb.box.x, gb.box.w), y: gb.box.y + oy };
@@ -266,20 +289,22 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     return { rect: gb.box, isNode: false, anchorY: gb.box.y + gb.box.h / 2 };
   };
   const snap = (v: number) => Math.round(v / G) * G;
-  const endpoint = (id: string, side: Side, along?: number): Endpoint => {
-    const { rect, isNode, anchorY, icon } = rectOf(id);
-    const m = isNode ? M + 2 : 6;
+  /** head: the arrowhead end, whose stub stands farther out so the wire arrives straight (12 px past its last corner) */
+  // an arrowhead end ('far') stands 20+ px out, or in a tight gap ('mid') 14 px: either leaves 12 px of straight
+  // wire before the arrowhead (a corner there reads as a hook)
+  const endpoint = (id: string, side: Side, along?: number, head: boolean | 'mid' = false): Endpoint => {
+    const { rect, isNode, anchorY } = rectOf(id);
+    const m = head === 'mid' ? 14 : head ? (isNode ? 22 : 20) : isNode ? M + 2 : 6;
     if (side === 'e' || side === 'w') {
       const y = snap(along ?? anchorY);
-      // wires reach the icon itself (as in the reference style), not the invisible label box
-      const near = icon && y >= icon.y - 4 && y <= icon.y + icon.h + 4;
-      const px = near ? (side === 'e' ? icon.x + icon.w + 6 : icon.x - 6) : side === 'e' ? rect.x + rect.w : rect.x;
+      // the wire ends at the tile's edge (wires are drawn over tiles, so reaching in to the icon would cross the tile)
+      const px = side === 'e' ? rect.x + rect.w : rect.x;
       const bx = side === 'e' ? rect.x + rect.w : rect.x;
       const sx = side === 'e' ? Math.ceil((bx + m) / G) * G : Math.floor((bx - m) / G) * G;
       return { port: { x: px, y }, side, stub: { x: sx, y } };
     }
     const x = snap(along ?? rect.x + rect.w / 2);
-    const py = side === 's' ? rect.y + rect.h : icon ? icon.y - 5 : rect.y;
+    const py = side === 's' ? rect.y + rect.h : rect.y;
     const sy = side === 's' ? Math.ceil((py + m) / G) * G : Math.floor((rect.y - m) / G) * G;
     return { port: { x, y: py }, side, stub: { x, y: sy } };
   };
@@ -311,13 +336,29 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     }
     return at;
   };
+  // a wire between two things inside an account boundary stays inside it: the innermost boundary holding both
+  // ends, 4 px in from its border
+  const holdsBoth = (e: ArchEdge): Rect | undefined => {
+    const a = rectOf(e.from).rect;
+    const b = rectOf(e.to).rect;
+    const inR = (r2: Rect, o: Rect) => r2.x >= o.x && r2.y >= o.y && r2.x + r2.w <= o.x + o.w && r2.y + r2.h <= o.y + o.h;
+    const hold = [...groups.values()].filter((gb) => gb.g.kind === 'boundary' && gb.box !== a && gb.box !== b && inR(a, gb.box) && inR(b, gb.box)).sort((p, q) => p.box.w * p.box.h - q.box.w * q.box.h)[0];
+    return hold ? { x: hold.box.x + 4, y: hold.box.y + 4, w: hold.box.w - 8, h: hold.box.h - 8 } : undefined;
+  };
+  /**
+   * Try each candidate route inside the holding boundary first; only when none fits there, the same candidates
+   * anywhere. (Falling back per candidate let a far stub outside the boundary win over a near one inside it.)
+   */
+  const inThenOut = <T,>(e: ArchEdge, attempt: (within?: Rect) => T | null | undefined): T | null => {
+    const w = holdsBoth(e);
+    return (w && attempt(w)) || attempt() || null;
+  };
   // pass 1: pick a side for each end
   const chosen = edgesSpec.map((e) => {
-    const res = router.route(
-      sidesOf(e.fromSide).map((s) => endpoint(e.from, s, facing(e.from, s, centreOf(e.to)))),
-      sidesOf(e.toSide).map((s) => endpoint(e.to, s, facing(e.to, s, centreOf(e.from)))),
-      10,
-    );
+    const starts = sidesOf(e.fromSide).map((s) => endpoint(e.from, s, facing(e.from, s, centreOf(e.to))));
+    // the arrowhead end prefers a stub far enough out to arrive straight; a tight gap takes the near one
+    const goalsAt = (head: boolean | 'mid') => sidesOf(e.toSide).map((s) => endpoint(e.to, s, facing(e.to, s, centreOf(e.from)), head));
+    const res = inThenOut(e, (w) => router.route(starts, goalsAt(true), 10, w) ?? router.route(starts, goalsAt('mid'), 10, w) ?? router.route(starts, goalsAt(false), 10, w));
     if (!res) {
       const ss = sidesOf(e.fromSide).map((s) => endpoint(e.from, s));
       const gg = sidesOf(e.toSide).map((s) => endpoint(e.to, s));
@@ -362,12 +403,45 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     const step = Math.min(2 * G, Math.max(G, Math.floor((span - 2 * G) / Math.max(1, list.length) / G) * G));
     list.forEach((s2, j) => along.set(`${s2.edge}|${s2.end}`, centre + (j - (list.length - 1) / 2) * step));
   }
+  // a lone wire on a side lines up with its other end's spread port when that fits on its tile: a straight wire, no jog
+  // (wide layouts only: a phone column's tight lanes can turn the moved port into a detour)
+  if (opts.variant === 'wide') edgesSpec.forEach((e, i) => {
+    for (const [end, other] of [['from', 'to'], ['to', 'from']] as const) {
+      const id = end === 'from' ? e.from : e.to;
+      const side = end === 'from' ? chosen[i]!.fromSide : chosen[i]!.toSide;
+      const otherSide = other === 'from' ? chosen[i]!.fromSide : chosen[i]!.toSide;
+      const otherId = other === 'from' ? e.from : e.to;
+      const { rect, isNode } = rectOf(id);
+      if (!isNode || (slots.get(`${id}|${side}`)?.length ?? 0) !== 1 || (slots.get(`${otherId}|${otherSide}`)?.length ?? 0) < 2) continue;
+      const vertical = side === 'e' || side === 'w';
+      if (vertical !== (otherSide === 'e' || otherSide === 'w')) continue;
+      const v = along.get(`${i}|${other}`);
+      if (v == null) continue;
+      const lo = (vertical ? rect.y : rect.x) + G;
+      const hi = (vertical ? rect.y + rect.h : rect.x + rect.w) - G;
+      if (v >= lo && v <= hi) along.set(`${i}|${end}`, v);
+    }
+  });
 
   // pass 2: fixed ports, committed in order so wires keep apart
   const routed: Routed[] = edgesSpec.map((e, i) => {
     const a = endpoint(e.from, chosen[i]!.fromSide, along.get(`${i}|from`));
-    const b = endpoint(e.to, chosen[i]!.toSide, along.get(`${i}|to`));
-    const res = router.route([a], [b], 8) ?? router.route(sidesOf(e.fromSide).map((s) => endpoint(e.from, s)), sidesOf(e.toSide).map((s) => endpoint(e.to, s)), 8);
+    const b = endpoint(e.to, chosen[i]!.toSide, along.get(`${i}|to`), true);
+    const near = endpoint(e.to, chosen[i]!.toSide, along.get(`${i}|to`), 'mid');
+    // the far stub gives a straight arrival, unless it makes the wire loop back in a tight gap: then the near one
+    // a loop: the far stub sits past where a tight gap lets the wire arrive, so it overshoots and comes back with
+    // extra corners. A wire round a margin has the same corners either way (an outer lane is only longer).
+    type R = NonNullable<ReturnType<Router['route']>>;
+    const turnsOf = (r: R) => simplify([r.start.port, ...r.pts, r.goal.port]).length;
+    const res = inThenOut(e, (w) => {
+      const far = router.route([a], [b], 8, w);
+      const close = router.route([a], [near], 8, w);
+      return (
+        (far && close ? (turnsOf(far) > turnsOf(close) + 1 ? close : far) : (far ?? close)) ??
+        router.route(sidesOf(e.fromSide).map((s) => endpoint(e.from, s)), sidesOf(e.toSide).map((s) => endpoint(e.to, s, undefined, true)), 8, w) ??
+        router.route(sidesOf(e.fromSide).map((s) => endpoint(e.from, s)), sidesOf(e.toSide).map((s) => endpoint(e.to, s)), 8, w)
+      );
+    });
     if (!res) throw new Error(`${spec.id}: no route ${e.from} → ${e.to}`);
     const pts = simplify([res.start.port, ...res.pts, res.goal.port]);
     router.commit(pts.slice(1, -1));
@@ -383,33 +457,102 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
       const q = rt.pts[i]!;
       return [{ x: Math.min(p.x, q.x) - 1, y: Math.min(p.y, q.y) - 1, w: Math.abs(p.x - q.x) + 2, h: Math.abs(p.y - q.y) + 2 }];
     });
-  const inCanvas = (q: Rect) => q.x >= 4 && q.y >= 4 && q.x + q.w <= W - 4 && q.y + q.h <= H - 4;
-  const free = (q: Rect, wires: Rect[]) => inCanvas(q) && !obstacles.some((o) => intersects(q, o, 3)) && !placed.some((o) => intersects(q, o, 3)) && !wires.some((o) => intersects(q, o, 1));
+  // labels and badges keep 12 px from the drawing's sides: a scroll box opens with nothing touching its edge
+  const inCanvas = (q: Rect) => q.x >= 12 && q.y >= 4 && q.x + q.w <= W - 12 && q.y + q.h <= H - 4;
+  // labels and badges keep 6 px from every line and group border
+  const CLEAR = 6;
+  const free = (q: Rect, wires: Rect[]) => inCanvas(q) && !obstacles.some((o) => intersects(q, o, CLEAR)) && !placed.some((o) => intersects(q, o, 4)) && !wires.some((o) => intersects(q, o, CLEAR));
 
+  // each group's outline as four thin strips: a label may sit inside or outside a group, never on its edge
+  const borders: Rect[] = [...groups.values()].flatMap(({ box: b }) => [
+    { x: b.x - 1, y: b.y - 1, w: b.w + 2, h: 2 },
+    { x: b.x - 1, y: b.y + b.h - 1, w: b.w + 2, h: 2 },
+    { x: b.x - 1, y: b.y - 1, w: 2, h: b.h + 2 },
+    { x: b.x + b.w - 1, y: b.y - 1, w: 2, h: b.h + 2 },
+  ]);
+  // step badges first, at their natural spot near each wire's start; labels then fit around them
   const badges: { rt: Routed; c: Pt; n: number; at: number }[] = [];
-  const BR = 11;
+  // radius 9: a badge on one of two wires spread 16 px apart still keeps 6 px from the other
+  const BR = 9;
   for (const rt of routed) {
     if (rt.e.step == null || spec.badges === false) continue;
     let best: { c: Pt; at: number } | null = null;
-    const others = routed.filter((x) => x !== rt).flatMap((x) => segRects(x));
+    const others = [...routed.filter((x) => x !== rt).flatMap((x) => segRects(x)), ...borders];
+    // the circle's own distance to every other wire (a square test lets a round badge sit 5 px from a line)
+    const segs = routed.filter((x) => x !== rt).flatMap((x) => x.pts.slice(1).map((p, i) => [x.pts[i]!, p] as const));
+    const wireDist = (c: Pt) =>
+      Math.min(
+        999,
+        ...segs.map(([a, b]) => {
+          const vx = b.x - a.x;
+          const vy = b.y - a.y;
+          const t = Math.max(0, Math.min(1, ((c.x - a.x) * vx + (c.y - a.y) * vy) / (vx * vx + vy * vy || 1)));
+          return Math.hypot(c.x - a.x - t * vx, c.y - a.y - t * vy);
+        }),
+      );
+    const WIRE = BR + 7;
     for (let d = 22; d < rt.len - 22; d += 4) {
       const c = pointAt(rt.pts, d);
       const q = { x: c.x - BR, y: c.y - BR, w: 2 * BR, h: 2 * BR };
-      if (free(q, others)) {
+      // 5 px from every label and badge already placed, 6 px (and a bit) from every other wire
+      if (free(q, others) && !placed.some((o) => intersects(q, o, 5)) && wireDist(c) >= WIRE) {
         best = { c, at: d };
         break;
       }
     }
-    const fb = best ?? { c: pointAt(rt.pts, rt.len / 2), at: rt.len / 2 };
+    // no spot clear of everything: the point of the wire farthest from any group border
+    const clearance = (c: Pt) => Math.min(999, ...borders.map((o) => Math.hypot(Math.max(o.x - c.x, 0, c.x - (o.x + o.w)), Math.max(o.y - c.y, 0, c.y - (o.y + o.h)))));
+    let fb = best;
+    if (!fb) {
+      let far = -1;
+      for (let d = 4; d < rt.len - 4; d += 2) {
+        const c = pointAt(rt.pts, d);
+        const q = { x: c.x - BR, y: c.y - BR, w: 2 * BR, h: 2 * BR };
+        // never on a tile, a title or another wire; among the rest, the farthest from any border
+        if (obstacles.some((o) => intersects(q, o, CLEAR)) || placed.some((o) => intersects(q, o, 3)) || wireDist(c) < WIRE) continue;
+        const k = clearance(c);
+        if (k > far) {
+          far = k;
+          fb = { c, at: d };
+        }
+      }
+      // still nothing: the spot that keeps farthest from other wires and borders, never on a tile or another badge
+      if (!fb) {
+        let bestK = -Infinity;
+        for (let d = 4; d < rt.len - 4; d += 2) {
+          const c = pointAt(rt.pts, d);
+          const q = { x: c.x - BR, y: c.y - BR, w: 2 * BR, h: 2 * BR };
+          if (!inCanvas(q) || obstacles.some((o) => intersects(q, o, CLEAR)) || placed.some((o) => intersects(q, o, 4))) continue;
+          const k = Math.min(clearance(c), wireDist(c) - BR);
+          if (k > bestK) {
+            bestK = k;
+            fb = { c, at: d };
+          }
+        }
+      }
+      fb ??= { c: pointAt(rt.pts, rt.len / 2), at: rt.len / 2 };
+    }
     placed.push({ x: fb.c.x - BR, y: fb.c.y - BR, w: 2 * BR, h: 2 * BR });
     badges.push({ rt, c: fb.c, n: rt.e.step, at: fb.at });
   }
 
   const labels: { rt: Routed; rect: Rect; text: string }[] = [];
+  /** each group's title row, edge to edge: a wire's label never sits beside another group's title */
+  const titleRows: Rect[] = [...groups.values()].map((gb) => ({ x: gb.box.x, y: gb.box.y, w: gb.box.w, h: gb.label.y + gb.label.h - gb.box.y + 4 }));
   const LS = 11;
   for (const rt of routed) {
     if (!rt.e.label) continue;
-    const lw = textWidth(rt.e.label, LS) + 10;
+    // Noto Naskh at weight 600 runs wider than the estimate: an Arabic pill takes room so the words stay on it,
+    // falling back to the estimate where a gap is too tight
+    const lw0 = textWidth(rt.e.label, LS) + 10;
+    const lwAr = hasArabic(rt.e.label) ? textWidth(rt.e.label, LS) * 1.15 + 10 : lw0;
+    let lw = lwAr;
+    let hit: { q: Rect; wires: Rect[] } | undefined;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (attempt === 1) {
+        if (lwAr === lw0) break;
+        lw = lw0;
+      }
     const lh = 17;
     const segs = rt.pts.slice(1).map((p, i) => ({ a: rt.pts[i]!, b: p, i, len: Math.abs(p.x - rt.pts[i]!.x) + Math.abs(p.y - rt.pts[i]!.y) }));
     const order = [...segs].sort((p, q) => q.len - p.len);
@@ -417,51 +560,59 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
     const cands: { q: Rect; wires: Rect[] }[] = [];
     for (const s of order) {
       const horiz = s.a.y === s.b.y;
-      for (const t of [0.5, 0.38, 0.62, 0.26, 0.74, 0.14, 0.86]) {
+      // middle first, then outwards: a short segment may hold a label that overhangs its ends
+      for (const t of [0.5, 0.38, 0.62, 0.26, 0.74, 0.14, 0.86, 0.05, 0.95, 0.2, 0.8, 0.32, 0.68, 0.44, 0.56]) {
         const p = { x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t };
-        if (horiz && s.len < lw + 16) continue;
-        if (!horiz && s.len < 14) continue;
+        if (!horiz && s.len < 10) continue;
         const own = segRects(rt);
-        if (horiz) {
-          cands.push({ q: { x: p.x - lw / 2, y: p.y - 4 - lh, w: lw, h: lh }, wires: [...others, ...own] });
-          cands.push({ q: { x: p.x - lw / 2, y: p.y + 4, w: lw, h: lh }, wires: [...others, ...own] });
-        } else {
-          const right = { x: p.x + 5, y: p.y - lh / 2, w: lw, h: lh };
-          const left = { x: p.x - 5 - lw, y: p.y - lh / 2, w: lw, h: lh };
-          for (const q of opts.rtl ? [left, right] : [right, left]) cands.push({ q, wires: [...others, ...own] });
+        // 8, 12 or 16 px from the wire: still within 24 px of it, with more room to clear neighbours
+        for (const off of [CLEAR + 2, CLEAR + 6, CLEAR + 10]) {
+          if (horiz) {
+            cands.push({ q: { x: p.x - lw / 2, y: p.y - off - lh, w: lw, h: lh }, wires: [...others, ...own] });
+            cands.push({ q: { x: p.x - lw / 2, y: p.y + off, w: lw, h: lh }, wires: [...others, ...own] });
+          } else {
+            const right = { x: p.x + off, y: p.y - lh / 2, w: lw, h: lh };
+            const left = { x: p.x - off - lw, y: p.y - lh / 2, w: lw, h: lh };
+            for (const q of opts.rtl ? [left, right] : [right, left]) cands.push({ q, wires: [...others, ...own] });
+          }
         }
       }
     }
-    // on the wire, as a pill (the wire passes behind it)
-    for (const s of order) {
-      const horiz = s.a.y === s.b.y;
-      if ((horiz && s.len < lw + 20) || (!horiz && s.len < lh + 20)) continue;
-      for (const t of [0.5, 0.35, 0.65]) {
-        const p = { x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t };
-        cands.push({ q: { x: p.x - lw / 2, y: p.y - lh / 2, w: lw, h: lh }, wires: [...others, ...segRects(rt, s.i)] });
-      }
-    }
-    let hit = cands.find((c) => free(c.q, c.wires));
+    // never on a wire or a group's border: a label always sits beside its line
+    for (const c of cands) c.wires.push(...borders);
+    // first choice: outside every group the wire doesn't run inside (a wire between two groups is labelled in
+    // the gap between them, not inside one of them), and never in a group's title row
+    const ends = [rt.e.from, rt.e.to].map((id) => nodes.get(id)?.box ?? groups.get(id)?.box).filter(Boolean) as Rect[];
+    const within = (b: Rect, g: Rect) => b.x >= g.x && b.y >= g.y && b.x + b.w <= g.x + g.w && b.y + b.h <= g.y + g.h;
+    const foreign = [...groups.values()].filter((gb) => !(ends.length === 2 && ends.every((b) => b !== gb.box && within(b, gb.box)))).map((gb) => gb.box);
+    hit = cands.find((c) => free(c.q, c.wires) && !titleRows.some((t) => intersects(c.q, t, 4)) && !foreign.some((g) => intersects(c.q, g, 4)));
+    hit ??= cands.find((c) => free(c.q, c.wires) && !titleRows.some((t) => intersects(c.q, t, 4)));
     if (!hit) {
       // last resort: the nearest free spot around the wire's middle, still clear of every node and label
-      const mid = pointAt(rt.pts, rt.len / 2);
+      // last resort: the nearest free spot beside any point of the wire, still clear of every node, line and label
       const own = segRects(rt);
-      for (let rad = 8; rad < 90 && !hit; rad += 6)
-        for (let k = 0; k < 16 && !hit; k++) {
-          const a = (k / 16) * Math.PI * 2;
-          const q = { x: mid.x + Math.cos(a) * rad - lw / 2, y: mid.y + Math.sin(a) * rad - lh / 2, w: lw, h: lh };
-          if (free(q, [...others, ...own])) hit = { q, wires: [] };
-        }
+      // a label stays within 24 px of its wire, and never in a group's title row
+      for (let rad = 8; rad <= 24 && !hit; rad += 4)
+        for (const f of [0.5, 0.3, 0.7, 0.15, 0.85])
+          for (let k = 0; k < 24 && !hit; k++) {
+            const mid = pointAt(rt.pts, rt.len * f);
+            const a = (k / 24) * Math.PI * 2;
+            const q = { x: mid.x + Math.cos(a) * rad - lw / 2, y: mid.y + Math.sin(a) * rad - lh / 2, w: lw, h: lh };
+            if (free(q, [...others, ...own, ...borders]) && !titleRows.some((t) => intersects(q, t, 4))) hit = { q, wires: [] };
+          }
+    }
+      if (hit) break;
     }
     if (!hit) {
       // on a phone a margin wire may have no room for its words: the step badge and the page text carry them
-      if (opts.variant === 'narrow') continue;
+      if (opts.variant === 'narrow' || spec.dropTightLabels) continue;
       throw new Error(`${spec.id}/${opts.variant}: no room for the label "${rt.e.label}" (${rt.e.from} → ${rt.e.to})`);
     }
     const q = hit.q;
     placed.push(q);
     labels.push({ rt, rect: q, text: rt.e.label });
   }
+
 
   // 6. render
   const icons = [...new Set([...nodes.values()].map((n) => n.n.icon).concat([...groups.values()].flatMap((g) => [g.g.tag, g.g.tagLogo?.id]).filter(Boolean) as string[]))];
@@ -525,6 +676,30 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   out.push('</g>');
 
   // wires
+  // nodes, then the wires over them: an arrowhead is never hidden under a tile, in either mode
+  out.push('<g class="an-nodes">');
+  for (const nb of nodes.values()) {
+    const { box } = nb;
+    out.push(`<g class="an-node" data-node="${nb.n.id}">`);
+    out.push(`<rect class="an-node-box" x="${r(box.x)}" y="${r(box.y)}" width="${r(box.w)}" height="${r(box.h)}" rx="10"/>`);
+    out.push(useIcon(prefix, nb.n.icon, nb.icon.x, nb.icon.y, nb.icon.s));
+    if (nb.rule !== undefined) out.push(`<path class="an-field-rule" d="M${r(box.x + 10)} ${r(nb.rule)} H${r(box.x + box.w - 10)}"/>`);
+    for (const l of nb.lines) {
+      if (l.kind === 'field') {
+        // identifiers read left to right in both languages; on an Arabic page the column hugs the right edge
+        out.push(`<text class="an-field" x="${r(opts.rtl ? box.x + box.w - 13 : box.x + 13)}" y="${r(l.y)}" text-anchor="${opts.rtl ? 'end' : 'start'}" direction="ltr" font-size="${l.size}">${esc(l.text)}</text>`);
+        continue;
+      }
+      const cls = l.kind === 'rate' ? 'an-rate' : l.kind === 'meter' ? 'an-meter' : l.kind === 'total' ? 'an-total' : l.bold ? 'an-name' : 'an-role';
+      let data = '';
+      if (l.kind === 'meter' && nb.n.meter) data = ` data-meter data-lane="${nb.n.meter.lane}" data-win="${meterWin(nb.n.id).map(f4).join(',')}" data-usd="${esc(JSON.stringify(nb.n.meter.usd))}"`;
+      if (l.kind === 'total' && nb.n.total) data = ` data-total="${nb.n.total.lane}" data-usd="${esc(JSON.stringify(nb.n.total.usd))}"`;
+      out.push(`<text class="${cls}" x="${r(nb.cx)}" y="${r(l.y)}" text-anchor="middle" font-size="${l.size}"${hasArabic(l.text) ? ' direction="rtl"' : ''}${data}>${esc(l.text)}</text>`);
+    }
+    out.push('</g>');
+  }
+  out.push('</g>');
+
   out.push('<g class="an-edges">');
   for (const rt of routed) {
     const d = roundedPath(rt.pts);
@@ -539,15 +714,15 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   out.push('<g class="an-motion" aria-hidden="true">');
   for (const rt of routed) {
     const d = roundedPath(rt.pts);
-    if (rt.e.stream || rt.e.flow === 'delivery') out.push(`<path class="an-march an-f-${rt.e.flow}" d="${d}"/>`);
+    // marching light only where a figure asks for a stream: a dashed line means control, nothing else
+    if (rt.e.stream) out.push(`<path class="an-march an-f-${rt.e.flow}" d="${d}"/>`);
     if (spec.motion === 'steps' && rt.e.step != null) {
       const a = ((rt.e.step - 1) * HOP) / T;
       const b = (rt.e.step * HOP) / T;
       const kt = `0;${f4(a)};${f4(b)};1`;
-      out.push(
-        `<path class="an-lit an-f-${rt.e.flow}" d="${d}" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"><animate attributeName="stroke-dashoffset" values="1;1;0;0" keyTimes="${kt}" dur="${T}s" repeatCount="indefinite"/></path>`,
-        `<circle class="an-comet an-f-${rt.e.flow}" r="5" opacity="0"><animateMotion dur="${T}s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="${kt}" calcMode="linear"><mpath href="#${rt.id}"/></animateMotion><animate attributeName="opacity" values="0;1;0" keyTimes="0;${f4(a)};${f4(Math.min(b + 0.01, 0.999))}" calcMode="discrete" dur="${T}s" repeatCount="indefinite"/></circle>`,
-      );
+      // a control wire stays dashed: no solid lit trace over it, only the comet
+      if (rt.e.flow !== 'control') out.push(`<path class="an-lit an-f-${rt.e.flow}" d="${d}" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"><animate attributeName="stroke-dashoffset" values="1;1;0;0" keyTimes="${kt}" dur="${T}s" repeatCount="indefinite"/></path>`);
+      out.push(`<circle class="an-comet an-f-${rt.e.flow}" r="5" opacity="0"><animateMotion dur="${T}s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="${kt}" calcMode="linear"><mpath href="#${rt.id}"/></animateMotion><animate attributeName="opacity" values="0;1;0" keyTimes="0;${f4(a)};${f4(Math.min(b + 0.01, 0.999))}" calcMode="discrete" dur="${T}s" repeatCount="indefinite"/></circle>`);
     } else {
       const dur = Math.max(1.8, rt.len / 95);
       for (const k of [0, 0.5]) {
@@ -566,28 +741,10 @@ export function renderArch(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts)
   }
   out.push('</g>');
 
-  // nodes
-  out.push('<g class="an-nodes">');
-  for (const nb of nodes.values()) {
-    const { box } = nb;
-    out.push(`<g class="an-node" data-node="${nb.n.id}">`);
-    out.push(`<rect class="an-node-box" x="${r(box.x)}" y="${r(box.y)}" width="${r(box.w)}" height="${r(box.h)}" rx="10"/>`);
-    out.push(useIcon(prefix, nb.n.icon, nb.icon.x, nb.icon.y, nb.icon.s));
-    for (const l of nb.lines) {
-      const cls = l.kind === 'rate' ? 'an-rate' : l.kind === 'meter' ? 'an-meter' : l.kind === 'total' ? 'an-total' : l.bold ? 'an-name' : 'an-role';
-      let data = '';
-      if (l.kind === 'meter' && nb.n.meter) data = ` data-meter data-lane="${nb.n.meter.lane}" data-win="${meterWin(nb.n.id).map(f4).join(',')}" data-usd="${esc(JSON.stringify(nb.n.meter.usd))}"`;
-      if (l.kind === 'total' && nb.n.total) data = ` data-total="${nb.n.total.lane}" data-usd="${esc(JSON.stringify(nb.n.total.usd))}"`;
-      out.push(`<text class="${cls}" x="${r(nb.cx)}" y="${r(l.y)}" text-anchor="middle" font-size="${l.size}"${hasArabic(l.text) ? ' direction="rtl"' : ''}${data}>${esc(l.text)}</text>`);
-    }
-    out.push('</g>');
-  }
-  out.push('</g>');
-
   // labels and badges on top
   out.push('<g class="an-labels">');
   for (const l of labels) {
-    out.push(`<g class="an-elabel an-f-${l.rt.e.flow}" data-for="${l.rt.id}" data-covers><rect class="an-elabel-bg" x="${r(l.rect.x)}" y="${r(l.rect.y)}" width="${r(l.rect.w)}" height="${l.rect.h}" rx="${l.rect.h / 2}"/><text x="${r(l.rect.x + l.rect.w / 2)}" y="${r(l.rect.y + 12.5)}" text-anchor="middle" font-size="${LS}"${hasArabic(l.text) ? ' direction="rtl"' : ''}>${esc(l.text)}</text></g>`);
+    out.push(`<g class="an-elabel an-f-${l.rt.e.flow}" data-for="${l.rt.id}"><rect class="an-elabel-bg" x="${r(l.rect.x)}" y="${r(l.rect.y)}" width="${r(l.rect.w)}" height="${l.rect.h}" rx="${l.rect.h / 2}"/><text x="${r(l.rect.x + l.rect.w / 2)}" y="${r(l.rect.y + 12.5)}" text-anchor="middle" font-size="${LS}"${hasArabic(l.text) ? ' direction="rtl"' : ''}>${esc(l.text)}</text></g>`);
   }
   for (const b of badges) {
     out.push(`<g class="an-badge an-f-${b.rt.e.flow}" data-for="${b.rt.id}" data-covers><circle cx="${r(b.c.x)}" cy="${r(b.c.y)}" r="${BR}"/><text x="${r(b.c.x)}" y="${r(b.c.y + 4)}" text-anchor="middle">${formatNumber(b.n, opts.locale ?? 'en')}</text></g>`);

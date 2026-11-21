@@ -32,9 +32,14 @@ export const TOKENS = {
   tkGtk: 'GTK 4',
 } as const;
 
+/** Quality rungs read as numbers: «٣٦٠p» in Arabic (the shared formatter's digits), 360p in English. */
+const rungs = (locale: Locale) =>
+  Object.fromEntries(Object.entries(TOKENS).filter(([k]) => k.startsWith('tkRung')).map(([k, v]) => [k, v.replace(/\d+/g, (d) => formatIn(Number(d), locale, { useGrouping: false }))]));
+
 const values = (locale: Locale): Record<string, string | number> => ({
   ...NUMBERS,
   ...TOKENS,
+  ...rungs(locale),
   rolloutStart: formatPercent(0, locale),
   rolloutFull: formatPercent(1, locale),
 });

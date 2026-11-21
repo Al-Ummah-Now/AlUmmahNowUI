@@ -3,12 +3,12 @@ export const costEn = {
   monitor: {
     title: 'How the bill is watched',
     lead: 'A small Worker with no public address collects usage every hour into its own database. The admin Costs page reads it: month to date against the budget, a forecast, and which products and environments moved. Admins who opt in get an email when an alert opens.',
-    desc: 'Inside the Cloudflare account, cron triggers wake al-ummah-cost-monitor hourly and once a day. It puts its jobs on the al-ummah-cost-jobs queue, with retries and a dead-letter queue, and runs them: one Cloudflare GraphQL query per run for platform usage across production, stage and QA, plus Containers usage, Bunny charges and the number of emails Resend sent. Rows land in the al-ummah-now-costs D1 database. admin-api reads them for the admin Costs page, which shows month to date against the budget, the forecast, products, environments and top movers. When the hourly alert check opens a budget, forecast or spike alert, admin-api puts one email per opted-in admin on its mail queue and Resend sends it. A job that fails for good is flagged on the admin Errors page.',
+    desc: 'Inside the Cloudflare account, cron triggers wake al-ummah-cost-monitor hourly and once a day. It puts its jobs on the al-ummah-cost-jobs queue, with retries and a dead-letter queue, and runs them: one Cloudflare GraphQL query per run for platform usage across production, stage and QA, plus Containers usage, Bunny charges and the number of emails Resend sent. Rows land in the al-ummah-now-costs D1 database. The admin-api Worker reads them for the admin Costs page, which shows month to date against the budget, the forecast, products, environments and top movers. When the hourly alert check opens a budget, forecast or spike alert, admin-api puts one email per opted-in admin on its mail queue and Resend sends it. A job that fails for good is flagged on the admin Errors page.',
     group: { cf: 'Cloudflare account', collector: 'Collector · no public route', admin: 'Videos admin', bunny: 'bunny.net' },
     node: {
       cron: { name: 'Cron triggers', role: 'hourly · daily' },
       worker: { name: 'cost-monitor', role: 'plans the jobs' },
-      jobs: { name: 'al-ummah-cost-jobs', role: 'retry · DLQ' },
+      jobs: { name: 'al-ummah-cost-jobs', role: 'retry · dead letters' },
       graphql: { name: 'Cloudflare GraphQL', role: 'one query per run' },
       d1: { name: 'al-ummah-now-costs', role: 'hourly and daily rows' },
       api: { name: 'admin-api', role: 'alert check' },
@@ -30,7 +30,7 @@ export const costEn = {
       budget: { title: 'Monthly budget', note: 'watched hourly' },
       containers: { title: 'Per-second containers', note: 'no rented servers' },
       logs: { title: 'Warn-only logs', note: 'no invocation logs' },
-      rum: { title: 'RUM, {N1} in {N20}', note: 'page loads sampled' },
+      rum: { title: 'Page-speed samples, {N1} in {N20}', note: 'from real visits' },
       originals: { title: 'Bounded originals', note: 'kept {N30}–{N90} days' },
       ai: { title: 'AI under caps', note: 'daily neuron budget' },
       tests: { title: 'Lean release tests', note: 'one clip transcoded' },

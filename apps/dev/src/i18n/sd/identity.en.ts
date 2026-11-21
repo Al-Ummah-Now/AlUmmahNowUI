@@ -2,8 +2,8 @@
 export const identityEn = {
   map: {
     title: 'The pieces of sign-in',
-    lead: 'One issuer signs everyone in for every app. Its own account page and admin are clients like any other app. Users, sessions and refresh tokens live in its D1 database; revocations are copied to a KV namespace that the videos services read on every request.',
-    desc: 'The apps on the left sign in through the issuer at auth.*, sending a PKCE S256 challenge. Inside the Cloudflare account, the Auth group holds the issuer, the profile app and the auth admin (both OAuth clients of the issuer), Turnstile in monitor mode and the rate limiters in front of the issuer, and three stores: AUTH_STORAGE in KV, the AUTH_DB D1 database where refresh tokens rotate, and the TOKEN_REVOCATIONS KV namespace. The issuer sends email codes through Resend. The apps call the videos services with a fifteen-minute access token, and the videos services check the revocation KV. Auth depends on no app.',
+    lead: 'One issuer signs everyone in for every app. Its own account page and admin are clients like any other app. Users, sessions and refresh tokens live in its D1 database (Cloudflare’s SQL database); revocations are copied to KV, a key-value store, that the videos services read on every request.',
+    desc: 'The apps on the left sign in through the issuer at auth.*, sending a one-time PKCE proof. Inside the Cloudflare account, the Auth group holds the issuer, the profile app and the auth admin (both OAuth clients of the issuer), Turnstile in monitor mode and the rate limiters in front of the issuer, and three stores: AUTH_STORAGE in KV, the AUTH_DB D1 database where refresh tokens rotate, and the TOKEN_REVOCATIONS KV namespace. The issuer sends email codes through Resend. The apps call the videos services with a fifteen-minute access token, and the videos services check the revocation KV. Auth depends on no app.',
     group: { cf: 'Cloudflare account', auth: 'Auth', videos: 'Videos' },
     caption: { auth: 'auth depends on no app' },
     node: {
@@ -11,7 +11,7 @@ export const identityEn = {
       resend: { name: 'Resend', role: 'email codes' },
       turnstile: { name: 'Turnstile', role: 'monitor mode' },
       limiters: { name: 'Rate limiters', role: 'token · code · password' },
-      issuer: { name: 'Issuer', role: ['auth.* · OIDC', 'password · code · passkey'] },
+      issuer: { name: 'Issuer', role: ['auth.* · OpenID Connect', 'password · code · passkey'] },
       profile: { name: 'Profile', role: 'profile.auth.*' },
       authAdmin: { name: 'Auth admin', role: 'admin.auth.*' },
       kvStore: { name: 'AUTH_STORAGE', role: 'KV · OpenAuth store' },
@@ -19,12 +19,12 @@ export const identityEn = {
       revKv: { name: 'TOKEN_REVOCATIONS', role: 'KV · user + s:<sid>' },
       videos: { name: 'Videos services', role: 'api · admin · realtime' },
     },
-    edge: { signIn: 'sign-in · PKCE S256', code: 'email codes', client: 'OIDC client', confidential: 'client secret', rotate: 'refresh rotation', revoke: 'revocations', check: 'checked per request', token: '15-minute access token' },
+    edge: { signIn: 'sign-in · one-time proof', code: 'email codes', client: 'OpenID client', confidential: 'client secret', rotate: 'refresh rotation', revoke: 'revocations', check: 'checked per request', token: '15-minute access token' },
   },
   signin: {
     title: 'One sign-in, step by step',
-    lead: 'The app never sees a password. It sends you to the issuer with a PKCE challenge, gets back a single-use code, and trades it with the verifier for a fifteen-minute access token and a refresh token. Refreshing rotates the token; using an old one again revokes the whole family.',
-    desc: 'Numbered steps. 1: the browser opens /authorize on the issuer with a PKCE S256 challenge. 2: if the person picks an email code, the issuer sends it through Resend. 3: the issuer redirects back with a single-use code. 4: the browser hands the code to the app. 5: the app sends the code with its verifier. 6: the issuer returns a fifteen-minute access token and a refresh token. 7: the app calls api-videos with the access token. 8: api-videos checks the revocation KV. 9: when the access token runs out, the app refreshes. 10: the issuer rotates the refresh token atomically in D1; reusing an old one revokes that token family.',
+    lead: 'The app never sees a password. It sends you to the issuer with a PKCE challenge (a one-time proof only this app can answer), gets back a single-use code, and trades it with the verifier for a fifteen-minute access token and a refresh token. Refreshing rotates the token; using an old one again revokes the whole family.',
+    desc: 'Numbered steps. 1: the browser opens /authorize on the issuer with a one-time PKCE proof. 2: if the person picks an email code, the issuer sends it through Resend. 3: the issuer redirects back with a single-use code. 4: the browser hands the code to the app. 5: the app sends the code with its verifier. 6: the issuer returns a fifteen-minute access token and a refresh token. 7: the app calls api-videos with the access token. 8: api-videos checks the revocation KV. 9: when the access token runs out, the app refreshes. 10: the issuer rotates the refresh token atomically in D1; reusing an old one revokes that token family.',
     group: { cf: 'Cloudflare account' },
     node: {
       user: { name: 'Browser', role: 'the person' },

@@ -49,7 +49,8 @@ const stores: Builder = (d) => {
         { id: 'kv', label: c.group.kv, caption: c.caption.kv, members: ['revocations', 'appKv', 'sessions', 'feed'] },
         { id: 'do', label: c.group.do, members: ['sockets', 'views', 'transcoder', 'lock'] },
         { id: 'ae', label: c.group.ae, members: ['rum', 'abuse', 'authEvents'] },
-        { id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', members: ['workers', 'r2', 'd1', 'kv', 'do', 'ae'] },
+        // room inside the account for the margin wires: a wire between two stores stays inside it
+        { id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', pad: 64, members: ['workers', 'r2', 'd1', 'kv', 'do', 'ae'] },
       ],
       edges: [
         { from: 'apiVideos', to: 'r2', flow: 'request', label: e.records, fromSide: 's', toSide: 'n' },
@@ -69,6 +70,9 @@ const stores: Builder = (d) => {
         [['apiVideos', 'processor'], 0],
         [['auth', 'comms'], 1.05],
         [['web'], 1.05],
+        // Analytics Engine sits right under the Workers: videos web's page-speed wire drops straight in
+        [['rum', 'abuse'], 2.1],
+        [['authEvents'], 1.05],
         [['records', 'media'], 2.1],
         [['system'], 1.05],
         [['search', 'notifications'], 2.1],
@@ -77,15 +81,13 @@ const stores: Builder = (d) => {
         [['sessions', 'feed'], 1.05],
         [['sockets', 'views'], 2.3],
         [['transcoder', 'lock'], 1.05],
-        [['rum', 'abuse'], 2.1],
-        [['authEvents'], 1.05],
       ]),
       edges: [
         { from: 'apiVideos', to: 'r2', flow: 'request', label: e.records, fromSide: 'w', toSide: 'w' },
         { from: 'processor', to: 'd1', flow: 'async', label: e.rows, fromSide: 'e', toSide: 'e' },
         { from: 'auth', to: 'kv', flow: 'control', fromSide: 'w', toSide: 'w' },
         { from: 'comms', to: 'do', flow: 'request', fromSide: 'e', toSide: 'e' },
-        { from: 'web', to: 'ae', flow: 'control', fromSide: 'w', toSide: 'w' },
+        { from: 'web', to: 'ae', flow: 'control', fromSide: 's', toSide: 'n' },
       ],
     },
   };

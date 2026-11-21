@@ -14,7 +14,9 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { chromium } from '@playwright/test';
+import sharp from 'sharp';
 import { gateInBrowser } from '../e2e/diagram-gate.ts';
+import { GATE_GLOSSARY, NEAR } from '../src/lib/glossary.ts';
 
 const out = process.argv[2];
 if (!out) throw new Error('usage: sysdesign-shots.ts <outDir> [--pages=a/,b/] [--record]');
@@ -75,7 +77,8 @@ for (const slug of PAGES)
   for (const lang of LANGS)
     for (const mode of ['dark', 'light'] as const)
       for (const [w, vp] of Object.entries(WIDTHS)) {
-        const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: vp.dsf, colorScheme: mode, reducedMotion: 'no-preference' });
+        const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: vp.dsf, colorScheme: mode, reducedMotion: 'reduce' });
+        // stills show the final state with no moving dots over the arrowheads; recordings use their own context
         await ctx.addInitScript((m) => localStorage.setItem('aun_mode', m), mode);
         const page = await ctx.newPage();
         const cspViolations: string[] = [];
@@ -97,7 +100,7 @@ for (const slug of PAGES)
           }
         });
         await page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => ok(null)))));
-        const found = await page.evaluate(gateInBrowser);
+        const found = await page.evaluate(gateInBrowser, { glossary: GATE_GLOSSARY(), near: NEAR });
         for (const v of cspViolations.splice(0)) found.push(`CSP blocked: ${v}`);
         for (const d of found) defects.push(`${name(slug)} ${lang} ${mode} ${w}: ${d}`);
         const tag = `${name(slug)}-${mode}-${w}-${lang}`;
@@ -105,6 +108,19 @@ for (const slug of PAGES)
         // viewport frames: top, then each diagram centred, then the end
         await page.evaluate(() => window.scrollTo(0, 0));
         if (!ONLY) await page.screenshot({ path: join(out, `${tag}-frame-1-top.png`) });
+        // the hub's page list in full: as many viewport frames as it takes, each starting below the sticky header
+        if (!ONLY && (await page.locator('.sd-index').count())) {
+          const head = await page.evaluate(() => document.querySelector('header')?.getBoundingClientRect().height ?? 0);
+          const list = await page.locator('#pages-h').evaluate((el) => {
+            const sec = el.closest('section')!.getBoundingClientRect();
+            return { top: sec.top + window.scrollY, bottom: sec.bottom + window.scrollY };
+          });
+          const view = (page.viewportSize()?.height ?? 800) - head - 8;
+          for (let y = list.top - head - 8, k = 1; y < list.bottom - head; y += view, k++) {
+            await page.evaluate((top) => window.scrollTo(0, top), y);
+            await page.screenshot({ path: join(out, `${tag}-frame-1-pages-${k}.png`) });
+          }
+        }
         const figs = await page.locator('.an-figure').count();
         for (let i = 0; i < figs; i++) {
           const fig = page.locator('.an-figure').nth(i);
@@ -114,10 +130,93 @@ for (const slug of PAGES)
           await fig.evaluate((el) => el.scrollIntoView({ block: 'start' }));
           await page.evaluate(() => window.scrollBy(0, -72));
           await page.screenshot({ path: join(out, `${tag}-frame-${i + 2}-diagram-${i + 1}.png`) });
-          await svg.screenshot({ path: join(out, `${tag}-diagram-${id}.png`) });
+          // the figure alone and whole: a copy of the drawing at its natural size, over the page, in a
+          // viewport big enough to hold it (the page scrolls a wide figure, so an element shot would clip it)
+          const size = await svg.evaluate((el) => ({ w: (el as SVGSVGElement).width.baseVal.value, h: (el as SVGSVGElement).height.baseVal.value }));
+          // copy first: a bigger viewport may switch the page to its other layout
+          await svg.evaluate((el) => {
+            const host = document.createElement('div');
+            host.id = 'shot-host';
+            host.setAttribute('dir', 'ltr');
+            // an opaque backdrop in the page's own colour under the capture, so nothing of the page can show at its edges
+            const paint = [getComputedStyle(document.body).backgroundColor, getComputedStyle(document.documentElement).backgroundColor].find((c) => !/rgba\(.*,\s*0\)$|transparent/.test(c)) ?? '#ffffff';
+            const backdrop = document.createElement('div');
+            backdrop.id = 'shot-backdrop';
+            for (const [k, v] of Object.entries({ position: 'fixed', inset: '0', 'z-index': '2147483646', background: paint })) backdrop.style.setProperty(k, v);
+            document.body.append(backdrop);
+            for (const [k, v] of Object.entries({ position: 'fixed', top: '0', left: '0', 'z-index': '2147483647', padding: '20px 24px 24px', display: 'grid', gap: '14px', width: 'max-content', background: paint })) host.style.setProperty(k, v);
+            // the figure's own key, as the page shows it above the drawing
+            const legend = [...(el.closest('.an-figure')?.querySelectorAll<HTMLElement>('.an-legend') ?? [])].find((l) => getComputedStyle(l).display !== 'none');
+            if (legend) {
+              const key = legend.cloneNode(true) as HTMLElement;
+              // the layout classes would hide it at the capture's (wider) viewport
+              key.classList.remove('an-legend-wide', 'an-legend-narrow');
+              key.style.setProperty('display', 'flex');
+              key.setAttribute('dir', document.documentElement.dir || 'ltr');
+              key.style.setProperty('max-width', `${(el as SVGSVGElement).width.baseVal.value}px`);
+              host.append(key);
+            }
+            // the copy gets its own ids: otherwise its markers and symbols point at the original's, which a
+            // bigger viewport may hide (its layout switches), and arrowheads would vanish from the shot
+            host.insertAdjacentHTML('beforeend', el.outerHTML.replace(/\bid="/g, 'id="shot-').replace(/url\(#/g, 'url(#shot-').replace(/href="#/g, 'href="#shot-').replace(/aria-labelledby="([^"]*)"/g, (_m, ids: string) => `aria-labelledby="${ids.split(' ').map((i) => `shot-${i}`).join(' ')}"`));
+            document.body.append(host);
+          });
+          const vp = page.viewportSize()!;
+          // a viewport that holds the whole capture (legend + drawing + padding), with room to spare
+          const hostSize = await page.evaluate(() => {
+            const r = document.getElementById('shot-host')!.getBoundingClientRect();
+            return { w: Math.ceil(r.width), h: Math.ceil(r.height) };
+          });
+          await page.setViewportSize({ width: Math.max(vp.width, hostSize.w + 40, Math.ceil(size.w) + 60), height: Math.max(vp.height, hostSize.h + 80) });
+          // the capture holds the figure only: its legend when the figure has one, and nothing from the page
+          // around it (every point along its edges belongs to the capture itself)
+          const capture = await page.evaluate(() => {
+            const host = document.getElementById('shot-host')!;
+            const problems: string[] = [];
+            if (Number((getComputedStyle(host).backgroundColor.match(/[\d.]+/g) ?? [])[3] ?? 1) < 1) problems.push('capture background is see-through');
+            const r = host.getBoundingClientRect();
+            if (r.bottom > innerHeight || r.right > innerWidth) problems.push('the capture is larger than the viewport (the page shows below it)');
+            for (const [x, y] of [...[0.05, 0.3, 0.5, 0.7, 0.95].map((f) => [r.left + r.width * f, r.bottom - 1]), [r.left + 1, r.top + r.height / 2], [r.right - 1, r.top + r.height / 2]] as [number, number][]) {
+              const el = document.elementFromPoint(x, y);
+              if (el && el !== host && !host.contains(el)) problems.push(`pixels from outside the figure at the capture's edge (${el.tagName.toLowerCase()})`);
+            }
+            return problems;
+          });
+          const legendHad = await svg.evaluate((el) => [...(el.closest('.an-figure')?.querySelectorAll('.an-legend li') ?? [])].length > 0);
+          // visible, not merely present: a hidden legend in the capture is as good as none
+          const legendShot = await page.locator('#shot-host .an-legend li:visible').count();
+          if (legendHad && !legendShot) capture.push('standalone capture is missing its legend');
+          for (const c of capture) defects.push(`${name(slug)} ${lang} ${mode} ${w}: ${id} capture: ${c}`);
+          const png = await page.locator('#shot-host').screenshot({ path: join(out, `${tag}-diagram-${id}.png`) });
+          // the capture's padding is plain background: its bottom rows and right column must be that colour only
+          // (a row of the page below showing through fails the capture)
+          const bg = await page.evaluate(() => (getComputedStyle(document.getElementById('shot-host')!).backgroundColor.match(/\d+/g) ?? []).slice(0, 3).map(Number));
+          const { data, info } = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+          const off = (x: number, y: number) => (y * info.width + x) * info.channels;
+          const differs = (x: number, y: number) => [0, 1, 2].some((c) => Math.abs(data[off(x, y) + c]! - (bg[c] ?? 0)) > 12);
+          let edge = false;
+          for (let y = info.height - 4; y < info.height && !edge; y++) for (let x = 0; x < info.width && !edge; x += 2) edge = differs(x, y);
+          for (let y = 0; y < info.height && !edge; y += 2) edge = differs(info.width - 2, y);
+          if (edge) defects.push(`${name(slug)} ${lang} ${mode} ${w}: ${id} capture: pixels along its edge aren't the figure's background (something outside the figure shows)`);
+          await page.evaluate(() => {
+            document.getElementById('shot-host')?.remove();
+            document.getElementById('shot-backdrop')?.remove();
+          });
+          await page.setViewportSize(vp);
+          // let the sticky header settle after the resize (a stale band above it otherwise lands in the next frame)
+          await page.evaluate(() => new Promise<void>((res) => {
+            window.scrollBy(0, 1);
+            window.scrollBy(0, -1);
+            requestAnimationFrame(() => requestAnimationFrame(() => res()));
+          }));
         }
         await page.evaluate((h) => window.scrollTo(0, h), H);
         if (!ONLY) await page.screenshot({ path: join(out, `${tag}-frame-${figs + 2}-end.png`) });
+        // the previous/next links, placed below the sticky header
+        if (!ONLY && (await page.locator('.sd-pager').count())) {
+          await page.locator('.sd-pager').evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - window.innerHeight / 2));
+          await page.screenshot({ path: join(out, `${tag}-frame-pager.png`) });
+        }
         await ctx.close();
       }
 

@@ -3,7 +3,7 @@ export const asyncEn = {
   queues: {
     title: 'Producers, queues, consumers',
     lead: 'Workers hand slow work to Cloudflare Queues and answer at once. Each queue has one consumer with its own batch size and retry budget; what still fails lands in a dead-letter queue, and from there on the admin Errors page with a Replay button.',
-    desc: 'A reference architecture inside the Cloudflare account. On the left, the producers: api-videos, admin-api and the scheduler, with the processor, cost-monitor and auth producing too. In the middle, the queues (all named al-ummah-now-…): videos, batch {N10} with {N3} retries; moderation, batch {N5} with {N3} retries; processing-check, batch {N10} with {N5} retries; admin-jobs and yt-import, batch {N1} with {N5} retries; transcode, batch {N1} with {N8} retries; errors, batch {N10} with {N5} retries. On the right, the consumers: the processor takes videos and moderation, api-videos takes processing-check, admin-jobs and yt-import, the media Worker takes transcode, and admin-api takes errors. Messages that use up their retries go to al-ummah-now-dlq (transcode and errors have their own DLQs). The processor reads that DLQ, stores each message and flags it on the admin Errors page; Replay there asks the processor to send it again.',
+    desc: 'A reference architecture inside the Cloudflare account. On the left, the producers: api-videos, admin-api and the scheduler, with the processor, cost-monitor and auth producing too. In the middle, the queues (all named al-ummah-now-…): videos, batch {N10} with {N3} retries; moderation, batch {N5} with {N3} retries; processing-check, batch {N10} with {N5} retries; admin-jobs and yt-import, batch {N1} with {N5} retries; transcode, batch {N1} with {N8} retries; errors, batch {N10} with {N5} retries. On the right, the consumers: the processor takes videos and moderation, api-videos takes processing-check, admin-jobs and yt-import, the media Worker takes transcode, and admin-api takes errors. Messages that use up their retries go to al-ummah-now-dlq (transcode and errors have their own dead-letter queues). The processor reads that dead-letter queue, stores each message and flags it on the admin Errors page; Replay there asks the processor to send it again.',
     group: { cf: 'Cloudflare account', producers: 'Producers', queues: 'Queues', consumers: 'Consumers', dead: 'Dead letters' },
     caption: { producers: '+ processor · cost-monitor · auth', queues: 'all named al-ummah-now-…', dead: 'transcode · errors: own DLQs' },
     node: {
@@ -28,14 +28,14 @@ export const asyncEn = {
   fail: {
     title: 'A message that keeps failing',
     lead: 'Nothing is lost quietly. A message that fails is retried; when its retries run out it becomes a dead letter, which is stored, logged and put in front of an admin, who can send it round again with one click.',
-    desc: 'Numbered steps for one failing message. 1: api-videos puts an event on the al-ummah-now-videos queue. 2: the queue hands it to the processor in a batch. 3: the processor throws, and the queue retries, up to {N3} times. 4: after the last retry the queue moves it to al-ummah-now-dlq. 5: the processor reads the DLQ in batches of up to ten. 6: it stores the message in the dead_letters table of the notifications database for {N30} days, and flags it on the admin Errors page. 7: an admin presses Replay. 8: the processor sends the stored message back to the videos queue with a clean retry budget.',
+    desc: 'Numbered steps for one failing message. 1: api-videos puts an event on the al-ummah-now-videos queue. 2: the queue hands it to the processor in a batch. 3: the processor throws, and the queue retries, up to {N3} times. 4: after the last retry the queue moves it to al-ummah-now-dlq. 5: the processor reads the dead-letter queue in batches of up to ten. 6: it stores the message in the dead_letters table of the notifications database for {N30} days, and flags it on the admin Errors page. 7: an admin presses Replay. 8: the processor sends the stored message back to the videos queue with a clean retry budget.',
     node: {
       producer: { name: 'api-videos', role: 'producer' },
       queue: { name: 'al-ummah-now-videos', role: 'max {N3} retries' },
       consumer: { name: 'processor', role: 'handles the event' },
       dlq: { name: 'al-ummah-now-dlq', role: 'dead-letter queue' },
-      dlqConsumer: { name: 'processor', role: 'DLQ consumer · batch {N10}' },
-      deadLetters: { name: 'dead_letters', role: 'D1 · kept {N30} days' },
+      dlqConsumer: { name: 'processor', role: 'reads dead letters · batch {N10}' },
+      deadLetters: { name: 'dead_letters', role: 'D1 table · kept {N30} days' },
       errorsPage: { name: 'Errors page', role: 'needs action' },
       admin: { name: 'Admin', role: 'decides' },
     },
@@ -44,7 +44,7 @@ export const asyncEn = {
   crons: {
     title: 'The cron clock',
     lead: 'Some work is not triggered by anyone: it runs on a schedule. Each Worker declares its own Cron Triggers in its wrangler config, and the job it starts does its heavy part through a queue or in small budgeted steps.',
-    desc: 'A hand-drawn sketch of the Cron Triggers in production, all in UTC. The scheduler runs every minute to publish videos that are due. api-videos runs every ten minutes to start a processing check for any video stuck without one, and also every minute for live sessions, hourly for subscriptions and daily at 03:17 for the GDPR retention sweep. The processor runs hourly at :17 to move analytics rollups into D1, and daily at 03:41 for the 90-day notification retention. admin-api runs every five minutes for open requests to auth, and daily at 03:17 for error retention. The status Worker checks every two minutes. cost-monitor collects hourly at :10 and rolls up daily at 03:30.',
+    desc: 'A hand-drawn sketch of the Cron Triggers in production, all in UTC. The scheduler runs every minute to publish videos that are due. The api-videos Worker runs every ten minutes to start a processing check for any video stuck without one, and also every minute for live sessions, hourly for subscriptions and daily at 03:17 for the GDPR retention sweep. The processor runs hourly at :17 to move analytics rollups into D1, and daily at 03:41 for the 90-day notification retention. The admin-api Worker runs every five minutes for open requests to auth, and daily at 03:17 for error retention. The status Worker checks every two minutes. The cost-monitor Worker collects hourly at :10 and rolls up daily at 03:30.',
     heading: 'The cron clock (UTC)',
     around: 'each schedule lives in its Worker’s wrangler config',
     node: {

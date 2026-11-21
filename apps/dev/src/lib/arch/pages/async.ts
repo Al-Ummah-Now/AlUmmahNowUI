@@ -38,7 +38,7 @@ const queues: Builder = (d) => {
         { id: 'queues', label: c.group.queues, caption: c.caption.queues, members: ['videosQ', 'moderationQ', 'processingQ', 'jobsQ', 'transcodeQ', 'errorsQ'] },
         { id: 'consumers', label: c.group.consumers, members: ['processor', 'apiC', 'media', 'adminC'] },
         { id: 'dead', label: c.group.dead, caption: c.caption.dead, members: ['dlq'] },
-        { id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', members: ['producers', 'queues', 'consumers', 'dead', 'errorsPage'] },
+        { id: 'cf', label: c.group.cf, kind: 'boundary', pad: 34, tag: 'simple-icons/cloudflare', members: ['producers', 'queues', 'consumers', 'dead', 'errorsPage'] },
       ],
       edges: [
         { from: 'producers', to: 'queues', flow: 'async', label: e.enqueue, fromSide: 'e', toSide: 'w' },

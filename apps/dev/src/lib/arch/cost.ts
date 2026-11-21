@@ -39,8 +39,6 @@ export const RATES = {
   freeNeuronsPerDay: 10_000,
   /** pricing.ts: Whisper large-v3-turbo, $0.000513 per audio minute */
   whisperPerMinute: 0.000513,
-  /** wiki AUN-VIDEO-REVIEW §Cost and latency: about $0.075 per video-hour (frames, stage 2, Whisper, text) */
-  reviewPerVideoHour: 0.075,
 } as const;
 
 /** admin-web delivery/metrics.ts ASSUMED */
@@ -88,7 +86,6 @@ export type StageId =
   | 'moderation'
   | 'captions'
   | 'quran'
-  | 'review'
   | 'bunnyEncode'
   | 'bunnyStore'
   | 'bunnyDeliver'
@@ -104,7 +101,6 @@ export const LANE_OF: Record<StageId, Lane> = {
   moderation: 'shared',
   captions: 'shared',
   quran: 'shared',
-  review: 'shared',
   bunnyEncode: 'bunny',
   bunnyStore: 'bunny',
   bunnyDeliver: 'bunny',
@@ -129,8 +125,6 @@ export function stageCost(stage: StageId, s: Scenario): number | null {
       return s.videoMinutes * RATES.whisperPerMinute;
     case 'quran':
       return 0; // matched in code against the synced Quran index: no AI call
-    case 'review':
-      return (s.videoMinutes / 60) * RATES.reviewPerVideoHour;
     case 'bunnyEncode':
       return s.videoMinutes * RATES.bunnyEncode;
     case 'bunnyStore':
@@ -162,11 +156,15 @@ export function costTable(): Record<StageId, Record<ScenarioId, number | null>> 
   return out;
 }
 
+/** An amount as it is shown (formatUsd's precision): lane totals add these, so they match what the reader adds. */
+export const asShown = (usd: number) => (usd >= 100 ? Math.round(usd * 100) / 100 : Math.round(usd * 1e4) / 1e4);
+
 /** Money as the page's language writes it, through the shared formatter (packages/render/src/format.ts):
  * ٠–٩ and the currency's Arabic name in Arabic, "$" in English; more decimals for tiny amounts. */
 export function formatUsd(locale: 'en' | 'ar', usd: number): string {
-  if (usd > 0 && usd < 0.0001) return `< ${formatUsd(locale, 0.0001)}`;
-  const digits = usd === 0 ? 2 : usd < 0.01 ? 4 : usd < 1 ? 3 : 2;
+  if (usd > 0 && usd < 0.0001) return `${locale === 'ar' ? 'أقل من ' : '< '}${formatUsd(locale, 0.0001)}`;
+  // one precision everywhere (4 decimals; whole cents from $100), so a lane's lines add up to its total as shown
+  const digits = usd >= 100 ? 2 : 4;
   return money(usd, locale, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 

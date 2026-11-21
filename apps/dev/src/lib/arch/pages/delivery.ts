@@ -31,7 +31,7 @@ const rails: Builder = (d) => {
       groups: [
         { id: 'pubRail', label: c.group.pub, caption: c.caption.pub, members: ['cache', 'domain', 'pub'] },
         { id: 'privRail', label: c.group.priv, caption: c.caption.priv, members: ['edge', 'worker', 'priv'] },
-        { id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', members: ['pubRail', 'privRail', 'api'] },
+        { id: 'cf', label: c.group.cf, kind: 'boundary', pad: 34, tag: 'simple-icons/cloudflare', members: ['pubRail', 'privRail', 'api'] },
         { id: 'bunny', label: c.group.bunny, kind: 'platform', tagLogo: { id: 'brand/bunnynet-logo-dark', w: 66, h: 19 }, tagEnd: true, accent: '#f29b1d', members: ['bunnyCdn', 'library'] },
       ],
       edges: [

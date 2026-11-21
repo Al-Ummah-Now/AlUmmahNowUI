@@ -3,7 +3,7 @@ export const deliveryEn = {
   rails: {
     title: 'Three rails to the viewer',
     lead: 'Public videos stream from R2 through the CDN without running any code. Private and unlisted ones go through the media Worker, which checks a token carried in the path. Bunny’s CDN serves its own copies. The API decides which rail a play takes and signs the address.',
-    desc: 'Viewers on the left ask api-videos for a play address. Three rails lead back to them: R2’s public bucket through its custom domain and a Cache Rule; R2’s private bucket through the media Worker with a token in the path and an edge cache keyed by object; and Bunny Stream’s library through Bunny’s token-signed CDN. api-videos purges the CDN when a video’s visibility changes.',
+    desc: 'Viewers on the left ask api-videos for a play address. Three rails lead back to them: R2’s public bucket through its custom domain and a Cache Rule; R2’s private bucket through the media Worker with a token in the path and an edge cache keyed by object; and Bunny Stream’s library through Bunny’s token-signed CDN. The api-videos Worker purges the CDN when a video’s visibility changes.',
     group: { cf: 'Cloudflare account', pub: 'Public rail', priv: 'Private rail', bunny: 'bunny.net' },
     caption: { pub: 'segments {N1} year · playlists {N10} s', priv: 'token in the path · one copy per object' },
     node: {
@@ -13,19 +13,19 @@ export const deliveryEn = {
       domain: { name: 'R2 custom domain', role: 'media.<env>' },
       pub: { name: 'R2 public', role: 'pub/<id>/<rev>/' },
       edge: { name: 'Edge cache', role: 'keyed by object' },
-      worker: { name: 'media Worker', role: '/priv/* · HMAC token' },
+      worker: { name: 'media Worker', role: '/priv/* · signed token' },
       priv: { name: 'R2 private', role: 'no public access' },
-      bunnyCdn: { name: 'Bunny CDN', role: 'token auth' },
+      bunnyCdn: { name: 'Bunny CDN', role: 'edge cache · token' },
       library: { name: 'Bunny Stream', role: 'the library' },
     },
-    edge: { ask: 'play address', hls: 'HLS', origin: 'origin', token: 'token', key: 'same signing key', purge: 'purge on visibility change' },
+    edge: { ask: 'play address', hls: 'video stream', origin: 'origin', token: 'token', key: 'same signing key', purge: 'purge on visibility change' },
   },
   miss: {
     title: 'One segment: hit or miss',
     lead: 'A segment is immutable, addressed by the video’s revision, so the edge keeps it for a year. A miss goes to the upper tier first; only if that misses too does R2 serve a read, and then every viewer nearby hits.',
-    desc: 'Numbered steps for one HLS segment. 1: the player asks the nearest edge. 2: on a hit the edge answers; on a miss it asks the upper tier of Smart Tiered Cache. 3: if the upper tier misses too, it reads the object from R2. 4: the upper tier keeps a copy. 5: the edge keeps a copy. 6: the segment reaches the player.',
+    desc: 'Numbered steps for one stream segment. 1: the player asks the nearest edge. 2: on a hit the edge answers; on a miss it asks the upper tier of Smart Tiered Cache. 3: if the upper tier misses too, it reads the object from R2. 4: the upper tier keeps a copy. 5: the edge keeps a copy. 6: the segment reaches the player.',
     node: {
-      player: { name: 'Player', role: 'one HLS segment' },
+      player: { name: 'Player', role: 'one stream segment' },
       edge: { name: 'Nearest edge', role: 'Cache Rule · {N1} year' },
       upper: { name: 'Upper tier', role: 'Smart Tiered Cache' },
       r2: { name: 'R2 public', role: 'read only on a miss' },
@@ -35,7 +35,7 @@ export const deliveryEn = {
   caches: {
     title: 'Small caches, big savings',
     lead: 'Inside the API, a few short-lived caches keep thousands of requests from becoming thousands of reads, and keep sign-in working when a database is slow.',
-    desc: 'A hand-drawn sketch. api-videos in the middle: it reads the delivery settings from a 30-second cache, the issuer’s public keys from an edge cache with the last good copy kept, and token revocations from a KV copy. It signs every playback address on the way out and never stores one. Share images stay on our own domain, and MP4 downloads are rate-limited per IP. All cache rules ship as code with every release.',
+    desc: 'A hand-drawn sketch. The api-videos Worker in the middle: it reads the delivery settings from a 30-second cache, the issuer’s public keys from an edge cache with the last good copy kept, and token revocations from a KV copy. It signs every playback address on the way out and never stores one. Share images stay on our own domain, and MP4 downloads are rate-limited per IP. All cache rules ship as code with every release.',
     heading: 'Small caches, big savings',
     around: 'cache rules ship as code with every release',
     node: {

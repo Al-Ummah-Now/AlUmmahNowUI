@@ -4,6 +4,7 @@ import PageHero from '../../../components/PageHero.astro';
 import ItemGrid from '../../../components/ItemGrid.astro';
 import ArchFigure from '../../../components/ArchFigure.astro';
 import SdDiagram from '../../../components/SdDiagram.astro';
+import SdShell from '../../../components/SdShell.astro';
 import { strings } from '../../../i18n';
 import type { Locale } from '../../../lib/pages';
 import { localePaths } from '../../../lib/static-paths';
@@ -15,7 +16,24 @@ const p = t.systemDesign;
 const hub = t.diagrams.pages.hub;
 ---
 <Base locale={locale} slug="system-design" title={p.title} description={p.description}>
-  <PageHero title={p.heroTitle} lead={p.heroLead} />
+  <PageHero title={p.heroTitle} lead={p.heroLead} section />
+  <SdShell locale={locale} slug="system-design" t={t}>
+  <section class="band band-raised" aria-labelledby="pages-h">
+    <div class="wrap">
+      <h2 id="pages-h" class="h2">{p.pagesTitle}</h2>
+      <p class="section-lead">{p.pagesLead}</p>
+      <ul class="sd-index" role="list">
+        {p.pages.map((page) => (
+          <li class="sd-index-item">
+            <a href={page.href}>
+              <h3 class="sd-index-title">{page.title}</h3>
+              <p>{page.body}</p>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
   <section class="band an-hero-band" aria-label={t.diagrams.hero.title}>
     <div class="wrap">
       <ArchFigure id="hero" locale={locale} />
@@ -33,20 +51,5 @@ const hub = t.diagrams.pages.hub;
       <ItemGrid items={p.zones} t={t} />
     </div>
   </section>
-  <section class="band" aria-labelledby="pages-h">
-    <div class="wrap">
-      <h2 id="pages-h" class="h2">{p.pagesTitle}</h2>
-      <p class="section-lead">{p.pagesLead}</p>
-      <ul class="sd-index" role="list">
-        {p.pages.map((page) => (
-          <li class="sd-index-item">
-            <a href={page.href}>
-              <h3 class="sd-index-title">{page.title}</h3>
-              <p>{page.body}</p>
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
-  </section>
+  </SdShell>
 </Base>

@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { gateInBrowser } from './diagram-gate';
+import { GATE_GLOSSARY, NEAR } from '../src/lib/glossary';
 
 /**
  * The diagram quality gate (docs/SYSTEM-DESIGN-OUTLINE.md): on every System design page, in both
@@ -8,7 +9,7 @@ import { gateInBrowser } from './diagram-gate';
  * nothing leaves the viewBox, and every node has its icon. Motion is reduced so frames are stable.
  */
 const PAGES = ['', 'video-pipeline/', 'delivery-caching/', 'data/', 'async/', 'realtime/', 'identity/', 'ai/', 'cost/', 'scaling/', 'clients/', 'release/'];
-/** Every page shows 3 to 5 diagrams (owner request 2026-11-19). */
+/** Every page shows at least 3 diagrams (owner, 2026-11-19: 5–8 on the pages rewritten for developers). */
 const MIN_DIAGRAMS = 3;
 
 for (const lang of ['en', 'ar'])
@@ -26,7 +27,7 @@ for (const lang of ['en', 'ar'])
         await page.evaluate(() => document.fonts.ready);
         const visible = await page.locator('svg.an').evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).length);
         expect(visible, 'diagrams on the page').toBeGreaterThanOrEqual(MIN_DIAGRAMS);
-        const defects = await page.evaluate(gateInBrowser);
+        const defects = await page.evaluate(gateInBrowser, { glossary: GATE_GLOSSARY(), near: NEAR });
         expect(defects, defects.join('\n')).toEqual([]);
         expect(csp, csp.join('\n')).toEqual([]);
         // no horizontal scroll at any width

@@ -1,4 +1,6 @@
 import { expect, test } from '@playwright/test';
+import { gateInBrowser } from './diagram-gate';
+import { GATE_GLOSSARY, NEAR } from '../src/lib/glossary';
 import AxeBuilder from '@axe-core/playwright';
 import { LOCALES, NAV, PAGES, dir, pagePath } from '../src/lib/pages';
 
@@ -20,6 +22,9 @@ for (const locale of LOCALES) {
         await expect(page.locator('h1')).toHaveCount(1);
         const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
         expect(axe.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+        // every page: no plan wording, every abbreviation spelled out where the page first uses it
+        const rules = await page.evaluate(gateInBrowser, { glossary: GATE_GLOSSARY(), near: NEAR });
+        expect(rules, rules.join('\n')).toEqual([]);
         // No horizontal scroll, and nothing blocked by the CSP
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
         expect(errors).toEqual([]);
@@ -66,7 +71,7 @@ test('Light / Dark: www’s icon button, saved per device, applied before paint 
   await expect(toggle).toHaveAccessibleName('Switch to light mode');
   await expect(toggle.locator('svg.lucide-sun')).toBeVisible();
   await expect(toggle).toBeFocused();
-  await page.goto('/ar/waqf/');
+  await page.goto('/ar/contact/');
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');
   await expect(page.getByTestId('theme-toggle')).toHaveAccessibleName('التبديل إلى الوضع الفاتح');
 });
@@ -139,6 +144,11 @@ test('every status comes from the wiki’s feature registry the site was built f
     await page.goto(pagePath(locale, 'technology'));
     for (const f of reg.features) {
       const row = page.locator(`#feature-${f.id}`);
+      // the site shows only what runs today: live and ready features, never rolling, building or planned
+      if (f.status !== 'live' && f.status !== 'ready') {
+        await expect(row).toHaveCount(0);
+        continue;
+      }
       await expect(row).toHaveCount(1);
       await expect(row.locator('.registry-name')).toHaveText(f.name[locale]);
       // the row sits in its status's group
@@ -148,7 +158,7 @@ test('every status comes from the wiki’s feature registry the site was built f
     await expect(page.locator('.registry-source')).toContainText(sha);
   }
   // the chips on the other pages show the same status as the registry
-  const label = { en: { live: 'Live', ready: 'Ready, not in use yet', rolling: 'Built, rolling out', building: 'In development', planned: 'Planned' } };
+  const label = { en: { live: 'Live', ready: 'Ready, not in use yet' } };
   await page.goto(pagePath('en', 'community'));
   const chips = await page.locator('.tile .chip').allTextContents();
   expect(chips.length).toBeGreaterThan(0);
@@ -168,7 +178,7 @@ test('the home page lists as live today only what the registry says is live; rea
   }
 });
 
-test.describe('light and dark: the hero, page heads, waqf panel and footer change with the mode', () => {
+test.describe('light and dark: the hero, page heads and footer change with the mode', () => {
   const bg = (page: import('@playwright/test').Page, sel: string) =>
     page.locator(sel).first().evaluate((el) => {
       const s = getComputedStyle(el);
@@ -181,7 +191,7 @@ test.describe('light and dark: the hero, page heads, waqf panel and footer chang
       await page.emulateMedia({ colorScheme: scheme });
       await page.goto('/en/');
       await expect(page.locator('html')).not.toHaveAttribute('data-mode', /./);
-      for (const sel of ['.hero', '.waqf-teaser', '.site-footer']) {
+      for (const sel of ['.hero', '.site-footer']) {
         const v = await bg(page, sel);
         if (scheme === 'dark') expect(v, sel).toMatch(DARK_BLUE);
         else expect(v, sel).not.toMatch(DARK_BLUE);
@@ -208,7 +218,7 @@ test.describe('light and dark: the hero, page heads, waqf panel and footer chang
     await expect(page.locator('html')).toHaveAttribute('data-mode', 'light');
     expect(await bg(page, '.hero')).toBe(after);
     // the saved choice wins over the device on another page, from the first paint
-    await page.goto('/ar/waqf/');
+    await page.goto('/ar/contact/');
     expect(await bg(page, '.page-hero')).not.toMatch(DARK_BLUE);
     await page.getByTestId('theme-toggle').click();
     await expect(page.locator('html')).toHaveAttribute('data-mode', 'dark');

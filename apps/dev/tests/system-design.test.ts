@@ -104,8 +104,8 @@ describe('system design section', () => {
     }
   });
 
-  it('the pipeline keeps its story: tee, queue, container, both buckets, one play address', () => {
+  it('the pipeline keeps its story: resumable upload, queue, container, both buckets, one play address', () => {
     const names = pipeline(en.diagrams.pipeline, en.diagrams.costs, 'en').spec.nodes.map((n) => `${n.name} ${n.role ?? ''}`).join('|');
-    for (const part of ['TUS', 'tee', 'Bunny Stream', 'R2 originals', 'R2 pub', 'transcode queue', 'Transcoder', 'api-videos']) expect(names).toContain(part);
+    for (const part of ['resumable upload', 'Bunny Stream', 'R2 originals', 'R2 pub', 'transcode queue', 'Transcoder', 'api-videos']) expect(names).toContain(part);
   });
 });

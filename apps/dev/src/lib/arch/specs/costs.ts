@@ -4,7 +4,7 @@
  * sourced); meters tick as the flow reaches each stage and every lane keeps a running total.
  */
 import { stack, type ArchEdge, type ArchLayout, type ArchNode, type ArchSpec } from '../arch.ts';
-import { ASSUMED, LANE_OF, RATES, SCENARIOS, costTable, money, type MoneyOptions, type Lane, type StageId } from '../cost.ts';
+import { ASSUMED, LANE_OF, RATES, SCENARIOS, asShown, costTable, money, type MoneyOptions, type Lane, type StageId } from '../cost.ts';
 import { formatNumber } from '../../../../../../packages/render/src/format.ts';
 import type { diagramsEn } from '../../../i18n/diagrams.en.ts';
 
@@ -32,7 +32,6 @@ const RATE_VALUES: Record<StageId, Record<string, { usd: number } | { n: number 
   moderation: { a: { usd: RATES.usdPerNeuron * 1000 }, k: { n: 1000 }, free: { n: RATES.freeNeuronsPerDay } },
   captions: { a: { usd: RATES.whisperPerMinute } },
   quran: {},
-  review: { a: { usd: RATES.reviewPerVideoHour } },
   bunnyEncode: {},
   bunnyStore: { a: { usd: RATES.bunnyStorageGbMonthPerRegion }, n: { n: RATES.bunnyRegions } },
   bunnyDeliver: { a: { usd: RATES.bunnyDeliveryGb } },
@@ -61,7 +60,6 @@ const ICON: Record<StageId, string> = {
   moderation: 'cloudflare/workers-ai',
   captions: 'lucide/scroll-text',
   quran: 'lucide/book-open',
-  review: 'lucide/shield-check',
   bunnyEncode: 'brand/bunny-stream',
   bunnyStore: 'brand/bunny-stream',
   bunnyDeliver: 'brand/bunny-cdn',
@@ -76,7 +74,7 @@ const ICON: Record<StageId, string> = {
 const LANES: Record<Lane, StageId[]> = {
   bunny: ['bunnyEncode', 'bunnyStore', 'bunnyDeliver'],
   r2: ['originals', 'queue', 'slots', 'transcode', 'renditions', 'r2Deliver'],
-  shared: ['moderation', 'captions', 'quran', 'review'],
+  shared: ['moderation', 'captions', 'quran'],
 };
 const TOTAL: Record<Lane, 'totalBunny' | 'totalR2' | 'totalShared'> = { bunny: 'totalBunny', r2: 'totalR2', shared: 'totalShared' };
 
@@ -84,7 +82,7 @@ export function costs(c: Copy, locale: 'en' | 'ar'): { spec: ArchSpec; wide: Arc
   const table = costTable();
   const laneTotal = (lane: Lane) => {
     const out: Record<string, number | null> = {};
-    for (const s of SCENARIOS) out[s.id] = (Object.keys(LANE_OF) as StageId[]).filter((st) => LANE_OF[st] === lane).reduce((sum, st) => sum + (table[st][s.id] ?? 0), 0);
+    for (const s of SCENARIOS) out[s.id] = (Object.keys(LANE_OF) as StageId[]).filter((st) => LANE_OF[st] === lane).reduce((sum, st) => sum + asShown(table[st][s.id] ?? 0), 0);
     return out;
   };
   const stageNode = (st: StageId, at: [number, number]): ArchNode => ({
@@ -98,8 +96,9 @@ export function costs(c: Copy, locale: 'en' | 'ar'): { spec: ArchSpec; wide: Arc
   });
   const totalNode = (lane: Lane, at: [number, number]): ArchNode => ({ id: TOTAL[lane], icon: 'lucide/receipt', name: c.node[TOTAL[lane]].name, role: c.node[TOTAL[lane]].role, total: { lane, usd: laneTotal(lane) }, at });
 
-  const nodes: ArchNode[] = [stageNode('upload', [0, 1.2])];
-  const rows: Record<Lane, number> = { bunny: 0, r2: 1.2, shared: 2.4 };
+  // the Cloudflare boundary's title sits inside its top: room between it and the Bunny lane above
+  const nodes: ArchNode[] = [stageNode('upload', [0, 1.4])];
+  const rows: Record<Lane, number> = { bunny: 0, r2: 1.4, shared: 2.6 };
   for (const lane of ['bunny', 'r2', 'shared'] as Lane[]) {
     LANES[lane].forEach((st, i) => nodes.push(stageNode(st, [1.2 + i, rows[lane]])));
     nodes.push(totalNode(lane, [1.2 + LANES[lane].length + 0.15, rows[lane]]));
@@ -113,7 +112,7 @@ export function costs(c: Copy, locale: 'en' | 'ar'): { spec: ArchSpec; wide: Arc
     for (let i = 1; i < chain.length; i++) {
       const last = i === chain.length - 1;
       const into = chain[i]!;
-      const flow = into === 'bunnyDeliver' || into === 'r2Deliver' ? 'delivery' : last ? 'control' : lane === 'shared' ? 'request' : into === 'queue' ? 'async' : flowOf[lane] === 'delivery' ? 'media' : 'media';
+      const flow = into === 'bunnyDeliver' || into === 'r2Deliver' ? 'delivery' : last ? (lane === 'shared' ? 'request' : 'media') : lane === 'shared' ? 'request' : into === 'queue' ? 'async' : flowOf[lane] === 'delivery' ? 'media' : 'media';
       edges.push({ from: chain[i - 1]!, to: into, flow, step: i + 1, fromSide: 'e', toSide: 'w' });
     }
   }
@@ -129,7 +128,8 @@ export function costs(c: Copy, locale: 'en' | 'ar'): { spec: ArchSpec; wide: Arc
       { id: 'laneBunny', label: c.lane.bunny, kind: 'platform', tagLogo: { id: 'brand/bunnynet-logo-dark', w: 66, h: 19 }, accent: '#f29b1d', members: [...LANES.bunny, TOTAL.bunny] },
       { id: 'laneR2', label: c.lane.r2, members: [...LANES.r2, TOTAL.r2] },
       { id: 'laneShared', label: c.lane.shared, members: [...LANES.shared, TOTAL.shared] },
-      { id: 'cf', label: c.lane.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', members: ['upload', 'laneR2', 'laneShared'] },
+      // room inside the account for the upload's wire round the R2 lane: it stays inside
+      { id: 'cf', label: c.lane.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', pad: 40, members: ['upload', 'laneR2', 'laneShared'] },
     ],
     edges,
   };
@@ -150,7 +150,7 @@ export function costs(c: Copy, locale: 'en' | 'ar'): { spec: ArchSpec; wide: Arc
       [['renditions', 'r2Deliver'], 1.75],
       [['totalR2'], 1.75],
       [['moderation', 'captions'], 2.4],
-      [['quran', 'review'], 1.75],
+      [['quran'], 1.75],
       [['totalShared'], 1.75],
     ]),
     edges: [
@@ -159,27 +159,26 @@ export function costs(c: Copy, locale: 'en' | 'ar'): { spec: ArchSpec; wide: Arc
       { from: 'upload', to: 'laneShared', flow: 'request', step: 1, fromSide: ['e', 'w'], toSide: ['e', 'w'] },
       { from: 'bunnyEncode', to: 'bunnyStore', flow: 'media', step: 2, fromSide: 'e', toSide: 'w' },
       { from: 'bunnyStore', to: 'bunnyDeliver', flow: 'delivery', step: 3, fromSide: 's', toSide: 'n' },
-      { from: 'bunnyDeliver', to: 'totalBunny', flow: 'control', step: 4, fromSide: 'e', toSide: 'w' },
+      { from: 'bunnyDeliver', to: 'totalBunny', flow: 'media', step: 4, fromSide: 'e', toSide: 'w' },
       { from: 'originals', to: 'queue', flow: 'async', step: 2, fromSide: 'e', toSide: 'w' },
       { from: 'queue', to: 'slots', flow: 'media', step: 3, fromSide: 's', toSide: 'n' },
       { from: 'slots', to: 'transcode', flow: 'media', step: 4, fromSide: 'e', toSide: 'w' },
       { from: 'transcode', to: 'renditions', flow: 'media', step: 5, fromSide: 's', toSide: 'n' },
       { from: 'renditions', to: 'r2Deliver', flow: 'delivery', step: 6, fromSide: 'e', toSide: 'w' },
-      { from: 'r2Deliver', to: 'totalR2', flow: 'control', step: 7, fromSide: 's', toSide: 'n' },
+      { from: 'r2Deliver', to: 'totalR2', flow: 'media', step: 7, fromSide: 's', toSide: 'n' },
       { from: 'moderation', to: 'captions', flow: 'request', step: 2, fromSide: 'e', toSide: 'w' },
       { from: 'captions', to: 'quran', flow: 'request', step: 3, fromSide: 's', toSide: 'n' },
-      { from: 'quran', to: 'review', flow: 'request', step: 4, fromSide: 'e', toSide: 'w' },
-      { from: 'review', to: 'totalShared', flow: 'control', step: 5, fromSide: 's', toSide: 'n' },
+      { from: 'quran', to: 'totalShared', flow: 'request', step: 4, fromSide: 's', toSide: 'n' },
     ],
   };
   return { spec, wide, narrow };
 }
 
-/** The AI checks on one upload (moderation + captions + review), per example: the Workers AI meter in the design diagrams. */
+/** The AI check every upload gets (moderation), per example: the Workers AI meter in the design diagrams. Captions run only when a creator asks. */
 export function aiChecksUsd(): Record<string, number | null> {
   const table = costTable();
   const out: Record<string, number | null> = {};
-  for (const s of SCENARIOS) out[s.id] = (['moderation', 'captions', 'review'] as StageId[]).reduce((sum, st) => sum + (table[st][s.id] ?? 0), 0);
+  for (const s of SCENARIOS) out[s.id] = (['moderation'] as StageId[]).reduce((sum, st) => sum + (table[st][s.id] ?? 0), 0);
   return out;
 }
 /** The Workers AI price line, in the page's language. */
@@ -191,7 +190,7 @@ export function laneTotals(): Record<Lane, Record<string, number>> {
   const out = {} as Record<Lane, Record<string, number>>;
   for (const lane of ['bunny', 'r2', 'shared'] as Lane[]) {
     out[lane] = {};
-    for (const s of SCENARIOS) out[lane][s.id] = (Object.keys(LANE_OF) as StageId[]).filter((st) => LANE_OF[st] === lane).reduce((sum, st) => sum + (table[st][s.id] ?? 0), 0);
+    for (const s of SCENARIOS) out[lane][s.id] = (Object.keys(LANE_OF) as StageId[]).filter((st) => LANE_OF[st] === lane).reduce((sum, st) => sum + asShown(table[st][s.id] ?? 0), 0);
   }
   return out;
 }

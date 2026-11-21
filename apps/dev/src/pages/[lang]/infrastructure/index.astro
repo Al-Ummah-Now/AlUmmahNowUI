@@ -2,7 +2,6 @@
 import Base from '../../../layouts/Base.astro';
 import PageHero from '../../../components/PageHero.astro';
 import ItemGrid from '../../../components/ItemGrid.astro';
-import Sources from '../../../components/Sources.astro';
 import Street from '../../../components/Street.astro';
 import Steps from '../../../components/Steps.astro';
 import { strings } from '../../../i18n';
@@ -13,7 +12,6 @@ export const getStaticPaths = localePaths;
 const locale = Astro.params.lang as Locale;
 const t = strings(locale);
 const p = t.infrastructure;
-const src = (links: { label: string; href: string }[]) => ({ links, label: t.common.source, plural: t.common.sources });
 ---
 <Base locale={locale} slug="infrastructure" title={p.title} description={p.description}>
   <PageHero title={p.heroTitle} lead={p.heroLead} />
@@ -22,7 +20,6 @@ const src = (links: { label: string; href: string }[]) => ({ links, label: t.com
       <p class="more"><a href={p.deepLink.href}>{p.deepLink.label} <span class="dir-icon" aria-hidden="true">→</span></a></p>
       <h2 id="pipeline-h" class="h2">{p.pipelineTitle}</h2>
       <Street steps={p.pipeline} label={p.pipelineLabel} />
-      <Sources {...src(p.pipelineSources)} />
     </div>
   </section>
   <section class="band" aria-labelledby="details-h">
@@ -44,14 +41,12 @@ const src = (links: { label: string; href: string }[]) => ({ links, label: t.com
           </li>
         ))}
       </ul>
-      <Sources {...src(p.environmentsSources)} />
     </div>
   </section>
   <section class="band" aria-labelledby="release-h">
     <div class="wrap">
       <h2 id="release-h" class="h2">{p.releaseTitle}</h2>
       <Steps steps={p.release} label={p.releaseLabel} />
-      <Sources {...src(p.releaseSources)} />
     </div>
   </section>
   <section class="band band-raised" aria-labelledby="cost-h">
@@ -59,7 +54,6 @@ const src = (links: { label: string; href: string }[]) => ({ links, label: t.com
       <div class="panel">
         <h2 id="cost-h" class="h2">{p.costTitle}</h2>
         <p>{p.costBody}</p>
-        <Sources {...src(p.costSources)} />
       </div>
       <div class="panel">
         <h2 class="h2">{p.statusTitle}</h2>

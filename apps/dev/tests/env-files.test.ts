@@ -49,9 +49,9 @@ describe('wrangler config', () => {
 
 describe('seo', () => {
   it('canonical is production; hreflang en, ar and x-default', () => {
-    const l = headLinks('ar', 'waqf');
-    expect(l.canonical).toBe('https://alummahnow.dev/ar/waqf/');
+    const l = headLinks('ar', 'contact');
+    expect(l.canonical).toBe('https://alummahnow.dev/ar/contact/');
     expect(l.alternates.map((a) => a.hreflang)).toEqual(['en', 'ar', 'x-default']);
-    expect(l.alternates[2]?.href).toBe('https://alummahnow.dev/en/waqf/');
+    expect(l.alternates[2]?.href).toBe('https://alummahnow.dev/en/contact/');
   });
 });

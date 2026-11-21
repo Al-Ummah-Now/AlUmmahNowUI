@@ -3,7 +3,7 @@ export const aiEn = {
   map: {
     title: 'Where AI runs',
     lead: 'Every model is open-weight and runs on Workers AI. Comments, posts and titles reach the processor through a queue; creators ask for captions; the CMS has its own writing assist. Each call is counted in neurons against a daily cap, and what moderation finds goes to people in the admin.',
-    desc: 'Members and creators on the left. Inside the Cloudflare account, api-videos sends AI work through queues to the processor, which runs every AI job: moderation, category suggestions, captions and pre-publication review. The processor reserves and settles each scan’s cost in the REPORTS_DB D1 database (ai_budget_daily, ai_usage_daily), where its moderation signals also land for the videos admin’s review queue. The processor and the CMS call Workers AI, shown with its price per thousand neurons and the cost of one upload’s AI checks. Below it, the models: {tkGemma} for translation and checks, {tkGuard} for safety, {tkScout} for category suggestions, Whisper large-v3-turbo for captions, DeepSeek V4.1 Flash for caption translation (in development) and clef-flash for review frames (rolling out).',
+    desc: 'Members and creators on the left. Inside the Cloudflare account, api-videos sends AI work through queues to the processor, which runs every AI job: moderation, category suggestions, captions and pre-publication review. The processor reserves and settles each scan’s cost in the REPORTS_DB D1 database (ai_budget_daily, ai_usage_daily), where its moderation signals also land for the videos admin’s review queue. The processor and the CMS call Workers AI, shown with its price per thousand neurons and the cost of one upload’s AI checks. Below it, the models: {tkGemma} for translation and checks, {tkGuard} for safety, {tkScout} for category suggestions, Whisper large-v3-turbo for captions.',
     group: { cf: 'Cloudflare account', models: 'Open-weight models' },
     caption: { models: 'no proprietary model APIs' },
     node: {
@@ -32,7 +32,7 @@ export const aiEn = {
     group: { cf: 'Cloudflare account', models: 'Workers AI' },
     node: {
       api: { name: 'api-videos', role: 'comment · post · title' },
-      queue: { name: 'Moderation queue', role: 'retries · DLQ' },
+      queue: { name: 'Moderation queue', role: 'retries · dead letters' },
       processor: { name: 'processor', role: 'kill switch first' },
       budget: { name: 'ai_budget_daily', role: 'reserve → settle' },
       gemma: { name: '{tkGemma}', role: 'Arabic → English' },

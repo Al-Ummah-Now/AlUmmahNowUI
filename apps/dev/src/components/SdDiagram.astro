@@ -11,11 +11,13 @@ interface Props {
   raised?: boolean;
   costs?: boolean;
   bleed?: boolean;
+  why?: string;
+  tradeoff?: string;
 }
-const { id, locale, title, lead, raised = false, costs = false, bleed = true } = Astro.props;
+const { id, locale, title, lead, raised = false, costs = false, bleed = true, why, tradeoff } = Astro.props;
 ---
 <section class:list={['band', raised && 'band-raised']} aria-labelledby={`${id}-h`}>
   <div class="wrap">
-    <ArchFigure id={id} locale={locale} title={title} lead={lead} headingId={`${id}-h`} costs={costs} bleed={bleed} />
+    <ArchFigure id={id} locale={locale} title={title} lead={lead} headingId={`${id}-h`} costs={costs} bleed={bleed} why={why} tradeoff={tradeoff} />
   </div>
 </section>

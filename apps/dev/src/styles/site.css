@@ -237,7 +237,7 @@ main:focus {
   margin-inline-start: 0.35em;
 }
 
-/* ---------- Lantern bands (hero, page heads, waqf, footer, 404) ----------
+/* ---------- Lantern bands (hero, page heads, footer, 404) ----------
  * Designed for both modes. Light is a Fawanees morning: warm parchment, the lantern's gold as light
  * rather than fill, dark amber marks (contrast AA on the parchment). Dark is the Fawanees night:
  * deep blue, gold glow, gold marks. Components read only the --band-* tokens below.
@@ -453,10 +453,6 @@ html[lang='ar'] .hero-wordmark {
   margin-block-end: 1rem;
 }
 
-.hero-source {
-  margin: 0;
-  font-size: 0.95rem;
-}
 .jump ul {
   display: flex;
   flex-wrap: wrap;
@@ -503,7 +499,7 @@ html[lang='ar'] .hero-wordmark {
   }
 }
 
-/* ---------- Pillars (home, waqf) ---------- */
+/* ---------- Pillars (home) ---------- */
 .pillars {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -707,75 +703,6 @@ html[lang='ar'] .hero-wordmark {
   }
 }
 
-/* ---------- Waqf ---------- */
-.waqf-teaser {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: clamp(20px, 4vw, 56px);
-  padding: clamp(28px, 5vw, 56px);
-  border-radius: var(--radius-panel);
-  border: 1px solid var(--band-line);
-  /* Light: a parchment panel lit from behind the glyph, a white top edge and an amber shadow */
-  --band-line: rgb(138 90 18 / 0.38);
-  --band-bg:
-    radial-gradient(45% 90% at 12% 50%, rgb(244 174 58 / 0.3), transparent 70%), url('/brand/pattern.svg') repeat,
-    linear-gradient(135deg, #fffaf0 0%, #fbeccb 100%);
-  background-size:
-    auto,
-    96px 96px,
-    auto;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.9),
-    0 28px 56px -30px rgb(122 67 0 / 0.4);
-}
-[dir='rtl'] .waqf-teaser {
-  --band-bg:
-    radial-gradient(45% 90% at 88% 50%, rgb(244 174 58 / 0.3), transparent 70%), url('/brand/pattern.svg') repeat,
-    linear-gradient(225deg, #fffaf0 0%, #fbeccb 100%);
-}
-.waqf-teaser p {
-  max-width: 62ch;
-  color: var(--band-muted);
-}
-.waqf-glyph {
-  font-family: var(--font-arabic);
-  font-weight: 700;
-  font-size: clamp(4.5rem, 3rem + 6vw, 8.5rem);
-  line-height: 1;
-  color: transparent;
-  background: var(--band-glyph);
-  -webkit-background-clip: text;
-  background-clip: text;
-  filter: var(--band-glyph-glow);
-}
-.waqf-def {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: clamp(20px, 5vw, 64px);
-  align-items: center;
-  padding: clamp(24px, 4vw, 48px);
-  border-radius: var(--radius-panel);
-  border: 1px solid var(--edge);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 60%), var(--raised);
-  box-shadow: var(--shadow);
-}
-.waqf-def .waqf-glyph {
-  background: linear-gradient(180deg, var(--gold), var(--accent));
-  -webkit-background-clip: text;
-  background-clip: text;
-}
-.waqf-def-body {
-  font-size: 1.15rem;
-  max-width: 64ch;
-  margin: 0;
-}
-@media (max-width: 680px) {
-  .waqf-teaser,
-  .waqf-def {
-    grid-template-columns: 1fr;
-  }
-}
 .open-list {
   margin: 0;
   padding: 0;
@@ -866,24 +793,8 @@ html[lang='ar'] .hero-wordmark {
 }
 .tile-body {
   color: var(--muted);
-  margin-block-end: 0.75rem;
+  margin-block-end: 0;
 }
-.sources {
-  margin: auto 0 0;
-  padding-block-start: 10px;
-  border-block-start: 1px dashed var(--line);
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-.sources-label {
-  margin-inline-end: 0.4em;
-}
-.band > .wrap > .sources,
-.panel .sources {
-  border: 0;
-  margin-block-start: 1.25rem;
-}
-
 /* Status chips: shape and fill differ as well as colour, so they read without colour too */
 .chip {
   display: inline-flex;
@@ -1494,7 +1405,6 @@ html[data-mode='dark'] .night {
 html[data-mode='dark'] .night,
 html[data-mode='dark'] .hero,
 html[data-mode='dark'] .page-hero,
-html[data-mode='dark'] .waqf-teaser,
 html[data-mode='dark'] .site-footer,
 html[data-mode='dark'] .notfound {
   --band-bg:
@@ -1504,9 +1414,6 @@ html[data-mode='dark'] .notfound {
     auto,
     96px 96px,
     auto;
-}
-html[data-mode='dark'] .waqf-teaser {
-  box-shadow: 0 30px 60px -30px rgb(9 21 30 / 0.6);
 }
 html[data-mode='dark'] .hero-sky {
   background:
@@ -1540,7 +1447,6 @@ html[data-mode='dark'] .hero-sky {
   html:not([data-mode='light']) .night,
   html:not([data-mode='light']) .hero,
   html:not([data-mode='light']) .page-hero,
-  html:not([data-mode='light']) .waqf-teaser,
   html:not([data-mode='light']) .site-footer,
   html:not([data-mode='light']) .notfound {
     --band-bg:
@@ -1550,9 +1456,6 @@ html[data-mode='dark'] .hero-sky {
       auto,
       96px 96px,
       auto;
-  }
-  html:not([data-mode='light']) .waqf-teaser {
-    box-shadow: 0 30px 60px -30px rgb(9 21 30 / 0.6);
   }
   html:not([data-mode='light']) .hero-sky {
     background:
@@ -2102,4 +2005,149 @@ html:not([data-mode='light']) .pi-invert-dark svg {
 
 .rf-boundary-label-narrow {
   font-size: 11px;
+}
+
+/* ---------- System design section nav (SdShell, SdNav, SdPager) ---------- */
+.sd-shell {
+  display: block;
+}
+.sd-aside {
+  padding: 18px var(--gutter, 16px) 0;
+}
+.sd-nav-title {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sd-nav ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sd-nav a {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 11px;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: var(--raised);
+  color: var(--link);
+  font-size: 0.9rem;
+  line-height: 1.35;
+  text-decoration: none;
+}
+.sd-nav a:hover {
+  border-color: var(--edge-strong);
+  text-decoration: underline;
+}
+.sd-nav a[aria-current='page'] {
+  border-color: var(--link);
+  background: var(--link);
+  color: var(--raised);
+  font-weight: 650;
+}
+.sd-nav-n {
+  font-size: 0.78em;
+  font-weight: 400;
+}
+@media (min-width: 1100px) {
+  .sd-shell {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+  }
+  .sd-aside {
+    padding: 28px 0 28px 20px;
+    border-inline-end: 1px solid var(--edge);
+  }
+  [dir='rtl'] .sd-aside {
+    padding: 28px 20px 28px 0;
+  }
+  .sd-nav {
+    position: sticky;
+    top: 96px;
+    max-height: calc(100vh - 116px);
+    overflow-y: auto;
+  }
+  /* the hero's text starts where the column beside the nav starts */
+  .page-hero-sd .wrap {
+    max-width: calc(var(--wrap) + 232px);
+    padding-inline-start: calc(232px + var(--gutter));
+  }
+  .sd-nav ol {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 2px;
+  }
+  .sd-nav a {
+    display: flex;
+    width: 100%;
+    padding: 4px 10px;
+    font-size: 0.875rem;
+    border-color: transparent;
+    border-radius: 8px;
+    background: transparent;
+  }
+  .sd-nav a[aria-current='page'] {
+    border-color: transparent;
+    background: var(--raised);
+    color: var(--text);
+    box-shadow: inset 3px 0 0 var(--link);
+  }
+  [dir='rtl'] .sd-nav a[aria-current='page'] {
+    box-shadow: inset -3px 0 0 var(--link);
+  }
+}
+.sd-pager {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.sd-pager a {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: min(100%, 240px);
+  padding: 14px 18px;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius-tile);
+  background: var(--raised);
+  text-decoration: none;
+}
+.sd-pager a:hover {
+  border-color: var(--edge-strong);
+}
+.sd-pager-next {
+  margin-inline-start: auto;
+  text-align: end;
+}
+.sd-pager-dir {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.sd-pager-title {
+  font-weight: 650;
+  color: var(--link);
+}
+/* beside the section nav, a wide figure bleeds to its own column, never under the nav */
+.sd-main {
+  container-type: inline-size;
+  min-width: 0;
+}
+.sd-main .an-bleed {
+  width: min(100cqw - 32px, 1400px);
+  margin-inline: calc(50% - min(50cqw - 16px, 700px));
+}
+/* the hub lists every page as cards right under its hero: below desktop width the chips would repeat them */
+@media (max-width: 1099.98px) {
+  .sd-shell-hub .sd-aside {
+    display: none;
+  }
 }

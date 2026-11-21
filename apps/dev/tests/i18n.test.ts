@@ -31,10 +31,29 @@ describe('copy', () => {
   it('Arabic uses «مرئي» for video, never «فيديو» (wiki glossary)', () => {
     for (const [p, s] of strings(ar)) expect(s, p).not.toMatch(/فيديو/);
   });
-  it('waqf is a direction, never a claim (wiki AUN-DEV-SITE wording rules)', () => {
+  it('describes only what exists and runs today: no plans, no studies (owner, 2026-11-19)', () => {
     const all = strings(en).map(([, s]) => s).join('\n');
-    expect(all).not.toMatch(/\bis a (registered )?(waqf|charity)\b/i);
-    expect(all).not.toMatch(/tax[- ]deductible|donate now/i);
+    expect(all).not.toMatch(/\bwe are (exploring|studying|considering|planning)\b|\bcoming soon\b|\bin development\b|\brolling out\b|\bplanned\b|\blater\b(?! in case)|\bwaqf\b|tax[- ]deductible|donate now/i);
+    const allAr = strings(ar).map(([, s]) => s).join('\n');
+    expect(allAr).not.toMatch(/ندرس|نخطط|قريبًا|الوقف|قيد التطوير|قيد الطرح|قيد الإطلاق|لاحقًا|مخطط له/);
+  });
+  it('one term per thing, and no sentence opens with a lowercase code name (AUDIT-2, round 5)', () => {
+    const allAr = strings(ar).map(([, s]) => s).join('\n');
+    expect(allAr).not.toMatch(/خانة شاغرة|البوتات/);
+    // a range of rungs in Arabic reads as words («من ٣٦٠p إلى ١٠٨٠p»), never a dash the bidi algorithm can reverse
+    expect(allAr).not.toMatch(/\{tkRung\w+\}\s*[–-]\s*\{tkRung/);
+    // and so does any other range: «من ٣٠ إلى ٩٠ يومًا», never «٣٠–٩٠»
+    expect(allAr).not.toMatch(/\}\s*[–-]\s*\{|\d\s*–\s*\d/);
+    // prose only: a tile's name (api-videos) is a label, not a sentence
+    const lc = /(?:[.!?]\s+)(?:[a-z][a-z0-9]*[-_][a-z0-9_-]+|videos|processor|media|scheduler)\b/;
+    for (const [path, s] of strings(en)) {
+      expect(s, path).not.toMatch(lc);
+      if (s.length > 60 && /\. /.test(s)) expect(s, path).not.toMatch(/^(?:[a-z][a-z0-9]*[-_][a-z0-9_-]+|videos|processor|media|scheduler)\b/);
+    }
+  });
+  it('no shorthand a reader has to decode (AUDIT-2, round 6)', () => {
+    // "pub · priv" outside a code path: write "public · private" / «عام · خاص»
+    for (const [path, v] of [...strings(en), ...strings(ar)]) expect(v, path).not.toMatch(/\bpub\s*[·,]\s*priv\b|\bpub\b(?![|}/])/);
   });
   it('no user, view or money figures', () => {
     const all = strings(en).map(([, s]) => s).join('\n');
