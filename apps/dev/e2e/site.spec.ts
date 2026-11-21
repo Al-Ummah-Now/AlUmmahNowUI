@@ -34,7 +34,11 @@ test('/ redirects to /en/; unknown paths are a real 404 page in both languages',
   expect(r.headers().location).toMatch(/\/en\/$/);
   const res = await page.goto('/en/nothing-here/');
   expect(res?.status()).toBe(404);
-  await expect(page.locator('section[lang=ar] h2')).toHaveText('الصفحة غير موجودة');
+  // The shared error card once per language (wiki guides/error-pages.md)
+  await expect(page.locator('.ep[lang=en] h1')).toHaveText('Page not found');
+  await expect(page.locator('.ep[lang=ar] h2')).toHaveText('الصفحة غير موجودة');
+  await expect(page.locator('.ep[lang=ar] .ep-code')).toHaveText('خطأ ٤٠٤');
+  await expect(page.locator('meta[name=robots]')).toHaveAttribute('content', 'noindex');
   const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
   expect(axe.violations).toEqual([]);
 });

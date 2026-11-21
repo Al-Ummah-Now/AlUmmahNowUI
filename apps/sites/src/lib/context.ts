@@ -22,9 +22,13 @@ export interface PageContext {
 
 /** null: no site (rendered outside the Worker) or a language the site doesn't serve → the page 404s. */
 export function pageContext(Astro: AstroGlobal): PageContext | null {
+  return pageContextFor(Astro, Astro.params.locale);
+}
+
+/** The same for a page whose language isn't a route param (404.astro). */
+export function pageContextFor(Astro: AstroGlobal, locale: unknown): PageContext | null {
   const cfg = config(workerBindings());
   const site = siteFromRequest(Astro.request);
-  const locale = Astro.params.locale;
   if (!site || !isLocale(locale) || !site.site.locales.includes(locale)) return null;
   const cache = typeof caches !== 'undefined' ? (caches as unknown as { default: Cache }).default : null;
   return {

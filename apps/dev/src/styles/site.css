@@ -233,7 +233,7 @@ main:focus {
   margin-inline-start: 0.35em;
 }
 
-/* ---------- Lantern bands (hero, page heads, waqf, footer, 404) ----------
+/* ---------- Lantern bands (hero, page heads, waqf, footer) ----------
  * Designed for both modes. Light is a Fawanees morning: warm parchment, the lantern's gold as light
  * rather than fill, dark amber marks (contrast AA on the parchment). Dark is the Fawanees night:
  * deep blue, gold glow, gold marks. Components read only the --band-* tokens below.
@@ -1270,45 +1270,18 @@ html[lang='ar'] .hero-wordmark {
   }
 }
 
-/* ---------- 404 ---------- */
-.notfound-logo img {
-  width: 140px;
-  height: auto;
-}
-.notfound {
-  --band-bg:
-    radial-gradient(50% 45% at 50% 22%, rgb(244 174 58 / 0.3), transparent 70%), url('/brand/pattern.svg') repeat,
-    linear-gradient(180deg, #fffbf2, #f3e5c8);
-  background-size:
-    auto,
-    96px 96px,
-    auto;
-  min-height: 100vh;
+/* ---------- 404 (pages/404.astro): the shared error card, once per language ---------- */
+.ep-pair {
   display: grid;
-  place-items: center;
-  align-content: center;
   gap: 24px;
-  padding: 40px var(--gutter);
-  text-align: center;
+  padding-block: clamp(24px, 6vw, 64px);
 }
-
-.notfound-cols {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 48px;
-  max-width: 900px;
+.ep-pair .ep {
+  min-height: 0;
+  padding-block: 0;
 }
-.notfound .display {
-  font-size: clamp(1.8rem, 1.2rem + 2vw, 2.6rem);
-  margin-block-end: 0.75rem;
-}
-.notfound p {
-  color: var(--band-muted);
-}
-@media (max-width: 640px) {
-  .notfound-cols {
-    grid-template-columns: 1fr;
-  }
+.ep-btn {
+  gap: 8px;
 }
 
 /* ---------- Icons from www's set (apps/www/src/components/Icon.astro) ---------- */
@@ -1491,8 +1464,7 @@ html[data-mode='dark'] .night,
 html[data-mode='dark'] .hero,
 html[data-mode='dark'] .page-hero,
 html[data-mode='dark'] .waqf-teaser,
-html[data-mode='dark'] .site-footer,
-html[data-mode='dark'] .notfound {
+html[data-mode='dark'] .site-footer {
   --band-bg:
     radial-gradient(120% 80% at 50% 120%, rgb(244 174 58 / 0.16), transparent 60%), url('/brand/pattern.svg') repeat,
     linear-gradient(180deg, var(--night-1), var(--night-0));
@@ -1537,8 +1509,7 @@ html[data-mode='dark'] .hero-sky {
   html:not([data-mode='light']) .hero,
   html:not([data-mode='light']) .page-hero,
   html:not([data-mode='light']) .waqf-teaser,
-  html:not([data-mode='light']) .site-footer,
-  html:not([data-mode='light']) .notfound {
+  html:not([data-mode='light']) .site-footer {
     --band-bg:
       radial-gradient(120% 80% at 50% 120%, rgb(244 174 58 / 0.16), transparent 60%), url('/brand/pattern.svg') repeat,
       linear-gradient(180deg, var(--night-1), var(--night-0));

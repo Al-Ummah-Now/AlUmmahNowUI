@@ -1,27 +1,57 @@
 ---
+/**
+ * The scholar site's 404 (an unknown path, or a page, post or video that isn't there: pages rewrite
+ * here): the Al Ummah Now error card (packages/render/src/error-page.ts, wiki guides/error-pages.md)
+ * inside the site's own theme, header and footer. noindex. Without a site (rendered outside the
+ * Worker) a bare page in the site's first language.
+ */
+import '../../../../packages/render/src/styles/aun-error-page.css';
+import SiteLayout from '../layouts/SiteLayout.astro';
 import { siteFromRequest } from '../lib/site';
+import { pageContextFor } from '../lib/context';
+import { alternates, canonicalUrl } from '../lib/seo';
 import { strings } from '../lib/i18n';
 import { isLocale } from '../../../../packages/render/src/locale';
+import { errorCardHtml, ERROR_CARD_STRINGS } from '../../../../packages/render/src/error-page';
 
 const site = siteFromRequest(Astro.request);
-const seg = Astro.url.pathname.split('/')[1];
-const locale = isLocale(seg) ? seg : site?.site.locales[0] ?? 'en';
+const path = (Astro as { originPathname?: string }).originPathname ?? Astro.url.pathname;
+const seg = path.split('/')[1];
+const locale = isLocale(seg) && (!site || site.site.locales.includes(seg)) ? seg : site?.site.locales[0] ?? 'en';
+const ctx = pageContextFor(Astro, locale);
 const t = strings(locale);
+const c = ERROR_CARD_STRINGS[locale];
 Astro.response.status = 404;
+const card = ctx
+  ? errorCardHtml({
+      locale,
+      kind: 'notFound',
+      buttonClass: { primary: 'button', secondary: 'button button-secondary' },
+      primary: { label: c.goHome, href: `/${locale}/`, icon: 'home' },
+      back: true,
+      contactHref: `${ctx.cfg.videosWebUrl}/${locale}/contact`,
+    })
+  : '';
 ---
-<!doctype html>
-<html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'}>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex" />
-    <title>{t.notFoundTitle}</title>
-  </head>
-  <body>
-    <main>
-      <h1>{t.notFoundTitle}</h1>
-      <p>{t.notFoundBody}</p>
-      <p><a href={`/${locale}/`}>{t.backHome}</a></p>
-    </main>
-  </body>
-</html>
+{ctx ? (
+  <SiteLayout ctx={ctx} title={c.kinds.notFound.title} alternates={alternates(ctx.site, '')} canonical={canonicalUrl(ctx.site, locale, '', ctx.scheme)} noindex hreflang={false}>
+    <Fragment set:html={card} />
+  </SiteLayout>
+) : (
+  <html lang={locale} dir={locale === 'ar' ? 'rtl' : 'ltr'}>
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <meta name="robots" content="noindex" />
+      <title>{t.notFoundTitle}</title>
+    </head>
+    <body>
+      <main>
+        <h1>{t.notFoundTitle}</h1>
+        <p>{t.notFoundBody}</p>
+        <p><a href={`/${locale}/`}>{t.backHome}</a></p>
+      </main>
+    </body>
+  </html>
+)}
+<script is:inline src="/ep-back.js" defer></script>
