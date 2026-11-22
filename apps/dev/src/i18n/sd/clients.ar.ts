@@ -11,7 +11,7 @@ export const clientsAr: typeof clientsEn = {
     node: {
       browsers: { name: 'المتصفحات', role: 'www، المرئيات، الإدارة' },
       embeds: { name: 'التضمين', role: 'المشغّل في مواقع أخرى' },
-      www: { name: 'www', role: 'Astro، محتوى CMS' },
+      www: { name: 'www', role: 'Astro، ومحتواه من إدارة المحتوى' },
       videos: { name: 'videos', role: 'Next.js، OpenNext' },
       adminWeb: { name: 'admin', role: 'Next.js، OpenNext' },
       shortLinks: { name: 'short-links', role: 'alummahnow.link' },

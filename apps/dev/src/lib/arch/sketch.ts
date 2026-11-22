@@ -124,6 +124,12 @@ export interface SketchEdge {
   /** the tag's middle this many px below the middle of the gap between the foot of one tile and the head of the one
    * below it: two tags stacked in one gap sit the same distance apart in both languages, whatever their widths */
   tagGap?: [string, string, number];
+  /** the tag's start edge (left in English, right in Arabic) this far in from the canvas's start side: tags stacked
+   * in one gap line up on the start side, mirrored between the languages */
+  tagStart?: number;
+  /** with tagStart: the tag's end edge this far in from the start side, so tags stacked in one gap are one width in
+   * both languages and each reaches its wire (Arabic text runs shorter than English) */
+  tagEnd?: number;
   /** a U through a lane this far out from the start side (a phone fan-out): out sideways, along the lane, and in;
    * wires sharing a start nest, the widest lane on the outermost port */
   lane?: number;
@@ -519,7 +525,9 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
     o.push(`<path id="${prefix}-e${i}" data-edge="${prefix}-e${i}" data-from="${e.from}" data-to="${e.to}" class="an-edge an-sk-arrow${e.dashed ? ' an-sk-dashed' : ''}"${e.noHead ? ' data-nohead' : ''} d="${shaft}"/>${e.noHead ? '' : `<path class="an-sk-head" d="${head}"/>`}`);
     if (!e.tag) return;
     // a tag sits beside its curve, never on it: try both sides at a few points along it
-    const tw = textWidth(e.tag, 15, true) + 18;
+    // a tag with a fixed span runs from tagStart to tagEnd whatever its text's width: both languages draw the same pill
+    const textW = textWidth(e.tag, 15, true) + 18;
+    const tw = e.tagStart !== undefined && e.tagEnd !== undefined ? Math.max(textW, e.tagEnd - e.tagStart) : textW;
     const th = 26;
     const gapY = e.tagGap ? (box.get(e.tagGap[0])!.y + box.get(e.tagGap[0])!.h + box.get(e.tagGap[1])!.y) / 2 + e.tagGap[2] : null;
     let best: Box | null = null;
@@ -551,11 +559,12 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
       for (const dir of dirs)
       for (const [s, gap] of [15, 18, 21, 12, 24, 9, 27, 30, 6, 34].flatMap((g) => [[side, g], [-side, g]]) as [number, number][]) {
         const half = Math.abs(dir[0]) * (tw / 2) + Math.abs(dir[1]) * (th / 2);
-        const cx = p[0] + dir[0] * (half + gap) * s;
+        const cx = e.tagStart !== undefined ? (opts.rtl ? W - e.tagStart - tw / 2 : e.tagStart + tw / 2) : p[0] + dir[0] * (half + gap) * s;
         const cy = gapY ?? p[1] + dir[1] * (half + gap) * s;
         const q = { x: cx - tw / 2, y: cy - th / 2, w: tw, h: th };
         if (q.x < 8 || q.y < 60 || q.x + q.w > W - 8 || q.y + q.h > Hc - 8) continue;
         const own = dist(q, ownPts(c));
+        // (a tag lined up with its neighbours may sit a little farther off its own curve)
         if (own < ownMin || own > 24) continue;
         if (otherMin && dist(q, otherPts(c)) < otherMin) continue;
         if (samples.some((pt) => hits(q, pt, 5))) continue;

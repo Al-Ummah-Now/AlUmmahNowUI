@@ -1713,9 +1713,22 @@ html[lang='ar'] .dg {
   padding: 0;
   list-style: none;
 }
+/* a short last row fills it: no empty cell under the list */
+.sd-index > .sd-index-item:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
 @media (min-width: 900px) {
   .sd-index {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .sd-index > .sd-index-item:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+  .sd-index > .sd-index-item:last-child:nth-child(3n + 1) {
+    grid-column: 1 / -1;
+  }
+  .sd-index > .sd-index-item:last-child:nth-child(3n + 2) {
+    grid-column: span 2;
   }
 }
 .sd-index-item a {

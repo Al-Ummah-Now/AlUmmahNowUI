@@ -16,7 +16,7 @@ export const aiAr: typeof aiEn = {
       processor: { name: 'processor', role: 'يشغّل كل مهمة ذكاء' },
       d1: { name: 'REPORTS_DB', role: 'الميزانية، الإشارات' },
       admin: { name: 'إدارة المرئيات', role: 'طابور المراجعة' },
-      cms: { name: 'CMS', role: 'مساعد الكتابة' },
+      cms: { name: 'إدارة المحتوى', role: 'مساعد الكتابة' },
       workersAi: { name: 'Workers AI', role: 'سقوف يومية للخلايا' },
       gemma: { name: '{tkGemma}', role: 'ترجمة، فحوص' },
       guard: { name: '{tkGuard}', role: 'فئات السلامة' },

@@ -198,12 +198,12 @@ const roles: Builder = (d) => {
       rowH: 205,
       nodeW: 250,
       cols: 1,
-      at: { channelRoles: [0, 0], siteRoles: [0, 1.35], token: [0, 2.35], transfer: [0, 3.35], record: [0, 4.35], can: [0, 5.35] },
+      at: { channelRoles: [0, 0], siteRoles: [0, 1.4], token: [0, 2.4], transfer: [0, 3.4], record: [0, 4.4], can: [0, 5.4] },
       // one column, every wire the wide figure draws: the two role systems next to each other at the top ("neither
-      // grants the other" bows out to the right with its words), the token and ownership chain straight down, and
-      // channel roles' two long wires nested down the left margin
+      // grants the other" bows out to the right), the token and ownership chain straight down, and channel roles' two
+      // long wires nested down the left margin; the two relation tags stacked in the gap, lined up on the start side
       edges: [
-        { from: 'siteRoles', to: 'channelRoles', fromSide: 'e', toSide: 'e', bend: 60, tagAt: 0.3, tagGap: ['channelRoles', 'siteRoles', 32] },
+        { from: 'siteRoles', to: 'channelRoles', fromSide: 'e', toSide: 'e', bend: 70, tagAt: 0.3, tagGap: ['channelRoles', 'siteRoles', 20], tagStart: 106, tagEnd: 308 },
         { from: 'siteRoles', to: 'token', fromSide: 's', toSide: 'n' },
         { from: 'token', to: 'transfer', fromSide: 's', toSide: 'n' },
         { from: 'transfer', to: 'record', fromSide: 's', toSide: 'n' },
@@ -211,7 +211,7 @@ const roles: Builder = (d) => {
         // the farther wire first (its end spreads to the outer side) and bowed in proportion to its length, so the two
         // leave at the same angle and never cross
         { from: 'channelRoles', to: 'record', fromSide: 'w', toSide: 'w', bend: 120 },
-        { from: 'channelRoles', to: 'token', fromSide: 'w', toSide: 'w', bend: 50, tagAt: 0.2, tagGap: ['channelRoles', 'siteRoles', -32] },
+        { from: 'channelRoles', to: 'token', fromSide: 'w', toSide: 'w', bend: 50, tagAt: 0.2, tagGap: ['channelRoles', 'siteRoles', -36], tagStart: 106, tagEnd: 308 },
       ],
     },
   };
