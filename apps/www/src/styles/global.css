@@ -1542,22 +1542,23 @@ main {
   font-size: 0.875rem;
   color: var(--text-soft);
 }
-.tl-meta > * + *::before {
+.tl-meta > :has(+ :not(.visually-hidden))::after {
   content: '·';
-  margin-inline-end: 0.75rem;
+  margin-inline-start: 0.75rem;
+  font-weight: 400;
   color: var(--line);
 }
-/* Arabic meta lines join with «،» attached to the part before it, never a dot: «·» beside Arabic
-   digits reads as zero (owner's number rule, 2026-11-21). Hidden parts (the absolute time for screen
-   readers) take no mark. */
+/* The mark between parts stays with the part before it, so a wrapped line never starts with one;
+   hidden parts (the absolute time for screen readers) take none. Arabic joins with «،», never a dot:
+   «·» beside Arabic digits reads as zero (owner's number rule, 2026-11-21). */
 .tl-meta:lang(ar) {
   column-gap: 0.35em;
 }
-.tl-meta:lang(ar) > * + *::before {
-  content: none;
-}
 .tl-meta:lang(ar) > :has(+ :not(.visually-hidden))::after {
   content: '،';
+  margin-inline-start: 0;
+  font-weight: inherit;
+  color: inherit;
 }
 .tl-meta time {
   font-weight: 600;
@@ -1651,9 +1652,12 @@ main {
 .tl-ov .tl-meta:lang(ar) {
   column-gap: 0.35em;
 }
-.tl-ov .tl-meta > * + *::before {
-  margin-inline-end: 0.5rem;
+.tl-ov .tl-meta > :has(+ :not(.visually-hidden))::after {
+  margin-inline-start: 0.5rem;
   color: inherit;
+}
+.tl-ov .tl-meta:lang(ar) > :has(+ :not(.visually-hidden))::after {
+  margin-inline-start: 0;
 }
 .tl-ov .tl-meta time {
   font-weight: 400;
@@ -2202,15 +2206,17 @@ html[data-js] .ci-deck .tl-ov {
 .tl-byline .tl-author a:hover {
   text-decoration: underline;
 }
-.tl-byline time::before {
+.tl-byline .tl-author::after {
   content: '·';
-  margin-inline-end: 0.5rem;
-}
-.tl-byline:lang(ar) time::before {
-  content: none;
+  margin-inline-start: 0.5rem;
+  font-weight: 400;
+  color: var(--text-soft);
 }
 .tl-byline:lang(ar) .tl-author::after {
   content: '،';
+  margin-inline-start: 0;
+  font-weight: inherit;
+  color: inherit;
 }
 .tl-avatar {
   flex: none;
