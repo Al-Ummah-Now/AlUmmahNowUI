@@ -100,9 +100,23 @@ async function readBlocks(page: Page) {
       for (let p = el.parentElement; p; p = p.parentElement) if (set.has(p)) return false;
       return true;
     });
+    // a block reaches as far as anything drawn inside it (a legend's step badge may hang below its box)
+    const extent = (el: Element) => {
+      const r = el.getBoundingClientRect();
+      let top = r.top;
+      let bottom = r.bottom;
+      for (const d of el.querySelectorAll('*')) {
+        const q = d.getBoundingClientRect();
+        if (q.width > 0 && q.height > 0) {
+          top = Math.min(top, q.top);
+          bottom = Math.max(bottom, q.bottom);
+        }
+      }
+      return { top, bottom };
+    };
     const blocks = outer
       .map((el) => {
-        const r = el.getBoundingClientRect();
+        const r = extent(el);
         const svg = [...el.querySelectorAll<SVGSVGElement>('svg.an')].find((x) => x.getBoundingClientRect().width > 0);
         const cls = el.classList[0] ? `.${el.classList[0]}` : '';
         return {
@@ -180,6 +194,9 @@ function planFrames(blocks: Block[], head: number, vh: number, H: number, endSid
     groups.push(whole.map((x) => x.i));
     for (const x of whole) taken.add(x.i);
   }
+  // a sliver (a terms line alone before a drawing too tall to frame) joins the frame before it, grown to hold it
+  const span = (g: number[]) => Math.max(...g.map((i) => blocks[i]!.bottom)) - Math.min(...g.map((i) => blocks[i]!.top));
+  for (let k = groups.length - 2; k >= 1; k--) if (span(groups[k]!) < 160) groups.splice(k - 1, 2, [...groups[k - 1]!, ...groups[k]!]);
   return groups;
 }
 /** frame plans by page and width, made on the first language shot and reused for the other */
@@ -212,11 +229,15 @@ async function shootFrames(page: Page, tag: string, blocks: Block[], head: numbe
     let pick: Spot | null = null;
     let fallback: Spot | null = null;
     for (const d of first ? [0] : [0, -2, 2, -4, 4, -6, 6, -8, 8, -10, 10, -12, 12, -14, 14, -16, -18, -20, -22, -24, -26, -28, -30]) {
-      await page.evaluate((top) => window.scrollTo(0, top), first ? 0 : y - head - 16 + d);
+      // the header's lower edge lands 16px above the first block, or in the gap above it when that gap is narrower
+      await page.evaluate((top) => window.scrollTo(0, top), first ? 0 : Math.max(y - 16, prev + 2) - head + d);
       const sy = await page.evaluate(() => window.scrollY);
       const side = await sideRects(page);
       // the line between two items of the list is free; only a cut through an item's own box is not
-      const inside = (c: number) => side.some(([t, b]) => c > t + 0.5 && c < b - 0.5);
+      // the list's first and last lines also keep 4px of margin to an edge
+      const listTop = Math.min(...side.map(([t]) => t));
+      const listBottom = Math.max(...side.map(([, b]) => b));
+      const inside = (c: number) => side.some(([t, b]) => c > t + 0.5 && c < b - 0.5) || (side.length > 0 && ((c > listTop - 4 && c < listTop + 0.5) || (c > listBottom - 0.5 && c < listBottom + 4)));
       const free = (want: number, lo: number, hi: number) => {
         for (let e = 0; e <= Math.max(want - lo, hi - want, 0); e++) {
           if (want - e >= lo && want - e <= hi && !inside(want - e)) return want - e;
@@ -328,6 +349,11 @@ function proveFrames(tag: string, blocks: Block[], frames: Frame[], head: number
     if (inside.length && f.bottom < H - 1 && f.bottom - Math.max(...inside.map((b) => b.bottom)) > 48) fail(`${base(f.file)} ends on an empty band of ${Math.round(f.bottom - Math.max(...inside.map((b) => b.bottom)))} px`);
     for (const [t, b] of f.side)
       for (const e of [f.top - f.sy, f.bottom - f.sy]) if (t < e - 0.5 && b > e + 0.5) fail(`${base(f.file)} cuts a line of the page list (${t}–${b} at edge ${Math.round(e)})`);
+    if (f.side.length) {
+      const lt = Math.min(...f.side.map(([t]) => t));
+      const lb = Math.max(...f.side.map(([, b]) => b));
+      for (const e of [f.top - f.sy, f.bottom - f.sy]) if ((e > lt - 4 && e < lt - 0.5) || (e > lb + 0.5 && e < lb + 4)) fail(`${base(f.file)}: the page list ends ${Math.round(Math.min(Math.abs(e - lt), Math.abs(e - lb)))} px from an edge (min 4)`);
+    }
   });
   return [`## ${tag}`, '', `${frames.length} frames · header ${Math.round(head)} px · page ${H} px · ${note}`, '', '| block (px) | block | shown whole in |', '|---|---|---|', ...rows, ''].join('\n');
 }
