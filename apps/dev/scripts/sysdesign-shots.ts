@@ -1,6 +1,7 @@
 /**
  * Review captures for the System design pages, from the built site (dist/):
- *  - viewport frames (top, middle, end; never full-page) per page × language × mode × width;
+ *  - viewport frames over the whole page (never full-page shots), proved to cover every block once with no cut
+ *    edges (COVERAGE.md lists each block and its frame), per page × language × mode × width;
  *  - one element shot per diagram at full resolution;
  *  - an MP4 and a GIF per animated diagram, stepped frame by frame (SMIL clock + CSS animations
  *    paused and set), so recordings are smooth and loop exactly;
@@ -10,9 +11,10 @@
  * Needs ffmpeg for recordings. Run under the shared build lock.
  */
 import { createServer } from 'node:http';
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { chromium } from '@playwright/test';
 import sharp from 'sharp';
 import { gateInBrowser } from '../e2e/diagram-gate.ts';
@@ -74,95 +76,231 @@ const name = (slug: string) => (slug ? slug.replace(/\/$/, '') : 'hub');
 const defects: string[] = [];
 
 type Page = Awaited<ReturnType<Awaited<ReturnType<typeof browser.newContext>>['newPage']>>;
-/** what a frame is made of: headings, leads, cards, paragraphs, the pager and the footer (document coordinates) */
-const BLOCKS = 'main h2, main h3:not(.tile-title, .sd-index-title), main .section-lead, main .tile, main .band p, main .sd-index li, .sd-pager, footer.site-footer';
 /**
- * Viewport frames over [from, to) of the page: each starts at a block's top (or the heading just above it), below
- * the sticky header, and is clipped at the bottom of the last block it shows whole, so no frame opens or ends on a
- * cut line; the next frame starts at the first block in range the last one didn't show whole.
+ * What a frame is made of, in document coordinates: every heading, paragraph, list item, card, figure, the pager and
+ * the footer, outermost only (a card's own heading and text belong to the card). The page list beside the content
+ * and the header are not blocks; the sidebar is checked on its own.
  */
-async function walkFrames(page: Page, file: (k: number) => string, from: number, to: number, max = 20): Promise<number> {
-  const vh = page.viewportSize()?.height ?? 800;
-  const vw = page.viewportSize()?.width ?? 1280;
-  const { head, all } = await page.evaluate(
-    ({ sel }) => {
-      const head = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
-      const blocks = [...document.querySelectorAll<HTMLElement>(sel)]
-        .filter((el) => getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().height > 0)
-        .map((el) => {
-          const r = el.getBoundingClientRect();
-          return { top: Math.round(r.top + window.scrollY), bottom: Math.round(r.bottom + window.scrollY), heading: /^H[23]$/.test(el.tagName) || el.classList.contains('section-lead') };
-        })
-        .sort((p, q) => p.top - q.top || p.bottom - q.bottom);
-      return { head, all: blocks };
-    },
-    { sel: BLOCKS },
-  );
-  // the frames walk the blocks in range; every block on screen decides where a frame is clipped
-  const blocks = all.filter((b) => b.top >= from - 1 && b.top < to - 1);
-  if (!blocks.length) return 0;
-  // a start steps back to the headings (and lead) directly above it, so a section never opens without its title
-  const withTitle = (y: number) => {
-    for (;;) {
-      const above = all.filter((b) => b.heading && b.top >= from - 1 && b.bottom <= y + 1 && y - b.bottom < 96 && !all.some((o) => !o.heading && o.top > b.bottom - 1 && o.top < y - 1));
-      const h = above.sort((p, q) => q.top - p.top)[0];
-      if (!h || h.top >= y) return y;
-      y = h.top;
-    }
-  };
-  let y = withTitle(blocks[0]!.top);
-  let k = 0;
-  while (k < max) {
-    k++;
-    await page.evaluate((top) => window.scrollTo(0, top), y - head - 16);
-    const sy = await page.evaluate(() => window.scrollY);
-    // the page can't scroll that far: the frame starts below the header at the block's top instead
-    let clipTop = Math.max(0, Math.round(y - sy - 16 > head + 1 ? y - sy - 16 : 0));
-    const viewBottom = sy + vh;
-    const whole = all.filter((b) => b.top >= y - 1 && b.bottom <= viewBottom);
-    const cut = all.filter((b) => b.top >= y - 1 && b.bottom > viewBottom && b.top < viewBottom);
-    const left = blocks.filter((b) => b.top >= y - 1 && b.bottom > viewBottom);
-    // clipped at the last whole block's bottom when the next one would show cut (a single block taller than the
-    // view is shown as far as it goes)
-    const lastWhole = whole.length ? Math.max(...whole.map((b) => b.bottom)) : viewBottom;
-    let clipBottom = cut.length && whole.length ? Math.min(vh, Math.round(lastWhole - sy + 16)) : vh;
-    // a clipped edge never cuts through a line of the sticky page list beside the content: it moves into the
-    // space around the blocks (above the start, below the last whole block) to clear it
-    if (clipTop || clipBottom < vh) {
-      const side = await page.evaluate(() =>
-        [...document.querySelectorAll('.sd-aside .sd-nav-title, .sd-aside li')].map((el) => {
-          const r = el.getBoundingClientRect();
-          return [Math.round(r.top), Math.round(r.bottom)] as [number, number];
-        }),
-      );
-      const inside = (c: number) => side.some(([t, b]) => c > t && c < b);
-      // the free spot nearest the wanted edge, within [lo, hi]
-      const nearest = (want: number, lo: number, hi: number) => {
-        for (let d = 0; d <= Math.max(want - lo, hi - want); d++) {
-          if (want - d >= lo && !inside(want - d)) return want - d;
-          if (want + d <= hi && !inside(want + d)) return want + d;
-        }
-        return want;
-      };
-      if (clipTop) {
-        // between the bottom of the last block above the start and the start itself
-        const floor = Math.max(head, ...all.filter((b) => b.bottom <= y).map((b) => Math.ceil(b.bottom - sy + 4)));
-        clipTop = nearest(clipTop, floor, Math.floor(y - sy - 2));
-      }
-      if (clipBottom < vh) {
-        // between the last whole block's bottom and the top of the next one
-        const ceil = Math.min(vh, ...cut.map((b) => Math.floor(b.top - sy - 4)));
-        clipBottom = nearest(clipBottom, Math.ceil(lastWhole - sy + 2), ceil);
-      }
-    }
-    await page.screenshot({ path: file(k), clip: { x: 0, y: clipTop, width: vw, height: clipBottom - clipTop } });
-    const next = left.length ? Math.min(...left.map((b) => b.top)) : null;
-    if (next === null) break;
-    const n2 = withTitle(next);
-    y = n2 > y ? n2 : next > y ? next : y + vh - head - 32;
-  }
-  return k;
+type Block = { top: number; bottom: number; heading: boolean; label: string; diagram: string | null; tall: boolean };
+type Frame = { file: string; sy: number; top: number; bottom: number; side: [number, number][] };
+async function readBlocks(page: Page) {
+  return page.evaluate(() => {
+    const head = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
+    const shown = (el: Element) => {
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      return cs.display !== 'none' && cs.visibility !== 'hidden' && r.height > 0 && r.width > 0;
+    };
+    // a figure is read part by part (its heading, lead, key, the drawing, the cards under it): the drawing alone may be
+    // too tall for a frame, and its capture holds the drawing, not the text around it
+    const sel = 'main h1, main h2, main h3, main h4, main p, main li, main pre, main table, main .tile, main .an-figure > *, main .sd-pager, footer.site-footer';
+    const found = [...document.querySelectorAll<HTMLElement>(sel)].filter((el) => !el.closest('.sd-aside, header, svg') && shown(el));
+    const set = new Set<Element>(found);
+    const outer = found.filter((el) => {
+      for (let p = el.parentElement; p; p = p.parentElement) if (set.has(p)) return false;
+      return true;
+    });
+    const blocks = outer
+      .map((el) => {
+        const r = el.getBoundingClientRect();
+        const svg = [...el.querySelectorAll<SVGSVGElement>('svg.an')].find((x) => x.getBoundingClientRect().width > 0);
+        const cls = el.classList[0] ? `.${el.classList[0]}` : '';
+        return {
+          top: Math.round(r.top + window.scrollY),
+          bottom: Math.round(r.bottom + window.scrollY),
+          heading: /^H[1-4]$/.test(el.tagName),
+          label: `${el.tagName.toLowerCase()}${cls} “${(el.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 56)}”`,
+          diagram: svg?.dataset.diagram ?? null,
+          tall: false,
+        };
+      })
+      .sort((p, q) => p.top - q.top || p.bottom - q.bottom);
+    // where the page list sits once the page is at its foot (its column's end pushes it up): the end frame's top edge
+    // must clear it
+    const H = document.scrollingElement!.scrollHeight;
+    const was = window.scrollY;
+    window.scrollTo(0, H);
+    const endSide = [...document.querySelectorAll('.sd-aside .sd-nav-title, .sd-aside li')]
+      .map((el) => el.getBoundingClientRect())
+      .filter((r) => r.height > 0)
+      .map((r) => [Math.round(r.top + window.scrollY), Math.round(r.bottom + window.scrollY)] as [number, number]);
+    window.scrollTo(0, was);
+    return { head, blocks, H, endSide };
+  });
 }
+const sideRects = (page: Page) =>
+  page.evaluate(() =>
+    [...document.querySelectorAll('.sd-aside .sd-nav-title, .sd-aside li')]
+      .map((el) => el.getBoundingClientRect())
+      .filter((r) => r.height > 0)
+      .map((r) => [Math.round(r.top), Math.round(r.bottom)] as [number, number]),
+  );
+/**
+ * The page top to bottom as groups of blocks, one group per frame: each group opens on the first block no group holds
+ * yet and takes every block after it that fits whole in a view below the sticky header, never ending on a heading
+ * (its section opens the next group). The pager and the footer always share the last group. A figure taller than the
+ * view is in no group: its standalone capture shows it whole.
+ */
+function planFrames(blocks: Block[], head: number, vh: number, H: number, endSide: [number, number][]): number[][] {
+  const flow = blocks.map((b, i) => ({ b, i })).filter((x) => !x.b.tall);
+  // the end frame holds the pager and the footer, opening on the nearest whole block above them whose top edge cuts no
+  // line of the page list as it sits at the page's foot
+  let endAt = blocks.findIndex((b) => /^(nav|div|section)\.sd-pager|^footer/.test(b.label));
+  if (endAt > 0 && endSide.length) {
+    const cuts = (e: number) => endSide.some(([t, b]) => e > t + 0.5 && e < b - 0.5);
+    let i = endAt;
+    while (i > 0 && cuts(blocks[i]!.top - 16)) {
+      const j = i - 1;
+      if (blocks[j]!.tall) break;
+      i = j;
+    }
+    // never inside a row of cards: the row opens on its first card
+    while (i > 0 && !blocks[i - 1]!.tall && Math.abs(blocks[i - 1]!.top - blocks[i]!.top) <= 1) i--;
+    endAt = i;
+  }
+  const groups: number[][] = [];
+  const taken = new Set<number>();
+  for (let first = true; groups.length < 60; first = false) {
+    const start = flow.find((x) => !taken.has(x.i));
+    if (!start) break;
+    if (endAt >= 0 && start.i >= endAt) {
+      groups.push(flow.filter((x) => !taken.has(x.i)).map((x) => x.i));
+      break;
+    }
+    const y = first ? 0 : start.b.top;
+    const sy = Math.max(0, Math.min(first ? 0 : y - head - 16, H - vh));
+    const visTop = first ? head : Math.max(sy + head, y - 16);
+    const viewBottom = sy + vh;
+    let whole = flow.filter((x) => !taken.has(x.i) && x.b.top >= visTop - 1 && x.b.bottom <= viewBottom - 16 && (endAt < 0 || x.i < endAt));
+    // whole means whole: nothing in the group sits past a block the view cuts
+    const cutTop = Math.min(...blocks.filter((b) => b.top >= visTop - 1 && b.bottom > viewBottom - 16).map((b) => b.top), Infinity);
+    whole = whole.filter((x) => x.b.bottom <= cutTop);
+    while (whole.length > 1 && whole[whole.length - 1]!.b.heading) whole.pop();
+    if (!whole.length) whole = [start];
+    groups.push(whole.map((x) => x.i));
+    for (const x of whole) taken.add(x.i);
+  }
+  return groups;
+}
+/** frame plans by page and width, made on the first language shot and reused for the other */
+const plans = new Map<string, { groups: number[][]; shape: string }>();
+const shapeOf = (blocks: Block[]) => blocks.map((b) => `${b.label.split(' ')[0]}${b.tall ? '!' : ''}`).join(',');
+/**
+ * Shoots one frame per group: opening 16 px above its first block (just under the header), clipped 16 px under its
+ * last; a group taller than the view gets a taller viewport rather than a second frame. A clipped edge moves (within
+ * the gap between blocks) to a spot where it cuts no line of the page list.
+ */
+async function shootFrames(page: Page, tag: string, blocks: Block[], head: number, groups: number[][]): Promise<Frame[]> {
+  const base = page.viewportSize()!;
+  const frames: Frame[] = [];
+  for (const [k, g] of groups.entries()) {
+    const first = k === 0;
+    const y = first ? 0 : blocks[g[0]!]!.top;
+    const last = Math.max(...g.map((i) => blocks[i]!.bottom));
+    const need = first ? last + 16 : last - y + head + 32;
+    const vh = Math.max(base.height, Math.ceil(need));
+    if (vh !== base.height) {
+      await page.setViewportSize({ width: base.width, height: vh });
+      const again = (await readBlocks(page)).blocks;
+      if (again.length !== blocks.length || g.some((i) => Math.abs(again[i]!.top - blocks[i]!.top) > 1)) defects.push(`${tag}: the page moved when the view grew for frame ${k + 1}`);
+    }
+    const nextTop = Math.min(...blocks.filter((b) => b.top > last - 1).map((b) => b.top), Infinity);
+    const prev = Math.max(0, ...blocks.filter((b) => b.bottom <= y + 1).map((b) => b.bottom));
+    // the page list stays pinned while the page scrolls under it: when a gap between blocks is narrower than a line
+    // of the list, scrolling a few px moves the gap onto the line between two items
+    type Spot = { sy: number; side: [number, number][]; eTop: number; clipBottom: number };
+    let pick: Spot | null = null;
+    let fallback: Spot | null = null;
+    for (const d of first ? [0] : [0, -2, 2, -4, 4, -6, 6, -8, 8, -10, 10, -12, 12, -14, 14, -16, -18, -20, -22, -24, -26, -28, -30]) {
+      await page.evaluate((top) => window.scrollTo(0, top), first ? 0 : y - head - 16 + d);
+      const sy = await page.evaluate(() => window.scrollY);
+      const side = await sideRects(page);
+      // the line between two items of the list is free; only a cut through an item's own box is not
+      const inside = (c: number) => side.some(([t, b]) => c > t + 0.5 && c < b - 0.5);
+      const free = (want: number, lo: number, hi: number) => {
+        for (let e = 0; e <= Math.max(want - lo, hi - want, 0); e++) {
+          if (want - e >= lo && want - e <= hi && !inside(want - e)) return want - e;
+          if (want + e <= hi && want + e >= lo && !inside(want + e)) return want + e;
+        }
+        return null;
+      };
+      const topWant = first ? head : Math.max(head, y - sy - 16);
+      const eTop = first ? head : free(topWant, Math.max(head, prev - sy + 2), y - sy - 2);
+      const hi = Math.min(vh, Math.floor(nextTop - sy - 2));
+      // 16 px under the last block, or the view's foot when that's nearer; never past the next block's top
+      const cb = free(Math.min(hi, last - sy + 16), Math.min(hi, Math.ceil(last - sy + 2)), hi);
+      const got = { sy, side, eTop: Math.round(eTop ?? topWant), clipBottom: Math.round(Math.min(vh, cb ?? Math.min(hi, last - sy + 16))) };
+      fallback ??= got;
+      if (eTop !== null && cb !== null) {
+        pick = got;
+        break;
+      }
+    }
+    const { sy, side, eTop, clipBottom } = pick ?? fallback!;
+    if (!pick) await page.evaluate((top) => window.scrollTo(0, top), sy);
+    const clipTop = eTop <= head ? 0 : eTop;
+    const file = join(out, `${tag}-frame-${String(k + 1).padStart(2, '0')}.png`);
+    await page.screenshot({ path: file, clip: { x: 0, y: clipTop, width: base.width, height: clipBottom - clipTop } });
+    frames.push({ file, sy, top: sy + Math.max(eTop, head), bottom: sy + clipBottom, side });
+    if (vh !== base.height) await page.setViewportSize(base);
+  }
+  return frames;
+}
+async function walkPage(page: Page, tag: string, key: string, blocks: Block[], head: number, H: number, endSide: [number, number][]): Promise<{ frames: Frame[]; note: string }> {
+  const shape = shapeOf(blocks);
+  const prior = plans.get(key);
+  let note = 'plan made here';
+  let groups: number[][];
+  if (prior && prior.shape === shape) {
+    groups = prior.groups;
+    note = 'plan shared with the first language';
+  } else {
+    groups = planFrames(blocks, head, page.viewportSize()!.height, H, endSide);
+    if (prior) note = 'plan made here (the page has other blocks than in the first language)';
+    plans.set(key, { groups, shape });
+  }
+  return { frames: await shootFrames(page, tag, blocks, head, groups), note };
+}
+/**
+ * Proof the frames cover the page, checked from what was shot, not from how it was planned: (1) every block whole in
+ * exactly one frame (a figure taller than the view: its capture); (2) no two frames the same bytes or sharing more than a
+ * header's height; (3) every edge in a gap between blocks, with no empty band at a frame's top or bottom; (4) no edge
+ * through a line of the page list. Returns the block → frame table.
+ */
+function proveFrames(tag: string, blocks: Block[], frames: Frame[], head: number, H: number, captures: Set<string>, note: string): string {
+  const fail = (m: string) => defects.push(`${tag}: ${m}`);
+  const base = (f: string) => f.slice(f.lastIndexOf('/') + 1).replace(`${tag}-`, '');
+  const rows: string[] = [];
+  for (const b of blocks) {
+    const inFrames = frames.filter((f) => b.top >= f.top - 1 && b.bottom <= f.bottom + 1).map((f) => base(f.file));
+    let where = inFrames.join(', ');
+    if (!where && b.diagram && b.tall && captures.has(b.diagram)) where = `diagram-${b.diagram}.png (taller than the view)`;
+    if (!where) fail(`“${b.label}” (${b.top}–${b.bottom}) appears whole in no frame`);
+    if (inFrames.length > 1) fail(`“${b.label}” appears whole in ${inFrames.length} frames (${where})`);
+    rows.push(`| ${b.top}–${b.bottom} | ${b.label.replace(/\|/g, '/')} | ${where || '**MISSING**'} |`);
+  }
+  const hashes = new Map<string, string>();
+  frames.forEach((f, i) => {
+    const h = createHash('sha1').update(readFileSync(f.file)).digest('hex');
+    if (hashes.has(h)) fail(`${base(f.file)} is byte-identical to ${hashes.get(h)}`);
+    hashes.set(h, base(f.file));
+    for (const g of frames.slice(i + 1)) {
+      const shared = Math.min(f.bottom, g.bottom) - Math.max(f.top, g.top);
+      if (shared > head) fail(`${base(f.file)} and ${base(g.file)} share ${Math.round(shared)} px (more than the header's ${Math.round(head)})`);
+    }
+    const inside = blocks.filter((b) => b.top >= f.top - 1 && b.bottom <= f.bottom + 1);
+    for (const b of blocks) {
+      if (b.top < f.top - 1 && b.bottom > f.top + 1) fail(`${base(f.file)} opens inside “${b.label}”`);
+      if (b.top < f.bottom - 1 && b.bottom > f.bottom + 1) fail(`${base(f.file)} ends inside “${b.label}”`);
+    }
+    if (i > 0 && inside.length && Math.min(...inside.map((b) => b.top)) - f.top > 48) fail(`${base(f.file)} opens on an empty band of ${Math.round(Math.min(...inside.map((b) => b.top)) - f.top)} px`);
+    if (inside.length && f.bottom < H - 1 && f.bottom - Math.max(...inside.map((b) => b.bottom)) > 48) fail(`${base(f.file)} ends on an empty band of ${Math.round(f.bottom - Math.max(...inside.map((b) => b.bottom)))} px`);
+    for (const [t, b] of f.side)
+      for (const e of [f.top - f.sy, f.bottom - f.sy]) if (t < e - 0.5 && b > e + 0.5) fail(`${base(f.file)} cuts a line of the page list (${t}–${b} at edge ${Math.round(e)})`);
+  });
+  return [`## ${tag}`, '', `${frames.length} frames · header ${Math.round(head)} px · page ${H} px · ${note}`, '', '| block (px) | block | shown whole in |', '|---|---|---|', ...rows, ''].join('\n');
+}
+const coverage: string[] = [];
 
 for (const slug of PAGES)
   for (const lang of LANGS)
@@ -195,27 +333,20 @@ for (const slug of PAGES)
         for (const v of cspViolations.splice(0)) found.push(`CSP blocked: ${v}`);
         for (const d of found) defects.push(`${name(slug)} ${lang} ${mode} ${w}: ${d}`);
         const tag = `${name(slug)}-${mode}-${w}-${lang}`;
-        // viewport frames: top, then each diagram centred, then the end
-        await page.evaluate(() => window.scrollTo(0, 0));
-        if (!ONLY) await page.screenshot({ path: join(out, `${tag}-frame-1-top.png`) });
-        // the hub's page list in full: as many frames as it takes, each opening on its heading or a row of cards and
-        // ending on a whole one
-        if (!ONLY && (await page.locator('.sd-index').count())) {
-          const list = await page.locator('#pages-h').evaluate((el) => {
-            const sec = el.closest('section')!.getBoundingClientRect();
-            return { top: sec.top + window.scrollY, bottom: sec.bottom + window.scrollY };
-          });
-          await walkFrames(page, (k) => join(out, `${tag}-frame-1-pages-${k}.png`), list.top, list.bottom);
-        }
+        // viewport frames: the whole page top to bottom, walked block by block (proved after the captures)
+        const read = await readBlocks(page);
+        const room = vp.height - read.head - 32;
+        const blocks: Block[] = read.blocks.map((x) => ({ ...x, tall: x.bottom - x.top > room }));
+        for (const x of blocks) if (x.tall && !x.diagram) defects.push(`${tag}: “${x.label}” is taller than the view (${x.bottom - x.top} px), so no frame can show it whole`);
+        const walked = ONLY ? { frames: [], note: '' } : await walkPage(page, tag, `${slug}|${w}|${mode}`, blocks, read.head, read.H, read.endSide);
+        const frames = walked.frames;
+        const captures = new Set<string>();
         const figs = await page.locator('.an-figure').count();
         for (let i = 0; i < figs; i++) {
           const fig = page.locator('.an-figure').nth(i);
           const svg = fig.locator('svg.an:visible');
           const id = await svg.getAttribute('data-diagram');
           if (ONLY && !ONLY.has(id ?? '')) continue;
-          await fig.evaluate((el) => el.scrollIntoView({ block: 'start' }));
-          await page.evaluate(() => window.scrollBy(0, -72));
-          await page.screenshot({ path: join(out, `${tag}-frame-${i + 2}-diagram-${i + 1}.png`) });
           // the figure alone and whole: a copy of the drawing at its natural size, over the page, in a
           // viewport big enough to hold it (the page scrolls a wide figure, so an element shot would clip it)
           const size = await svg.evaluate((el) => ({ w: (el as SVGSVGElement).width.baseVal.value, h: (el as SVGSVGElement).height.baseVal.value }));
@@ -274,6 +405,7 @@ for (const slug of PAGES)
           if (legendHad && !legendShot) capture.push('standalone capture is missing its legend');
           for (const c of capture) defects.push(`${name(slug)} ${lang} ${mode} ${w}: ${id} capture: ${c}`);
           const png = await page.locator('#shot-host').screenshot({ path: join(out, `${tag}-diagram-${id}.png`) });
+          if (id) captures.add(id);
           // the capture's padding is plain background: its bottom rows and right column must be that colour only
           // (a row of the page below showing through fails the capture)
           const bg = await page.evaluate(() => (getComputedStyle(document.getElementById('shot-host')!).backgroundColor.match(/\d+/g) ?? []).slice(0, 3).map(Number));
@@ -296,32 +428,7 @@ for (const slug of PAGES)
             requestAnimationFrame(() => requestAnimationFrame(() => res()));
           }));
         }
-        // everything between the last figure and the pager (the cards after the diagrams): as many frames as it takes,
-        // each opening on a heading or a row of cards and ending on a whole one, so no copy goes unseen
-        if (!ONLY && figs && (await page.locator('.sd-pager').count())) {
-          const span = await page.evaluate(() => {
-            const figsAll = [...document.querySelectorAll('.an-figure')];
-            const last = figsAll[figsAll.length - 1]!.getBoundingClientRect();
-            const pager = document.querySelector('.sd-pager')!.getBoundingClientRect();
-            return { top: last.bottom + window.scrollY, bottom: pager.top + window.scrollY };
-          });
-          await walkFrames(page, (k) => join(out, `${tag}-frame-after-${k}.png`), span.top, span.bottom);
-        }
-        // the end: from the first block whose run to the page's foot fits in one view, to the foot
-        if (!ONLY) {
-          const from = await page.evaluate((sel) => {
-            const head = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
-            const H = document.scrollingElement!.scrollHeight;
-            const tops = [...document.querySelectorAll<HTMLElement>(sel)].map((el) => el.getBoundingClientRect().top + window.scrollY).filter((t) => H - t <= window.innerHeight - head - 16);
-            return Math.min(...tops, H - 1);
-          }, BLOCKS);
-          await walkFrames(page, () => join(out, `${tag}-frame-${figs + 2}-end.png`), from, Infinity, 1);
-        }
-        // the previous/next links, opening on the pager itself
-        if (!ONLY && (await page.locator('.sd-pager').count())) {
-          const top = await page.locator('.sd-pager').evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
-          await walkFrames(page, () => join(out, `${tag}-frame-pager.png`), top - 1, top + 2, 1);
-        }
+        if (!ONLY) coverage.push(proveFrames(tag, blocks, frames, read.head, read.H, captures, walked.note));
         await ctx.close();
       }
 
@@ -417,6 +524,7 @@ if (RECORD) {
 
 await browser.close();
 server.close();
+if (coverage.length) writeFileSync(join(out, 'COVERAGE.md'), [`# Frame coverage`, '', 'Every block on every page, and the frames that show it whole. Written by scripts/sysdesign-shots.ts, which fails the run when a block is missing, two frames repeat or overlap, an edge cuts a block or a line of the page list, or a frame opens or ends on an empty band.', '', ...coverage].join('\n'));
 if (defects.length) {
   console.error(defects.join('\n'));
   console.error(`GATE FAILED: ${defects.length} defects`);
