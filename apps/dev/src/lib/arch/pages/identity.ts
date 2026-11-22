@@ -16,8 +16,8 @@ const map: Builder = (d) => {
       desc: c.desc,
       motion: 'pulses',
       nodes: [
-        node('resend', 'simple-icons/resend', n.resend, [-0.75, 0]),
-        node('apps', 'lucide/users', n.apps, [-0.75, 1.3]),
+        node('resend', 'simple-icons/resend', n.resend, [0, 0]),
+        node('apps', 'lucide/users', n.apps, [0, 1.3]),
         node('turnstile', 'cloudflare/turnstile', n.turnstile, [1.4, 0]),
         node('limiters', 'cloudflare/waf', n.limiters, [2.6, 0]),
         node('issuer', 'cloudflare/workers', n.issuer, [1.4, 1.3]),
@@ -26,14 +26,13 @@ const map: Builder = (d) => {
         node('kvStore', 'cloudflare/kv', n.kvStore, [3.8, 0]),
         node('d1', 'cloudflare/d1', n.d1, [3.8, 1.3]),
         node('revKv', 'cloudflare/kv', n.revKv, [3.8, 2.6]),
-        // inside the account, left of Auth on the clients' bottom row: the token drops from the apps into it, the
-        // check runs under Auth up into the revocations, and the figure needs no fourth row (an outside column
-        // of two boxes beside four rows left a block of nothing under the apps)
-        node('videos', 'cloudflare/workers', n.videos, [0.3, 2.6]),
+        // under the apps, one column with Resend: the token drops straight into it and the check runs under Auth up
+        // into the revocations, so no column of the figure holds an empty block
+        node('videos', 'cloudflare/workers', n.videos, [0, 2.6]),
       ],
       groups: [
         { id: 'auth', label: c.group.auth, caption: c.caption.auth, pad: 28, members: ['turnstile', 'limiters', 'issuer', 'profile', 'authAdmin', 'kvStore', 'd1', 'revKv'] },
-        { id: 'videosG', label: c.group.videos, members: ['videos'] },
+        { id: 'videosG', label: c.group.videos, caption: c.caption.videos, members: ['videos'] },
         { id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', tagEnd: true, pad: 40, members: ['auth', 'videosG'] },
       ],
       edges: [
@@ -47,13 +46,16 @@ const map: Builder = (d) => {
         { from: 'issuer', to: 'd1', flow: 'request', fromSide: 'e', toSide: 'w' },
         { from: 'issuer', to: 'revKv', flow: 'async', label: e.revoke, fromSide: 'e', toSide: 'w' },
         // its words under the run along Auth's foot: above it they would sit inside Auth
-        { from: 'videos', to: 'revKv', flow: 'request', label: e.check, fromSide: 's', toSide: 's', labelBelow: true },
-        { from: 'apps', to: 'videos', flow: 'request', label: e.token, fromSide: 's', toSide: 'w' },
+        { from: 'videos', to: 'revKv', flow: 'request', label: e.check, fromSide: 'e', toSide: 's', labelBelow: true },
+        { from: 'apps', to: 'videos', flow: 'request', label: e.token, fromSide: 's', toSide: 'n' },
       ],
     },
-    // room under the run along Auth's foot for its words
-    wide: { colW: 300, rowH: 170, pad: 40, growPad: { cf: { b: 16 } } },
+    // the account boundary would hold Videos and Auth but not the clients beside them, leaving a block of nothing:
+    // on desktop Videos says it is in the same account instead
+    wide: { colW: 300, rowH: 170, pad: 40, hideGroups: ['cf'] },
     narrow: {
+      // the account boundary is drawn here, so Videos needs no word that it is inside it
+      hideCaptions: ['videosG'],
       colW: 180,
       rowH: 100,
       iconSize: 34,
@@ -196,20 +198,20 @@ const roles: Builder = (d) => {
       rowH: 205,
       nodeW: 250,
       cols: 1,
-      at: { channelRoles: [0, 0], siteRoles: [0, 1], token: [0, 2], transfer: [0, 3], record: [0, 4], can: [0, 5] },
+      at: { channelRoles: [0, 0], siteRoles: [0, 1.35], token: [0, 2.35], transfer: [0, 3.35], record: [0, 4.35], can: [0, 5.35] },
       // one column, every wire the wide figure draws: the two role systems next to each other at the top ("neither
       // grants the other" bows out to the right with its words), the token and ownership chain straight down, and
       // channel roles' two long wires nested down the left margin
       edges: [
-        { from: 'siteRoles', to: 'channelRoles', fromSide: 'e', toSide: 'e', bend: 40 },
+        { from: 'siteRoles', to: 'channelRoles', fromSide: 'e', toSide: 'e', bend: 60, tagAt: 0.3, tagGap: ['channelRoles', 'siteRoles', 32] },
         { from: 'siteRoles', to: 'token', fromSide: 's', toSide: 'n' },
         { from: 'token', to: 'transfer', fromSide: 's', toSide: 'n' },
         { from: 'transfer', to: 'record', fromSide: 's', toSide: 'n' },
         { from: 'record', to: 'can', fromSide: 's', toSide: 'n' },
         // the farther wire first (its end spreads to the outer side) and bowed in proportion to its length, so the two
         // leave at the same angle and never cross
-        { from: 'channelRoles', to: 'record', fromSide: 'w', toSide: 'w', bend: 140 },
-        { from: 'channelRoles', to: 'token', fromSide: 'w', toSide: 'w', bend: 30 },
+        { from: 'channelRoles', to: 'record', fromSide: 'w', toSide: 'w', bend: 120 },
+        { from: 'channelRoles', to: 'token', fromSide: 'w', toSide: 'w', bend: 50, tagAt: 0.2, tagGap: ['channelRoles', 'siteRoles', -32] },
       ],
     },
   };

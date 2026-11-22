@@ -183,7 +183,8 @@ const core: Builder = (d) => {
         { from: 'android', to: 'core', fromSide: 'w', toSide: 'w', lane: 18 },
         { from: 'desktop', to: 'core', fromSide: 's', toSide: 'n' },
         { from: 'core', to: 'api', fromSide: 's', toSide: 'n' },
-        { from: 'core', to: 'auth', fromSide: 'w', toSide: 'w', lane: 18 },
+        // down a lane of its own outside the platforms' (on Android's lane the two read as one line past Core)
+        { from: 'core', to: 'auth', fromSide: 'w', toSide: 'w', lane: 46 },
         { from: 'config', to: 'core', fromSide: 'e', toSide: 'e', lane: 18 },
         // the player pair it is linked into, up on the right in a lane of its own outside the config wire's (on one
         // lane the two read as a single line past Core)

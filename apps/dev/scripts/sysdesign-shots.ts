@@ -218,12 +218,21 @@ for (const slug of PAGES)
             const figsAll = [...document.querySelectorAll('.an-figure')];
             const last = figsAll[figsAll.length - 1]!.getBoundingClientRect();
             const pager = document.querySelector('.sd-pager')!.getBoundingClientRect();
-            return { top: last.bottom + window.scrollY, bottom: pager.top + window.scrollY };
+            // where a frame may start: the top of a card, a heading or a paragraph after the last figure
+            const starts = [...document.querySelectorAll('.tile, h2, h3, .section-lead, .band p')]
+              .map((el) => el.getBoundingClientRect().top + window.scrollY)
+              .filter((y) => y > last.bottom + window.scrollY && y < pager.top + window.scrollY);
+            return { top: last.bottom + window.scrollY, bottom: pager.top + window.scrollY, starts: [...new Set(starts.map(Math.round))].sort((p, q) => p - q) };
           });
           const view = (page.viewportSize()?.height ?? 800) - head - 8;
-          for (let y = span.top - head - 8, k = 1; y < span.bottom - head - 8; y += view, k++) {
-            await page.evaluate((top) => window.scrollTo(0, top), y);
+          // each frame starts at a card's (or heading's) top, never mid-card under the sticky header: the next one at the
+          // last start this frame doesn't show whole
+          let y = span.top;
+          for (let k = 1; y < span.bottom - 8 && k < 20; k++) {
+            await page.evaluate((top) => window.scrollTo(0, top), y - head - 8);
             await page.screenshot({ path: join(out, `${tag}-frame-after-${k}.png`) });
+            const next = span.starts.filter((s) => s > y + 8 && s <= y + view - 40).pop();
+            y = next ?? y + view;
           }
         }
         await page.evaluate((h) => window.scrollTo(0, h), H);

@@ -68,30 +68,33 @@ const stores: Builder = (d) => {
       colW: 180,
       rowH: 100,
       iconSize: 34,
+      // a margin wire's words in the middle of the gap between two stores, well clear of both
+      labelClear: 28,
       at: stack([
         [['apiVideos', 'processor'], 0],
         [['auth', 'comms'], 1.05],
         [['web'], 1.05],
         // Analytics Engine sits right under the Workers: videos web's page-speed wire drops straight in
-        [['rum', 'abuse'], 2.1],
+        [['rum', 'abuse'], 2.4],
         [['authEvents'], 1.05],
         // KV and the Durable Objects before R2 and D1: auth's and comms' wires end first, so they take the inner lanes
         // and the api-videos and processor wires nest outside them, their words in the open margin
-        [['revocations', 'appKv'], 2.1],
+        [['revocations', 'appKv'], 2.4],
         [['sessions', 'feed'], 1.05],
-        [['sockets', 'views'], 2.3],
+        [['sockets', 'views'], 2.6],
         [['transcoder', 'lock'], 1.05],
-        [['records', 'media'], 2.3],
+        [['records', 'media'], 2.6],
         [['system'], 1.05],
-        [['search', 'notifications'], 2.1],
+        [['search', 'notifications'], 2.4],
         [['reports', 'authDb'], 1.05],
       ]),
+      // each margin wire's words in the gap just above the stores it ends at, the same gap in both languages
       edges: [
-        { from: 'apiVideos', to: 'r2', flow: 'request', label: e.records, fromSide: 'w', toSide: 'w' },
-        { from: 'apiVideos', to: 'd1', flow: 'request', fromSide: 'w', toSide: 'w' },
-        { from: 'comms', to: 'do', flow: 'request', fromSide: 'e', toSide: 'e' },
-        { from: 'processor', to: 'd1', flow: 'async', label: e.rows, fromSide: 'e', toSide: 'e' },
-        { from: 'auth', to: 'kv', flow: 'control', fromSide: 'w', toSide: 'w' },
+        { from: 'apiVideos', to: 'r2', flow: 'request', label: e.records, fromSide: 'w', toSide: 'w', labelAt: 0.92 },
+        { from: 'apiVideos', to: 'd1', flow: 'request', fromSide: 'w', toSide: 'w', labelAt: 0.95 },
+        { from: 'comms', to: 'do', flow: 'request', fromSide: 'e', toSide: 'e', labelAt: 0.9 },
+        { from: 'processor', to: 'd1', flow: 'async', label: e.rows, fromSide: 'e', toSide: 'e', labelAt: 0.95 },
+        { from: 'auth', to: 'kv', flow: 'control', fromSide: 'w', toSide: 'w', labelAt: 0.88 },
         { from: 'web', to: 'ae', flow: 'control', fromSide: 's', toSide: 'n' },
       ],
     },
