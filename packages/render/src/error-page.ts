@@ -36,6 +36,17 @@ export interface ErrorCardStrings {
   pageTitle: string;
 }
 
+/**
+ * A reference the visitor can quote: ERR-XXXX-XXXX in Crockford base32 (no I, L, O, U), the same
+ * format the videos site, the admin and Auth show (AlUmmahNow shared-types error-reporting), so it
+ * reads the same over the phone and inside Arabic text on every app.
+ */
+const REF_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+export function newErrorRef(random: (bytes: Uint8Array) => Uint8Array = (b) => crypto.getRandomValues(b)): string {
+  const chars = Array.from(random(new Uint8Array(8)), (b) => REF_ALPHABET[b & 31]).join('');
+  return `ERR-${chars.slice(0, 4)}-${chars.slice(4, 8)}`;
+}
+
 export const ERROR_CARD_STRINGS: Record<Locale, ErrorCardStrings> = {
   en: {
     kinds: {

@@ -5,16 +5,16 @@
  * as every other app, on the lantern street inside the site's header and footer.
  */
 import '../../../../packages/render/src/styles/aun-error-page.css';
-import { errorCardHtml, ERROR_CARD_STRINGS, type ErrorCardKind } from '../../../../packages/render/src/error-page';
+import { errorCardHtml, newErrorRef, ERROR_CARD_STRINGS, type ErrorCardKind } from '../../../../packages/render/src/error-page';
 import type { Locale } from '../lib/locale';
 
 interface Props { locale: Locale; kind: 'not_found' | 'server' | 'unavailable' }
 const { locale, kind } = Astro.props;
 const card: ErrorCardKind = kind === 'not_found' ? 'notFound' : kind;
-// 500/503: a reference for the visitor to quote, logged with the failure so it can be found: the
-// request's Cloudflare Ray ID (also in Cloudflare's own logs), or a fresh id where there is none
-const reference = card === 'notFound' ? undefined : (Astro.request.headers.get('cf-ray') ?? crypto.randomUUID().replace(/-/g, '').slice(0, 16));
-if (reference) console.error(JSON.stringify({ msg: 'error card', kind: card, reference, path: Astro.url.pathname }));
+// 500/503: a reference for the visitor to quote, in every app's ERR-XXXX-XXXX format, logged with the
+// failure and the request's Cloudflare Ray ID, so a quoted reference leads to Cloudflare's own logs too
+const reference = card === 'notFound' ? undefined : newErrorRef();
+if (reference) console.error(JSON.stringify({ msg: 'error card', kind: card, reference, ray: Astro.request.headers.get('cf-ray'), path: Astro.url.pathname }));
 const t = ERROR_CARD_STRINGS[locale];
 const home = { label: t.goHome, href: `/${locale}/`, icon: 'home' as const };
 const html = errorCardHtml({

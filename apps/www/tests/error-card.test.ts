@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { ERROR_CARD_STRINGS, errorCardHtml, errorCodeLabel, errorPageTitle } from '../../../packages/render/src/error-page';
+import { ERROR_CARD_STRINGS, errorCardHtml, errorCodeLabel, errorPageTitle, newErrorRef } from '../../../packages/render/src/error-page';
 
 const base = {} as const;
 
@@ -34,6 +34,12 @@ describe('the shared error card (wiki guides/error-pages.md)', () => {
     expect(html.indexOf('ep-body')).toBeLessThan(html.indexOf('ep-ref'));
     expect(html.indexOf('ep-ref')).toBeLessThan(html.indexOf('ep-foot'));
     expect(errorCardHtml({ ...base, locale: 'en', kind: 'notFound', primary: { label: 'x', href: '/' } })).not.toContain('ep-ref');
+  });
+
+  it('references use every app\'s ERR-XXXX-XXXX format (Crockford base32, as on the videos site)', () => {
+    expect(newErrorRef()).toMatch(/^ERR-[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}$/);
+    expect(newErrorRef((b) => b.fill(31))).toBe('ERR-ZZZZ-ZZZZ');
+    expect(newErrorRef((b) => b.map((_, i) => i))).toBe('ERR-0123-4567');
   });
 
   it('503 says the same as the videos site', () => {
