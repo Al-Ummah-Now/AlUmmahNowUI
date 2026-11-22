@@ -117,7 +117,7 @@ const cheap: Builder = (d) => {
     if (i === 0) return { from: id, to: 'budget', fromSide: 'n', toSide: 's' };
     const left = i % 2 === 1;
     // each side's wires nest down their own lanes, 14 px apart
-    return { from: id, to: 'budget', fromSide: left ? 'w' : 'e', toSide: left ? 'w' : 'e', lane: 18 + Math.floor((i - 1) / 2) * 14 };
+    return { from: id, to: 'budget', fromSide: left ? 'w' : 'e', toSide: left ? 'w' : 'e', lane: 18 + Math.floor((i - 1) / 2) * 18 };
   });
   return {
     kind: 'sketch',

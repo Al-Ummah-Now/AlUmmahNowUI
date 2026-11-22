@@ -22,9 +22,10 @@ const copies: Builder = (d) => {
         node('topics', 'cloudflare/durable-objects', n.topics, [4.35, 0]),
         node('views', 'cloudflare/durable-objects', n.views, [3.15, 1.35]),
         node('videoJson', 'cloudflare/r2', n.videoJson, [4.35, 1.35]),
-        node('queue', 'cloudflare/queues', n.queue, [2.9, 2.7]),
-        node('container', 'cloudflare/containers', n.container, [4.1, 2.7]),
-        node('slots', 'cloudflare/durable-objects', n.slots, [2.9, 3.7]),
+        // transcoding under the Workers (the job drops straight in), out to the counting column: no empty corner
+        node('queue', 'cloudflare/queues', n.queue, [1.3, 2.7]),
+        node('container', 'cloudflare/containers', n.container, [3.15, 2.7]),
+        node('slots', 'cloudflare/durable-objects', n.slots, [1.3, 3.7]),
       ],
       groups: [
         { id: 'realtime', label: c.group.realtime, caption: c.caption.realtime, members: ['sockets', 'topics'] },
@@ -38,12 +39,13 @@ const copies: Builder = (d) => {
         { from: 'topics', to: 'sockets', flow: 'delivery', label: e.broadcast, fromSide: 'w', toSide: 'e' },
         { from: 'workers', to: 'views', flow: 'request', label: e.view, fromSide: 'e', toSide: 'w' },
         { from: 'views', to: 'videoJson', flow: 'async', label: e.cas, fromSide: 'e', toSide: 'w' },
-        { from: 'workers', to: 'queue', flow: 'async', label: e.job, fromSide: 'e', toSide: 'w' },
+        { from: 'workers', to: 'queue', flow: 'async', label: e.job, fromSide: 's', toSide: 'n' },
         { from: 'queue', to: 'slots', flow: 'control', label: e.acquire, fromSide: 's', toSide: 'n' },
         { from: 'queue', to: 'container', flow: 'media', label: e.start, fromSide: 'e', toSide: 'w' },
       ],
     },
-    wide: { colW: 300, rowH: 160, pad: 36 },
+    // the job drops in at the transcoding group's near corner: its title stands at the far end
+    wide: { colW: 300, rowH: 160, pad: 36, titleEnd: ['transcode'] },
     narrow: {
       colW: 180,
       rowH: 100,
@@ -168,7 +170,7 @@ const fixes: Builder = (d) => {
       cols: 1,
       at: { blind: [0, 0], cas: [0, 1], shards: [0, 2], upsert: [0, 3], sockets: [0, 4], limiter: [0, 5], reserve: [0, 6] },
       // one column: each wire bows out through the margin at its own distance
-      edges: around.map((to, i) => ({ from: 'blind', to, fromSide: 'w' as const, toSide: 'w' as const, lane: 18 + i * 14 })),
+      edges: around.map((to, i) => ({ from: 'blind', to, fromSide: 'w' as const, toSide: 'w' as const, lane: 14 + i * 16 })),
     },
   };
 };

@@ -525,7 +525,7 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
         const vr = box.getBoundingClientRect();
         const rtl = getComputedStyle(box).direction === 'rtl' || document.documentElement.dir === 'rtl';
         const fits = box.scrollWidth <= box.clientWidth + 1;
-        const SEL = '[data-group] > rect, [data-group] polygon, [data-tag] rect, .an-iso-tag rect, [data-node] [data-box], [data-node] .an-node-box, [data-for], .an-sk-cloud, .an-sk-side, .an-sk-title, .an-lifeline, .an-seq-note-box';
+        const SEL = '.an-edge, [data-group] > rect, [data-group] polygon, [data-tag] rect, .an-iso-tag rect, [data-node] [data-box], [data-node] .an-node-box, [data-for], .an-sk-cloud, .an-sk-side, .an-sk-title, .an-lifeline, .an-seq-note-box';
         const near: string[] = [];
         for (const el of svg.querySelectorAll<SVGGraphicsElement>(SEL)) {
           if (el.closest('.an-motion')) continue;

@@ -65,6 +65,6 @@ export const dataEn = {
       dobj: { title: 'Durable Objects', note: 'sockets · counters · gates' },
       ae: { title: 'Analytics Engine', note: 'numbers, no cookies' },
     },
-    tag: { whole: 'whole JSON + version tag', sql: 'SQL · full-text search' },
+    tag: { whole: 'JSON + version tag', sql: 'SQL · full-text search' },
   },
 };

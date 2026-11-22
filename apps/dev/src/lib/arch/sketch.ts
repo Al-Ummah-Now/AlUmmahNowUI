@@ -366,11 +366,21 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
         const up = (y: (typeof group)[number]) => (y.k === 'a' ? y.c.b : y.c.a)[1] < p[1];
         const key = (y: (typeof group)[number]) => (up(y) ? -1e4 + y.c.e.lane! : 1e4 - y.c.e.lane!);
         group.sort((u, v) => key(u) - key(v));
+      } else {
+        // the rest in the order their other ends lie along the side, so no two cross at the tile (the Arabic mirror
+        // reverses where the sources sit, not the list order)
+        const far = (y: (typeof group)[number]) => (y.k === 'a' ? y.c.b : y.c.a)[vertical ? 1 : 0];
+        group.sort((u, v) => far(u) - far(v));
       }
-      // (arrowheads meeting one side sit 20 px apart: closer, their 11 px barbs read as one pile)
-      const gap = group.every((y) => y.k === 'b') ? 20 : 12;
+      // (two arrowheads side by side sit 28 px apart: closer, their 11 px barbs, slanted in from a lane, read as one
+      // pile; a head beside a plain start 18 px, two starts 12 px, two laned starts 16 px, as a fan stays 12 px apart
+      // out to its lanes)
+      const laned = group.every((y) => y.c.e.lane != null);
+      const steps: number[] = group.map((y, j) => (j === 0 ? 0 : y.k === 'b' && group[j - 1]!.k === 'b' ? 28 : y.k === 'b' || group[j - 1]!.k === 'b' ? 18 : laned ? 16 : 12));
+      const pos = steps.map((_, j) => steps.slice(0, j + 1).reduce((t, v) => t + v, 0));
+      const mid = pos[pos.length - 1]! / 2;
       group.forEach((y, j) => {
-        const off = (j - (group.length - 1) / 2) * gap;
+        const off = pos[j]! - mid;
         const q = y.c[y.k];
         y.c[y.k] = vertical ? [q[0], q[1] + off] : [q[0] + off, q[1]];
       });
@@ -418,6 +428,8 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
   const nodeBoxes = [...box.values()];
 
   const tags: string[] = [];
+  const otherPts = (c: (typeof curves)[number]) => curves.filter((x) => x !== c).flatMap((x) => Array.from({ length: 61 }, (_, k) => at(x, k / 60)));
+  const ownPts = (c: (typeof curves)[number]) => Array.from({ length: 61 }, (_, k) => at(c, k / 60));
   o.push('<g class="an-edges">');
   curves.forEach((c) => {
     const { e, i, a, b, ctrl, ctrl2 } = c;
@@ -428,19 +440,26 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
     const tw = textWidth(e.tag, 15, true) + 18;
     const th = 26;
     let best: Box | null = null;
+    // first 12 to 20 px out and 12 px from every other curve; where a fan leaves no such room, 8 px out and 5 px clear
+    for (const roomy of [true, false]) {
+    if (best) break;
     for (const t of [e.tagAt ?? 0.5, 0.45, 0.55, 0.4, 0.6, 0.35, 0.65, 0.3, 0.7, 0.25, 0.75, 0.2, 0.8, 0.15, 0.85, 0.1, 0.9]) {
       const p = at(c, t);
       const q2 = at(c, Math.min(1, t + 0.01));
       const dl = Math.hypot(q2[0] - p[0], q2[1] - p[1]) || 1;
       const n: [number, number] = [-(q2[1] - p[1]) / dl, (q2[0] - p[0]) / dl];
-      // 8 to 20 px between the tag and its curve: beside it, never far from it (the gate allows 24)
+      // 12 to 20 px between the tag and its curve: beside it, never far from it (the gate allows 24); the pen's rough
+      // outline overshoots the box by a few px, so less reads as touching
       const half = Math.abs(n[0]) * (tw / 2) + Math.abs(n[1]) * (th / 2);
-      for (const [s, gap] of [[1, 8], [-1, 8], [1, 14], [-1, 14], [1, 20], [-1, 20]] as const) {
+      for (const [s, gap] of (roomy ? [[1, 12], [-1, 12], [1, 16], [-1, 16], [1, 20], [-1, 20]] : [[1, 8], [-1, 8], [1, 14], [-1, 14], [1, 20], [-1, 20]]) as [number, number][]) {
         const cx = p[0] + n[0] * (half + gap) * s;
         const cy = p[1] + n[1] * (half + gap) * s;
         const q = { x: cx - tw / 2, y: cy - th / 2, w: tw, h: th };
         if (q.x < 8 || q.y < 60 || q.x + q.w > W - 8 || q.y + q.h > Hc - 8) continue;
         if (samples.some((pt) => hits(q, pt, 5))) continue;
+        // 12 px from every other curve when it can (no wire runs close beside another wire's words), 10 px from its
+        // own where it bends back toward a tile
+        if (roomy && (otherPts(c).some((pt) => hits(q, pt, 12)) || ownPts(c).some((pt) => hits(q, pt, 10)))) continue;
         // never on the cloud's bumpy outline: keep clear of a band around its edges
         if (cloudBand.some((e) => overlaps(q, e, 0))) continue;
         if (nodeBoxes.some((nb) => overlaps(q, { x: nb.x - 4, y: nb.y - 4, w: nb.w + 12, h: nb.h + 12 }, 6)) || placedTags.some((pb) => overlaps(q, pb, 12))) continue;
@@ -448,6 +467,7 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
         break;
       }
       if (best) break;
+    }
     }
     // no room beside it: on it, an opaque tag over its own curve's middle stretch (as the flat diagrams label a
     // crowded wire), still clear of every other curve, tile, tag and the cloud's outline

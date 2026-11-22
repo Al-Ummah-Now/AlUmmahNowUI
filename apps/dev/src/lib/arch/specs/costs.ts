@@ -100,9 +100,13 @@ export function costs(c: Copy, locale: 'en' | 'ar'): { spec: ArchSpec; wide: Arc
   // the Cloudflare boundary's title sits inside its top: room between it and the Bunny lane above
   const nodes: ArchNode[] = [stageNode('upload', [0, 1.4])];
   const rows: Record<Lane, number> = { bunny: 0, r2: 1.4, shared: 2.6 };
+  // every lane spans the R2 lane's width: a shorter lane spreads its stages out, and the three totals stand in one
+  // column at the end (no empty half-rows on a wide screen)
+  const span = LANES.r2.length - 1;
   for (const lane of ['bunny', 'r2', 'shared'] as Lane[]) {
-    LANES[lane].forEach((st, i) => nodes.push(stageNode(st, [1.2 + i, rows[lane]])));
-    nodes.push(totalNode(lane, [1.2 + LANES[lane].length + 0.15, rows[lane]]));
+    const step = span / (LANES[lane].length - 1);
+    LANES[lane].forEach((st, i) => nodes.push(stageNode(st, [1.2 + i * step, rows[lane]])));
+    nodes.push(totalNode(lane, [1.2 + span + 1.15, rows[lane]]));
   }
   // the flow: the upload feeds all three lanes at once, then each lane hops along
   const edges: ArchEdge[] = [];

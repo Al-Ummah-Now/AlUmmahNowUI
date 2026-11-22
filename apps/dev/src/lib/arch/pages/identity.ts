@@ -97,10 +97,11 @@ const signin: Builder = (d) => {
         node('user', 'lucide/browser', n.user, [0, 0]),
         node('resend', 'simple-icons/resend', n.resend, [2.2, -1.45]),
         node('issuer', 'cloudflare/workers', n.issuer, [2.2, 0]),
-        node('d1', 'cloudflare/d1', n.d1, [4.2, 0]),
+        // the stores one gap beside the issuer and the API: no empty column inside the account
+        node('d1', 'cloudflare/d1', n.d1, [3.4, 0]),
         node('app', 'lucide/smartphone', n.app, [-0.3, 1.8]),
-        node('api', 'cloudflare/workers', n.api, [2.2, 3.0]),
-        node('revKv', 'cloudflare/kv', n.revKv, [4.2, 3.0]),
+        node('api', 'cloudflare/workers', n.api, [2.2, 2.6]),
+        node('revKv', 'cloudflare/kv', n.revKv, [3.4, 2.6]),
       ],
       groups: [{ id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', tagEnd: true, members: ['issuer', 'd1', 'api', 'revKv'] }],
       edges: [

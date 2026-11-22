@@ -35,7 +35,9 @@ const rails: Builder = (d) => {
         { id: 'bunny', label: c.group.bunny, kind: 'platform', tagLogo: { id: 'brand/bunnynet-logo-dark', w: 66, h: 19 }, tagEnd: true, accent: '#f29b1d', members: ['bunnyCdn', 'library'] },
       ],
       edges: [
-        { from: 'viewers', to: 'api', flow: 'request', label: e.ask, fromSide: 's', toSide: 'w' },
+        // the address request leaves beside the stream wires and turns down by the account; the Bunny stream climbs into
+        // the viewers' bottom: neither crosses the other or shares a line with the public stream
+        { from: 'viewers', to: 'api', flow: 'request', label: e.ask, fromSide: 'e', toSide: 'w' },
         { from: 'pub', to: 'domain', flow: 'delivery', label: e.origin, fromSide: 'w', toSide: 'e' },
         { from: 'domain', to: 'cache', flow: 'delivery', fromSide: 'w', toSide: 'e' },
         { from: 'cache', to: 'viewers', flow: 'delivery', label: e.hls, fromSide: 'w', toSide: 'e', stream: true },
@@ -43,7 +45,7 @@ const rails: Builder = (d) => {
         { from: 'worker', to: 'edge', flow: 'delivery', label: e.token, fromSide: 'w', toSide: 'e' },
         { from: 'edge', to: 'viewers', flow: 'delivery', fromSide: 'w', toSide: 'e', stream: true },
         { from: 'library', to: 'bunnyCdn', flow: 'delivery', fromSide: 'w', toSide: 'e' },
-        { from: 'bunnyCdn', to: 'viewers', flow: 'delivery', fromSide: 'w', toSide: 'e', stream: true },
+        { from: 'bunnyCdn', to: 'viewers', flow: 'delivery', fromSide: 'w', toSide: 's', stream: true },
         // each control wire ends at the box it acts on: the signing key at the media Worker, the purge at R2 public's
         // cached copies; the key leaves from the top so the two never cross
         { from: 'api', to: 'worker', flow: 'control', label: e.key, fromSide: 'n', toSide: 's' },

@@ -1,13 +1,13 @@
 /**
  * Diagrams render at their natural size and never shrink (labels stay readable). When the visible
  * layout is wider than its column it scrolls sideways; this shows the hint over it only then, and opens
- * the box on the drawing's start: the start-most piece of the drawing (a boundary, platform, tag, tile,
- * label or sketch note) sits 24 px inside the box's start edge (left in English, right in Arabic). A
+ * the box on the drawing's start: the start-most piece of the drawing (a wire, boundary, platform, tag,
+ * tile, label or sketch note) sits 24 px inside the box's start edge (left in English, right in Arabic). A
  * figure that fits, or whose drawing already starts that far in, stays where it opens; the isometric
  * hero's empty floor margin is skipped, and nothing of the drawing is ever hidden past the start edge.
  */
 const opened = new WeakSet<HTMLElement>();
-const CONTENT = '[data-group] > rect, [data-group] polygon, [data-tag] rect, .an-iso-tag rect, [data-node] [data-box], [data-node] .an-node-box, [data-for], .an-sk-cloud, .an-sk-side, .an-sk-title, .an-lifeline, .an-seq-note-box';
+const CONTENT = '.an-edge, [data-group] > rect, [data-group] polygon, [data-tag] rect, .an-iso-tag rect, [data-node] [data-box], [data-node] .an-node-box, [data-for], .an-sk-cloud, .an-sk-side, .an-sk-title, .an-lifeline, .an-seq-note-box';
 const INSET = 24;
 
 function openOnContent(box: HTMLElement) {

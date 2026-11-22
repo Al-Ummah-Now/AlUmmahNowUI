@@ -160,14 +160,17 @@ const gates: Builder = (d) => {
       sk('stageE2E', 'lucide/list-ordered', 'blue', [0, 1]),
       sk('local', 'lucide/laptop', 'blue', [1, 1]),
       sk('secrets', 'cloudflare/secrets-store', 'blue', [2, 1]),
-      sk('smoke', 'cloudflare/workers', 'green', [0, 2]),
-      sk('signedIn', 'lucide/user', 'green', [1, 2]),
-      sk('media', 'cloudflare/containers', 'green', [2, 2]),
+      // the rollout sits under the middle test, so the three tests fan into it from both sides and above (from the far
+      // column a wire would arrive flat along its top); the chain goes on to the end side and down
+      sk('smoke', 'cloudflare/workers', 'green', [1, 2]),
+      sk('signedIn', 'lucide/user', 'green', [2, 2]),
+      sk('media', 'cloudflare/containers', 'green', [2, 3]),
     ],
     foot: [
-      { id: 'rollback', icon: 'lucide/shield-check', title: c.obs.rollback },
-      { id: 'dry', icon: 'lucide/timer', title: c.obs.dry },
       { id: 'status', icon: 'lucide/activity', title: c.obs.status },
+      { id: 'dry', icon: 'lucide/timer', title: c.obs.dry },
+      // under the media smoke: its failure wire drops straight down
+      { id: 'rollback', icon: 'lucide/shield-check', title: c.obs.rollback },
     ],
     edges: [
       { from: 'pr', to: 'qa', fromSide: 'e', toSide: 'w' },
@@ -176,17 +179,17 @@ const gates: Builder = (d) => {
       { from: 'tag', to: 'local', fromSide: 's', toSide: 'n', bend: -24 },
       { from: 'tag', to: 'secrets', fromSide: 's', toSide: 'n' },
       { from: 'stageE2E', to: 'smoke', fromSide: 's', toSide: 'n' },
-      { from: 'local', to: 'smoke', fromSide: 's', toSide: 'n', bend: 24, tag: c.tag.all, tone: 'green', tagAt: 0.45 },
-      { from: 'secrets', to: 'smoke', fromSide: 's', toSide: 'n', bend: -40 },
+      { from: 'local', to: 'smoke', fromSide: 's', toSide: 'n', tag: c.tag.all, tone: 'green', tagAt: 0.45 },
+      { from: 'secrets', to: 'smoke', fromSide: 's', toSide: 'n' },
       { from: 'smoke', to: 'signedIn', fromSide: 'e', toSide: 'w' },
-      { from: 'signedIn', to: 'media', fromSide: 'e', toSide: 'w' },
-      { from: 'media', to: 'rollback', fromSide: 's', toSide: 'n', bend: -30, dashed: true, tag: c.tag.fail, tone: 'pink', tagAt: 0.5 },
+      { from: 'signedIn', to: 'media', fromSide: 's', toSide: 'n' },
+      { from: 'media', to: 'rollback', fromSide: 's', toSide: 'n', dashed: true, tag: c.tag.fail, tone: 'pink', tagAt: 0.5 },
     ],
   };
   return {
     kind: 'sketch',
     spec,
-    wide: { colW: 360, rowH: 210, nodeW: 250, cols: 3, footGap: 70 },
+    wide: { colW: 360, rowH: 225, nodeW: 250, cols: 3, footGap: 40 },
     narrow: {
       colW: 300,
       rowH: 160,

@@ -60,9 +60,10 @@ const queues: Builder = (d) => {
       rowH: 100,
       iconSize: 34,
       // every wire the wide figure draws: each queue stands in its consumer's column; errors runs straight down,
-      // transcode down the channel between the columns, the rest nest down that column's margin; Replay climbs the outermost left lane
+      // transcode and errors straight down past the centred caption, the rest nest down that column's margin; Replay climbs the outermost left lane
       pad: 44,
       growPad: { cf: { l: 48, r: 32 } },
+      captionMid: ['queues'],
       at: stack([
         [['apiVideos', 'adminApi'], 0],
         [['scheduler'], 1.05],
@@ -76,8 +77,8 @@ const queues: Builder = (d) => {
       ]),
       edges: [
         { from: 'producers', to: 'queues', flow: 'async', label: e.enqueue, fromSide: 's', toSide: 'n' },
-        // down the channel between the columns (straight down would cross the queues' caption, on this side)
-        { from: 'transcodeQ', to: 'media', flow: 'async', fromSide: 'e', toSide: 'e' },
+        // straight down: the queues' caption sits centred under the channel, clear of both columns' drops
+        { from: 'transcodeQ', to: 'media', flow: 'async', fromSide: 's', toSide: 'n' },
         { from: 'errorsQ', to: 'adminC', flow: 'async', fromSide: 's', toSide: 'n' },
         { from: 'moderationQ', to: 'processor', flow: 'async', fromSide: 'w', toSide: 'w' },
         { from: 'videosQ', to: 'processor', flow: 'async', fromSide: 'w', toSide: 'w' },
@@ -146,7 +147,9 @@ const fail: Builder = (d) => {
         { from: 'queue', to: 'dlq', flow: 'control', step: 4, fromSide: 'e', toSide: 'w' },
         { from: 'dlq', to: 'dlqConsumer', flow: 'async', label: e.read, step: 5, fromSide: 's', toSide: 'n' },
         { from: 'dlqConsumer', to: 'deadLetters', flow: 'async', label: e.store, step: 6, fromSide: 's', toSide: 'n' },
-        { from: 'dlqConsumer', to: 'errorsPage', flow: 'control', step: 6, fromSide: 'w', toSide: 'n' },
+        // down the gap between the columns and into the page's near side (from its top the wire would step round the
+        // consumer tile above it)
+        { from: 'dlqConsumer', to: 'errorsPage', flow: 'control', step: 6, fromSide: 'w', toSide: 'e' },
         { from: 'admin', to: 'errorsPage', flow: 'request', label: e.replay, step: 7, fromSide: 'n', toSide: 's' },
         { from: 'errorsPage', to: 'queue', flow: 'async', label: e.resend, step: 8, fromSide: 'w', toSide: 'w' },
       ],
@@ -193,7 +196,7 @@ const crons: Builder = (d) => {
       nodeW: 270,
       cols: 1,
       at: Object.fromEntries([['clock', at(0, 0)], ...order.map((id, i) => [id, at(0, i + 1)])]),
-      edges: order.map((to, i) => ({ from: 'clock', to, fromSide: 'w' as const, toSide: 'w' as const, lane: 18 + i * 14 })),
+      edges: order.map((to, i) => ({ from: 'clock', to, fromSide: 'w' as const, toSide: 'w' as const, lane: 14 + i * 16 })),
     },
   };
 };
