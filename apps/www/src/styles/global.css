@@ -1547,6 +1547,18 @@ main {
   margin-inline-end: 0.75rem;
   color: var(--line);
 }
+/* Arabic meta lines join with «،» attached to the part before it, never a dot: «·» beside Arabic
+   digits reads as zero (owner's number rule, 2026-11-21). Hidden parts (the absolute time for screen
+   readers) take no mark. */
+.tl-meta:lang(ar) {
+  column-gap: 0.35em;
+}
+.tl-meta:lang(ar) > * + *::before {
+  content: none;
+}
+.tl-meta:lang(ar) > :has(+ :not(.visually-hidden))::after {
+  content: '،';
+}
 .tl-meta time {
   font-weight: 600;
   color: var(--text);
@@ -1635,6 +1647,9 @@ main {
   gap: 0 0.5rem;
   font-size: 0.8125rem;
   color: var(--color-on-night-soft);
+}
+.tl-ov .tl-meta:lang(ar) {
+  column-gap: 0.35em;
 }
 .tl-ov .tl-meta > * + *::before {
   margin-inline-end: 0.5rem;
@@ -2190,6 +2205,12 @@ html[data-js] .ci-deck .tl-ov {
 .tl-byline time::before {
   content: '·';
   margin-inline-end: 0.5rem;
+}
+.tl-byline:lang(ar) time::before {
+  content: none;
+}
+.tl-byline:lang(ar) .tl-author::after {
+  content: '،';
 }
 .tl-avatar {
   flex: none;

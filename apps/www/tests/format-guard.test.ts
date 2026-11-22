@@ -23,6 +23,7 @@ import { formatDuration as siteDuration } from '../../sites/src/lib/data';
 import { strings as devStrings } from '../../dev/src/i18n';
 import { ar as devAr } from '../../dev/src/i18n/ar';
 import { POST_STRINGS } from '../../../packages/render/src/posts/strings';
+import { formatCountNoun } from '../../../packages/render/src/count-nouns';
 
 const ASCII = /[0-9]/;
 const EASTERN = /[٠-٩]/;
@@ -62,7 +63,7 @@ describe('Arabic formatted values use Eastern Arabic (Hindi) numerals ٠–٩', 
   }
 
   it('money in Arabic names the currency in Arabic, never «US$»', () => {
-    expect(arabic.money).toBe('١٬٢٣٤٫٥٠ دولار أمريكي');
+    expect(arabic.money).toBe('١٢٣٤٫٥٠ دولار أمريكي');
     expect(f.formatMoney(1234.5, 'USD', 'en')).toBe('US$1,234.50');
   });
 
@@ -89,6 +90,35 @@ describe('Arabic formatted values use Eastern Arabic (Hindi) numerals ٠–٩', 
   it('inputs accept ٠–٩ (and Persian ۰–۹) and normalise them to 0–9', () => {
     expect(f.toAsciiDigits('٠١٢٣٤٥٦٧٨٩ ۰۱۲۳۴۵۶۷۸۹')).toBe('0123456789 0123456789');
     expect(f.toAsciiNumber('١٬٢٣٤٫٥')).toBe('1234.5');
+  });
+});
+
+/**
+ * Arabic numbers are never grouped (owner, 2026-11-21): «٬» looks like «٫» in most Arabic fonts, so
+ * «١٬٢٣٤٫٥» reads as three numbers. No formatter, placeholder or count may write it.
+ */
+describe('no «٬» in Arabic output', () => {
+  const GROUP = /٬/;
+  const big = [999, 1000, 4887, 11_000, 25_000, 123_456.78, 1_234_567.5, 25_000_000, 1.2e9, 98_765_432_101];
+  const outputs: [string, string][] = big.flatMap((n) => [
+    [`formatNumber(${n})`, f.formatNumber(n, 'ar')],
+    [`formatNumber(${n}, grouping on)`, f.formatNumber(n, 'ar', { useGrouping: true })],
+    [`formatCompact(${n})`, f.formatCompact(n, 'ar')],
+    [`formatCount(${n})`, f.formatCount(n, 'ar')],
+    [`formatMoney(${n})`, f.formatMoney(n, 'USD', 'ar')],
+    [`formatPercent(${n})`, f.formatPercent(n, 'ar')],
+    [`fill(${n})`, f.fill('{n}', { n }, 'ar')],
+    [`plural(${n})`, f.plural(n, { other: '{count} إعجاب' }, 'ar')],
+    [`www fmt(${n})`, fmt('{count}', { count: n }, 'ar')],
+    [`countNoun(${n})`, formatCountNoun('ar', n, 'like')],
+    [`countNoun compact(${n})`, formatCountNoun('ar', n, 'view', { compact: true })],
+    [`siteDuration(${n})`, siteDuration(n, 'ar')],
+  ]);
+  for (const [name, value] of outputs) it(`${name}: «${value}»`, () => expect(value).not.toMatch(GROUP));
+
+  it('the Arabic UI strings never write «٬» by hand', () => {
+    const bad = [ar, SITE_STRINGS.ar, devAr, POST_STRINGS.ar].flatMap((s) => leaves(s)).filter(([, s]) => GROUP.test(s));
+    expect(bad).toEqual([]);
   });
 });
 

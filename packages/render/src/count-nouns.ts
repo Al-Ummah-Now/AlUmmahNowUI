@@ -4,11 +4,14 @@
  * The same rules and words as AlUmmahNow's @al-ummah/shared-types formatCountNoun (AlUmmahNow #1586),
  * which UI can't import: Arabic follows the CLDR plural category of the count. One and two are words
  * of their own («إعجاب واحد», «إعجابان»), 3–10 take the plural, 11–99 the accusative singular, 100+
- * the genitive singular, and zero is a phrase («لا توجد تعليقات»), never «٠ تعليق». Arabic digits are
+ * the genitive singular, and zero is a phrase («لا توجد تعليقات»), never «٠ تعليق». With `compact`, a count
+ * of 1,000 or more is cut to one decimal and takes the singular noun after its scale word, with no digit
+ * for exactly one or two: «ألف إعجاب», «ألفا إعجاب», «٣ آلاف إعجاب», «٤٫٨ ألف إعجاب», «١٫٢ م إعجاب»;
+ * English "4.8K likes" (owner's number rule, 2026-11-21). Arabic is never grouped. Arabic digits are
  * ٠–٩ through the explicit numbering system (ar-u-nu-arab), never the implicit 'ar' default.
  * Keep the tables in step with shared-types; add a noun here rather than writing another helper.
  */
-import { formatNumber, pluralCategory } from './format';
+import { formatCompact, formatNumber, pluralCategory } from './format';
 
 export type CountNoun = 'view' | 'like' | 'comment';
 
@@ -28,7 +31,7 @@ const EN: Record<CountNoun, { zero: string; one: string; other: string }> = {
 
 const isArabic = (locale: string) => String(locale).toLowerCase().startsWith('ar');
 
-/** A whole number in the locale's digits: ٠–٩ with Arabic grouping in Arabic, 0–9 in English. */
+/** A whole number in the locale's digits: ٠–٩ never grouped in Arabic («٤٨٨٧»), 0–9 grouped in English ("4,887"). */
 export function formatInteger(locale: string, n: number): string {
   return formatNumber(n, isArabic(locale) ? 'ar' : 'en', { maximumFractionDigits: 0 });
 }
@@ -39,12 +42,20 @@ export function localDigits(locale: string, text: string): string {
 }
 
 /** A count with its noun in the locale's language and digits; see the module note. */
-export function formatCountNoun(locale: string, count: number | string | null | undefined, noun: CountNoun): string {
+export interface CountNounOptions {
+  /** "4.8K" / «٤٫٨ ألف» from 1,000 on instead of the exact number (every count a reader sees). */
+  compact?: boolean;
+}
+
+export function formatCountNoun(locale: string, count: number | string | null | undefined, noun: CountNoun, options: CountNounOptions = {}): string {
   const n = Math.max(0, Math.floor(Number(count) || 0));
-  const shown = formatInteger(locale, n);
+  const lang = isArabic(locale) ? 'ar' : 'en';
+  const shown = options.compact ? formatCompact(n, lang) : formatInteger(locale, n);
   if (isArabic(locale)) {
     const forms = AR[noun];
     if (n === 0) return forms.zero;
+    // 1,000+: the scale word (construct form for two) then the singular noun
+    if (options.compact && n >= 1000) return `${formatCompact(n, 'ar', { beforeNoun: true })} ${forms.other}`;
     const category = pluralCategory(n, 'ar');
     if (category === 'one') return forms.one;
     if (category === 'two') return forms.two;

@@ -42,6 +42,6 @@ describe('cost model', () => {
     expect(formatUsd('ar', 1.5)).not.toMatch(/[0-9]/);
     expect(formatRate('en', 0.000513)).toBe('$0.000513');
     expect(fill('{a}/h per slot', 'en', { a: { usd: 0.401 } })).toBe('$0.40/h per slot');
-    expect(fill('{n} مرة', 'ar', { n: { n: 1000 } })).toBe('١٬٠٠٠ مرة');
+    expect(fill('{n} مرة', 'ar', { n: { n: 1000 } })).toBe('١٠٠٠ مرة');
   });
 });
