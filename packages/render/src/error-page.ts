@@ -34,7 +34,7 @@ export const ERROR_CARD_STRINGS: Record<Locale, ErrorCardStrings> = {
   en: {
     kinds: {
       notFound: { title: 'Page not found', body: "We couldn't find this page. The link may be wrong, or the page may have moved." },
-      gone: { title: 'This was removed', body: "It's no longer on Al Ummah Now. Search for something else, or go to the home page." },
+      gone: { title: 'This was removed', body: "It's no longer on Al Ummah Now. Search for something else, or go to the home\u00a0page." },
       server: { title: 'We could not load this page', body: 'Our server had a problem with this request. Please try again in a moment.' },
       unavailable: { title: 'This page is temporarily unavailable', body: 'Our content service is not responding. Try again in a few minutes.' },
     },
@@ -51,7 +51,7 @@ export const ERROR_CARD_STRINGS: Record<Locale, ErrorCardStrings> = {
   ar: {
     kinds: {
       notFound: { title: 'الصفحة غير موجودة', body: 'لم نعثر على هذه الصفحة. ربما الرابط غير صحيح أو نُقلت الصفحة.' },
-      gone: { title: 'حُذف هذا المحتوى', body: 'لم يعد موجودًا على الأمة الآن. ابحث عن شيء آخر أو انتقل إلى الصفحة الرئيسية.' },
+      gone: { title: 'حُذف هذا المحتوى', body: 'لم يعد موجودًا على الأمة الآن. ابحث عن شيء آخر أو انتقل إلى الصفحة\u00a0الرئيسية.' },
       server: { title: 'تعذّر تحميل هذه الصفحة', body: 'واجه الخادم مشكلة في هذا الطلب. يُرجى المحاولة بعد قليل.' },
       unavailable: { title: 'هذه الصفحة غير متاحة مؤقتًا', body: 'خدمة المحتوى لا تستجيب حاليًا. حاول مرة أخرى بعد دقائق.' },
     },
