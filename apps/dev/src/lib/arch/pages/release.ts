@@ -39,7 +39,9 @@ const train: Builder = (d) => {
         { from: 'tag', to: 'localE2E', flow: 'request', label: e.local, step: 1, fromSide: 'w', toSide: 'w' },
         { from: 'build', to: 'stage', flow: 'request', label: e.deploy, step: 2, fromSide: 'e', toSide: 'w' },
         { from: 'stage', to: 'stageE2E', flow: 'request', label: e.test, step: 3, fromSide: 's', toSide: 'n' },
-        { from: 'stage', to: 'secrets', flow: 'request', label: e.check, step: 3, fromSide: 's', toSide: 'n' },
+        // its badge on its own drop into the secrets checks, like the stage tests' on theirs: by its start it would
+        // sit against the stage tests' wire beside it
+        { from: 'stage', to: 'secrets', flow: 'request', label: e.check, step: 3, fromSide: 's', toSide: 'n', badgeAt: 0.92 },
         // straight down from the gates into the candidate: down the start margin it would continue the local tests'
         // wire on the same line and read as one
         { from: 'gates', to: 'zero', flow: 'request', label: e.pass, step: 4, fromSide: 's', toSide: 'n' },

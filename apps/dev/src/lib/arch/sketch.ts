@@ -417,9 +417,9 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
       // pile; a head beside a plain start 18 px, two starts 12 px, two laned starts 16 px, as a fan stays 12 px apart
       // out to its lanes)
       const laned = group.every((y) => y.c.e.lane != null);
-      // (two bows leaving one side head out at nearly the same angle: 24 px apart, or they run as one line for a while)
+      // (two bows leaving one side head out at nearly the same angle: 56 px apart, or they run as one line for a while)
       const bows = !laned && vertical && group.every((y) => y.c.e.fromSide === y.c.e.toSide);
-      const steps: number[] = group.map((y, j) => (j === 0 ? 0 : y.k === 'b' && group[j - 1]!.k === 'b' ? 28 : bows ? 24 : y.k === 'b' || group[j - 1]!.k === 'b' ? 18 : laned ? 16 : 12));
+      const steps: number[] = group.map((y, j) => (j === 0 ? 0 : y.k === 'b' && group[j - 1]!.k === 'b' ? 28 : bows ? 56 : y.k === 'b' || group[j - 1]!.k === 'b' ? 18 : laned ? 16 : 12));
       const pos = steps.map((_, j) => steps.slice(0, j + 1).reduce((t, v) => t + v, 0));
       const mid = pos[pos.length - 1]! / 2;
       group.forEach((y, j) => {

@@ -17,7 +17,10 @@ const copies: Builder = (d) => {
       motion: 'pulses',
       nodes: [
         // the Workers halfway between the realtime and counting rows: both wires leave as short Ls, no empty corner
-        node('users', 'lucide/users', n.users, [0, 0.7]),
+        // viewers and creators apart: the viewers' requests reach the realtime and counting rows, the creators'
+        // uploads become transcode jobs; two tiles down the outside column leave it no block of nothing
+        node('users', 'lucide/users', n.users, [0, 0.45]),
+        node('creators', 'lucide/cloud-upload', n.creators, [0, 2.25]),
         node('workers', 'cloudflare/workers', n.workers, [1.3, 0.7]),
         node('sockets', 'cloudflare/durable-objects', n.sockets, [3.15, 0]),
         node('topics', 'cloudflare/durable-objects', n.topics, [4.35, 0]),
@@ -37,6 +40,7 @@ const copies: Builder = (d) => {
       ],
       edges: [
         { from: 'users', to: 'workers', flow: 'request', label: e.req, fromSide: 'e', toSide: 'w' },
+        { from: 'creators', to: 'workers', flow: 'request', label: e.upload, fromSide: 'e', toSide: 'w' },
         { from: 'workers', to: 'sockets', flow: 'request', label: e.socket, fromSide: 'e', toSide: 'w' },
         { from: 'topics', to: 'sockets', flow: 'delivery', label: e.broadcast, fromSide: 'w', toSide: 'e' },
         { from: 'workers', to: 'views', flow: 'request', label: e.view, fromSide: 'e', toSide: 'w' },
@@ -58,9 +62,10 @@ const copies: Builder = (d) => {
       growPad: { cf: { l: 24, r: 24 }, counting: { l: 24, r: 24 } },
       // Video JSON under the views (its long "conditional write" words beside the wire, in the empty column); the
       // queue under the job lane on the right, so the job lands clear of the group's title
-      at: { users: [0.5, 0], workers: [0.5, 2.4], sockets: [0, 4.7], topics: [1, 4.7], views: [0, 7], videoJson: [0, 8.6], queue: [1, 10.9], container: [0, 10.9], slots: [1, 12.35] },
+      at: { users: [0, 0], creators: [1, 0], workers: [0.5, 2.4], sockets: [0, 4.7], topics: [1, 4.7], views: [0, 7], videoJson: [0, 8.6], queue: [1, 10.9], container: [0, 10.9], slots: [1, 12.35] },
       edges: [
         { from: 'users', to: 'workers', flow: 'request', fromSide: 's', toSide: 'n' },
+        { from: 'creators', to: 'workers', flow: 'request', fromSide: 's', toSide: 'n' },
         { from: 'workers', to: 'sockets', flow: 'request', fromSide: 's', toSide: 'n' },
         { from: 'topics', to: 'sockets', flow: 'delivery', fromSide: 'w', toSide: 'e' },
         { from: 'workers', to: 'views', flow: 'request', fromSide: 'w', toSide: 'w' },

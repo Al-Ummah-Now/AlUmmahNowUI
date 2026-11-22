@@ -79,7 +79,8 @@ const map: Builder = (d) => {
         { from: 'dir', to: 'shards', flow: 'async', label: e.forward, fromSide: 's', toSide: 'n' },
         { from: 'worker', to: 'shards', flow: 'request', label: e.shard, fromSide: 'w', toSide: 'w' },
         { from: 'apiVideos', to: 'views', flow: 'request', label: e.counter, fromSide: 'e', toSide: 'e' },
-        { from: 'views', to: 'record', flow: 'control', label: e.flush, fromSide: 's', toSide: 'e' },
+        // the record sits straight under the counter here: the flush drops into its top
+        { from: 'views', to: 'record', flow: 'control', label: e.flush, fromSide: 's', toSide: 'n' },
       ],
     },
   };

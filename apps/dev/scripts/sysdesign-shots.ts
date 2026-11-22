@@ -210,6 +210,22 @@ for (const slug of PAGES)
             requestAnimationFrame(() => requestAnimationFrame(() => res()));
           }));
         }
+        // everything between the last figure and the pager (the cards after the diagrams): as many viewport frames as
+        // it takes, each starting below the sticky header, so no copy goes unseen between the figures and the end
+        if (!ONLY && figs && (await page.locator('.sd-pager').count())) {
+          const head = await page.evaluate(() => document.querySelector('header')?.getBoundingClientRect().height ?? 0);
+          const span = await page.evaluate(() => {
+            const figsAll = [...document.querySelectorAll('.an-figure')];
+            const last = figsAll[figsAll.length - 1]!.getBoundingClientRect();
+            const pager = document.querySelector('.sd-pager')!.getBoundingClientRect();
+            return { top: last.bottom + window.scrollY, bottom: pager.top + window.scrollY };
+          });
+          const view = (page.viewportSize()?.height ?? 800) - head - 8;
+          for (let y = span.top - head - 8, k = 1; y < span.bottom - head - 8; y += view, k++) {
+            await page.evaluate((top) => window.scrollTo(0, top), y);
+            await page.screenshot({ path: join(out, `${tag}-frame-after-${k}.png`) });
+          }
+        }
         await page.evaluate((h) => window.scrollTo(0, h), H);
         if (!ONLY) await page.screenshot({ path: join(out, `${tag}-frame-${figs + 2}-end.png`) });
         // the previous/next links, placed below the sticky header

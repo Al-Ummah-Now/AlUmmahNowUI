@@ -185,8 +185,9 @@ const core: Builder = (d) => {
         { from: 'core', to: 'api', fromSide: 's', toSide: 'n' },
         { from: 'core', to: 'auth', fromSide: 'w', toSide: 'w', lane: 18 },
         { from: 'config', to: 'core', fromSide: 'e', toSide: 'e', lane: 18 },
-        // the player pair it is linked into, up on the right above the config wire
-        { from: 'core', to: 'pair', fromSide: 'e', toSide: 'e', lane: 18 },
+        // the player pair it is linked into, up on the right in a lane of its own outside the config wire's (on one
+        // lane the two read as a single line past Core)
+        { from: 'core', to: 'pair', fromSide: 'e', toSide: 'e', lane: 40 },
       ],
     },
   };
