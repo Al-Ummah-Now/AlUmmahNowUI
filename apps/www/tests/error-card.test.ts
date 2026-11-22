@@ -49,6 +49,12 @@ describe('the shared error card (wiki guides/error-pages.md)', () => {
     expect(ERROR_CARD_STRINGS.en.kinds.gone.body).toContain('Al\u00a0Ummah\u00a0Now');
   });
 
+  it('draws the body one inline-block span a sentence, so no line ends on the next one’s first words', () => {
+    const html = errorCardHtml({ ...base, locale: 'ar', kind: 'notFound', primary: { label: 'x', href: '/ar/' } });
+    expect(html).toContain('<p class="ep-body"><span class="ep-s">لم نعثر على هذه الصفحة.</span> <span class="ep-s">ربما الرابط غير صحيح أو نُقلت الصفحة.</span></p>');
+    expect(readFileSync(new URL('../../../packages/render/src/styles/aun-error-page.css', import.meta.url), 'utf8')).toContain('.ep-s{display:inline-block}');
+  });
+
   it('escapes every value', () => {
     const html = errorCardHtml({ ...base, locale: 'en', kind: 'notFound', primary: { label: '<b>', href: '/"x' } });
     expect(html).toContain('&lt;b&gt;');

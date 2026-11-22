@@ -187,7 +187,7 @@ export function errorCardHtml(o: ErrorCardOptions): string {
     `<section class="ep-card" aria-labelledby="${id}">` +
     `<div class="ep-head"><span class="ep-badge" aria-hidden="true">${errorCardIcon(icon)}</span>` +
     `<div class="ep-heading"><p class="ep-code">${escapeHtml(errorCodeLabel(o.locale, status))}</p><${h} class="ep-title" id="${id}">${escapeHtml(o.title ?? copy.title)}</${h}></div>` +
-    `<p class="ep-body">${escapeHtml(o.body ?? copy.body)}</p></div>` +
+    `<p class="ep-body">${bodySentencesHtml(o.body ?? copy.body)}</p></div>` +
     search +
     ref +
     `<footer class="ep-foot">${help}<div class="ep-actions">${back}${(o.secondary ?? []).map((a) => button(a, SECONDARY)).join('')}${button(o.primary, PRIMARY)}</div></footer>` +
@@ -197,3 +197,16 @@ export function errorCardHtml(o: ErrorCardOptions): string {
 
 /** Go back: each app serves public/ep-back.js (external: the dev site's and www's CSP have no inline scripts). */
 export const ERROR_CARD_BACK_SCRIPT = '/ep-back.js';
+
+/**
+ * The body one `.ep-s` span (an inline block) a sentence: two sentences share a line only when both
+ * fit, so no line ends on the next sentence's first words («… الصفحة. ربما» / “… a problem. Try”).
+ * The same split as shared-types' errorBodySentences in the videos app.
+ */
+export function bodySentencesHtml(body: string): string {
+  return body
+    .split(/(?<=[.!?؟])\s+(?=\S)/u)
+    .filter(Boolean)
+    .map((s) => `<span class="ep-s">${escapeHtml(s)}</span>`)
+    .join(' ');
+}

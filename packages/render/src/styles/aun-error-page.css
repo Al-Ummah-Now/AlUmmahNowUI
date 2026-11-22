@@ -32,6 +32,7 @@ html[lang=ar] .ep-code,.ep[lang=ar] .ep-code{letter-spacing:0}
 /* Balanced lines: a two- or three-line body never ends on one lone word */
 .ep-body{grid-column:1/-1;margin:var(--fanous-spacing-md,12px) 0 0;max-width:60ch;font-size:17px;line-height:1.65;text-wrap:balance;color:var(--fanous-color-text-secondary)}
 .ep[lang=ar] .ep-body{line-height:1.9}
+.ep-s{display:inline-block}
 
 .ep-search{display:flex;gap:var(--fanous-spacing-sm,8px);margin-block-start:var(--fanous-spacing-xl,24px)}
 .ep-search-input{flex:1 1 0;inline-size:100%;min-inline-size:0;box-sizing:border-box;min-height:44px;padding:0 14px;border:1px solid var(--fanous-color-outline);border-radius:12px;background:var(--fanous-color-surface);color:var(--fanous-color-text-primary);font:inherit;font-size:16px}
