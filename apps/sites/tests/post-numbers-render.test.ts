@@ -22,7 +22,16 @@ const post = (likes: number, comments: number): SitePost => ({
   likes, comments, createdAt: '2026-11-15T10:00:00Z', updatedAt: null, pinned: false,
 });
 
-const text = (html: string) => html.replace(/<[^>]+>/g, '').replace(/[ \t\r\n]+/g, ' ');
+/** The visible text of rendered HTML: tags dropped until none are left, whitespace collapsed (U+00A0 kept). */
+const text = (html: string) => {
+  let out = html;
+  let prev: string;
+  do {
+    prev = out;
+    out = out.replace(/<[^>]*>/g, '');
+  } while (out !== prev);
+  return out.replace(/[ \t\r\n]+/g, ' ');
+};
 
 describe('post meta numbers', () => {
   const render = (locale: 'en' | 'ar', likes: number, comments: number) => {
