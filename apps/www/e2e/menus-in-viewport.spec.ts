@@ -97,12 +97,15 @@ test.describe('menus stay inside the viewport', () => {
           }),
         );
         await page.goto(`/${l}/`);
-        // below 1024px the header search sits in the menu panel
-        const menu = page.locator('.site-header .aun-menu-collapse');
-        if (await menu.isVisible()) await menu.click();
-        const box = page.locator('.site-header [role="combobox"]:visible');
+        // below 1024px the header search is in the sheet its icon opens; where the bar has no room for the
+        // icon (under 360px, Arabic, signed out) the search page's box is the search
+        const open = page.getByTestId('header-search-open');
+        const inBar = await page.locator('#site-search-input').isVisible();
+        if (!inBar && (await open.isVisible())) await open.click();
+        else if (!inBar) await page.goto(`/${l}/search`);
+        const box = page.locator('[role="combobox"]:visible').first();
         await box.fill(l === 'ar' ? 'مقالة' : 'article');
-        await expectInViewport(page, page.locator('.site-header .search-popup:visible'), 'search suggestions');
+        await expectInViewport(page, page.locator('.search-popup:visible'), 'search suggestions');
       });
 
       test(`${vp.width}×${vp.height} ${l}: account menu`, async ({ page, context }) => {

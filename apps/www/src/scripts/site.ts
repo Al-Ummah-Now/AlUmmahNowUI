@@ -18,7 +18,7 @@ import { confirmDialog, type ConfirmOptions } from './confirm';
 import { initFacades } from './facade';
 import { initSearchBoxes } from './search-combobox';
 import { fitBrand } from '../../../../packages/render/src/brand-fit';
-import { fitToViewport } from '../../../../packages/render/src/menu-fit';
+import { coverBar, fitToViewport } from '../../../../packages/render/src/menu-fit';
 import { initTheme } from './theme';
 import { startStreet } from '../../../../packages/render/src/themes/fanous-street.generated.js';
 import {
@@ -503,6 +503,18 @@ rememberLocale();
 initTheme();
 initFacades();
 initSearchBoxes();
+
+// Below 1024px the header search is a sheet over the bar (the shared popover, NAV.md "Search"); opening,
+// Escape and the back arrow need no script. Script starts it where the bar starts and focuses its field.
+const searchSheet = document.getElementById('site-search-sheet');
+let releaseSheet = () => {};
+searchSheet?.addEventListener('toggle', (e) => {
+  releaseSheet();
+  releaseSheet = () => {};
+  if ((e as ToggleEvent).newState !== 'open') return;
+  releaseSheet = coverBar(searchSheet);
+  searchSheet.querySelector<HTMLInputElement>('.aun-search-input')?.focus();
+});
 startStreet();
 void initAccount();
 

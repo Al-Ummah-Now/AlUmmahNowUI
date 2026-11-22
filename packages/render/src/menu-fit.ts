@@ -5,10 +5,13 @@
  * shift it sideways (CSS `translate`) to an 8px gutter, narrow it if wider than the screen; keep it
  * below its anchor when it fits, else open it upwards when the anchor has more room above, capping
  * its height to the room on that side (it scrolls inside). Never a minimum height: a 96px floor
- * pushed a picker past a landscape phone's bottom (WebKit, 844x390). Re-fits when its size changes
- * and on resize.
+ * pushed a picker past a landscape phone's bottom (WebKit, 844x390). A fixed sheet (the phone account menu)
+ * hangs 4px under its `.aun-header`, wherever the bar is. Re-fits when its size changes and on resize.
+ * coverBar() places the header search's phone sheet over its bar.
  */
 const GUTTER = 8;
+/** A phone sheet's gap under the bar (aun-nav.css: var(--fanous-spacing-xs)). */
+const SHEET_GAP = 4;
 const fitted = new Set<HTMLElement>();
 const observers = new Map<HTMLElement, ResizeObserver>();
 let listening = false;
@@ -68,12 +71,17 @@ export function fitToViewport(el: HTMLElement | null | undefined): void {
   }
   const dx = r.left < vp.left + GUTTER ? vp.left + GUTTER - r.left : r.right > vp.right - GUTTER ? vp.right - GUTTER - r.right : 0;
   let dy = 0;
-  const below = Math.floor(vp.bottom - GUTTER - Math.max(r.top, vp.top + GUTTER));
+  // A fixed sheet (the phone account menu) hangs 4px under its bar wherever the bar is: its CSS top
+  // knows only the bar's height, so a banner above the header would put it over the bar (AUDIT-2, CMS #154).
+  const sheet = getComputedStyle(el).position === 'fixed';
+  const bar = sheet ? el.closest<HTMLElement>('.aun-header') : null;
+  if (bar) dy = Math.max(bar.getBoundingClientRect().bottom, vp.top) + SHEET_GAP - r.top;
+  const below = Math.floor(vp.bottom - GUTTER - Math.max(r.top + dy, vp.top + GUTTER));
   let cap: number | null = r.height > below ? below : null;
   if (cap !== null) {
     // No room below: open upwards when the anchor (the positioned box it hangs from) has more room
     // above. A fixed popup (a phone sheet) has no anchor to flip around.
-    const anchor = getComputedStyle(el).position === 'fixed' ? null : el.offsetParent;
+    const anchor = sheet ? null : el.offsetParent;
     if (anchor && anchor !== document.body && anchor !== document.documentElement) {
       const a = anchor.getBoundingClientRect();
       const gap = Math.max(0, r.top - a.bottom);
@@ -87,4 +95,28 @@ export function fitToViewport(el: HTMLElement | null | undefined): void {
   }
   if (cap !== null) el.style.maxBlockSize = `${Math.max(cap, 0)}px`;
   if (dx || dy) el.style.translate = `${Math.round(dx)}px ${Math.round(dy)}px`;
+}
+
+/**
+ * The header search's phone sheet (aun-nav.css "header search", below 1024px) covers its `.aun-header`:
+ * its CSS top is 0, so a banner above the bar would be covered instead of the bar. Call when the sheet
+ * opens; it follows the bar on scroll and resize until the returned release runs (on close). The same
+ * function as AlUmmahNow nav/menu-fit.js coverBar.
+ */
+export function coverBar(el: HTMLElement | null | undefined): () => void {
+  const bar = el?.closest<HTMLElement>('.aun-header');
+  if (!el || !bar) return () => {};
+  const place = () => {
+    el.style.removeProperty('translate');
+    const dy = Math.round(Math.max(bar.getBoundingClientRect().top, 0) - el.getBoundingClientRect().top);
+    if (dy) el.style.translate = `0px ${dy}px`;
+  };
+  place();
+  window.addEventListener('scroll', place, { passive: true });
+  window.addEventListener('resize', place);
+  return () => {
+    window.removeEventListener('scroll', place);
+    window.removeEventListener('resize', place);
+    el.style.removeProperty('translate');
+  };
 }

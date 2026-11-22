@@ -26,18 +26,19 @@ describe('www header = the header contract', () => {
       expect(i, s).toBeGreaterThanOrEqual(0);
       return i;
     };
-    const order = ['menuButtonHtml(', 'brandHtml(', 'envBadgeHtml(', 'class="aun-header-primary aun-collapse"', 'langButtonHtml(', 'class="aun-icon-btn aun-mode"', 'id="account"', 'signInHtml('].map(at);
+    const order = ['menuButtonHtml(', 'brandHtml(', 'envBadgeHtml(', 'class="aun-header-primary"', 'langButtonHtml(', 'class="aun-icon-btn aun-mode"', 'id="account"', 'signInHtml('].map(at);
     expect(order).toEqual([...order].sort((a, b) => a - b));
   });
 
-  it('one line on every screen: the links and search collapse into the menu panel below 1024px', () => {
+  it('one line on every screen: below 1024px the links collapse into the menu panel and the search into its icon', () => {
     expect(markup).toContain("menuButtonHtml({ lang: locale, panel: 'site-menu' })");
-    expect(markup).toContain('class="aun-header-primary aun-collapse"');
+    expect(markup).toContain('class="aun-header-primary"');
+    expect(markup).toContain('class="aun-icon-btn aun-search-open" popovertarget="site-search-sheet"');
     const panel = markup.slice(markup.indexOf('<div id="site-menu" class="aun-header-panel" popover>'));
     expect(panel.length).toBeLessThan(markup.length);
     expect(markup.indexOf('id="site-menu"')).toBeLessThan(markup.indexOf('</header>'));
     expect(panel).toContain('aria-current={current(i.href)}');
-    expect(panel).toContain('<SearchBox cfg={cfg} locale={locale} id="panel-search" />');
+    expect(panel).not.toContain('<SearchBox');
   });
 
   it('full width and the contract\'s typeface: header.css has no centring, row moves or header font', () => {

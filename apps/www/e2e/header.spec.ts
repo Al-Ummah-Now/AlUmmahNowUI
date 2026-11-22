@@ -64,22 +64,40 @@ for (const l of LOCALES) {
         await expect(menu).toBeHidden();
         await expect(page.locator('.site-header .primary-nav')).toBeVisible();
         await expect(page.locator('#site-search-input')).toBeVisible();
+        await expect(page.getByTestId('header-search-open')).toBeHidden();
         continue;
       }
       await expect(page.locator('.site-header .primary-nav')).toBeHidden();
       await expect(page.locator('#site-search-input')).toBeHidden();
+      // the search keeps its icon: it opens the sheet over the bar (same top and height), Escape closes it.
+      // Under 360px in Arabic, signed out, there is no room for it: the menu panel links to the search page.
+      const open = page.getByTestId('header-search-open');
+      const noRoom = rtl && w < 360;
+      if (noRoom) {
+        await expect(open).toBeHidden();
+      } else {
+        expect((await box(page, '[data-testid=header-search-open]')).height).toBe(40);
+        await open.click();
+        const sheet = await box(page, '[data-testid=header-search-sheet]');
+        expect([sheet.y, sheet.height, sheet.width], `${w} sheet`).toEqual([0, bar, w]);
+        await expect(page.locator('#site-search-input')).toBeFocused();
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#site-search-input')).toBeHidden();
+      }
       await expect(menu).toBeVisible();
       const mb = await box(page, '.aun-menu-collapse');
       expect([mb.width, mb.height]).toEqual([40, 40]);
       expect(rtl ? w - (mb.x + mb.width) : mb.x, `${w}`).toBe(w < 640 ? 12 : 16);
-      // the panel opens without script, right under the bar: the same links (aria-current kept) and the search
+      // the panel opens without script, right under the bar: the same links (aria-current kept)
       await menu.click();
       const panel = page.locator('#site-menu');
       await expect(panel).toBeVisible();
       expect((await panel.boundingBox())!.y).toBe(bar);
-      await expect(panel.getByRole('link')).toHaveText(await page.locator('.primary-nav a').allTextContents());
+      await expect(panel.locator('.panel-nav').getByRole('link')).toHaveText(await page.locator('.primary-nav a').allTextContents());
       await expect(panel.locator('a[aria-current="page"]')).toHaveCount(await page.locator('.primary-nav a[aria-current="page"]').count());
-      await expect(panel.getByRole('combobox', { name: rtl ? 'ابحث في المقالات' : 'Search articles' })).toBeVisible();
+      await expect(panel.getByRole('combobox')).toHaveCount(0);
+      if (noRoom) await expect(panel.getByTestId('panel-search-link')).toHaveAttribute('href', `/${l}/search`);
+      else await expect(panel.getByTestId('panel-search-link')).toBeHidden();
       await page.keyboard.press('Escape');
       await expect(panel).toBeHidden();
     }
@@ -122,7 +140,7 @@ test('sizes: 40px controls, the bar 64px (56px on phones), sticky; Sign in is th
   const phone = (page.viewportSize()?.width ?? 1366) < 640;
   expect((await box(page, '.site-header')).height).toBe(phone ? 56 : 64);
   const wide = (page.viewportSize()?.width ?? 1366) >= 1024;
-  for (const sel of ['.aun-lang', '.aun-mode', '.aun-signin', wide ? '#site-search-input' : '.aun-menu-collapse']) expect((await box(page, sel)).height, sel).toBe(40);
+  for (const sel of ['.aun-lang', '.aun-mode', '.aun-signin', wide ? '.site-header form.aun-search' : '.aun-menu-collapse']) expect((await box(page, sel)).height, sel).toBe(40);
   expect((await box(page, '.aun-mode')).width).toBe(40);
   expect((await box(page, '.aun-brand-mark')).width).toBe(phone ? 32 : 36);
   const signin = page.locator('.aun-signin');
@@ -164,6 +182,12 @@ for (const scheme of ['light', 'dark'] as const) {
         await expect(page.locator('#site-menu')).toBeVisible();
         const panel = await new AxeBuilder({ page }).include('.site-header').options(LABEL_IN_NAME).withTags(tags).analyze();
         expect(panel.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`), 'menu panel').toEqual([]);
+        await page.keyboard.press('Escape');
+        // and the search sheet
+        await page.getByTestId('header-search-open').click();
+        await expect(page.getByTestId('header-search-sheet')).toBeVisible();
+        const sheet = await new AxeBuilder({ page }).include('.site-header').options(LABEL_IN_NAME).withTags(tags).analyze();
+        expect(sheet.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`), 'search sheet').toEqual([]);
         await page.keyboard.press('Escape');
       }
 

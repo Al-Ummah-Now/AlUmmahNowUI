@@ -24,13 +24,13 @@ async function stubSuggest(page: Page, status = 200) {
   return seen;
 }
 
-/** The header's search box: in the bar from 1024px, in the menu panel below (opened first). */
+/** The header's search box: in the bar from 1024px; below, in the sheet its icon opens (NAV.md "Search"). */
 async function headerSearch(page: Page, name: string) {
-  const menu = page.locator('.site-header .aun-menu-collapse');
-  if (await menu.isVisible()) await menu.click();
+  const open = page.getByTestId('header-search-open');
+  if (await open.isVisible()) await open.click();
   return page.getByRole('combobox', { name });
 }
-const headerId = (page: Page) => ((page.viewportSize()?.width ?? 1366) >= 1024 ? 'site-search' : 'panel-search');
+const headerId = () => 'site-search';
 
 test('ar: the header box suggests as you type, with the combobox ARIA, marks and keyboard', async ({ page }) => {
   const seen = await stubSuggest(page);
@@ -70,9 +70,9 @@ test('en: Enter with no suggestion picked runs the full search; the search is re
   await expect(pageBox).toHaveValue('prayer times');
 
   // The empty header box shows the recent search on focus.
-  // the bar's box, the menu panel's box (the same search below 1024px) and the page's
-  await expect(page.locator('form[data-search][data-enhanced="true"]')).toHaveCount(3);
-  const id = headerId(page);
+  // the header's box (in the bar, or the sheet below 1024px) and the page's
+  await expect(page.locator('form[data-search][data-enhanced="true"]')).toHaveCount(2);
+  const id = headerId();
   await headerSearch(page, 'Search articles');
   const header = page.locator(`#${id}-input`);
   await expect(header).toBeVisible();

@@ -6,9 +6,10 @@
  * links and search in the primary slot (src/styles/header.css). Order, mirrored in Arabic:
  * menu (below 1024px) · brand · env badge · links + search · language · light/dark ·
  * account (or Sign in; neither, nor the silent sign-in probe, when sign-in isn't configured: cfg.signIn).
- * Below 1024px the links and search leave the bar (`aun-collapse`) and the menu
- * button opens them again in the `.aun-header-panel` popover (no script needed), so the bar is one
- * 64px (56px) line on every screen.
+ * The search is the shared one (NAV.md "Search"): in the bar from 1024px; below it the
+ * `.aun-search-open` icon opens it as a sheet over the bar (a popover, no script needed). Below 1024px the
+ * links leave the bar and the menu button opens them in the `.aun-header-panel` popover, so the bar is
+ * one 64px (56px) line on every screen.
  * apps/dev renders the same header (its tests compare its markup with this file).
  */
 import Icon from './Icon.astro';
@@ -19,8 +20,8 @@ import type { NavItem } from '../lib/cms-types';
 import { libraryUrl } from '../lib/embeds';
 import type { Config } from '../lib/env';
 import type { Locale } from '../lib/locale';
-import { brandHtml, envBadgeHtml, langButtonHtml, menuButtonHtml, signInHtml } from '../../../../packages/render/src/nav/header.js';
-import { modeIconSvg, modeToggleLabel } from '../../../../packages/render/src/nav/mode-toggle.js';
+import { BACK_ICON_BODY, HEADER_LABELS, SEARCH_ICON_BODY, brandHtml, envBadgeHtml, langButtonHtml, menuButtonHtml, signInHtml } from '../../../../packages/render/src/nav/header.js';
+import { MODE_ICON_ATTRS, modeIconSvg, modeToggleLabel } from '../../../../packages/render/src/nav/mode-toggle.js';
 
 interface Props { cfg: Config; locale: Locale; nav: NavItem[]; switchHref: string }
 const { cfg, locale, nav, switchHref } = Astro.props;
@@ -35,13 +36,16 @@ const toDark = modeToggleLabel(locale, false);
 const toLight = modeToggleLabel(locale, true);
 const loginHref = `/auth/login?return=${encodeURIComponent(path + Astro.url.search)}`;
 const videosUrl = libraryUrl(cfg.videosWebUrl, locale);
+// the shared search's icon button and back arrow (nav/header.js searchHtml's markup; NAV.md "Search")
+const searchLabels = HEADER_LABELS[locale];
+const navIcon = (name: string, body: string) => `<svg ${MODE_ICON_ATTRS} class="lucide lucide-${name}" aria-hidden="true" focusable="false">${body}</svg>`;
 ---
 <header class="site-header aun-header">
   <div class="aun-header-row">
     <Fragment set:html={menuButtonHtml({ lang: locale, panel: 'site-menu' })} />
     <Fragment set:html={brandHtml({ lang: locale, href: `/${locale}/`, logoSrc: '/brand/logo-192.webp' })} />
     <Fragment set:html={envBadgeHtml(cfg.appEnv, locale)} />
-    <div class="aun-header-primary aun-collapse">
+    <div class="aun-header-primary">
       <nav class="primary-nav" aria-label={t.a11y.primaryNav}>
         <ul>
           {items.map((i) => (
@@ -49,7 +53,15 @@ const videosUrl = libraryUrl(cfg.videosWebUrl, locale);
           ))}
         </ul>
       </nav>
-      <SearchBox cfg={cfg} locale={locale} id="site-search" />
+      <button type="button" class="aun-icon-btn aun-search-open" popovertarget="site-search-sheet" data-testid="header-search-open" aria-label={searchLabels.search} title={searchLabels.search}>
+        <Fragment set:html={navIcon('search', SEARCH_ICON_BODY)} />
+      </button>
+      <div class="aun-search-slot" id="site-search-sheet" popover="auto" data-testid="header-search-sheet">
+        <button type="button" class="aun-search-back" popovertarget="site-search-sheet" popovertargetaction="hide" data-testid="header-search-back" aria-label={searchLabels.back} title={searchLabels.back}>
+          <Fragment set:html={navIcon('arrow-left', BACK_ICON_BODY)} />
+        </button>
+        <SearchBox cfg={cfg} locale={locale} id="site-search" />
+      </div>
     </div>
     <div class="aun-header-tools">
       <Fragment set:html={langButtonHtml({ lang: locale, href: switchHref })} />
@@ -94,7 +106,9 @@ const videosUrl = libraryUrl(cfg.videosWebUrl, locale);
       )}
     </div>
   </div>
-  <!-- below 1024px: the same links and search, opened by the menu button (first in the bar) -->
+  <!-- below 1024px: the same links, opened by the menu button (first in the bar); the search has its own icon.
+       Where the bar has no room for that icon (header.css: under 360px, Arabic, signed out) the panel links to
+       the search page instead -->
   <div id="site-menu" class="aun-header-panel" popover>
     <nav class="panel-nav" aria-label={t.a11y.primaryNav}>
       <ul>
@@ -103,7 +117,10 @@ const videosUrl = libraryUrl(cfg.videosWebUrl, locale);
         ))}
       </ul>
     </nav>
-    <SearchBox cfg={cfg} locale={locale} id="panel-search" />
+    <a class="panel-search" href={`/${locale}/search`} data-testid="panel-search-link">
+      <Fragment set:html={navIcon('search', SEARCH_ICON_BODY)} />
+      <span>{searchLabels.search}</span>
+    </a>
   </div>
   <template id="caret-icon"><Icon name="caret" /></template>
   <template id="signout-icon"><svg class="aun-flip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4H5v16h4M14 8l4 4-4 4M18 12H8" /></svg></template>
