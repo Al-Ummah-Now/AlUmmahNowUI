@@ -26,7 +26,6 @@ const card = ctx
   ? errorCardHtml({
       locale,
       kind: 'notFound',
-      buttonClass: { primary: 'button', secondary: 'button button-secondary' },
       primary: { label: c.goHome, href: `/${locale}/`, icon: 'home' },
       back: true,
       contactHref: `${ctx.cfg.videosWebUrl}/${locale}/contact`,
@@ -42,7 +41,7 @@ const card = ctx
     <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <meta name="robots" content="noindex" />
+      <meta name="robots" content="noindex, nofollow" />
       <title>{t.notFoundTitle}</title>
     </head>
     <body>

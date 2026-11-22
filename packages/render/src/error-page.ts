@@ -28,17 +28,19 @@ export interface ErrorCardStrings {
   needHelp: string;
   contactUs: string;
   errorCode: string;
+  /** The tab title: "{title} | Al Ummah Now" (the same format on every app) */
+  pageTitle: string;
 }
 
 export const ERROR_CARD_STRINGS: Record<Locale, ErrorCardStrings> = {
   en: {
     kinds: {
-      notFound: { title: 'Page not found', body: "We couldn't find this page. The link may be wrong, or the page may have moved." },
-      gone: { title: 'This was removed', body: "It's no longer on Al Ummah Now. Search for something else, or go to the home\u00a0page." },
-      server: { title: 'We could not load this page', body: 'Our server had a problem with this request. Please try again in a moment.' },
-      unavailable: { title: 'This page is temporarily unavailable', body: 'Our content service is not responding. Try again in a few minutes.' },
+      notFound: { title: 'Page not found', body: 'We couldn’t find this page. The link may be wrong, or the page may have moved.' },
+      gone: { title: 'This was removed', body: 'It’s no longer on Al Ummah Now. Search for something else, or go to the home\u00a0page.' },
+      server: { title: 'We could not load this page', body: 'Our server had a problem with this request. Please try again in a\u00a0moment.' },
+      unavailable: { title: 'Page temporarily unavailable', body: 'Our content service is not responding. Try again in a few\u00a0minutes.' },
     },
-    goHome: 'Go to home',
+    goHome: 'Home page',
     goBack: 'Go back',
     tryAgain: 'Try again',
     search: 'Search',
@@ -47,13 +49,14 @@ export const ERROR_CARD_STRINGS: Record<Locale, ErrorCardStrings> = {
     needHelp: 'Still stuck?',
     contactUs: 'Contact us',
     errorCode: 'Error {code}',
+    pageTitle: '{title} | Al Ummah Now',
   },
   ar: {
     kinds: {
       notFound: { title: 'الصفحة غير موجودة', body: 'لم نعثر على هذه الصفحة. ربما الرابط غير صحيح أو نُقلت الصفحة.' },
       gone: { title: 'حُذف هذا المحتوى', body: 'لم يعد موجودًا على الأمة الآن. ابحث عن شيء آخر أو انتقل إلى الصفحة\u00a0الرئيسية.' },
       server: { title: 'تعذّر تحميل هذه الصفحة', body: 'واجه الخادم مشكلة في هذا الطلب. يُرجى المحاولة بعد قليل.' },
-      unavailable: { title: 'هذه الصفحة غير متاحة مؤقتًا', body: 'خدمة المحتوى لا تستجيب حاليًا. حاول مرة أخرى بعد دقائق.' },
+      unavailable: { title: 'الصفحة غير متاحة مؤقتًا', body: 'خدمة المحتوى لا تستجيب حاليًا. حاول مرة أخرى بعد دقائق.' },
     },
     goHome: 'الصفحة الرئيسية',
     goBack: 'رجوع',
@@ -64,6 +67,7 @@ export const ERROR_CARD_STRINGS: Record<Locale, ErrorCardStrings> = {
     needHelp: 'ما زلت تواجه المشكلة؟',
     contactUs: 'تواصل معنا',
     errorCode: 'خطأ {code}',
+    pageTitle: '{title} | الأمة الآن',
   },
 };
 
@@ -90,6 +94,11 @@ export function errorCodeLabel(locale: Locale, code: number): string {
   return ERROR_CARD_STRINGS[locale].errorCode.replace('{code}', digits);
 }
 
+/** "Page not found | Al Ummah Now" / «الصفحة غير موجودة | الأمة الآن»: the error pages' tab title. */
+export function errorPageTitle(locale: Locale, title: string): string {
+  return ERROR_CARD_STRINGS[locale].pageTitle.replace('{title}', title);
+}
+
 export interface ErrorCardAction {
   label: string;
   href: string;
@@ -99,8 +108,6 @@ export interface ErrorCardAction {
 export interface ErrorCardOptions {
   locale: Locale;
   kind: ErrorCardKind;
-  /** The app's own button classes: [main action, other actions] */
-  buttonClass: { primary: string; secondary: string };
   primary: ErrorCardAction;
   secondary?: ErrorCardAction[];
   /** The site search form (GET action?q=), on 404 and 410 */
@@ -115,8 +122,12 @@ export interface ErrorCardOptions {
   headingLevel?: 1 | 2;
 }
 
-const button = (a: ErrorCardAction, cls: string, attrs = ''): string =>
-  `<a class="${escapeHtml(cls)} ep-btn" href="${escapeHtml(a.href)}"${attrs}>${a.icon ? errorCardIcon(a.icon) : ''}<span>${escapeHtml(a.label)}</span></a>`;
+/** The family's own buttons (aun-error-page.css), never the app's: the same on every app. */
+const PRIMARY = 'ep-btn ep-btn-primary';
+const SECONDARY = 'ep-btn ep-btn-secondary';
+
+const button = (a: ErrorCardAction, cls: string): string =>
+  `<a class="${cls}" href="${escapeHtml(a.href)}">${a.icon ? errorCardIcon(a.icon) : ''}<span>${escapeHtml(a.label)}</span></a>`;
 
 /** The card's HTML (every value escaped). */
 export function errorCardHtml(o: ErrorCardOptions): string {
@@ -131,10 +142,10 @@ export function errorCardHtml(o: ErrorCardOptions): string {
     ? `<form class="ep-search" role="search" action="${escapeHtml(o.search.action)}" method="get">` +
       `<label class="ep-sr" for="ep-search-q-${o.locale}">${escapeHtml(t.searchLabel)}</label>` +
       `<input id="ep-search-q-${o.locale}" class="ep-search-input" type="search" name="q" placeholder="${escapeHtml(o.search.placeholder ?? t.searchPlaceholder)}" autocomplete="off" enterkeyhint="search">` +
-      `<button type="submit" class="${escapeHtml(o.buttonClass.secondary)} ep-btn ep-search-btn">${errorCardIcon('search')}<span>${escapeHtml(t.search)}</span></button></form>`
+      `<button type="submit" class="${SECONDARY} ep-search-btn">${errorCardIcon('search')}<span>${escapeHtml(t.search)}</span></button></form>`
     : '';
   const back = o.back
-    ? `<button type="button" class="${escapeHtml(o.buttonClass.secondary)} ep-btn" data-ep-back hidden>${errorCardIcon('back')}<span>${escapeHtml(t.goBack)}</span></button>`
+    ? `<button type="button" class="${SECONDARY}" data-ep-back hidden>${errorCardIcon('back')}<span>${escapeHtml(t.goBack)}</span></button>`
     : '';
   const help = o.contactHref ? `<p class="ep-help">${escapeHtml(t.needHelp)} <a href="${escapeHtml(o.contactHref)}">${escapeHtml(t.contactUs)}</a></p>` : '';
   return (
@@ -144,7 +155,7 @@ export function errorCardHtml(o: ErrorCardOptions): string {
     `<div class="ep-heading"><p class="ep-code">${escapeHtml(errorCodeLabel(o.locale, status))}</p><${h} class="ep-title" id="${id}">${escapeHtml(o.title ?? copy.title)}</${h}></div>` +
     `<p class="ep-body">${escapeHtml(o.body ?? copy.body)}</p></div>` +
     search +
-    `<footer class="ep-foot">${help}<div class="ep-actions">${back}${(o.secondary ?? []).map((a) => button(a, o.buttonClass.secondary)).join('')}${button(o.primary, o.buttonClass.primary)}</div></footer>` +
+    `<footer class="ep-foot">${help}<div class="ep-actions">${back}${(o.secondary ?? []).map((a) => button(a, SECONDARY)).join('')}${button(o.primary, PRIMARY)}</div></footer>` +
     `</section></div>`
   );
 }

@@ -1269,6 +1269,17 @@ html[lang='ar'] .hero-wordmark {
     grid-column: 1 / -1;
   }
 }
+/* A host name ("videos.alummahnow.net") is never split: on a narrow phone the link groups stack in
+   one column, wide enough for the longest host, and the host links never wrap */
+.site-footer a[rel~='external'] {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+@media (max-width: 440px) {
+  .footer-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 
 /* ---------- 404 (pages/404.astro): the shared error card, once per language ---------- */
 .ep-pair {
@@ -1279,9 +1290,6 @@ html[lang='ar'] .hero-wordmark {
 .ep-pair .ep {
   min-height: 0;
   padding-block: 0;
-}
-.ep-btn {
-  gap: 8px;
 }
 
 /* ---------- Icons from www's set (apps/www/src/components/Icon.astro) ---------- */

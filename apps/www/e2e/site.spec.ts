@@ -41,7 +41,7 @@ test.describe('rendering', () => {
       await expect(card).toHaveAttribute('data-error-status', '404');
       await expect(card.getByText(l === 'en' ? 'Error 404' : 'خطأ ٤٠٤')).toBeVisible();
       await expect(card.getByRole('search').getByRole('searchbox')).toBeVisible();
-      await expect(card.getByRole('link', { name: l === 'en' ? 'Go to home' : 'الصفحة الرئيسية' })).toHaveAttribute('href', `/${l}/`);
+      await expect(card.getByRole('link', { name: l === 'en' ? 'Home page' : 'الصفحة الرئيسية' })).toHaveAttribute('href', `/${l}/`);
       await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
       expect(await card.evaluate((el) => [...el.querySelectorAll('*')].filter((e) => getComputedStyle(e).animationName !== 'none').length)).toBe(0);
     });

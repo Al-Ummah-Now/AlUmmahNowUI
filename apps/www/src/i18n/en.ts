@@ -141,10 +141,10 @@ export const en = {
   },
   errors: {
     notFoundTitle: 'Page not found',
-    notFoundBody: "We couldn't find this page. The link may be wrong, or the page may have moved.",
+    notFoundBody: 'We couldn’t find this page. The link may be wrong, or the page may have moved.',
     serverTitle: 'We could not load this page',
     serverBody: 'Our server had a problem with this request. Please try again in a moment.',
-    unavailableTitle: 'This page is temporarily unavailable',
+    unavailableTitle: 'Page temporarily unavailable',
     unavailableBody: 'Our content service is not responding. Try again in a few minutes.',
     goHome: 'Go to the home page',
     tryAgain: 'Try again',

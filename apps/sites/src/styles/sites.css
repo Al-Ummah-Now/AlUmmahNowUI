@@ -74,12 +74,21 @@ html[data-theme][data-mode='dark'] {
 *::after {
   box-sizing: border-box;
 }
+/* The footer always reaches the bottom of the window: on a short page (a 404 on a phone) main takes the
+   free height, so no empty band shows under the footer */
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font);
   line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+body > main {
+  flex: 1 0 auto;
 }
 html[lang='ar'] body {
   font-family: var(--font-ar);
@@ -438,14 +447,4 @@ html[data-signed-in] .site-header .aun-signin {
 .button:hover,
 .button:focus-visible {
   background: color-mix(in srgb, var(--button-text) 8%, var(--button-bg));
-}
-/* The other actions next to the main one (the error card's Go back): outlined, flat */
-.button-secondary {
-  border: 0;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  background: transparent;
-  color: var(--fanous-color-text-primary);
-  box-shadow: inset 0 0 0 1px var(--fanous-color-outline);
 }

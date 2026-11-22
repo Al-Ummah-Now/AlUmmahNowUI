@@ -13,7 +13,7 @@ import '../../../../packages/render/src/styles/aun-error-page.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { strings } from '../i18n';
-import { errorCardHtml, ERROR_CARD_STRINGS } from '../../../../packages/render/src/error-page';
+import { errorCardHtml, errorPageTitle, ERROR_CARD_STRINGS } from '../../../../packages/render/src/error-page';
 
 const t = strings('en');
 const card = (locale: 'en' | 'ar', headingLevel: 1 | 2) =>
@@ -21,9 +21,8 @@ const card = (locale: 'en' | 'ar', headingLevel: 1 | 2) =>
     locale,
     kind: 'notFound',
     headingLevel,
-    buttonClass: { primary: 'button button-primary', secondary: 'button button-quiet' },
     primary: { label: ERROR_CARD_STRINGS[locale].goHome, href: `/${locale}/`, icon: 'home' },
-    back: locale === 'en',
+    back: true,
     contactHref: `/${locale}/contact/`,
   });
 ---
@@ -33,8 +32,8 @@ const card = (locale: 'en' | 'ar', headingLevel: 1 | 2) =>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script is:inline src="/mode.js"></script>
-    <title>{ERROR_CARD_STRINGS.en.kinds.notFound.title} · {ERROR_CARD_STRINGS.ar.kinds.notFound.title} | Al Ummah Now</title>
-    <meta name="robots" content="noindex" />
+    <title>{errorPageTitle('en', `${ERROR_CARD_STRINGS.en.kinds.notFound.title} | ${ERROR_CARD_STRINGS.ar.kinds.notFound.title}`)}</title>
+    <meta name="robots" content="noindex, nofollow" />
     <meta name="color-scheme" content="light dark" />
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="preload" as="font" type="font/woff2" href="/fonts/noto-naskh-arabic-arabic-400-normal.woff2" crossorigin />

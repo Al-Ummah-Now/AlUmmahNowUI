@@ -16,13 +16,12 @@ const home = { label: t.goHome, href: `/${locale}/`, icon: 'home' as const };
 const html = errorCardHtml({
   locale,
   kind: card,
-  // Gold for the card's one main action, as on every app's error page; the rest outlined
-  buttonClass: { primary: 'button button-primary', secondary: 'button button-outline' },
-  // 404: the site search and the way home; 500/503: try the same page again, or home
+  // 404: the site search, Go back and the way home; 500/503: try the same page again, or home (the
+  // videos site's set: no Go back on a server error)
   primary: card === 'notFound' ? home : { label: t.tryAgain, href: Astro.url.pathname, icon: 'retry' },
   secondary: card === 'notFound' ? [] : [home],
   search: card === 'notFound' ? { action: `/${locale}/search` } : undefined,
-  back: true,
+  back: card === 'notFound',
   contactHref: `/${locale}/contact`,
 });
 ---
