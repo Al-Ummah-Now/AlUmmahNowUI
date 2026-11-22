@@ -2144,6 +2144,17 @@ html:not([data-mode='light']) .pi-invert-dark svg {
     box-shadow: inset -3px 0 0 var(--link);
   }
 }
+/* the pager follows the page at block spacing, not a band's: the last section keeps 40px under its content, and
+   the pager band adds 40px only outside a raised (tinted) section, then 40px down to the footer */
+.sd-main > .band:has(+ .sd-pager-band) {
+  padding-block-end: 40px;
+}
+.sd-pager-band {
+  padding-block: 0 40px;
+}
+.sd-main > .band-raised + .sd-pager-band {
+  padding-block-start: 40px;
+}
 .sd-pager {
   display: flex;
   justify-content: space-between;

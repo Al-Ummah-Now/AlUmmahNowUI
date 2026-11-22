@@ -17,7 +17,7 @@ export const aiAr: typeof aiEn = {
       d1: { name: 'REPORTS_DB', role: 'الميزانية، الإشارات' },
       admin: { name: 'إدارة المرئيات', role: 'طابور المراجعة' },
       cms: { name: 'إدارة المحتوى', role: 'مساعد الكتابة' },
-      workersAi: { name: 'Workers AI', role: 'سقوف يومية للخلايا' },
+      workersAi: { name: 'Workers AI', role: 'سقوف نيورونات يومية' },
       gemma: { name: '{tkGemma}', role: 'ترجمة، فحوص' },
       guard: { name: '{tkGuard}', role: 'فئات السلامة' },
       scout: { name: '{tkScout}', role: 'اقتراح التصنيفات' },
