@@ -254,9 +254,40 @@ async function walkPage(page: Page, tag: string, key: string, blocks: Block[], h
   if (prior && prior.shape === shape) {
     groups = prior.groups;
     note = 'plan shared with the first language';
+  } else if (prior) {
+    // a block one language has and the other doesn't (a terms line a figure needs in English only): the blocks are
+    // lined up in order; a missing one leaves its group, an extra one joins the group of the block before it
+    // lined up by kind of block only: a drawing may be too tall for a frame in one language and not the other
+    const aTall = prior.shape.split(',').map((t) => t.endsWith('!'));
+    const a = prior.shape.split(',').map((t) => t.replace(/!$/, ''));
+    const b = shape.split(',').map((t) => t.replace(/!$/, ''));
+    const map = new Map<number, number>();
+    for (let i = 0, j = 0; i < a.length && j < b.length; ) {
+      if (a[i] === b[j]) map.set(i++, j++);
+      else if (a.indexOf(b[j]!, i) === -1) j++;
+      else i++;
+    }
+    const groupOf = new Map<number, number>();
+    groups = prior.groups.map((g, k) => {
+      // a block that fit a frame in the first language keeps its frame here, the view grown to hold it
+      const out = g.flatMap((i) => (map.has(i) && (!blocks[map.get(i)!]!.tall || !aTall[i]) ? [map.get(i)!] : []));
+      for (const j of out) groupOf.set(j, k);
+      return out;
+    });
+    b.forEach((_, j) => {
+      if (groupOf.has(j) || blocks[j]!.tall) return;
+      let k = 0;
+      for (let q = j - 1; q >= 0; q--) if (groupOf.has(q)) {
+        k = groupOf.get(q)!;
+        break;
+      }
+      groups[k]!.push(j);
+      groupOf.set(j, k);
+    });
+    groups = groups.map((g) => g.sort((x, y) => x - y)).filter((g) => g.length);
+    note = `plan shared with the first language (lined up: ${a.length - map.size} block(s) only there, ${b.length - map.size} only here)`;
   } else {
     groups = planFrames(blocks, head, page.viewportSize()!.height, H, endSide);
-    if (prior) note = 'plan made here (the page has other blocks than in the first language)';
     plans.set(key, { groups, shape });
   }
   return { frames: await shootFrames(page, tag, blocks, head, groups), note };
@@ -301,6 +332,7 @@ function proveFrames(tag: string, blocks: Block[], frames: Frame[], head: number
   return [`## ${tag}`, '', `${frames.length} frames · header ${Math.round(head)} px · page ${H} px · ${note}`, '', '| block (px) | block | shown whole in |', '|---|---|---|', ...rows, ''].join('\n');
 }
 const coverage: string[] = [];
+const frameCounts = new Map<string, number>();
 
 for (const slug of PAGES)
   for (const lang of LANGS)
@@ -340,6 +372,10 @@ for (const slug of PAGES)
         for (const x of blocks) if (x.tall && !x.diagram) defects.push(`${tag}: “${x.label}” is taller than the view (${x.bottom - x.top} px), so no frame can show it whole`);
         const walked = ONLY ? { frames: [], note: '' } : await walkPage(page, tag, `${slug}|${w}|${mode}`, blocks, read.head, read.H, read.endSide);
         const frames = walked.frames;
+        // both languages tell a page in the same frames
+        const pk = `${slug}|${w}|${mode}`;
+        if (!ONLY && frameCounts.has(pk) && frameCounts.get(pk) !== frames.length) defects.push(`${tag}: ${frames.length} frames, the first language had ${frameCounts.get(pk)}`);
+        if (!ONLY && !frameCounts.has(pk)) frameCounts.set(pk, frames.length);
         const captures = new Set<string>();
         const figs = await page.locator('.an-figure').count();
         for (let i = 0; i < figs; i++) {
@@ -524,7 +560,7 @@ if (RECORD) {
 
 await browser.close();
 server.close();
-if (coverage.length) writeFileSync(join(out, 'COVERAGE.md'), [`# Frame coverage`, '', 'Every block on every page, and the frames that show it whole. Written by scripts/sysdesign-shots.ts, which fails the run when a block is missing, two frames repeat or overlap, an edge cuts a block or a line of the page list, or a frame opens or ends on an empty band.', '', ...coverage].join('\n'));
+if (coverage.length) writeFileSync(join(out, 'COVERAGE.md'), [`# Frame coverage`, '', 'Every block on every page, and the frames that show it whole. Written by scripts/sysdesign-shots.ts, which fails the run when a block is missing, two frames repeat or overlap, the languages differ in frame count, an edge cuts a block or a line of the page list, or a frame opens or ends on an empty band.', '', ...coverage].join('\n'));
 if (defects.length) {
   console.error(defects.join('\n'));
   console.error(`GATE FAILED: ${defects.length} defects`);
