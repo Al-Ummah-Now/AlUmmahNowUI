@@ -2464,6 +2464,10 @@ html[data-js] .ci-deck .tl-ov {
   background: var(--fanous-color-primary);
   color: var(--fanous-color-on-primary);
   border-radius: 2px;
+  /* room either side so the letters and the punctuation after the word don't sit on the box edge */
+  padding-inline: 0.15em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 .search-thumb {
   flex: none;
