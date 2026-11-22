@@ -73,6 +73,97 @@ const WIDTHS = { desktop: { width: 1440, height: 900, dsf: 2 }, phone: { width: 
 const name = (slug: string) => (slug ? slug.replace(/\/$/, '') : 'hub');
 const defects: string[] = [];
 
+type Page = Awaited<ReturnType<Awaited<ReturnType<typeof browser.newContext>>['newPage']>>;
+/** what a frame is made of: headings, leads, cards, paragraphs, the pager and the footer (document coordinates) */
+const BLOCKS = 'main h2, main h3:not(.tile-title, .sd-index-title), main .section-lead, main .tile, main .band p, main .sd-index li, .sd-pager, footer.site-footer';
+/**
+ * Viewport frames over [from, to) of the page: each starts at a block's top (or the heading just above it), below
+ * the sticky header, and is clipped at the bottom of the last block it shows whole, so no frame opens or ends on a
+ * cut line; the next frame starts at the first block in range the last one didn't show whole.
+ */
+async function walkFrames(page: Page, file: (k: number) => string, from: number, to: number, max = 20): Promise<number> {
+  const vh = page.viewportSize()?.height ?? 800;
+  const vw = page.viewportSize()?.width ?? 1280;
+  const { head, all } = await page.evaluate(
+    ({ sel }) => {
+      const head = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
+      const blocks = [...document.querySelectorAll<HTMLElement>(sel)]
+        .filter((el) => getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().height > 0)
+        .map((el) => {
+          const r = el.getBoundingClientRect();
+          return { top: Math.round(r.top + window.scrollY), bottom: Math.round(r.bottom + window.scrollY), heading: /^H[23]$/.test(el.tagName) || el.classList.contains('section-lead') };
+        })
+        .sort((p, q) => p.top - q.top || p.bottom - q.bottom);
+      return { head, all: blocks };
+    },
+    { sel: BLOCKS },
+  );
+  // the frames walk the blocks in range; every block on screen decides where a frame is clipped
+  const blocks = all.filter((b) => b.top >= from - 1 && b.top < to - 1);
+  if (!blocks.length) return 0;
+  // a start steps back to the headings (and lead) directly above it, so a section never opens without its title
+  const withTitle = (y: number) => {
+    for (;;) {
+      const above = all.filter((b) => b.heading && b.top >= from - 1 && b.bottom <= y + 1 && y - b.bottom < 96 && !all.some((o) => !o.heading && o.top > b.bottom - 1 && o.top < y - 1));
+      const h = above.sort((p, q) => q.top - p.top)[0];
+      if (!h || h.top >= y) return y;
+      y = h.top;
+    }
+  };
+  let y = withTitle(blocks[0]!.top);
+  let k = 0;
+  while (k < max) {
+    k++;
+    await page.evaluate((top) => window.scrollTo(0, top), y - head - 16);
+    const sy = await page.evaluate(() => window.scrollY);
+    // the page can't scroll that far: the frame starts below the header at the block's top instead
+    let clipTop = Math.max(0, Math.round(y - sy - 16 > head + 1 ? y - sy - 16 : 0));
+    const viewBottom = sy + vh;
+    const whole = all.filter((b) => b.top >= y - 1 && b.bottom <= viewBottom);
+    const cut = all.filter((b) => b.top >= y - 1 && b.bottom > viewBottom && b.top < viewBottom);
+    const left = blocks.filter((b) => b.top >= y - 1 && b.bottom > viewBottom);
+    // clipped at the last whole block's bottom when the next one would show cut (a single block taller than the
+    // view is shown as far as it goes)
+    const lastWhole = whole.length ? Math.max(...whole.map((b) => b.bottom)) : viewBottom;
+    let clipBottom = cut.length && whole.length ? Math.min(vh, Math.round(lastWhole - sy + 16)) : vh;
+    // a clipped edge never cuts through a line of the sticky page list beside the content: it moves into the
+    // space around the blocks (above the start, below the last whole block) to clear it
+    if (clipTop || clipBottom < vh) {
+      const side = await page.evaluate(() =>
+        [...document.querySelectorAll('.sd-aside .sd-nav-title, .sd-aside li')].map((el) => {
+          const r = el.getBoundingClientRect();
+          return [Math.round(r.top), Math.round(r.bottom)] as [number, number];
+        }),
+      );
+      const inside = (c: number) => side.some(([t, b]) => c > t && c < b);
+      // the free spot nearest the wanted edge, within [lo, hi]
+      const nearest = (want: number, lo: number, hi: number) => {
+        for (let d = 0; d <= Math.max(want - lo, hi - want); d++) {
+          if (want - d >= lo && !inside(want - d)) return want - d;
+          if (want + d <= hi && !inside(want + d)) return want + d;
+        }
+        return want;
+      };
+      if (clipTop) {
+        // between the bottom of the last block above the start and the start itself
+        const floor = Math.max(head, ...all.filter((b) => b.bottom <= y).map((b) => Math.ceil(b.bottom - sy + 4)));
+        clipTop = nearest(clipTop, floor, Math.floor(y - sy - 2));
+      }
+      if (clipBottom < vh) {
+        // between the last whole block's bottom and the top of the next one
+        const ceil = Math.min(vh, ...cut.map((b) => Math.floor(b.top - sy - 4)));
+        clipBottom = nearest(clipBottom, Math.ceil(lastWhole - sy + 2), ceil);
+      }
+    }
+    await page.screenshot({ path: file(k), clip: { x: 0, y: clipTop, width: vw, height: clipBottom - clipTop } });
+    const next = left.length ? Math.min(...left.map((b) => b.top)) : null;
+    if (next === null) break;
+    const n2 = withTitle(next);
+    y = n2 > y ? n2 : next > y ? next : y + vh - head - 32;
+  }
+  return k;
+}
+
 for (const slug of PAGES)
   for (const lang of LANGS)
     for (const mode of ['dark', 'light'] as const)
@@ -104,22 +195,17 @@ for (const slug of PAGES)
         for (const v of cspViolations.splice(0)) found.push(`CSP blocked: ${v}`);
         for (const d of found) defects.push(`${name(slug)} ${lang} ${mode} ${w}: ${d}`);
         const tag = `${name(slug)}-${mode}-${w}-${lang}`;
-        const H = await page.evaluate(() => document.scrollingElement!.scrollHeight);
         // viewport frames: top, then each diagram centred, then the end
         await page.evaluate(() => window.scrollTo(0, 0));
         if (!ONLY) await page.screenshot({ path: join(out, `${tag}-frame-1-top.png`) });
-        // the hub's page list in full: as many viewport frames as it takes, each starting below the sticky header
+        // the hub's page list in full: as many frames as it takes, each opening on its heading or a row of cards and
+        // ending on a whole one
         if (!ONLY && (await page.locator('.sd-index').count())) {
-          const head = await page.evaluate(() => document.querySelector('header')?.getBoundingClientRect().height ?? 0);
           const list = await page.locator('#pages-h').evaluate((el) => {
             const sec = el.closest('section')!.getBoundingClientRect();
             return { top: sec.top + window.scrollY, bottom: sec.bottom + window.scrollY };
           });
-          const view = (page.viewportSize()?.height ?? 800) - head - 8;
-          for (let y = list.top - head - 8, k = 1; y < list.bottom - head; y += view, k++) {
-            await page.evaluate((top) => window.scrollTo(0, top), y);
-            await page.screenshot({ path: join(out, `${tag}-frame-1-pages-${k}.png`) });
-          }
+          await walkFrames(page, (k) => join(out, `${tag}-frame-1-pages-${k}.png`), list.top, list.bottom);
         }
         const figs = await page.locator('.an-figure').count();
         for (let i = 0; i < figs; i++) {
@@ -210,37 +296,31 @@ for (const slug of PAGES)
             requestAnimationFrame(() => requestAnimationFrame(() => res()));
           }));
         }
-        // everything between the last figure and the pager (the cards after the diagrams): as many viewport frames as
-        // it takes, each starting below the sticky header, so no copy goes unseen between the figures and the end
+        // everything between the last figure and the pager (the cards after the diagrams): as many frames as it takes,
+        // each opening on a heading or a row of cards and ending on a whole one, so no copy goes unseen
         if (!ONLY && figs && (await page.locator('.sd-pager').count())) {
-          const head = await page.evaluate(() => document.querySelector('header')?.getBoundingClientRect().height ?? 0);
           const span = await page.evaluate(() => {
             const figsAll = [...document.querySelectorAll('.an-figure')];
             const last = figsAll[figsAll.length - 1]!.getBoundingClientRect();
             const pager = document.querySelector('.sd-pager')!.getBoundingClientRect();
-            // where a frame may start: the top of a card, a heading or a paragraph after the last figure
-            const starts = [...document.querySelectorAll('.tile, h2, h3, .section-lead, .band p')]
-              .map((el) => el.getBoundingClientRect().top + window.scrollY)
-              .filter((y) => y > last.bottom + window.scrollY && y < pager.top + window.scrollY);
-            return { top: last.bottom + window.scrollY, bottom: pager.top + window.scrollY, starts: [...new Set(starts.map(Math.round))].sort((p, q) => p - q) };
+            return { top: last.bottom + window.scrollY, bottom: pager.top + window.scrollY };
           });
-          const view = (page.viewportSize()?.height ?? 800) - head - 8;
-          // each frame starts at a card's (or heading's) top, never mid-card under the sticky header: the next one at the
-          // last start this frame doesn't show whole
-          let y = span.top;
-          for (let k = 1; y < span.bottom - 8 && k < 20; k++) {
-            await page.evaluate((top) => window.scrollTo(0, top), y - head - 8);
-            await page.screenshot({ path: join(out, `${tag}-frame-after-${k}.png`) });
-            const next = span.starts.filter((s) => s > y + 8 && s <= y + view - 40).pop();
-            y = next ?? y + view;
-          }
+          await walkFrames(page, (k) => join(out, `${tag}-frame-after-${k}.png`), span.top, span.bottom);
         }
-        await page.evaluate((h) => window.scrollTo(0, h), H);
-        if (!ONLY) await page.screenshot({ path: join(out, `${tag}-frame-${figs + 2}-end.png`) });
-        // the previous/next links, placed below the sticky header
+        // the end: from the first block whose run to the page's foot fits in one view, to the foot
+        if (!ONLY) {
+          const from = await page.evaluate((sel) => {
+            const head = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
+            const H = document.scrollingElement!.scrollHeight;
+            const tops = [...document.querySelectorAll<HTMLElement>(sel)].map((el) => el.getBoundingClientRect().top + window.scrollY).filter((t) => H - t <= window.innerHeight - head - 16);
+            return Math.min(...tops, H - 1);
+          }, BLOCKS);
+          await walkFrames(page, () => join(out, `${tag}-frame-${figs + 2}-end.png`), from, Infinity, 1);
+        }
+        // the previous/next links, opening on the pager itself
         if (!ONLY && (await page.locator('.sd-pager').count())) {
-          await page.locator('.sd-pager').evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - window.innerHeight / 2));
-          await page.screenshot({ path: join(out, `${tag}-frame-pager.png`) });
+          const top = await page.locator('.sd-pager').evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
+          await walkFrames(page, () => join(out, `${tag}-frame-pager.png`), top - 1, top + 2, 1);
         }
         await ctx.close();
       }
