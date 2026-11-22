@@ -325,7 +325,9 @@ for (const l of ['en', 'ar'] as const) {
 }
 
 // Owner (2026-11-15): a scholar site keeps its own theme's colours in the shared header; the layout
-// and controls are every app's. The colours come only from the theme's --fanous-c-nav-* tokens.
+// and controls are every app's. The colours come only from the theme's tokens: the bar's band is the
+// shared contract's for that theme (--aun-header-band, built from its --fanous-c-nav-* tokens, drawn on
+// the bar's ::before; AlUmmahNow NAV.md "Theme"), its controls the --fanous-c-nav-* colours.
 test('the header wears the site\'s own theme (nahas), from its nav tokens, never Fawanees\'; contrast holds', async ({ page }) => {
   const read = () =>
     page.evaluate(() => {
@@ -335,13 +337,15 @@ test('the header wears the site\'s own theme (nahas), from its nav tokens, never
         probe.style.cssText = `background-color: var(${token}); color: var(${token}); border: 1px solid var(${token})`;
         return getComputedStyle(probe)[prop];
       };
-      const header = getComputedStyle(document.querySelector('.site-header')!);
+      probe.style.cssText = 'background-image: var(--aun-header-band)';
+      const band = getComputedStyle(probe).backgroundImage;
+      const header = getComputedStyle(document.querySelector('.site-header')!, '::before');
       const lang = getComputedStyle(document.querySelector('.aun-lang')!);
       const out = {
-        header: header.backgroundColor,
+        header: header.backgroundImage,
         langText: lang.color,
         langBorder: lang.borderTopColor,
-        navBg: resolve('--fanous-c-nav-bg', 'backgroundColor'),
+        navBg: band,
         navText: resolve('--fanous-c-nav-text', 'color'),
         navBorder: resolve('--fanous-c-nav-search-border', 'borderTopColor'),
       };
@@ -354,12 +358,13 @@ test('the header wears the site\'s own theme (nahas), from its nav tokens, never
       await page.goto(at(HOSTS.both, `/${l}/`));
       await expect(page.locator('html')).toHaveAttribute('data-theme', 'nahas');
       const own = await read();
+      expect(own.header, `${scheme} ${l}`).toMatch(/gradient/);
       expect([own.header, own.langText, own.langBorder], `${scheme} ${l}`).toEqual([own.navBg, own.navText, own.navBorder]);
       // the same page in Fawanees would have other colours: the site's theme is what shows
       const fawanees = await page.evaluate(async () => {
         document.documentElement.setAttribute('data-theme', 'fawanees');
         await new Promise((r) => requestAnimationFrame(() => r(null)));
-        return getComputedStyle(document.querySelector('.site-header')!).backgroundColor;
+        return getComputedStyle(document.querySelector('.site-header')!, '::before').backgroundImage;
       });
       expect(fawanees, `${scheme} ${l}`).not.toBe(own.header);
       await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'nahas'));
