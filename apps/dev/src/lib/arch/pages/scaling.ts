@@ -1,5 +1,5 @@
 /** Scaling page diagrams (docs/SOURCES.md §2, §6, §10). */
-import { stack, type ArchNode } from '../arch.ts';
+import type { ArchNode } from '../arch.ts';
 import type { Builder } from './types.ts';
 
 const node = (id: string, icon: string, c: { name: string; role: string | string[] }, at: [number, number], extra: Partial<ArchNode> = {}): ArchNode => ({ id, icon, name: c.name, role: c.role, at, ...extra });
