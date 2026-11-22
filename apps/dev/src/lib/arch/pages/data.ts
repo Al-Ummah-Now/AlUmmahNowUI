@@ -68,8 +68,6 @@ const stores: Builder = (d) => {
       colW: 180,
       rowH: 100,
       iconSize: 34,
-      // room inside the account's side for the search-rows words beside the outer lane, clear of the dashed edge
-      growPad: { cf: { l: 6 } },
       at: stack([
         [['apiVideos', 'processor'], 0],
         [['auth', 'comms'], 1.05],
@@ -77,21 +75,23 @@ const stores: Builder = (d) => {
         // Analytics Engine sits right under the Workers: videos web's page-speed wire drops straight in
         [['rum', 'abuse'], 2.1],
         [['authEvents'], 1.05],
-        [['records', 'media'], 2.1],
-        [['system'], 1.05],
-        [['search', 'notifications'], 2.1],
-        [['reports', 'authDb'], 1.05],
-        [['revocations', 'appKv'], 2.3],
+        // KV and the Durable Objects before R2 and D1: auth's and comms' wires end first, so they take the inner lanes
+        // and the api-videos and processor wires nest outside them, their words in the open margin
+        [['revocations', 'appKv'], 2.1],
         [['sessions', 'feed'], 1.05],
         [['sockets', 'views'], 2.3],
         [['transcoder', 'lock'], 1.05],
+        [['records', 'media'], 2.3],
+        [['system'], 1.05],
+        [['search', 'notifications'], 2.1],
+        [['reports', 'authDb'], 1.05],
       ]),
       edges: [
         { from: 'apiVideos', to: 'r2', flow: 'request', label: e.records, fromSide: 'w', toSide: 'w' },
         { from: 'apiVideos', to: 'd1', flow: 'request', fromSide: 'w', toSide: 'w' },
+        { from: 'comms', to: 'do', flow: 'request', fromSide: 'e', toSide: 'e' },
         { from: 'processor', to: 'd1', flow: 'async', label: e.rows, fromSide: 'e', toSide: 'e' },
         { from: 'auth', to: 'kv', flow: 'control', fromSide: 'w', toSide: 'w' },
-        { from: 'comms', to: 'do', flow: 'request', fromSide: 'e', toSide: 'e' },
         { from: 'web', to: 'ae', flow: 'control', fromSide: 's', toSide: 'n' },
       ],
     },
