@@ -51,7 +51,8 @@ html[lang=ar] .ep-code,.ep[lang=ar] .ep-code{letter-spacing:0}
 .ep-ref-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .ep-ref-label{color:var(--fanous-color-text-secondary)}
 .ep-ref-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:600;letter-spacing:.02em;color:var(--fanous-color-text-primary)}
-.ep-ref-copy{display:inline-flex;align-items:center;gap:6px;margin-inline-start:auto;min-height:36px;padding-inline:10px;border:0;border-radius:999px;background:transparent;color:var(--fanous-color-link);font:inherit;font-weight:600;cursor:pointer}
+/* The link colour pulled 30% toward the text colour: on the tinted reference box a plain link colour fell under 4.5:1 (Zujaj dark 4.46:1) */
+.ep-ref-copy{display:inline-flex;align-items:center;gap:6px;margin-inline-start:auto;min-height:36px;padding-inline:10px;border:0;border-radius:999px;background:transparent;color:color-mix(in srgb,var(--fanous-color-link) 70%,var(--fanous-color-text-primary));font:inherit;font-weight:600;cursor:pointer}
 .ep-ref-copy svg{width:16px;height:16px}
 @media(hover:hover){.ep-ref-copy:hover{background:var(--ep-tint)}}
 .ep-ref-hint{margin:6px 0 0;color:var(--fanous-color-text-secondary);line-height:1.5;text-wrap:balance}
