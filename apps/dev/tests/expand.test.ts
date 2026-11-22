@@ -37,6 +37,18 @@ describe('glossary inserts never garble a sentence', () => {
     const en = expandAbbreviations(page('<p>Each queue has a dead-letter queue (DLQ).</p>'), 'en', 'x');
     expect(en).toContain('a dead-letter queue (DLQ).');
   });
+  it('a term inside parentheses waits for its next use, and an isolate followed by its own parenthesis gets none', () => {
+    const en = expandAbbreviations(page('<p>One upsert per batch (lists capped in SQL).</p><p>SQL runs at the edge.</p>'), 'en', 'x');
+    expect(en).toContain('(lists capped in SQL).');
+    expect(en).toContain('SQL (the database query language) runs');
+    const ar = expandAbbreviations(page('<p>تحدّي <bdi dir="ltr" class="lr">PKCE</bdi> (إثبات لمرة واحدة)</p>'), 'ar', 'x');
+    expect(ar).toContain('<bdi dir="ltr" class="lr">PKCE</bdi> (إثبات لمرة واحدة)');
+    expect(ar).not.toMatch(/\) \(/);
+  });
+  it('a term that is a whole parenthesis is explained there, so its next use stays plain', () => {
+    const out = expandAbbreviations(page('<p>Cloudflare’s content delivery network (CDN) serves sites.</p><p>Bunny’s CDN serves videos.</p>'), 'en', 'x');
+    expect(out).toContain('<p>Bunny’s CDN serves videos.</p>');
+  });
   it('API and APIs count as one term, and units in rates are named', () => {
     const fig = '<div class="an-frame"><svg class="an"><text>APIs</text><text>api-videos · API</text><text>$0.015/GB-month</text><text>$4.50/M requests</text><text>$0.40/h</text></svg></div>';
     const out = expandAbbreviations(page(fig), 'en', 'In this figure:');

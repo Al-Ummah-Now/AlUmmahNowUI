@@ -17,6 +17,6 @@ export const hubEn = {
       container: { title: 'Containers', note: 'FFmpeg transcodes' },
     },
     obs: { logs: 'Logs', errors: 'Errors', rum: 'Visitor page speed' },
-    tag: { segments: 'video segments', later: 'queued' },
+    tag: { segments: 'HLS segments', later: 'queued' },
   },
 };

@@ -106,6 +106,12 @@ export function expandAbbreviations(html: string, locale: 'en' | 'ar', label: st
       const re = termPattern(term.abbr);
       const m = re.exec(text);
       if (!m) continue;
+      // inside someone else's parentheses ("(lists capped in SQL)"): a meaning there would nest a bracket in a bracket,
+      // so the term waits for its next use
+      // (a term that is the whole parenthesis, "content delivery network (CDN)", is explained right there: it counts)
+      const own = /\(\s*$/.test(text.slice(0, m.index)) && /^\s*\)/.test(text.slice(m.index + term.abbr.length));
+      const open = (recent + ' ' + plain.slice(0, plain.indexOf(term.abbr))).split('').reduce((d, ch) => (ch === '(' ? d + 1 : ch === ')' ? Math.max(0, d - 1) : d), 0);
+      if (open > 0 && !own) continue;
       seen.add(term.abbr);
       if (term.same) seen.add(term.same);
       for (const t2 of GLOSSARY) if (t2.same === term.abbr) seen.add(t2.abbr);
@@ -116,7 +122,9 @@ export function expandAbbreviations(html: string, locale: 'en' | 'ar', label: st
       // already followed by its own parenthesis (e.g. "TUS (resumable uploads)"): leave it
       if (/^\s*\(/.test(text.slice(m.index + term.abbr.length))) continue;
       if (stack[stack.length - 1] === 'bdi') {
-        afterBdi += ` (${meaningHtml(term)})`;
+        // the isolate already followed by its own parenthesis («تحدّي PKCE (إثبات …)»): leave it
+        const after = tokens.slice(i + 1).find((x) => !x.startsWith('<') && x.trim()) ?? '';
+        if (!/^\s*\(/.test(decode(after))) afterBdi += ` (${meaningHtml(term)})`;
         continue;
       }
       let at = m.index + term.abbr.length;

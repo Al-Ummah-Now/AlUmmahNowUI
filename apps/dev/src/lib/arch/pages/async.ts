@@ -133,6 +133,8 @@ const fail: Builder = (d) => {
       rowH: 100,
       iconSize: 34,
       pad: 44,
+      // the batch and its retry, side by side between the queue and the processor, far enough apart to read as two
+      portStep: 32,
       at: stack([
         [['producer'], 0],
         [['queue', 'dlq'], 1.9],
@@ -143,8 +145,9 @@ const fail: Builder = (d) => {
       edges: [
         { from: 'producer', to: 'queue', flow: 'async', label: e.event, step: 1, fromSide: 's', toSide: 'n' },
         { from: 'queue', to: 'consumer', flow: 'async', label: e.batch, step: 2, fromSide: 's', toSide: 'n' },
-        // the retry U turns back up the channel between the columns: the start margin is the re-send wire's, so the two never cross
-        { from: 'consumer', to: 'queue', flow: 'control', label: e.retry, step: 3, fromSide: 'e', toSide: 'e' },
+        // the retry goes straight back up beside the batch it failed, a pair of opposite arrows: the channel between the
+        // columns is left to the flag wire alone
+        { from: 'consumer', to: 'queue', flow: 'control', label: e.retry, step: 3, fromSide: 'n', toSide: 's' },
         { from: 'queue', to: 'dlq', flow: 'control', step: 4, fromSide: 'e', toSide: 'w' },
         { from: 'dlq', to: 'dlqConsumer', flow: 'async', label: e.read, step: 5, fromSide: 's', toSide: 'n' },
         { from: 'dlqConsumer', to: 'deadLetters', flow: 'async', label: e.store, step: 6, fromSide: 's', toSide: 'n' },

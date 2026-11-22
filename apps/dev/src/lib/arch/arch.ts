@@ -82,6 +82,8 @@ export interface ArchLayout {
   tagBottom?: string[];
   /** groups whose title sits at the far end of the top edge here: a wire drops in across the near corner */
   titleEnd?: string[];
+  /** groups whose straight runs take their words below the wire here, in both languages alike */
+  labelsBelow?: string[];
   /** groups whose caption sits centred along the bottom (under the channel between two columns), clear of drops from either column */
   captionMid?: string[];
   /** widest spacing between wires leaving one side of a tile (default 2 lattice steps): more where a middle
@@ -491,7 +493,35 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
       const far = (x: { other: Pt }) => Math.abs((vertical ? x.other.x : x.other.y) - (vertical ? own.x + own.w / 2 : own.y + own.h / 2));
       return toward ? far(q) - far(p) : far(p) - far(q);
     };
-    list.sort((p, q) => key(p) - key(q) || lTie(p, q) || (opts.rtl && !vertical ? q.edge - p.edge : 0));
+    // an L whose run lies farther out than a U's run (it comes from a tile beyond the U's lane, say a row above) takes
+    // the port inside the U instead: the U turns off under the L's run, and the L drops past the U's corner
+    const isU = (x: { edge: number }) => chosen[x.edge]!.fromSide === chosen[x.edge]!.toSide;
+    const outward = (x: { edge: number; end: 'from' | 'to'; other: Pt }) => {
+      const ed = edgesSpec[x.edge]!;
+      const r = rectOf(x.end === 'from' ? ed.to : ed.from).rect;
+      // how far beyond this side the wire's run lies: an L runs along its other tile's middle, a U clears both tiles
+      const [lo, hi] = isL(x) ? [vertical ? x.other.x : x.other.y, vertical ? x.other.x : x.other.y] : [vertical ? r.x : r.y, vertical ? r.x + r.w : r.y + r.h];
+      if (side === 'n') return own.y - lo;
+      if (side === 's') return hi - (own.y + own.h);
+      if (side === 'w') return own.x - lo;
+      return hi - (own.x + own.w);
+    };
+    const luTie = (p: { edge: number; end: 'from' | 'to'; other: Pt }, q: { edge: number; end: 'from' | 'to'; other: Pt }) => {
+      const [l, u, sign] = isL(p) && isU(q) ? [p, q, 1] : isL(q) && isU(p) ? [q, p, -1] : [undefined, undefined, 0];
+      if (!l || !u) return 0;
+      const towardL = (vertical ? l.other.y : l.other.x) >= mid;
+      if (towardL !== (vertical ? u.other.y : u.other.x) >= mid) return 0;
+      if (outward(l) <= Math.max(0, outward(u)) + 2 * G) return 0;
+      // the L sits on the side away from where they both head
+      return (towardL ? -1 : 1) * sign;
+    };
+    // two U wires between the same two tiles nest as well: the first routed takes the inner lane, so it takes the port
+    // nearer the other tile at this end and the farther one at that end... in both, the side they turn toward
+    const uTie = (p: { edge: number; other: Pt }, q: { edge: number; other: Pt }) => {
+      if (!isU(p) || !isU(q) || p.other.x !== q.other.x || p.other.y !== q.other.y) return 0;
+      return (vertical ? p.other.y : p.other.x) >= mid ? q.edge - p.edge : p.edge - q.edge;
+    };
+    list.sort((p, q) => luTie(p, q) || key(p) - key(q) || lTie(p, q) || uTie(p, q) || (opts.rtl && !vertical ? q.edge - p.edge : 0));
     if (!isNode) {
       // each wire faces its other end; keep 2 lattice steps apart
       let prev = -Infinity;
@@ -914,6 +944,7 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     layout.tagBottom?.includes(gb.g.id) ? { x: gb.box.x, y: gb.label.y - 4, w: gb.box.w, h: gb.box.y + gb.box.h - gb.label.y + 4 } : { x: gb.box.x, y: gb.box.y, w: gb.box.w, h: gb.label.y + gb.label.h - gb.box.y + 4 },
   );
   const LS = 11;
+  const groupsBelow = (layout.labelsBelow ?? []).map((id) => groups.get(id)?.box).filter(Boolean) as Rect[];
   for (const rt of routed) {
     if (!rt.e.label) continue;
     // Noto Naskh at weight 600 runs wider than the estimate: an Arabic pill takes room so the words stay on it,
@@ -948,7 +979,9 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
             const below = { q: { x: p.x - lw / 2, y: p.y + off, w: lw, h: lh }, wires: [...others, ...own] };
             const first = rt.pts[0]!;
             const last = rt.pts[rt.pts.length - 1]!;
-            cands.push(...(first.y > p.y && last.y > p.y ? [below, above] : [above, below]));
+            // (or in a group whose runs take their words below here: the title row above leaves one language no room)
+            const under = groupsBelow.some((g) => p.x > g.x && p.x < g.x + g.w && p.y > g.y && p.y < g.y + g.h);
+            cands.push(...((first.y > p.y && last.y > p.y) || under ? [below, above] : [above, below]));
           } else {
             const right = { x: p.x + off, y: p.y - lh / 2, w: lw, h: lh };
             const left = { x: p.x - off - lw, y: p.y - lh / 2, w: lw, h: lh };

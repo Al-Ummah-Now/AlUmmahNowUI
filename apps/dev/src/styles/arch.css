@@ -797,6 +797,9 @@ html[data-mode='dark'] .an-sketch {
   cursor: pointer;
   font-size: 0.95rem;
 }
+.an-scenario .an-nw {
+  white-space: nowrap;
+}
 .an-scenario:has(input:checked) {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);

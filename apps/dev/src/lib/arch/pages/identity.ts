@@ -26,7 +26,9 @@ const map: Builder = (d) => {
         node('kvStore', 'cloudflare/kv', n.kvStore, [3.8, 0]),
         node('d1', 'cloudflare/d1', n.d1, [3.8, 1.3]),
         node('revKv', 'cloudflare/kv', n.revKv, [3.8, 2.6]),
-        node('videos', 'cloudflare/workers', n.videos, [5.0, 2.6]),
+        // under the clients, near the apps: the token arrives short, the check runs along the bottom up into the
+        // revocations, and the account needs no column of its own for it
+        node('videos', 'cloudflare/workers', n.videos, [1.4, 3.95]),
       ],
       groups: [
         { id: 'auth', label: c.group.auth, caption: c.caption.auth, pad: 28, members: ['turnstile', 'limiters', 'issuer', 'profile', 'authAdmin', 'kvStore', 'd1', 'revKv'] },
@@ -43,8 +45,8 @@ const map: Builder = (d) => {
         { from: 'issuer', to: 'kvStore', flow: 'request', fromSide: 'e', toSide: 'w' },
         { from: 'issuer', to: 'd1', flow: 'request', fromSide: 'e', toSide: 'w' },
         { from: 'issuer', to: 'revKv', flow: 'async', label: e.revoke, fromSide: 'e', toSide: 'w' },
-        { from: 'videos', to: 'revKv', flow: 'request', label: e.check, fromSide: 'w', toSide: 'e' },
-        { from: 'apps', to: 'videos', flow: 'request', label: e.token, fromSide: 's', toSide: 's' },
+        { from: 'videos', to: 'revKv', flow: 'request', label: e.check, fromSide: 'e', toSide: 's' },
+        { from: 'apps', to: 'videos', flow: 'request', label: e.token, fromSide: 's', toSide: 'w' },
       ],
     },
     wide: { colW: 300, rowH: 170, pad: 40 },
@@ -142,7 +144,8 @@ const signin: Builder = (d) => {
         { from: 'app', to: 'issuer', flow: 'request', label: e.exchange, step: 5, fromSide: 's', toSide: 'e' },
         { from: 'app', to: 'api', flow: 'request', label: e.call, step: 7, fromSide: 's', toSide: 'n' },
         { from: 'api', to: 'revKv', flow: 'request', label: e.check, step: 8, fromSide: 's', toSide: 'n' },
-        { from: 'app', to: 'issuer', flow: 'request', label: e.refresh, step: 9, fromSide: 's', toSide: 'e' },
+        // the refresh comes in under the issuer: on its side it would be the third of a bundle, its words with no room
+        { from: 'app', to: 'issuer', flow: 'request', label: e.refresh, step: 9, fromSide: 's', toSide: 's' },
         { from: 'issuer', to: 'd1', flow: 'request', step: 10, fromSide: 's', toSide: 'n' },
       ],
     },

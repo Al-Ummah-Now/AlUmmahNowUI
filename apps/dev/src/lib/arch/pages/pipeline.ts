@@ -280,7 +280,7 @@ const queues: Builder = (d) => {
         [['media', 'apiC'], 1.8],
         [['processor'], 1.05],
         // room under the consumers for both "out of retries" words and "consume" beside its climb
-        [['tdlq', 'dlq'], 2.2],
+        [['tdlq', 'dlq'], 2.5],
       ]),
       edges: [
         { from: 'api', to: 'transcode', flow: 'async', label: e.send, fromSide: 's', toSide: 'n' },
@@ -292,10 +292,10 @@ const queues: Builder = (d) => {
         { from: 'events', to: 'processor', flow: 'async', fromSide: 's', toSide: 'n' },
         { from: 'media', to: 'tdlq', flow: 'async', label: e.giveUp, fromSide: 's', toSide: 'n' },
         { from: 'apiC', to: 'dlq', flow: 'async', fromSide: 's', toSide: 'n' },
-        // the DLQ consumer leaves the DLQ's side and climbs into the processor; listed before "out of retries" it takes
-        // the processor's nearer port, so the two never cross
-        { from: 'dlq', to: 'processor', flow: 'async', label: e.read, fromSide: 'w', toSide: 's' },
+        // the DLQ stands under the processor's end half: "out of retries" drops into it and the DLQ consumer climbs
+        // back beside it, two straight wires side by side that never cross
         { from: 'processor', to: 'dlq', flow: 'async', label: e.giveUp, fromSide: 's', toSide: 'n' },
+        { from: 'dlq', to: 'processor', flow: 'async', label: e.read, fromSide: 'n', toSide: 's' },
         // the no-slot loop runs back up beside the wire it returns along
         { from: 'media', to: 'transcode', flow: 'control', fromSide: 'n', toSide: 's' },
       ],

@@ -52,7 +52,9 @@ const rails: Builder = (d) => {
         { from: 'api', to: 'pub', flow: 'control', label: e.purge, fromSide: 'e', toSide: 'e' },
       ],
     },
-    wide: { colW: 200, rowH: 165 },
+    // the public rail's origin words under their wire, as the private rail's are: above it, the rail's title row leaves
+    // English no room
+    wide: { colW: 200, rowH: 165, labelsBelow: ['pubRail'] },
     narrow: {
       colW: 180,
       rowH: 100,
@@ -68,14 +70,14 @@ const rails: Builder = (d) => {
       at: {
         ...stack([
           [['viewers'], 0],
-          [['api'], 2.2],
+          [['api'], 1.6],
           [['cache', 'domain'], 1.95],
           [['pub'], 1.05],
           [['edge', 'worker'], 1.95],
           [['priv'], 1.05],
           [['bunnyCdn', 'library'], 2.5],
         ]),
-        api: [1, 2.2],
+        api: [1, 1.6],
       },
       edges: [
         { from: 'viewers', to: 'api', flow: 'request', label: e.ask, fromSide: 's', toSide: 'w' },
@@ -120,7 +122,7 @@ const miss: Builder = (d, locale) => {
         { from: 'edge', to: 'player', flow: 'delivery', label: e.deliver, step: 6, fromSide: 's', toSide: 's' },
       ],
     },
-    wide: { colW: 220, rowH: 250, pad: 92 },
+    wide: { colW: 220, rowH: 250, pad: 92, portStep: 32 },
     narrow: {
       colW: 180,
       rowH: 100,

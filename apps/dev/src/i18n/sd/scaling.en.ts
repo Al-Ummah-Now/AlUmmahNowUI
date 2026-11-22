@@ -47,7 +47,7 @@ export const scalingEn = {
       shards: { title: 'Sharded counters', note: '{N4} view shards per video' },
       upsert: { title: 'Batched upserts', note: 'D1 · ≤ {N500} rows a statement' },
       sockets: { title: 'Socket shards', note: 'not one global object' },
-      limiter: { title: 'Rate Limiting binding', note: 'not a racy KV counter' },
+      limiter: { title: 'Rate Limiting', note: 'not a racy KV counter' },
       reserve: { title: 'Reserve, then settle', note: 'AI budget in one UPDATE' },
     },
     tag: { exact: 'exact count' },
