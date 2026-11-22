@@ -73,4 +73,9 @@ html[lang=ar] .ep-code,.ep[lang=ar] .ep-code{letter-spacing:0}
   .ep-help{flex:none}
   .ep-actions{flex-direction:column-reverse;margin-inline-start:0}
   .ep-actions .ep-btn{width:100%}
+  /* The reference on one line and Copy on the next, starting under the label (its icon on the label's
+     edge): wrapped by flex, Copy floated alone at the end edge, far from what it copies */
+  .ep-ref-row{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:8px;row-gap:2px}
+  .ep-ref-code{overflow-wrap:anywhere}
+  .ep-ref-copy{grid-column:1/-1;justify-self:start;margin-inline:-10px 0}
 }
