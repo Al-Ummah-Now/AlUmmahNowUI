@@ -65,7 +65,7 @@ export function finishBidi(svg: string): string {
   // a text wrapped into tspans (a sketch tile's lines): when its words hold Arabic, every line's Latin runs are isolated
   // (the text itself carries direction="rtl" from the renderer), a line all in Latin too («IP» wrapped off «لكل»)
   const wrapped = svg.replace(/<text([^>]*)>((?:<tspan[^>]*>[^<]*<\/tspan>)+)<\/text>/g, (m, attrs: string, body: string) => {
-    if (!hasArabic(unesc(body.replace(/<[^>]*>/g, '')))) return m;
+    if (!hasArabic([...body.matchAll(/<tspan[^>]*>([^<]*)<\/tspan>/g)].map((x) => unesc(x[1]!)).join(' '))) return m;
     return `<text${attrs}>${body.replace(/(<tspan[^>]*>)([^<]*)(<\/tspan>)/g, (_t, o: string, line: string, c: string) => `${o}${esc(isolateLatin(unesc(line), true))}${c}`)}</text>`;
   });
   return wrapped.replace(/<text([^>]*)>([^<]*)<\/text>/g, (m, attrs: string, body: string) => {

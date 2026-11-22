@@ -428,8 +428,11 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
   const nodeBoxes = [...box.values()];
 
   const tags: string[] = [];
-  const otherPts = (c: (typeof curves)[number]) => curves.filter((x) => x !== c).flatMap((x) => Array.from({ length: 61 }, (_, k) => at(x, k / 60)));
-  const ownPts = (c: (typeof curves)[number]) => Array.from({ length: 61 }, (_, k) => at(c, k / 60));
+  // each curve's samples, once: the tag search checks them for every spot it tries
+  const curvePts = new Map(curves.map((c) => [c, Array.from({ length: 61 }, (_, k) => at(c, k / 60))] as const));
+  const otherPtsOf = new Map(curves.map((c) => [c, curves.filter((x) => x !== c).flatMap((x) => curvePts.get(x)!)] as const));
+  const otherPts = (c: (typeof curves)[number]) => otherPtsOf.get(c)!;
+  const ownPts = (c: (typeof curves)[number]) => curvePts.get(c)!;
   o.push('<g class="an-edges">');
   curves.forEach((c) => {
     const { e, i, a, b, ctrl, ctrl2 } = c;

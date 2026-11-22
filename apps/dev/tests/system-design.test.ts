@@ -94,7 +94,8 @@ describe('system design section', () => {
           expect(svg, `${id} ${l}`).toMatch(/<title id="[^"]+">[^<]+<\/title><desc id="[^"]+">[^<]+<\/desc>/);
         }
       }
-  });
+    // routes every figure in both languages and widths (about 2 s here): a CI runner needs more than vitest's 5 s default
+  }, 20_000);
 
   it('the hub indexes every subpage, in PAGES order, and no link dangles', () => {
     expect(en.systemDesign.pages.map((x) => x.href)).toEqual(ar.systemDesign.pages.map((x) => x.href));
