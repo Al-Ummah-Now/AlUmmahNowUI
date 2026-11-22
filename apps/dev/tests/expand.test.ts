@@ -8,6 +8,10 @@ describe('abbreviations are spelled out where a page first uses them', () => {
     const out = expandAbbreviations(page('<p>Records live in R2. Media lives in R2 too.</p>'), 'en', 'In this figure:');
     expect(out).toContain('Records live in R2 (Cloudflare’s object storage). Media lives in R2 too.');
   });
+  it('a term inside a Latin isolate gets its meaning after the isolate, so the isolate stays one short Latin run', () => {
+    const out = expandAbbreviations(page('<p>التخزين في <bdi dir="ltr" class="lr">Cloudflare R2</bdi>.</p>'), 'ar', 'x');
+    expect(out).toContain('<bdi dir="ltr" class="lr">Cloudflare R2</bdi> (تخزين الكائنات لدى Cloudflare).');
+  });
   it('leaves a term already explained close by, headings and navigation', () => {
     const out = expandAbbreviations(page('<h2>The CDN</h2><p>Cloudflare’s content delivery network (CDN) serves every site.</p>'), 'en', 'x');
     expect(out).toContain('<h2>The CDN</h2>');

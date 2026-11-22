@@ -28,6 +28,8 @@ export function expandAbbreviations(html: string, locale: 'en' | 'ar', label: st
   const stack: string[] = [];
   const skipping = () => stack.some((t) => SKIP.has(t));
   const out: string[] = [];
+  // a term inside a Latin isolate (<bdi class="lr">, kept on one line): its meaning, often Arabic, follows the isolate
+  let afterBdi = '';
   for (let i = 0; i < tokens.length; i++) {
     const tok = tokens[i]!;
     if (tok.startsWith('<')) {
@@ -36,6 +38,12 @@ export function expandAbbreviations(html: string, locale: 'en' | 'ar', label: st
       if (tok.startsWith('</')) {
         const k = stack.lastIndexOf(name);
         if (k >= 0) stack.length = k;
+        if (name === 'bdi' && afterBdi) {
+          out.push(tok, afterBdi);
+          recent = (recent + afterBdi).slice(-NEAR);
+          afterBdi = '';
+          continue;
+        }
       } else if (name && !tok.endsWith('/>') && !VOID.has(name) && !tok.startsWith('<!')) {
         // a list of names (the feature registry) is marked data-no-expand: left exactly as written
         if (/\sdata-no-expand[\s>=]/.test(tok)) {
@@ -101,6 +109,10 @@ export function expandAbbreviations(html: string, locale: 'en' | 'ar', label: st
       if (said(term, before.slice(-NEAR)) || said(term, upcoming)) continue;
       // already followed by its own parenthesis (e.g. "TUS (resumable uploads)"): leave it
       if (/^\s*\(/.test(text.slice(m.index + term.abbr.length))) continue;
+      if (stack[stack.length - 1] === 'bdi') {
+        afterBdi += ` (${meaning(term)})`;
+        continue;
+      }
       let at = m.index + term.abbr.length;
       // "R2 storage" → "R2 storage (…)", not "R2 (… object storage) storage": a word the meaning already says goes first
       const next = /^ ([A-Za-z\u0600-\u06ff]+)/.exec(text.slice(at));
