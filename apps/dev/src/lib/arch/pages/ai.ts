@@ -1,7 +1,7 @@
 /** AI usage page diagrams (docs/SOURCES.md §8, §9a). */
 import type { ArchNode } from '../arch.ts';
 import type { Builder } from './types.ts';
-import { aiChecksUsd, aiRateLine } from '../specs/costs.ts';
+import { aiChecksUsd, aiMeterLine, aiRateLine } from '../specs/costs.ts';
 
 const node = (id: string, icon: string, c: { name: string; role: string | string[] }, at: [number, number], extra: Partial<ArchNode> = {}): ArchNode => ({ id, icon, name: c.name, role: c.role, at, ...extra });
 
@@ -25,7 +25,7 @@ const map: Builder = (d, locale) => {
         node('processor', 'cloudflare/workers', n.processor, [3.7, 1]),
         node('d1', 'cloudflare/d1', n.d1, [3.7, -0.4]),
         node('admin', 'cloudflare/workers', n.admin, [2.5, -0.4]),
-        node('workersAi', 'cloudflare/workers-ai', n.workersAi, [4.95, 1], { rate: [aiRateLine(d.costs, locale)], meter: { lane: 'ai', usd: aiChecksUsd() } }),
+        node('workersAi', 'cloudflare/workers-ai', n.workersAi, [4.95, 1], { rate: [aiRateLine(d.costs, locale), aiMeterLine(d.costs)], meter: { lane: 'ai', usd: aiChecksUsd() } }),
         node('cms', 'cloudflare/workers', n.cms, [4.95, 2.45]),
         node('gemma', 'lucide/sparkles', n.gemma, [6.3, -0.15]),
         node('guard', 'lucide/shield-check', n.guard, [7.9, -0.15]),
@@ -141,7 +141,9 @@ const scan: Builder = (d) => {
         { from: 'api', to: 'queue', flow: 'async', label: e.scan, step: 1, fromSide: 'e', toSide: 'w' },
         { from: 'queue', to: 'processor', flow: 'async', label: e.consume, step: 2, fromSide: 's', toSide: 'n' },
         { from: 'processor', to: 'budget', flow: 'control', label: e.reserve, step: 3, fromSide: 'w', toSide: 'e' },
-        { from: 'processor', to: 'gemma', flow: 'request', label: e.translate, step: 4, fromSide: 'e', toSide: 'e' },
+        // the first model sits right under the processor: a straight drop; the other two nest down the end margin
+        // (listed so the farther one takes the outer lane)
+        { from: 'processor', to: 'gemma', flow: 'request', label: e.translate, step: 4, fromSide: 's', toSide: 'n' },
         { from: 'processor', to: 'guard', flow: 'request', step: 5, fromSide: 'e', toSide: 'e' },
         { from: 'processor', to: 'ext', flow: 'request', label: e.ext, step: 6, fromSide: 'e', toSide: 'e' },
         // settle returns under the tiles: two wires side by side have no room for both step badges

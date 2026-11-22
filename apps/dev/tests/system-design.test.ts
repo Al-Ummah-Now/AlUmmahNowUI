@@ -80,7 +80,7 @@ describe('system design section', () => {
     const pagesAr = Object.values(ar.systemDesignPages);
     for (const [path, value] of walk(ar.systemDesign).concat(walk(ar.videoPipeline), walk(ar.diagrams, '.diagrams'), pagesAr.flatMap((page) => walk(page)))) {
       // {placeholders} are filled with ٠–٩ at render time (src/lib/arch/specs/costs.ts fill)
-      expect(stripLatinTokens(value.replace(/\{N[\d.]+\}|\{\w+\}/g, '')), path).not.toMatch(/[0-9]/);
+      expect(stripLatinTokens(value.replace(/\{N=?[\d.]+\}|\{\w+\}/g, '')), path).not.toMatch(/[0-9]/);
     }
   });
 

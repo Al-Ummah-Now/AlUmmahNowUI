@@ -28,9 +28,11 @@ const LRI = '⁦';
 const PDI = '⁩';
 /** A run of Latin script (identifiers, product names, paths) inside Arabic text: kept left to right as one unit. */
 // a bracket starts a run only when Latin follows it: «(اختبار)» stays Arabic, «(api-videos)» stays whole
-const WORD = String.raw`(?:[A-Za-z0-9<{*$]|[(\[](?=[A-Za-z0-9<{]))(?:[\w.\-/:<>{}()[\]|*?=+@#&$',]*[A-Za-z0-9>})\]*?$'_])?`;
-// names joined by spaces or « · » are one run, so «KV · D1 · R2» keeps its order in Arabic
-const LATIN_RUN = new RegExp(`${WORD}(?:(?: · | )${WORD})*`, 'g');
+// a path's leading «/» (or a name's leading «.», «.NET») and a run's trailing «-», «/», «*» or «…» belong to it: left outside the isolate, the bidi
+// algorithm moves them to the other end («/priv/*» shows as «priv/*/», «al-ummah-now-…» as «…-al-ummah-now»)
+const WORD = String.raw`(?:[A-Za-z0-9<{*$]|[(\[/.](?=[A-Za-z0-9<{*]))(?:[\w.\-/:<>{}()[\]|*?=+@#&$',…]*[A-Za-z0-9>})\]*?$'_…/\-])?`;
+// names joined by spaces are one run, so «Workers KV» keeps its order in Arabic
+const LATIN_RUN = new RegExp(`${WORD}(?: ${WORD})*`, 'g');
 
 /** Wrap every Latin run of an Arabic string in an isolate (LRI … PDI), so the bidi algorithm never reorders it. */
 export function isolateLatin(s: string): string {

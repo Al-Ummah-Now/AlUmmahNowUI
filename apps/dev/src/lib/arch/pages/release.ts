@@ -52,6 +52,8 @@ const train: Builder = (d) => {
       colW: 180,
       rowH: 100,
       iconSize: 34,
+      // two lanes down the end margin: the local tests wire outside, the stage tests wire inside it
+      pad: 48,
       at: stack([
         [['tag', 'build'], 0],
         [['stage'], 1.25],
@@ -64,7 +66,9 @@ const train: Builder = (d) => {
         { from: 'tag', to: 'build', flow: 'request', label: e.build, step: 1, fromSide: 'e', toSide: 'w' },
         { from: 'tag', to: 'localE2E', flow: 'request', label: e.local, step: 1, fromSide: 'w', toSide: 'w' },
         { from: 'build', to: 'stage', flow: 'request', label: e.deploy, step: 2, fromSide: 's', toSide: 'e' },
-        { from: 'stage', to: 'gates', flow: 'request', label: e.test, step: 3, fromSide: 's', toSide: 'n' },
+        // into the two gate tiles from their outer sides: a wire from above would cross the gates' title
+        { from: 'stage', to: 'stageE2E', flow: 'request', label: e.test, step: 3, fromSide: 'w', toSide: 'w' },
+        { from: 'stage', to: 'secrets', flow: 'request', label: e.check, step: 3, fromSide: 'e', toSide: 'e' },
         { from: 'gates', to: 'zero', flow: 'request', label: e.pass, step: 4, fromSide: 's', toSide: 'n' },
         { from: 'zero', to: 'full', flow: 'request', label: e.promote, step: 5, fromSide: 'e', toSide: 'w' },
         { from: 'full', to: 'media', flow: 'media', label: e.media, step: 6, fromSide: 's', toSide: 'n' },
@@ -194,10 +198,11 @@ const gates: Builder = (d) => {
         { from: 'pr', to: 'qa', fromSide: 's', toSide: 'n' },
         { from: 'qa', to: 'tag', fromSide: 's', toSide: 'n' },
         { from: 'tag', to: 'stageE2E', fromSide: 's', toSide: 'n' },
-        { from: 'tag', to: 'local', fromSide: 'w', toSide: 'w', bend: 36 },
-        { from: 'tag', to: 'secrets', fromSide: 'w', toSide: 'w', bend: 58 },
-        { from: 'stageE2E', to: 'smoke', fromSide: 'e', toSide: 'e', bend: -58 },
-        { from: 'local', to: 'smoke', fromSide: 'e', toSide: 'e', bend: -36 },
+        // side wires nest down their own lanes (sketch `lane`), the longer one outside
+        { from: 'tag', to: 'local', fromSide: 'w', toSide: 'w', lane: 18 },
+        { from: 'tag', to: 'secrets', fromSide: 'w', toSide: 'w', lane: 32 },
+        { from: 'stageE2E', to: 'smoke', fromSide: 'e', toSide: 'e', lane: 32 },
+        { from: 'local', to: 'smoke', fromSide: 'e', toSide: 'e', lane: 18 },
         { from: 'secrets', to: 'smoke', fromSide: 's', toSide: 'n' },
         { from: 'smoke', to: 'signedIn', fromSide: 's', toSide: 'n' },
         { from: 'signedIn', to: 'media', fromSide: 's', toSide: 'n' },

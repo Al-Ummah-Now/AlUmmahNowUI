@@ -5,7 +5,7 @@
  */
 import { stack, type ArchEdge, type ArchLayout, type ArchSpec } from '../arch.ts';
 import type { diagramsEn } from '../../../i18n/diagrams.en.ts';
-import { aiChecksUsd, aiRateLine } from './costs.ts';
+import { aiChecksUsd, aiMeterLine, aiRateLine } from './costs.ts';
 
 type Copy = typeof diagramsEn.pipeline;
 
@@ -52,7 +52,7 @@ export function pipeline(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
       node('cdn', 'cloudflare/cache', [6.05, 1.05]),
       node('player', 'lucide/play', [7.35, 1.05]),
       node('processor', 'cloudflare/workers', [1.15, 4.45]),
-      { ...node('workersAi', 'cloudflare/workers-ai', [2.7, 4.45]), rate: [aiRateLine(cc, locale)], meter: { lane: 'ai', usd: aiChecksUsd() } },
+      { ...node('workersAi', 'cloudflare/workers-ai', [2.7, 4.45]), rate: [aiRateLine(cc, locale), aiMeterLine(cc)], meter: { lane: 'ai', usd: aiChecksUsd() } },
       node('dlq', 'cloudflare/queues', [2.4, 3.3]),
     ],
     groups: [
@@ -62,11 +62,14 @@ export function pipeline(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
     ],
     edges,
   };
-  const wide: ArchLayout = { colW: 230, rowH: 160 };
+  const wide: ArchLayout = { colW: 238, rowH: 160 };
   const narrow: ArchLayout = {
     colW: 180,
     rowH: 100,
     iconSize: 36,
+    // the consume wire drops straight from the queue into the media Worker, across the transcode group's near
+    // corner: its title moves to the far end
+    titleEnd: ['transcode'],
     at: stack([
       [['creator'], 0],
       [['apiVideos', 'originals'], 2.25],
@@ -80,13 +83,15 @@ export function pipeline(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
     ]),
     edges: [
       { from: 'creator', to: 'apiVideos', flow: 'media', label: e.upload, step: 1, fromSide: 's', toSide: 'n' },
+      // the short enqueue U routes before the long Bunny wire, so it keeps the lane by the tiles and the Bunny wire
+      // runs outside it
+      { from: 'apiVideos', to: 'queue', flow: 'async', label: e.enqueue, step: 6, fromSide: 'w', toSide: 'w' },
       { from: 'apiVideos', to: 'bunny', flow: 'media', label: e.encode, step: 2, fromSide: 'n', toSide: 's' },
       { from: 'apiVideos', to: 'originals', flow: 'media', label: e.tee, step: 3, fromSide: 'e', toSide: 'w' },
       { from: 'apiVideos', to: 'processor', flow: 'async', step: 4, fromSide: 's', toSide: 'n' },
       { from: 'processor', to: 'workersAi', flow: 'request', label: e.ai, step: 5, fromSide: 'e', toSide: 'w' },
-      { from: 'apiVideos', to: 'queue', flow: 'async', label: e.enqueue, step: 6, fromSide: 'w', toSide: 'w' },
       { from: 'queue', to: 'dlq', flow: 'async', fromSide: 'e', toSide: 'w' },
-      { from: 'queue', to: 'media', flow: 'async', label: e.consume, step: 7, fromSide: 'w', toSide: 'w' },
+      { from: 'queue', to: 'media', flow: 'async', label: e.consume, step: 7, fromSide: 's', toSide: 'n' },
       { from: 'media', to: 'slots', flow: 'control', label: e.slot, step: 8, fromSide: 'e', toSide: 'w' },
       { from: 'media', to: 'container', flow: 'media', label: e.start, step: 9, fromSide: 's', toSide: 'w' },
       { from: 'originals', to: 'container', flow: 'media', label: e.read, step: 10, fromSide: 'e', toSide: 'e' },
@@ -94,6 +99,7 @@ export function pipeline(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
       { from: 'player', to: 'apiVideos', flow: 'request', step: 12, fromSide: 'w', toSide: 'w' },
       { from: 'renditions', to: 'cdn', flow: 'delivery', fromSide: 'e', toSide: 'w' },
       { from: 'cdn', to: 'player', flow: 'delivery', label: e.r2, step: 13, fromSide: 's', toSide: 'e' },
+      { from: 'bunny', to: 'bunnyCdn', flow: 'delivery', fromSide: 'e', toSide: 'w' },
       { from: 'bunnyCdn', to: 'player', flow: 'delivery', label: e.bunnyHls, step: 14, fromSide: 'n', toSide: 's' },
     ],
   };

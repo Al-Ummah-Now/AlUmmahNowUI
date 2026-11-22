@@ -51,7 +51,7 @@ export const realtimeEn = {
       tokens: { title: 'Token check', note: 'issuer + revocations' },
       shard: { title: 'sockets:n', note: 'hibernation API' },
       msgs: { title: 'Message limit', note: '{N600} a minute per user' },
-      attach: { title: 'Socket attachment', note: '< {N2} KiB · ≤ {N12} channels' },
+      attach: { title: 'Socket attachment', note: '< {N2} KB · ≤ {N12} channels' },
       dir: { title: 'topic:<channel>', note: 'holders only' },
       coal: { title: 'coalesce:admin:*', note: '≤ {N1} per second' },
     },

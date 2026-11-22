@@ -110,11 +110,17 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
     const nodes = [...svg.querySelectorAll<SVGGElement>('[data-node]')];
     if (!nodes.length) out.push(`${name}: no nodes`);
     const nodeBox = new Map<string, B>();
+    /** the parts a node is drawn as (an isometric block: its name pill over its shape); the box is their union */
+    const nodeParts = new Map<string, B[]>();
     for (const g of nodes) {
       const id = g.dataset.node!;
-      const boxEl = g.querySelector<SVGGraphicsElement>('[data-box]') ?? g.querySelector<SVGGraphicsElement>('.an-node-box') ?? g;
-      const box = bb(boxEl);
+      const partEls = [...g.querySelectorAll<SVGGraphicsElement>('[data-box]')];
+      const parts = partEls.length ? partEls.map((el) => bb(el)) : [bb(g.querySelector<SVGGraphicsElement>('.an-node-box') ?? g)];
+      const x0 = Math.min(...parts.map((b) => b.x));
+      const y0 = Math.min(...parts.map((b) => b.y));
+      const box = { x: x0, y: y0, w: Math.max(...parts.map((b) => b.x + b.w)) - x0, h: Math.max(...parts.map((b) => b.y + b.h)) - y0 };
       nodeBox.set(id, box);
+      nodeParts.set(id, parts);
       if (!inside(box, view)) out.push(`${name}: node ${id} outside the viewBox`);
       const icons = [...g.querySelectorAll<SVGGraphicsElement>('[data-icon]')];
       if (!icons.length) out.push(`${name}: node ${id} has no icon`);
@@ -143,6 +149,10 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
       // Arabic with Latin runs: each run isolated (LRI … PDI)
       const raw = t.textContent ?? '';
       if (/[\u0600-\u06ff]/.test(raw) && /[A-Za-z]/.test(raw.replace(/\u2066[^\u2069]*\u2069/g, ''))) out.push(`${name}: Arabic text "${raw}" has a Latin run that isn't isolated`);
+      // a run's own neutral ends («/» before it, «-», «/», «*», «…» after it) left outside its isolate get moved
+      if (/[\u0600-\u06ff]/.test(raw) && /\/\u2066|\u2069[-/*…]/.test(raw)) out.push(`${name}: Arabic text "${raw}" leaves part of a Latin run («/», «-», «*», «…») outside its isolate`);
+      // «·» is not an Arabic separator (it shows as a box in the Arabic face): «،»
+      if (/[\u0600-\u06ff]/.test(raw) && raw.includes('·')) out.push(`${name}: Arabic text "${raw}" uses «·»; use «،»`);
     }
     for (const { t, b } of tb) if (!inside(b, view)) out.push(`${name}: text "${t.textContent}" outside the viewBox`);
     for (let i = 0; i < tb.length; i++)
@@ -151,16 +161,16 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
     // text never sits on another node
     for (const { t, b } of tb) {
       const own = t.closest<SVGGElement>('[data-node]')?.dataset.node ?? t.closest<SVGGElement>('[data-node-label]')?.dataset.nodeLabel;
-      for (const [id, box] of nodeBox) if (id !== own && hit(b, box, 1)) out.push(`${name}: text "${t.textContent}" sits on node ${id}`);
+      for (const [id, parts] of nodeParts) if (id !== own && parts.some((box) => hit(b, box, 1))) out.push(`${name}: text "${t.textContent}" sits on node ${id}`);
     }
     for (const p of svg.querySelectorAll<SVGPathElement>('[data-edge]')) {
       const ends = new Set([p.dataset.from, p.dataset.to]);
       const len = p.getTotalLength();
       for (let d = 0; d <= len; d += 3) {
         const pt = p.getPointAtLength(d);
-        for (const [id, box] of nodeBox) {
+        for (const [id, parts] of nodeParts) {
           if (ends.has(id)) continue;
-          if (pt.x > box.x + 1 && pt.x < box.x + box.w - 1 && pt.y > box.y + 1 && pt.y < box.y + box.h - 1) {
+          if (parts.some((box) => pt.x > box.x + 1 && pt.x < box.x + box.w - 1 && pt.y > box.y + 1 && pt.y < box.y + box.h - 1)) {
             out.push(`${name}: edge ${p.dataset.from}→${p.dataset.to} passes through ${id}`);
             d = len + 1;
             break;
@@ -227,14 +237,16 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
       const gap = Math.min(...pts(own).map((pt) => distToBox(pt, lb)));
       if (gap > 24) out.push(`${name}: label "${lab.textContent}" is ${Math.round(gap)} px from its wire (max 24)`);
     }
-    // no wire label in any group's title row (edge to edge, down to the title's bottom)
+    // no wire label in any group's title row (edge to edge, down to the title's bottom, or up from a bottom tag)
     for (const g of svg.querySelectorAll<SVGGElement>('[data-group]')) {
       const gr = g.querySelector<SVGGraphicsElement>(':scope > rect');
       const title = g.querySelector<SVGGraphicsElement>('.an-group-label, [data-tag] rect');
       if (!gr || !title) continue;
       const box = bb(gr);
       const tb2 = bb(title);
-      const row = { x: box.x, y: box.y, w: box.w, h: tb2.y + tb2.h - box.y + 4 };
+      // a tag along the bottom edge (a layout's tagBottom): its row runs from the tag's top down to the border
+      const low = tb2.y > box.y + box.h / 2;
+      const row = low ? { x: box.x, y: tb2.y - 4, w: box.w, h: box.y + box.h - tb2.y + 4 } : { x: box.x, y: box.y, w: box.w, h: tb2.y + tb2.h - box.y + 4 };
       for (const lab of svg.querySelectorAll<SVGGElement>('[data-for]:not(.an-badge)')) if (hit(bb(lab), row, 0)) out.push(`${name}: label "${lab.textContent}" sits in the title row of group ${g.dataset.group}`);
     }
     // group boxes keep 6 px apart: never on (or hugging) another group's border, nested or side by side
@@ -341,7 +353,10 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
       if (!t.closest('[data-for]') || t.closest('.an-badge')) continue;
       const near = grow(b, CLEAR - 0.5);
       for (const [id, nbx] of nodeBox) if (hit(near, nbx, 0)) out.push(`${name}: label "${t.textContent}" is within ${CLEAR} px of tile ${id}`);
+      // (a label drawn on its own wire's opaque pill hides that wire: only the other wires count)
+      const own = t.closest<SVGGElement>('[data-for][data-covers]')?.dataset.for;
       for (const p of svg.querySelectorAll<SVGPathElement>('[data-edge]')) {
+        if (own && p.dataset.edge === own) continue;
         const len = p.getTotalLength();
         for (let d = 0; d <= len; d += 2) {
           const pt = p.getPointAtLength(d);
@@ -558,6 +573,61 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
         const len = p.getTotalLength();
         if (!inB(p.getPointAtLength(0), 1) || !inB(p.getPointAtLength(len), 1)) continue;
         if (pts(p).some((pt) => !inB(pt, 1))) out.push(`${name}: wire ${p.dataset.from}→${p.dataset.to} leaves the ${g.dataset.group} boundary although both its ends are inside`);
+      }
+    }
+    // no S-step or U-turn at either end: two corners within 44 px of a wire's start or its arrowhead read as a jog
+    // (a misaligned port), not a route
+    for (const p of edges) {
+      if (svg.classList.contains('an-sketch') || svg.classList.contains('an-iso') || p.dataset.from === p.dataset.to) continue;
+      const len = p.getTotalLength();
+      const corners: number[] = [];
+      let prev: number | null = null;
+      for (let d = 0; d + 3 <= len; d += 3) {
+        const u = p.getPointAtLength(d);
+        const v = p.getPointAtLength(d + 3);
+        const a = Math.atan2(v.y - u.y, v.x - u.x);
+        if (prev != null) {
+          let dd = Math.abs(a - prev);
+          if (dd > Math.PI) dd = 2 * Math.PI - dd;
+          // one corner per turn (a rounded corner spans a few samples)
+          if (dd > 0.3 && (!corners.length || d - corners[corners.length - 1]! > 9)) corners.push(d);
+        }
+        prev = a;
+      }
+      // anywhere along it: two turns within 14 px are a zig-zag glitch, not a route
+      const zig = corners.findIndex((c, k) => k > 0 && c - corners[k - 1]! < 14);
+      if (zig > 0) out.push(`${name}: wire ${p.dataset.from}→${p.dataset.to} zig-zags at ${Math.round(corners[zig]!)} px along it`);
+      if (corners.filter((c) => c > len - 44).length >= 2) out.push(`${name}: wire ${p.dataset.from}→${p.dataset.to} jogs just before its arrowhead (two turns in its last 44 px)`);
+      else if (corners.filter((c) => c < 44).length >= 2) out.push(`${name}: wire ${p.dataset.from}→${p.dataset.to} jogs just after its start (two turns in its first 44 px)`);
+    }
+    // a wire never rides a group's border: no run of 40 px or more within 9 px of it (crossing it is fine)
+    for (const g of svg.querySelectorAll<SVGGElement>('[data-group]')) {
+      const rr = g.querySelector<SVGGraphicsElement>(':scope > rect');
+      if (!rr) continue;
+      const box = bb(rr);
+      const lines = [
+        { h: true, at: box.y, lo: box.x, hi: box.x + box.w },
+        { h: true, at: box.y + box.h, lo: box.x, hi: box.x + box.w },
+        { h: false, at: box.x, lo: box.y, hi: box.y + box.h },
+        { h: false, at: box.x + box.w, lo: box.y, hi: box.y + box.h },
+      ];
+      for (const p of edges) {
+        if (svg.classList.contains('an-sketch') || svg.classList.contains('an-iso')) continue;
+        const list = pts(p, 3);
+        for (const ln of lines) {
+          let run = 0;
+          let worst = 0;
+          for (const pt of list) {
+            const along = ln.h ? pt.x : pt.y;
+            const off = Math.abs((ln.h ? pt.y : pt.x) - ln.at);
+            run = along > ln.lo && along < ln.hi && off <= 9 ? run + 3 : 0;
+            worst = Math.max(worst, run);
+          }
+          if (worst >= 40) {
+            out.push(`${name}: wire ${p.dataset.from}→${p.dataset.to} rides the border of ${g.dataset.group} for ${worst} px`);
+            break;
+          }
+        }
       }
     }
     // a step badge keeps 6 px from every wire but its own

@@ -119,6 +119,27 @@ export class Router {
     for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) f(this.idx(c, r));
   }
 
+  /**
+   * The cost of a straight axis-aligned run from a to b, as a route would pay it: every lattice point's soft cost,
+   * plus a crossing or overlap with a committed wire; Infinity when it passes a blocked point (its ends excluded).
+   */
+  costAlong(a: Pt, b: Pt): number {
+    const horiz = a.y === b.y;
+    const n = Math.round((horiz ? Math.abs(b.x - a.x) : Math.abs(b.y - a.y)) / G);
+    const sx = horiz ? Math.sign(b.x - a.x) * G : 0;
+    const sy = horiz ? 0 : Math.sign(b.y - a.y) * G;
+    let cost = 0;
+    for (let k = 1; k < n; k++) {
+      const c = Math.round((a.x + sx * k) / G);
+      const r = Math.round((a.y + sy * k) / G);
+      if (c < 0 || r < 0 || c >= this.cols || r >= this.rows) return Infinity;
+      const i = this.idx(c, r);
+      if (this.blocked[i]) return Infinity;
+      cost += 1 + this.soft[i]! + ((horiz ? this.useH[i] : this.useV[i]) ? 24 : 0);
+    }
+    return cost;
+  }
+
   isBlocked(p: Pt) {
     const c = Math.round(p.x / G);
     const r = Math.round(p.y / G);

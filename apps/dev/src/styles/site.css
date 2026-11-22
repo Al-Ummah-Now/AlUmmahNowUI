@@ -2151,3 +2151,7 @@ html:not([data-mode='light']) .pi-invert-dark svg {
     display: none;
   }
 }
+/* Arabic has no italic */
+:lang(ar) .repo-none {
+  font-style: normal;
+}

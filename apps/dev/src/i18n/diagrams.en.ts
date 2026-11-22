@@ -212,6 +212,7 @@ export const diagramsEn = {
     },
     note: 'Prices are the list prices in our code and docs. Small and medium are the admin cost page’s presets, with storage shown for the month after a year of uploads at that rate. A line marked “not in this example” depends on something the example doesn’t fix (the uploaded file’s size, or the number of uploads), and is left out of the totals. Workers AI bills in neurons, its own unit of compute.',
     compare: 'Where the money goes',
+    perUpload: 'one upload’s AI checks:',
     node: {
       upload: { name: 'Upload', role: 'api-videos · resumable' },
       moderation: { name: 'Workers AI', role: 'moderation of each upload' },

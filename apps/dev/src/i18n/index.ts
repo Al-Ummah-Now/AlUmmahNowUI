@@ -1,7 +1,7 @@
 import { en, type Strings } from './en.ts';
 import { ar } from './ar.ts';
 import type { Locale } from '../lib/pages.ts';
-import { fill, formatNumber as formatIn, formatPercent } from '../../../../packages/render/src/format.ts';
+import { fill, formatCount, formatNumber as formatIn, formatPercent } from '../../../../packages/render/src/format.ts';
 
 export type { Strings, Item, Link, Status } from './en.ts';
 
@@ -45,8 +45,17 @@ const values = (locale: Locale): Record<string, string | number> => ({
 });
 
 function filled<T>(v: T, vars: Record<string, string | number>, locale: Locale): T {
-  // {N<value>}: a number the copy states once, written in the page's numerals by the formatter
-  if (typeof v === 'string') return fill(v.replace(/\{N(\d+(?:\.\d+)?)\}/g, (_m, n: string) => formatIn(Number(n), locale)), vars, locale) as T;
+  // {N<value>}: a number the copy states once, written in the page's numerals by the formatter; a count from a
+  // thousand reads in words in Arabic («ألف مشاهدة»). {N=<value>}: an exact figure (a configured limit), never
+  // compacted and, in Arabic, never grouped
+  if (typeof v === 'string')
+    return fill(
+      v.replace(/\{N(=?)(\d+(?:\.\d+)?)\}/g, (_m, exact: string, n: string) =>
+        exact ? formatIn(Number(n), locale, locale === 'ar' ? { useGrouping: false } : {}) : Number(n) >= 1000 ? formatCount(Number(n), locale, { beforeNoun: true }) : formatIn(Number(n), locale),
+      ),
+      vars,
+      locale,
+    ) as T;
   if (Array.isArray(v)) return v.map((x) => filled(x, vars, locale)) as T;
   if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, filled(x, vars, locale)])) as T;
   return v;

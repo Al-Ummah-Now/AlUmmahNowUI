@@ -12,8 +12,6 @@ const map: Builder = (d) => {
     kind: 'arch',
     spec: {
       id: 'identity-map',
-      // rewritten for developers next; until then a label with no legal spot is left out (the page text says it)
-      dropTightLabels: true,
       title: c.title,
       desc: c.desc,
       motion: 'pulses',
@@ -28,7 +26,7 @@ const map: Builder = (d) => {
         node('kvStore', 'cloudflare/kv', n.kvStore, [4.25, 0]),
         node('d1', 'cloudflare/d1', n.d1, [4.25, 1.3]),
         node('revKv', 'cloudflare/kv', n.revKv, [4.25, 2.6]),
-        node('videos', 'cloudflare/workers', n.videos, [5.3, 2.6]),
+        node('videos', 'cloudflare/workers', n.videos, [5.45, 2.6]),
       ],
       groups: [
         { id: 'auth', label: c.group.auth, caption: c.caption.auth, pad: 28, members: ['turnstile', 'limiters', 'issuer', 'profile', 'authAdmin', 'kvStore', 'd1', 'revKv'] },
@@ -38,8 +36,8 @@ const map: Builder = (d) => {
       edges: [
         { from: 'apps', to: 'issuer', flow: 'request', label: e.signIn, fromSide: 'e', toSide: 'w' },
         { from: 'issuer', to: 'resend', flow: 'async', label: e.code, fromSide: 'w', toSide: 'e' },
-        { from: 'turnstile', to: 'issuer', flow: 'control', fromSide: 's', toSide: 'n' },
-        { from: 'limiters', to: 'issuer', flow: 'control', fromSide: 's', toSide: 'n' },
+        { from: 'turnstile', to: 'issuer', flow: 'request', fromSide: 's', toSide: 'n' },
+        { from: 'limiters', to: 'issuer', flow: 'request', fromSide: 's', toSide: 'n' },
         { from: 'profile', to: 'issuer', flow: 'request', label: e.client, fromSide: 'n', toSide: 's' },
         { from: 'authAdmin', to: 'issuer', flow: 'request', label: e.confidential, fromSide: 'n', toSide: 's' },
         { from: 'issuer', to: 'kvStore', flow: 'request', fromSide: 'e', toSide: 'w' },
@@ -56,26 +54,28 @@ const map: Builder = (d) => {
       iconSize: 34,
       pad: 44,
       at: stack([
-        [['apps', 'resend'], 0],
+        // the apps centred over the account: sign-in drops straight down the middle lane into the issuer
+        [['apps'], 0],
         [['profile', 'authAdmin'], 2.3],
         [['turnstile', 'limiters'], 1.4],
         [['issuer'], 1.4],
         [['kvStore', 'd1'], 1.5],
         [['revKv'], 1.4],
         [['videos'], 2.2],
+        [['resend'], 2.2],
       ]),
       edges: [
-        { from: 'apps', to: 'issuer', flow: 'request', label: e.signIn, fromSide: 'w', toSide: 'w' },
-        { from: 'issuer', to: 'resend', flow: 'async', label: e.code, fromSide: 'e', toSide: 'e' },
-        { from: 'turnstile', to: 'issuer', flow: 'control', fromSide: 's', toSide: 'n' },
-        { from: 'limiters', to: 'issuer', flow: 'control', fromSide: 's', toSide: 'n' },
+        { from: 'apps', to: 'issuer', flow: 'request', label: e.signIn, fromSide: 's', toSide: 'n' },
+        { from: 'issuer', to: 'resend', flow: 'async', label: e.code, fromSide: 'w', toSide: 'w' },
+        { from: 'turnstile', to: 'issuer', flow: 'request', fromSide: 's', toSide: 'n' },
+        { from: 'limiters', to: 'issuer', flow: 'request', fromSide: 's', toSide: 'n' },
         { from: 'profile', to: 'issuer', flow: 'request', fromSide: 'w', toSide: 'w' },
         { from: 'authAdmin', to: 'issuer', flow: 'request', fromSide: 'e', toSide: 'e' },
         { from: 'issuer', to: 'kvStore', flow: 'request', fromSide: 's', toSide: 'n' },
         { from: 'issuer', to: 'd1', flow: 'request', fromSide: 's', toSide: 'n' },
         { from: 'issuer', to: 'revKv', flow: 'async', label: e.revoke, fromSide: 's', toSide: 'n' },
         { from: 'videos', to: 'revKv', flow: 'request', label: e.check, fromSide: 'n', toSide: 's' },
-        { from: 'apps', to: 'videos', flow: 'request', label: e.token, fromSide: 'w', toSide: 'w' },
+        { from: 'apps', to: 'videos', flow: 'request', label: e.token, fromSide: 'e', toSide: 'e' },
       ],
     },
   };
@@ -89,8 +89,6 @@ const signin: Builder = (d) => {
     kind: 'arch',
     spec: {
       id: 'identity-signin',
-      // rewritten for developers next; until then a label with no legal spot is left out (the page text says it)
-      dropTightLabels: true,
       title: c.title,
       desc: c.desc,
       motion: 'steps',
@@ -108,30 +106,37 @@ const signin: Builder = (d) => {
       edges: [
         { from: 'user', to: 'issuer', flow: 'request', label: e.authorize, step: 1, fromSide: 'e', toSide: 'w' },
         { from: 'issuer', to: 'resend', flow: 'async', label: e.email, step: 2, fromSide: 'n', toSide: 's' },
-        { from: 'issuer', to: 'user', flow: 'control', label: e.redirect, step: 3, fromSide: 'w', toSide: 'e' },
+        { from: 'issuer', to: 'user', flow: 'request', label: e.redirect, step: 3, fromSide: 'w', toSide: 'e' },
         { from: 'user', to: 'app', flow: 'request', label: e.callback, step: 4, fromSide: 's', toSide: 'n' },
         { from: 'app', to: 'issuer', flow: 'request', label: e.exchange, step: 5, fromSide: 'e', toSide: 's' },
-        { from: 'issuer', to: 'app', flow: 'delivery', label: e.tokens, step: 6, fromSide: 's', toSide: 'e' },
+        { from: 'issuer', to: 'app', flow: 'request', label: e.tokens, step: 6, fromSide: 's', toSide: 'e' },
         { from: 'app', to: 'api', flow: 'request', label: e.call, step: 7, fromSide: 's', toSide: 'w' },
         { from: 'api', to: 'revKv', flow: 'request', label: e.check, step: 8, fromSide: 'e', toSide: 'w' },
         { from: 'app', to: 'issuer', flow: 'request', label: e.refresh, step: 9, fromSide: 'e', toSide: 's' },
         { from: 'issuer', to: 'd1', flow: 'request', step: 10, fromSide: 'e', toSide: 'w' },
       ],
     },
-    wide: { colW: 300, rowH: 160, pad: 40 },
+    // the app's three exchanges run as one bundle: room between them for the middle wire's words on its line
+    wide: { colW: 300, rowH: 160, pad: 40, portStep: 32 },
     narrow: {
       colW: 180,
       rowH: 100,
       iconSize: 34,
       pad: 44,
-      at: { user: [0, 0], app: [1, 0], issuer: [0, 2.9], d1: [0, 4.6], api: [1, 4.6], revKv: [1, 6.1], resend: [0, 7.9] },
+      // the person and the app on top, the account below them with its tag along the bottom edge: the browser's two
+      // wires drop straight into the issuer, the app's three exchanges come into its side as nested Ls, and the API
+      // call runs straight down
+      tagBottom: ['cf'],
+      portStep: 24,
+      at: { user: [0, 0], app: [1, 0], issuer: [0, 3.2], d1: [0, 4.8], api: [1.1, 4.8], revKv: [1.1, 6.4], resend: [0, 8.5] },
       edges: [
         { from: 'user', to: 'issuer', flow: 'request', label: e.authorize, step: 1, fromSide: 's', toSide: 'n' },
         { from: 'issuer', to: 'resend', flow: 'async', label: e.email, step: 2, fromSide: 'w', toSide: 'w' },
-        { from: 'issuer', to: 'user', flow: 'control', label: e.redirect, step: 3, fromSide: 'n', toSide: 's' },
+        { from: 'issuer', to: 'user', flow: 'request', label: e.redirect, step: 3, fromSide: 'n', toSide: 's' },
         { from: 'user', to: 'app', flow: 'request', label: e.callback, step: 4, fromSide: 'e', toSide: 'w' },
+        // the tokens wire nests outermost: its long words sit in the open lane beside it
+        { from: 'issuer', to: 'app', flow: 'request', label: e.tokens, step: 6, fromSide: 'e', toSide: 's' },
         { from: 'app', to: 'issuer', flow: 'request', label: e.exchange, step: 5, fromSide: 's', toSide: 'e' },
-        { from: 'issuer', to: 'app', flow: 'delivery', label: e.tokens, step: 6, fromSide: 'e', toSide: 's' },
         { from: 'app', to: 'api', flow: 'request', label: e.call, step: 7, fromSide: 's', toSide: 'n' },
         { from: 'api', to: 'revKv', flow: 'request', label: e.check, step: 8, fromSide: 's', toSide: 'n' },
         { from: 'app', to: 'issuer', flow: 'request', label: e.refresh, step: 9, fromSide: 's', toSide: 'e' },
@@ -163,7 +168,8 @@ const roles: Builder = (d) => {
       { from: 'siteRoles', to: 'token', fromSide: 's' as const, toSide: 'n' as const, tag: t.issued, tone: 'blue' as const },
       { from: 'channelRoles', to: 'record', fromSide: 's' as const, toSide: 'n' as const, tag: t.stored, tone: 'green' as const },
       { from: 'record', to: 'can', fromSide: 's' as const, toSide: 'n' as const },
-      { from: 'siteRoles', to: 'channelRoles', fromSide: 'e' as const, toSide: 'w' as const, dashed: true, tag: t.neither, tone: 'pink' as const },
+      // a relation between the two, not a flow: no arrowhead
+      { from: 'siteRoles', to: 'channelRoles', fromSide: 'e' as const, toSide: 'w' as const, dashed: true, noHead: true, tag: t.neither, tone: 'pink' as const },
       { from: 'channelRoles', to: 'token', fromSide: 'w' as const, toSide: 'e' as const, dashed: true, tag: t.never, tone: 'pink' as const, tagAt: 0.55 },
       { from: 'token', to: 'transfer', fromSide: 's' as const, toSide: 'n' as const },
       { from: 'transfer', to: 'record', fromSide: 'e' as const, toSide: 'w' as const, bend: -20, tag: t.owner, tone: 'yellow' as const, tagAt: 0.6 },
@@ -178,15 +184,20 @@ const roles: Builder = (d) => {
       rowH: 205,
       nodeW: 250,
       cols: 1,
-      at: { siteRoles: [0, 0], token: [0, 1], transfer: [0, 2], record: [0, 3], channelRoles: [0, 4], can: [0, 5] },
-      // one column: every wire joins neighbours except "never in a token", which bows out through the margin
+      at: { channelRoles: [0, 0], siteRoles: [0, 1], token: [0, 2], transfer: [0, 3], record: [0, 4], can: [0, 5] },
+      // one column, every wire the wide figure draws: the two role systems next to each other at the top ("neither
+      // grants the other" bows out to the right with its words), the token and ownership chain straight down, and
+      // channel roles' two long wires nested down the left margin
       edges: [
-        { from: 'siteRoles', to: 'token', fromSide: 's', toSide: 'n', tag: t.issued, tone: 'blue' },
+        { from: 'siteRoles', to: 'channelRoles', fromSide: 'e', toSide: 'e', bend: 40 },
+        { from: 'siteRoles', to: 'token', fromSide: 's', toSide: 'n' },
         { from: 'token', to: 'transfer', fromSide: 's', toSide: 'n' },
         { from: 'transfer', to: 'record', fromSide: 's', toSide: 'n' },
-        { from: 'channelRoles', to: 'record', fromSide: 'n', toSide: 's', tag: t.stored, tone: 'green' },
-        { from: 'channelRoles', to: 'can', fromSide: 's', toSide: 'n' },
-        { from: 'channelRoles', to: 'token', fromSide: 'w', toSide: 'w', bend: -46, dashed: true, tone: 'pink' },
+        { from: 'record', to: 'can', fromSide: 's', toSide: 'n' },
+        // the farther wire first (its end spreads to the outer side) and bowed in proportion to its length, so the two
+        // leave at the same angle and never cross
+        { from: 'channelRoles', to: 'record', fromSide: 'w', toSide: 'w', bend: 110 },
+        { from: 'channelRoles', to: 'token', fromSide: 'w', toSide: 'w', bend: 30 },
       ],
     },
   };

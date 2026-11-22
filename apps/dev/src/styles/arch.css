@@ -240,6 +240,10 @@ html[data-mode='dark'] .an {
   font-size: 12px;
   font-weight: 800;
 }
+.an .an-badge-sub text {
+  font-size: 11px;
+  letter-spacing: -0.4px;
+}
 html[data-mode='dark'] .an .an-badge text {
   fill: #04121b;
 }
@@ -586,6 +590,13 @@ html[data-mode='dark'] .an-iso {
   stroke-width: 3;
   stroke-linecap: round;
 }
+.an-iso .an-pipe-head {
+  fill: var(--f);
+  stroke: var(--f);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 3px var(--f));
+}
 .an-iso .an-pulse-big {
   filter: drop-shadow(0 0 5px var(--f));
 }
@@ -720,6 +731,10 @@ html[data-mode='dark'] .an-sketch {
 }
 .an-sketch .an-sk-dashed {
   stroke-dasharray: 7 7;
+}
+/* a tag drawn over its own curve hides the line under it */
+.an-sketch .an-sk-tag-bg {
+  fill: var(--an-canvas);
 }
 .an-sketch .an-sk-mark {
   fill: var(--tone);
@@ -1088,4 +1103,11 @@ html[data-mode='dark'] .an-iso .an-iso-shadow {
 }
 .an-legend .an-sw-life::after {
   display: none;
+}
+
+/* Arabic has no italic: notes, captions and unknown meters stay upright there, set apart by their muted colour */
+.an:lang(ar) .an-group-caption,
+.an:lang(ar) .an-seq-note,
+.an:lang(ar) .an-meter[data-unknown] {
+  font-style: normal;
 }

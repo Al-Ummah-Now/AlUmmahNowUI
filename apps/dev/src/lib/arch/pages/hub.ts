@@ -48,19 +48,19 @@ const pattern: Builder = (d) => {
       rowH: 160,
       nodeW: 250,
       cols: 1,
-      at: { clients: [0, 0], edge: [0, 1], workers: [0, 2], data: [0, 3], queue: [0, 4], bg: [0, 5], ai: [0, 6], container: [0, 7] },
+      // one column, every wire with its words: the store sits under the edge so "video segments" and the Workers'
+      // reads join neighbours; the three long wires bow out through margins that never share a stretch
+      at: { clients: [0, 0], edge: [0, 1], data: [0, 2], workers: [0, 3], queue: [0, 4], bg: [0, 5], ai: [0, 6], container: [0, 7] },
       edges: [
         { from: 'clients', to: 'edge', fromSide: 's', toSide: 'n' },
-        { from: 'edge', to: 'workers', fromSide: 's', toSide: 'n' },
-        { from: 'workers', to: 'data', fromSide: 's', toSide: 'n' },
-        // on a phone the single column leaves no room beside this curve inside the cloud: no tag here
-        { from: 'workers', to: 'queue', fromSide: 'w', toSide: 'w', bend: 44 },
+        { from: 'edge', to: 'workers', fromSide: 'w', toSide: 'w', bend: 44 },
+        { from: 'workers', to: 'data', fromSide: 'n', toSide: 's' },
+        { from: 'workers', to: 'queue', fromSide: 's', toSide: 'n' },
         { from: 'queue', to: 'bg', fromSide: 's', toSide: 'n' },
-        { from: 'bg', to: 'data', fromSide: 'e', toSide: 'e', bend: 44 },
+        { from: 'bg', to: 'data', fromSide: 'e', toSide: 'e', bend: 50 },
         { from: 'bg', to: 'ai', fromSide: 's', toSide: 'n' },
         { from: 'bg', to: 'container', fromSide: 'w', toSide: 'w', bend: 44 },
-        // a short bend: a wide one ran along the cloud's outline
-        { from: 'data', to: 'edge', fromSide: 'e', toSide: 'e', bend: 20 },
+        { from: 'data', to: 'edge', fromSide: 'n', toSide: 's' },
       ],
     },
   };

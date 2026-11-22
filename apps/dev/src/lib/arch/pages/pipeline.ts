@@ -66,24 +66,35 @@ const map: Builder = (d) => {
       colW: 186,
       rowH: 104,
       iconSize: 34,
+      // a lane inside the account's end side for the status report, and its tag along the bottom edge so the
+      // clients' wires come in across a bare top edge
+      growPad: { cf: { l: 28, r: 28 } },
+      tagBottom: ['cf'],
       at: stack([
         [['studio', 'player'], 0],
         [['api'], 2.1],
         [['kv', 'records'], 1.75],
         [['rules', 'db'], 1.05],
         [['originals'], 1.05],
-        [['queue', 'media'], 1.8],
-        [['slots', 'transcoder'], 1.75],
+        // the queue and the media runner centred: the runner's lease and start drop into the two tiles under it
+        [['queue'], 1.8],
+        [['media'], 1.6],
+        [['slots', 'transcoder'], 1.6],
         [['renditions'], 1.05],
-        [['bunny'], 1.9],
+        [['bunny'], 2.5],
       ]),
       edges: [
         { from: 'studio', to: 'api', flow: 'media', label: e.upload, fromSide: 's', toSide: 'w' },
         { from: 'player', to: 'api', flow: 'request', fromSide: 's', toSide: 'e' },
         { from: 'api', to: 'apiBinds', flow: 'request', label: e.binds, fromSide: 's', toSide: 'n' },
         { from: 'apiBinds', to: 'queue', flow: 'async', label: e.send, fromSide: 's', toSide: 'n' },
-        { from: 'queue', to: 'media', flow: 'async', fromSide: 'e', toSide: 'w' },
-        { from: 'media', to: 'mediaBinds', flow: 'media', label: e.start, fromSide: 's', toSide: 'n' },
+        { from: 'queue', to: 'media', flow: 'async', label: e.consume, fromSide: 's', toSide: 'n' },
+        // into the slots tile from the outside: a wire from above would cross the group's title
+        { from: 'media', to: 'slots', flow: 'control', label: e.lease, fromSide: 'w', toSide: 'w' },
+        { from: 'media', to: 'transcoder', flow: 'media', label: e.start, fromSide: 'e', toSide: 'n' },
+        { from: 'transcoder', to: 'renditions', flow: 'media', label: e.write, fromSide: 's', toSide: 'e' },
+        // the status report and the Bunny tee share the end margin, the tee outside it
+        { from: 'media', to: 'api', flow: 'control', label: e.events, fromSide: 'e', toSide: 'e' },
         { from: 'api', to: 'bunny', flow: 'media', label: e.tee, fromSide: 'e', toSide: 'e' },
       ],
     },
@@ -227,7 +238,9 @@ const queues: Builder = (d) => {
         node('apiC', 'cloudflare/workers', n.apiC, [2.8, 1.1]),
         node('processor', 'cloudflare/workers', n.processor, [2.8, 2.2]),
         node('tdlq', 'cloudflare/queues', n.tdlq, [4.2, 0]),
-        node('dlq', 'cloudflare/queues', n.dlq, [4.2, 1.65]),
+        // its centre 8 px (one port step: 1/15 row) above the processor's, so its lower two of three ports meet the
+        // processor's two: out of retries and consume run straight across side by side
+        node('dlq', 'cloudflare/queues', n.dlq, [4.2, 2.2 - 1 / 15]),
       ],
       groups: [
         { id: 'queuesG', label: c.group.queues, members: ['transcode', 'check', 'events'] },
@@ -248,7 +261,8 @@ const queues: Builder = (d) => {
         { from: 'media', to: 'tdlq', flow: 'async', label: e.giveUp, fromSide: 'e', toSide: 'w' },
         { from: 'apiC', to: 'dlq', flow: 'async', fromSide: 'e', toSide: 'w' },
         { from: 'processor', to: 'dlq', flow: 'async', label: e.giveUp, fromSide: 'e', toSide: 'w' },
-        { from: 'dlq', to: 'processor', flow: 'async', label: e.read, fromSide: 's', toSide: 's' },
+        // straight back across the gap beside "out of retries", never along the boundary under the consumers
+        { from: 'dlq', to: 'processor', flow: 'async', label: e.read, fromSide: 'w', toSide: 'e' },
       ],
     },
     wide: { colW: 240, rowH: 120, pad: 44 },
@@ -257,25 +271,32 @@ const queues: Builder = (d) => {
       rowH: 104,
       iconSize: 34,
       at: stack([
-        [['api', 'sweep'], 0],
-        [['transcode', 'check'], 1.75],
+        // the sweep above the queue it refills (straight down); videos above the check queue, its events wire down
+        // the channel between the columns
+        [['sweep', 'api'], 0],
+        [['transcode', 'check'], 2.4],
         [['events'], 1.05],
         [['media', 'apiC'], 1.8],
         [['processor'], 1.05],
-        [['tdlq', 'dlq'], 1.8],
+        // room under the consumers for both "out of retries" words and "consume" beside its climb
+        [['tdlq', 'dlq'], 2.2],
       ]),
       edges: [
         { from: 'api', to: 'transcode', flow: 'async', label: e.send, fromSide: 's', toSide: 'n' },
         { from: 'api', to: 'check', flow: 'async', fromSide: 's', toSide: 'n' },
-        { from: 'api', to: 'events', flow: 'async', fromSide: 'w', toSide: 'w' },
-        // down the gap between the columns, not along the queues group's top border
-        { from: 'sweep', to: 'transcode', flow: 'control', label: e.requeue, fromSide: 'w', toSide: 'e' },
+        { from: 'api', to: 'events', flow: 'async', fromSide: 's', toSide: 'n' },
+        { from: 'sweep', to: 'transcode', flow: 'control', label: e.requeue, fromSide: 's', toSide: 'n' },
         { from: 'transcode', to: 'media', flow: 'async', fromSide: 's', toSide: 'n' },
         { from: 'check', to: 'apiC', flow: 'async', fromSide: 's', toSide: 'n' },
         { from: 'events', to: 'processor', flow: 'async', fromSide: 's', toSide: 'n' },
         { from: 'media', to: 'tdlq', flow: 'async', label: e.giveUp, fromSide: 's', toSide: 'n' },
         { from: 'apiC', to: 'dlq', flow: 'async', fromSide: 's', toSide: 'n' },
-        { from: 'processor', to: 'dlq', flow: 'async', fromSide: 's', toSide: 'n' },
+        // the DLQ consumer leaves the DLQ's side and climbs into the processor; listed before "out of retries" it takes
+        // the processor's nearer port, so the two never cross
+        { from: 'dlq', to: 'processor', flow: 'async', label: e.read, fromSide: 'w', toSide: 's' },
+        { from: 'processor', to: 'dlq', flow: 'async', label: e.giveUp, fromSide: 's', toSide: 'n' },
+        // the no-slot loop runs back up beside the wire it returns along
+        { from: 'media', to: 'transcode', flow: 'control', fromSide: 'n', toSide: 's' },
       ],
     },
   };

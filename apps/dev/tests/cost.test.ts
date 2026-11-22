@@ -42,6 +42,10 @@ describe('cost model', () => {
     expect(formatUsd('ar', 1.5)).not.toMatch(/[0-9]/);
     expect(formatRate('en', 0.000513)).toBe('$0.000513');
     expect(fill('{a}/h per slot', 'en', { a: { usd: 0.401 } })).toBe('$0.40/h per slot');
-    expect(fill('{n} مرة', 'ar', { n: { n: 1000 } })).toBe('١٠٠٠ مرة');
+    // the owner's number rule (2026-11-21): never grouped in Arabic, a count from a thousand in words
+    expect(fill('{n} مرة', 'ar', { n: { n: 1000 } })).toBe('ألف مرة');
+    expect(fill('{n} يوميًا', 'ar', { n: { n: 10000 } })).toBe('١٠ آلاف يوميًا');
+    expect(fill('{n} نيورون', 'ar', { n: { n: 1500 } })).toBe('١٫٥ ألف نيورون');
+    expect(fill('{n} times', 'en', { n: { n: 1000 } })).toBe('1,000 times');
   });
 });

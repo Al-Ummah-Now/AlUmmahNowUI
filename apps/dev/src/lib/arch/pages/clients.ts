@@ -41,7 +41,7 @@ const map: Builder = (d) => {
         { id: 'apis', label: c.group.apis, members: ['apiVideos', 'adminApi', 'auth'] },
         { id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', members: ['sites', 'apis', 'r2'] },
         { id: 'native', label: c.group.native, caption: c.caption.native, members: ['apple', 'android', 'desktop', 'tv'] },
-        { id: 'bunnyNet', label: c.group.bunny, kind: 'platform', tagLogo: { id: 'brand/bunnynet-logo-dark', w: 66, h: 19 }, tagEnd: true, accent: '#f29b1d', members: ['bunny'] },
+        { id: 'bunnyNet', label: c.group.bunny, kind: 'platform', tagLogo: { id: 'brand/bunnynet-logo-dark', w: 66, h: 19 }, accent: '#f29b1d', members: ['bunny'] },
       ],
       edges: [
         { from: 'web', to: 'sites', flow: 'request', label: e.https, fromSide: 'e', toSide: 'w' },
@@ -54,31 +54,36 @@ const map: Builder = (d) => {
         { from: 'importer', to: 'bunny', flow: 'media', label: e.upload, fromSide: 's', toSide: 'n' },
       ],
     },
-    wide: { colW: 180, rowH: 150 },
+    // Bunny's tag is wide for its one-tile box: room on its side keeps it clear of the uploads wire into the tile
+    wide: { colW: 180, rowH: 150, growPad: { bunnyNet: { l: 60 } } },
     narrow: {
       colW: 180,
       rowH: 100,
       iconSize: 34,
+      // Bunny's tag sits top-left in its box: room on the left keeps it off the uploads wire dropping into the tile
+      growPad: { bunnyNet: { l: 64, r: 64 } },
       at: stack([
         [['browsers', 'embeds'], 0],
-        [['www', 'videos'], 2.1],
+        [['www', 'videos'], 2.7],
         [['adminWeb', 'shortLinks'], 1.05],
         [['apiVideos', 'adminApi'], 1.95],
         [['auth'], 1.05],
         [['r2'], 1.5],
-        [['apple', 'android'], 2.4],
+        [['apple', 'android'], 1.9],
         [['desktop', 'tv'], 1.05],
         [['core'], 2.0],
-        [['importer', 'bunny'], 1.9],
+        [['importer'], 1.9],
+        [['bunny'], 2.1],
       ]),
       edges: [
         { from: 'web', to: 'sites', flow: 'request', label: e.https, fromSide: 's', toSide: 'n' },
         { from: 'sites', to: 'apis', flow: 'request', label: e.bindings, fromSide: 's', toSide: 'n' },
         { from: 'apis', to: 'r2', flow: 'media', label: e.media, fromSide: 's', toSide: 'n' },
         { from: 'native', to: 'core', flow: 'request', label: e.uniffi, fromSide: 's', toSide: 'n' },
-        { from: 'core', to: 'apis', flow: 'request', label: e.api, fromSide: 'e', toSide: 'e' },
-        { from: 'importer', to: 'r2', flow: 'media', label: e.upload, fromSide: 'w', toSide: 'w' },
-        { from: 'importer', to: 'bunny', flow: 'media', fromSide: 'e', toSide: 'w' },
+        { from: 'core', to: 'apiVideos', flow: 'request', label: e.api, fromSide: 'w', toSide: 'w' },
+        { from: 'core', to: 'auth', flow: 'request', label: e.signIn, fromSide: 'w', toSide: 'w' },
+        { from: 'importer', to: 'r2', flow: 'media', label: e.upload, fromSide: 'e', toSide: 'e' },
+        { from: 'importer', to: 'bunny', flow: 'media', label: e.upload, fromSide: 's', toSide: 'n' },
       ],
     },
   };
@@ -110,17 +115,20 @@ const device: Builder = (d) => {
     },
     wide: { colW: 210, rowH: 170, pad: 84 },
     narrow: {
-      colW: 180,
+      // the code and token steps run down side by side between the TV and the issuer: a wide column gives each its words
+      colW: 270,
+      tileMin: 240,
       rowH: 100,
       iconSize: 34,
       pad: 56,
-      at: { tv: [0, 0], api: [1, 0], issuer: [0, 2.4], phone: [1, 2.4] },
+      at: { tv: [0, 0], api: [1, 0], issuer: [0, 3.2], phone: [1, 3.2] },
       edges: [
         { from: 'tv', to: 'issuer', flow: 'request', label: e.ask, step: 1, fromSide: 'w', toSide: 'w' },
-        { from: 'issuer', to: 'tv', flow: 'delivery', label: e.code, step: 2, fromSide: 'n', toSide: 's' },
+        // the code goes back up the east side, so each of the four TV ↔ issuer wires keeps its words beside it
+        { from: 'issuer', to: 'tv', flow: 'delivery', label: e.code, step: 2, fromSide: 'e', toSide: 'e' },
         { from: 'phone', to: 'issuer', flow: 'request', label: e.enter, step: 3, fromSide: 'w', toSide: 'e' },
         { from: 'issuer', to: 'phone', flow: 'control', label: e.confirm, step: 4, fromSide: 's', toSide: 's' },
-        { from: 'tv', to: 'issuer', flow: 'request', label: e.poll, step: 5, fromSide: 'w', toSide: 'w' },
+        { from: 'tv', to: 'issuer', flow: 'request', label: e.poll, step: 5, fromSide: 's', toSide: 'n' },
         { from: 'issuer', to: 'tv', flow: 'delivery', label: e.tokens, step: 6, fromSide: 'n', toSide: 's' },
         { from: 'tv', to: 'api', flow: 'request', label: e.call, step: 7, fromSide: 'e', toSide: 'w' },
       ],
@@ -168,14 +176,17 @@ const core: Builder = (d) => {
       nodeW: 250,
       cols: 1,
       at: { pair: [0, 0], apple: [0, 1], android: [0, 2], desktop: [0, 3], core: [0, 4], api: [0, 5], auth: [0, 6], config: [0, 7] },
-      // one column: the platforms come in on the left, the config comes up on the right
+      // one column: the platforms come in on the left, the config and the player pair join on the right
       edges: [
-        { from: 'apple', to: 'core', fromSide: 'w', toSide: 'w', bend: 58 },
-        { from: 'android', to: 'core', fromSide: 'w', toSide: 'w', bend: 34 },
+        // side wires nest down their own lanes (sketch `lane`), the farther one outside
+        { from: 'apple', to: 'core', fromSide: 'w', toSide: 'w', lane: 32 },
+        { from: 'android', to: 'core', fromSide: 'w', toSide: 'w', lane: 18 },
         { from: 'desktop', to: 'core', fromSide: 's', toSide: 'n' },
         { from: 'core', to: 'api', fromSide: 's', toSide: 'n' },
-        { from: 'core', to: 'auth', fromSide: 'w', toSide: 'w', bend: 40 },
-        { from: 'config', to: 'core', fromSide: 'e', toSide: 'e', bend: 52 },
+        { from: 'core', to: 'auth', fromSide: 'w', toSide: 'w', lane: 18 },
+        { from: 'config', to: 'core', fromSide: 'e', toSide: 'e', lane: 18 },
+        // the player pair it is linked into, up on the right above the config wire
+        { from: 'core', to: 'pair', fromSide: 'e', toSide: 'e', lane: 18 },
       ],
     },
   };
