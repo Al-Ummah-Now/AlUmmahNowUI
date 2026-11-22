@@ -27,6 +27,14 @@ async function signedIn(page: Page) {
   await page.route(`${AUTH_URL}/session/accounts`, (r) => r.fulfill({ status: 200, headers: cors, body: JSON.stringify({ accounts: [{ userId: 'u1', isActive: true, email: 'm@example.com', name: 'Mahmoud' }] }) }));
 }
 
+
+/** The bar's visible controls never overlap: each starts at least 4px after the one before it. */
+async function controlsApart(page: Page, label: string) {
+  const boxes = await page.locator('.site-header :is(.aun-menu-collapse, .aun-brand-mark, .aun-brand-name, .aun-search-open, .aun-lang, .aun-mode, .aun-signin, .aun-acct-btn)').evaluateAll((els) =>
+    els.filter((e) => (e as HTMLElement).offsetParent && e.getBoundingClientRect().width > 2).map((e) => { const r = e.getBoundingClientRect(); return { c: e.className, l: r.left, r: r.right }; }).sort((a, b) => a.l - b.l));
+  boxes.slice(1).forEach((b, i) => { const a = boxes[i]!; expect(b.l - a.r, `${label}: ${a.c} | ${b.c}`).toBeGreaterThanOrEqual(4); });
+}
+
 for (const l of LOCALES) {
   const other = l === 'en' ? 'ar' : 'en';
 
@@ -69,6 +77,7 @@ for (const l of LOCALES) {
       }
       await expect(page.locator('.site-header .primary-nav')).toBeHidden();
       await expect(page.locator('#site-search-input')).toBeHidden();
+      await controlsApart(page, `${w}`);
       // the search keeps its icon: it opens the sheet over the bar (same top and height), Escape closes it.
       // Under 360px in Arabic, signed out, there is no room for it: the menu panel links to the search page.
       const open = page.getByTestId('header-search-open');
@@ -119,6 +128,7 @@ for (const l of LOCALES) {
       await expect(page.locator('#account .aun-acct-btn')).toBeVisible();
       expect((await box(page, '.site-header')).height, `${w}`).toBe(bar);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${w} no sideways scroll`).toBe(true);
+      await controlsApart(page, `${w} signed in`);
     }
   });
 

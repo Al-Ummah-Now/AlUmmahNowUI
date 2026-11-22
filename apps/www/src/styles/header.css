@@ -84,6 +84,11 @@
 .site-header .aun-search {
   overflow: visible;
 }
+/* the pill's :focus-within ring is the field's focus (contract); the site-wide :focus-visible outline
+   would draw a second ring on the input inside it */
+.site-header .aun-search-input:focus-visible {
+  outline: none;
+}
 .site-header .aun-search-submit {
   border-start-end-radius: var(--fanous-radius-full, 999px);
   border-end-end-radius: var(--fanous-radius-full, 999px);
@@ -97,6 +102,11 @@
 @media (max-width: 63.99rem) {
   .site-header .primary-nav {
     display: none;
+  }
+  /* the icon is all that is left in the bar: the group keeps its width, so a long Arabic wordmark
+     shrinks (ellipsis) instead of the icon running under the language button */
+  .site-header .aun-header-primary {
+    min-width: min-content;
   }
 }
 /* Under 360px an Arabic bar that is signed out has no room for the search icon: «تسجيل الدخول» is 34px
