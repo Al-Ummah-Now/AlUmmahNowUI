@@ -35,9 +35,9 @@ const rails: Builder = (d) => {
         { id: 'bunny', label: c.group.bunny, kind: 'platform', tagLogo: { id: 'brand/bunnynet-logo-dark', w: 66, h: 19 }, tagEnd: true, accent: '#f29b1d', members: ['bunnyCdn', 'library'] },
       ],
       edges: [
-        // the address request leaves beside the stream wires and turns down by the account; the Bunny stream climbs into
-        // the viewers' bottom: neither crosses the other or shares a line with the public stream
-        { from: 'viewers', to: 'api', flow: 'request', label: e.ask, fromSide: 'e', toSide: 'w' },
+        // the address request leaves the viewers' bottom beside the Bunny stream and turns in to api-videos: it never
+        // shares a line with the public stream coming down into the viewers' side (in either language)
+        { from: 'viewers', to: 'api', flow: 'request', label: e.ask, fromSide: 's', toSide: 'w' },
         { from: 'pub', to: 'domain', flow: 'delivery', label: e.origin, fromSide: 'w', toSide: 'e' },
         { from: 'domain', to: 'cache', flow: 'delivery', fromSide: 'w', toSide: 'e' },
         { from: 'cache', to: 'viewers', flow: 'delivery', label: e.hls, fromSide: 'w', toSide: 'e', stream: true },
@@ -68,14 +68,14 @@ const rails: Builder = (d) => {
       at: {
         ...stack([
           [['viewers'], 0],
-          [['api'], 2.9],
+          [['api'], 2.2],
           [['cache', 'domain'], 1.95],
           [['pub'], 1.05],
           [['edge', 'worker'], 1.95],
           [['priv'], 1.05],
           [['bunnyCdn', 'library'], 2.5],
         ]),
-        api: [1, 2.9],
+        api: [1, 2.2],
       },
       edges: [
         { from: 'viewers', to: 'api', flow: 'request', label: e.ask, fromSide: 's', toSide: 'w' },
@@ -120,7 +120,7 @@ const miss: Builder = (d, locale) => {
         { from: 'edge', to: 'player', flow: 'delivery', label: e.deliver, step: 6, fromSide: 's', toSide: 's' },
       ],
     },
-    wide: { colW: 220, rowH: 250, pad: 72 },
+    wide: { colW: 220, rowH: 250, pad: 92 },
     narrow: {
       colW: 180,
       rowH: 100,
@@ -135,8 +135,8 @@ const miss: Builder = (d, locale) => {
       ]),
       edges: [
         { from: 'player', to: 'edge', flow: 'request', label: e.get, step: 1, fromSide: 'w', toSide: 'w' },
-        { from: 'edge', to: 'player', flow: 'delivery', label: e.hit, step: 2, fromSide: 'n', toSide: 's' },
         { from: 'edge', to: 'upper', flow: 'request', label: e.miss, step: 2, fromSide: 'w', toSide: 'w' },
+        { from: 'edge', to: 'player', flow: 'delivery', label: e.hit, step: 2, fromSide: 'n', toSide: 's' },
         { from: 'upper', to: 'r2', flow: 'request', label: e.read, step: 3, fromSide: 'w', toSide: 'w' },
         { from: 'r2', to: 'upper', flow: 'delivery', label: e.fillUpper, step: 4, fromSide: 'n', toSide: 's' },
         { from: 'upper', to: 'edge', flow: 'delivery', label: e.fillEdge, step: 5, fromSide: 'e', toSide: 'e' },
@@ -167,7 +167,8 @@ const caches: Builder = (d) => {
       { from: 'api', to: 'settings', fromSide: 'w' as const, toSide: 's' as const, bend: 30 },
       { from: 'api', to: 'jwks', fromSide: 'n' as const, toSide: 's' as const },
       { from: 'api', to: 'revoked', fromSide: 'e' as const, toSide: 's' as const, bend: -30 },
-      { from: 'api', to: 'share', fromSide: 'w' as const, toSide: 'n' as const, bend: -30, tag: c.tag.never, tone: 'pink' as const, tagAt: 0.35 },
+      // the share images' own colour: the tag belongs to their wire, never read as the revocations tile's
+      { from: 'api', to: 'share', fromSide: 'w' as const, toSide: 'n' as const, bend: -30, tag: c.tag.never, tone: 'green' as const, tagAt: 0.5 },
       { from: 'api', to: 'mp4', fromSide: 'e' as const, toSide: 'n' as const, bend: 30 },
     ],
   };

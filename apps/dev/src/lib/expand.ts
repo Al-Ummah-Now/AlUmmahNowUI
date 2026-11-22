@@ -7,6 +7,7 @@
  * Headings, navigation, lists marked data-no-expand, scripts and a drawing's <title>/<desc> are left alone.
  */
 import { GLOSSARY, NEAR, termPattern, type Term } from './glossary.ts';
+import { bindPhrases, splitLatin } from './arch/text.ts';
 
 const SKIP = new Set(['script', 'style', 'title', 'desc', 'nav', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'button', 'label', 'legend', 'code']);
 const VOID = new Set(['br', 'img', 'input', 'meta', 'link', 'hr', 'source', 'path', 'rect', 'circle', 'use', 'line', 'polygon', 'polyline', 'stop', 'ellipse']);
@@ -23,6 +24,10 @@ export function expandAbbreviations(html: string, locale: 'en' | 'ar', label: st
   const seen = new Set<string>();
   let recent = '';
   const meaning = (t: Term) => (locale === 'ar' ? t.ar : t.en);
+  const html_ = (x: string) => x.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  // an Arabic meaning's Latin words («… لدى Cloudflare») are isolated as the page's prose is: a parenthesis beside
+  // them otherwise wraps to a line start as «)Cloudflare»
+  const meaningHtml = (t: Term) => splitLatin(meaning(t)).map((q) => (q.latin ? `<bdi dir="ltr" class="lr">${html_(q.t)}</bdi>` : html_(q.t))).join('');
   const said = (t: Term, around: string) => around.toLowerCase().includes(meaning(t).toLowerCase());
 
   const stack: string[] = [];
@@ -73,7 +78,8 @@ export function expandAbbreviations(html: string, locale: 'en' | 'ar', label: st
           if (used.length) {
             const list = used.map((t) => `${t.abbr}: ${meaning(t)}`).join(locale === 'ar' ? '؛ ' : '; ');
             const line = `${label} ${list}.`;
-            out.push(`<p class="an-terms">${line.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</p>`);
+            const lineHtml = `${html_(label)} ${used.map((t) => `<bdi dir="ltr" class="lr">${html_(t.abbr)}</bdi>: ${meaningHtml(t)}`).join(locale === 'ar' ? '؛ ' : '; ')}.`;
+            out.push(`<p class="an-terms">${locale === 'ar' ? lineHtml : html_(line)}</p>`);
             for (const t of used) {
               seen.add(t.abbr);
               if (t.same) seen.add(t.same);
@@ -110,17 +116,67 @@ export function expandAbbreviations(html: string, locale: 'en' | 'ar', label: st
       // already followed by its own parenthesis (e.g. "TUS (resumable uploads)"): leave it
       if (/^\s*\(/.test(text.slice(m.index + term.abbr.length))) continue;
       if (stack[stack.length - 1] === 'bdi') {
-        afterBdi += ` (${meaning(term)})`;
+        afterBdi += ` (${meaningHtml(term)})`;
         continue;
       }
       let at = m.index + term.abbr.length;
       // "R2 storage" → "R2 storage (…)", not "R2 (… object storage) storage": a word the meaning already says goes first
       const next = /^ ([A-Za-z\u0600-\u06ff]+)/.exec(text.slice(at));
       if (next && meaning(term).toLowerCase().includes(next[1]!.toLowerCase())) at += next[0].length;
-      text = `${text.slice(0, at)} (${meaning(term)})${text.slice(at)}`;
+      text = `${text.slice(0, at)} (${meaningHtml(term)})${text.slice(at)}`;
     }
     out.push(text);
     recent = (recent + ' ' + decode(text)).slice(-NEAR);
   }
   return head + out.join('') + tail;
+}
+
+const ISO_SKIP = new Set(['script', 'style', 'svg', 'title', 'bdi', 'code', 'pre', 'textarea', 'kbd', 'samp']);
+
+/** Rewrites each text run of a page's <main> (not drawings, code or existing isolates); `fix` gets and returns decoded text, or null to leave it. */
+function mapProse(html: string, fix: (plain: string) => string | null): string {
+  const start = html.search(/<main[\s>]/);
+  const end = html.lastIndexOf('</main>');
+  if (start < 0 || end < 0) return html;
+  const tokens = html.slice(start, end).split(/(<[^>]+>)/);
+  const stack: string[] = [];
+  const out = tokens.map((tok) => {
+    if (tok.startsWith('<')) {
+      const name = /^<\/?([a-zA-Z0-9-]+)/.exec(tok)?.[1]?.toLowerCase() ?? '';
+      if (tok.startsWith('</')) {
+        const k = stack.lastIndexOf(name);
+        if (k >= 0) stack.length = k;
+      } else if (name && !tok.endsWith('/>') && !VOID.has(name) && !tok.startsWith('<!')) stack.push(name);
+      return tok;
+    }
+    if (!tok.trim() || stack.some((t) => ISO_SKIP.has(t))) return tok;
+    return fix(decode(tok)) ?? tok;
+  });
+  return html.slice(0, start) + out.join('') + html.slice(end);
+}
+
+const enc = (x: string) => x.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/**
+ * Every page's prose: a value never splits across lines («١ من ٢٠», "1 in 20", «٩٠ يومًا», «كل ساعة»,
+ * "can(role, capability)") and a dash keeps to the word before it, so a line never starts with «—».
+ */
+export function bindProse(html: string): string {
+  return mapProse(html, (plain) => {
+    const fixed = bindPhrases(plain).replace(/ —/g, '\u00a0—');
+    return fixed === plain ? null : enc(fixed);
+  });
+}
+
+/**
+ * An Arabic page's prose, after the glossary: every Latin run (a name, a path, ".NET") inside <main> is isolated in a
+ * <bdi> kept on one line, whichever component wrote it, so the bidi algorithm never moves its punctuation («NET.»)
+ * and a word that follows a paren never lands on the wrong side. Runs already isolated, drawings and code are left alone.
+ */
+export function isolateLatinProse(html: string): string {
+  return mapProse(bindProse(html), (plain) => {
+    const parts = splitLatin(plain);
+    if (!parts.some((q) => q.latin)) return null;
+    return parts.map((q) => (q.latin ? `<bdi dir="ltr" class="lr">${enc(q.t)}</bdi>` : enc(q.t))).join('');
+  });
 }

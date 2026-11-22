@@ -100,7 +100,8 @@ export function overview(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
     // the cache centred: both clients come down into its top
     [['cdn'], 2.3],
     [['turnstile'], 1.05],
-    [['www', 'videos'], 1.8],
+    // (Arabic: a taller group title above the sites, so a little more gap for the routes wire's words)
+    [['www', 'videos'], locale === 'ar' ? 1.95 : 1.8],
     [['adminWeb', 'cms'], 1.05],
     [['apiVideos', 'adminApi'], 2.3],
     [['auth', 'realtime'], 1.05],
@@ -112,7 +113,7 @@ export function overview(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
     [['workersAi'], 2.5],
     [['d1', 'r2'], 2.4],
     [['kv', 'queues'], 1.05],
-    [['logs', 'analytics'], 1.8],
+    [['logs', 'analytics'], locale === 'ar' ? 1.95 : 1.8],
     [['secrets', 'status'], 1.05],
     // room under the account for the providers wire's words beside it
     [['qf', 'resend'], 2.6],

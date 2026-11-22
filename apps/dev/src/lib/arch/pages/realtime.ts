@@ -22,7 +22,7 @@ const map: Builder = (d) => {
         node('limits', 'lucide/gauge', n.limits, [1.35, 0]),
         node('worker', 'cloudflare/workers', n.worker, [1.35, 1]),
         node('dir', DO, n.dir, [2.75, 0.2]),
-        node('coalescer', DO, n.coalescer, [2.75, 1.6]),
+        node('coalescer', DO, n.coalescer, [2.75, 1.45]),
         node('s0', DO, n.s0, [4.15, 0]),
         node('s1', DO, n.s1, [4.15, 1]),
         node('sn', DO, n.sn, [4.15, 2]),
@@ -40,7 +40,9 @@ const map: Builder = (d) => {
       edges: [
         { from: 'clients', to: 'worker', flow: 'request', label: e.socket, fromSide: 'e', toSide: 'w' },
         { from: 'worker', to: 'limits', flow: 'control', label: e.limit, fromSide: 'n', toSide: 's' },
-        { from: 'worker', to: 'shards', flow: 'request', label: e.shard, fromSide: 'e', toSide: 'w' },
+        // under the coalescer into a shard's side (any shard: the last one stands for it): a wire to the group's middle
+        // would pass between the directory and the coalescer and cross the paced wire that joins them
+        { from: 'worker', to: 'sn', flow: 'request', label: e.shard, fromSide: 's', toSide: 'w' },
         { from: 'producers', to: 'worker', flow: 'async', label: e.post, fromSide: 'n', toSide: 's' },
         { from: 'worker', to: 'dir', flow: 'async', label: e.broadcast, fromSide: 'e', toSide: 'w' },
         { from: 'worker', to: 'coalescer', flow: 'async', label: e.admin, fromSide: 'e', toSide: 'w' },

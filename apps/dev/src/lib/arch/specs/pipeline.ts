@@ -64,8 +64,10 @@ export function pipeline(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
   };
   const wide: ArchLayout = { colW: 238, rowH: 160 };
   const ask: ArchEdge = { from: 'player', to: 'apiVideos', flow: 'request', step: 12, fromSide: 'w', toSide: 'w' };
-  const enqueue: ArchEdge = { from: 'apiVideos', to: 'queue', flow: 'async', label: e.enqueue, step: 6, fromSide: 'w', toSide: 'w' };
-  const toBunny: ArchEdge = { from: 'apiVideos', to: 'bunny', flow: 'media', label: e.encode, step: 2, fromSide: 'n', toSide: 'w' };
+  // into the queue from above: its last run crosses the gap under the processor, clear of the address request's lane,
+  // so its badge has room
+  const enqueue: ArchEdge = { from: 'apiVideos', to: 'queue', flow: 'async', label: e.enqueue, step: 6, fromSide: 'w', toSide: 'n' };
+  const toBunny: ArchEdge = { from: 'apiVideos', to: 'bunny', flow: 'media', label: e.encode, step: 2, fromSide: 'w', toSide: 'w' };
   const narrow: ArchLayout = {
     colW: 180,
     rowH: 100,
@@ -73,7 +75,8 @@ export function pipeline(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
     // the consume wire drops straight from the queue into the media Worker, across the transcode group's near
     // corner: its title moves to the far end
     titleEnd: ['transcode'],
-    at: stack([
+    // the creator stands straight above api-videos, so a phone's first view (the start edge) opens on step 1
+    at: { ...stack([
       [['creator'], 0],
       [['apiVideos', 'originals'], 2.25],
       [['processor', 'workersAi'], 1.6],
@@ -83,17 +86,14 @@ export function pipeline(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
       [['renditions', 'cdn'], 1.75],
       [['player'], 1.9],
       [['bunny', 'bunnyCdn'], 2.2],
-    ]),
+    ]), creator: [0, 0] },
     edges: [
       { from: 'creator', to: 'apiVideos', flow: 'media', label: e.upload, step: 1, fromSide: 's', toSide: 'n' },
-      // the short enqueue U routes before the long Bunny wire, so it keeps the lane by the tiles and the Bunny wire
-      // runs outside it
-      ...(locale === 'ar' ? [] : [enqueue]),
-      // the player's address request and the Bunny wire share the start margin: the address request takes the inner
-      // lane and the Bunny wire runs outside it, down into Bunny Stream's side, so the two never cross. The router hands
-      // the outer lane to whichever routes first in English and the inner one in Arabic (its wider labels change the
-      // costs), so the order follows the language
-      ...(locale === 'ar' ? [ask, enqueue, toBunny] : [toBunny, ask]),
+      // the Bunny wire routes first and takes the outermost lane, outside the Cloudflare account; the player's address
+      // request takes the next lane in and the enqueue wire the lane by the tiles, so none of the three cross
+      toBunny,
+      ask,
+      enqueue,
       { from: 'apiVideos', to: 'originals', flow: 'media', label: e.tee, step: 3, fromSide: 'e', toSide: 'w' },
       { from: 'apiVideos', to: 'processor', flow: 'async', step: 4, fromSide: 's', toSide: 'n' },
       { from: 'processor', to: 'workersAi', flow: 'request', label: e.ai, step: 5, fromSide: 'e', toSide: 'w' },

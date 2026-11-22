@@ -133,8 +133,9 @@ export function costs(c: Copy, locale: 'en' | 'ar'): { spec: ArchSpec; wide: Arc
       { id: 'laneBunny', label: c.lane.bunny, kind: 'platform', tagLogo: { id: 'brand/bunnynet-logo-dark', w: 66, h: 19 }, accent: '#f29b1d', members: [...LANES.bunny, TOTAL.bunny] },
       { id: 'laneR2', label: c.lane.r2, members: [...LANES.r2, TOTAL.r2] },
       { id: 'laneShared', label: c.lane.shared, members: [...LANES.shared, TOTAL.shared] },
-      // room inside the account for the upload's wire round the R2 lane: it stays inside
-      { id: 'cf', label: c.lane.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', pad: 40, members: ['upload', 'laneR2', 'laneShared'] },
+      // room inside the account for the upload's wire round the R2 lane: it stays inside. The account's tag sits at the
+      // far end of its top edge: the upload's wire rises straight up to the Bunny lane past the near corner
+      { id: 'cf', label: c.lane.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', tagEnd: true, pad: 40, members: ['upload', 'laneR2', 'laneShared'] },
     ],
     edges,
   };
@@ -147,8 +148,10 @@ export function costs(c: Copy, locale: 'en' | 'ar'): { spec: ArchSpec; wide: Arc
     nameSize: 13,
     roleSize: 11,
     at: stack([
-      [['bunnyEncode', 'bunnyStore'], 0],
-      [['bunnyDeliver', 'totalBunny'], 1.75],
+      // the Bunny lane reads upward from Encode, on the row nearest the upload, so each Upload wire ends on its lane's
+      // first stage (as on a wide screen), never on a lane's border
+      [['bunnyDeliver', 'totalBunny'], 0],
+      [['bunnyEncode', 'bunnyStore'], 1.75],
       [['upload'], 2.75],
       [['originals', 'queue'], 2.5],
       [['slots', 'transcode'], 1.75],
@@ -159,11 +162,11 @@ export function costs(c: Copy, locale: 'en' | 'ar'): { spec: ArchSpec; wide: Arc
       [['totalShared'], 1.75],
     ]),
     edges: [
-      { from: 'upload', to: 'laneBunny', flow: 'media', step: 1, fromSide: 'n', toSide: 's' },
-      { from: 'upload', to: 'laneR2', flow: 'media', step: 1, fromSide: 's', toSide: 'n' },
-      { from: 'upload', to: 'laneShared', flow: 'request', step: 1, fromSide: ['e', 'w'], toSide: ['e', 'w'] },
+      { from: 'upload', to: 'bunnyEncode', flow: 'media', step: 1, fromSide: 'n', toSide: 's' },
+      { from: 'upload', to: 'originals', flow: 'media', step: 1, fromSide: 's', toSide: 'n' },
+      { from: 'upload', to: 'moderation', flow: 'request', step: 1, fromSide: ['w', 'e'], toSide: ['w', 'e'] },
       { from: 'bunnyEncode', to: 'bunnyStore', flow: 'media', step: 2, fromSide: 'e', toSide: 'w' },
-      { from: 'bunnyStore', to: 'bunnyDeliver', flow: 'delivery', step: 3, fromSide: 's', toSide: 'n' },
+      { from: 'bunnyStore', to: 'bunnyDeliver', flow: 'delivery', step: 3, fromSide: 'n', toSide: 's' },
       { from: 'bunnyDeliver', to: 'totalBunny', flow: 'media', step: 4, fromSide: 'e', toSide: 'w' },
       { from: 'originals', to: 'queue', flow: 'async', step: 2, fromSide: 'e', toSide: 'w' },
       { from: 'queue', to: 'slots', flow: 'media', step: 3, fromSide: 's', toSide: 'n' },

@@ -353,7 +353,7 @@ export const en = {
       title: 'Delivery & caching',
       description: 'How a video reaches a viewer quickly: public HLS straight from R2 through the CDN with cache rules applied as code, private HLS through the media Worker with a token in the path, and Bunny’s signed CDN — plus the caches inside the API.',
       heroTitle: 'Every rendition, two doors',
-      heroLead: 'Public videos stream from R2, Cloudflare’s file storage, through Cloudflare’s content delivery network (CDN) without touching a Worker. Private and unlisted videos go through the media Worker, which checks a token that lives in the path itself. Bunny’s CDN serves its own copies with addresses signed on every response.',
+      heroLead: 'Public videos stream from R2 through Cloudflare’s content delivery network (CDN) without touching a Worker. Private and unlisted videos go through the media Worker, which checks a token that lives in the path itself. Bunny’s CDN serves its own copies with addresses signed on every response.',
       stagesTitle: 'Layer by layer',
       stages: [
         { title: 'Public: the CDN, not a Worker', body: 'Public HLS (the streaming format: a playlist and short segments) never runs code. An R2 custom domain serves pub/… and a Cache Rule caches everything: segments and init files for a year (they are immutable, addressed by revision), playlists for ten seconds, manifest.json bypassed. Smart Tiered Cache keeps one upper tier per region warm. The zone is on the Free plan; its ten cache rules are enough because the rules ship as code with every release.' },
@@ -368,7 +368,7 @@ export const en = {
       title: 'Data',
       description: 'What holds what on Al Ummah Now: R2 buckets for records and media, seven D1 databases for everything that needs queries, KV namespaces, Durable Objects and Analytics Engine datasets.',
       heroTitle: 'Records in R2, questions in D1',
-      heroLead: 'A video, channel or profile is a JSON object in R2, Cloudflare’s file storage — written through compare-and-swap, read as a whole. Everything that needs a query — notifications, the search index, reports, costs — lives in D1, Cloudflare’s SQL database. Sessions and fast flags live in KV, a key-value store; sockets, counters and gates in Durable Objects.',
+      heroLead: 'A video, channel or profile is a JSON object in R2 — written through compare-and-swap, read as a whole. Everything that needs a query — notifications, the search index, reports, costs — lives in D1. Sessions and fast flags live in KV; sockets, counters and gates in Durable Objects.',
       stagesTitle: 'What holds what',
       stages: [
         { title: 'R2: the records', body: 'One bucket per record type: videos, channels, profiles, playlists, channel sections and tabs, community posts, subtitles, scheduled videos, upload defaults, and one global-settings bucket the workers share as a tiny document store (the delivery settings and the transcode limit live there).' },
