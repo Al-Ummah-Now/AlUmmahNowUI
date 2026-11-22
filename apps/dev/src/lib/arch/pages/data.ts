@@ -191,7 +191,7 @@ const sketch: Builder = (d) => {
       nodeW: 250,
       cols: 1,
       at: { api: [0, 0], r2: [0, 1], d1: [0, 2], kv: [0, 3], dobj: [0, 4], ae: [0, 5] },
-      edges: ['r2', 'd1', 'kv', 'dobj', 'ae'].map((to, i) => ({ from: 'api', to, fromSide: 'w' as const, toSide: 'w' as const, lane: 18 + i * 14 })),
+      edges: ['r2', 'd1', 'kv', 'dobj', 'ae'].map((to, i) => ({ from: 'api', to, fromSide: 'w' as const, toSide: 'w' as const, lane: 18 + i * 18 })),
     },
   };
 };

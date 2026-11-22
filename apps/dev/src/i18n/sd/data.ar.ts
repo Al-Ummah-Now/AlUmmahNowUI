@@ -67,6 +67,6 @@ export const dataAr: typeof dataEn = {
       dobj: { title: 'Durable Objects', note: 'اتصالات، عدّادات، بوّابات' },
       ae: { title: 'Analytics Engine', note: 'أرقام بلا تتبّع' },
     },
-    tag: { whole: 'JSON كامل + وسم الإصدار', sql: 'SQL، بحث نصي' },
+    tag: { whole: 'JSON + وسم الإصدار', sql: 'SQL، بحث نصي' },
   },
 };

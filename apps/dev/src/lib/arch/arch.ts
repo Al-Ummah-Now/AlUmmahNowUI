@@ -82,6 +82,8 @@ export interface ArchLayout {
   tagBottom?: string[];
   /** groups whose title sits at the far end of the top edge here: a wire drops in across the near corner */
   titleEnd?: string[];
+  /** groups whose caption sits centred along the bottom (under the channel between two columns), clear of drops from either column */
+  captionMid?: string[];
   /** widest spacing between wires leaving one side of a tile (default 2 lattice steps): more where a middle
    * wire's words sit on its own line between two neighbours */
   portStep?: number;
@@ -321,7 +323,7 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     const lx = atEnd ? gb.box.x + gb.box.w - (big ? 14 : 10) - gb.label.w : gb.box.x + (big ? 14 : 10);
     gb.label = { ...gb.label, x: lx, y: gb.label.y + oy };
     if (gb.caption) {
-      const cx = opts.rtl ? gb.box.x + gb.box.w - 10 - gb.caption.w : gb.box.x + 10;
+      const cx = layout.captionMid?.includes(gb.g.id) ? gb.box.x + (gb.box.w - gb.caption.w) / 2 : opts.rtl ? gb.box.x + gb.box.w - 10 - gb.caption.w : gb.box.x + 10;
       gb.caption = { ...gb.caption, x: cx, y: gb.caption.y + oy };
     }
   }
@@ -343,8 +345,8 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
       { x: b.x + b.w, y: b.y, w: 0, h: b.h },
     ])
       // an account boundary is a long dashed line: a wire running beside it reads as part of it, so keep well off
-      if (gb.g.kind === 'boundary') router.penalise(rc, 11, 40);
-      else router.penalise(rc, 9, 12);
+      if (gb.g.kind === 'boundary') router.penalise(rc, 12.5, 40);
+      else router.penalise(rc, 12.5, 12);
   }
   // nothing runs along the drawing's own edges: a scroll box opens on a cut wire otherwise
   router.penalise({ x: 0, y: 0, w: W, h: 0 }, 10, 200);
@@ -466,7 +468,12 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     const mid = vertical ? own.y + own.h / 2 : own.x + own.w / 2;
     const key = (x: { edge: number; other: Pt }) => {
       const v = vertical ? x.other.y : x.other.x;
-      if (chosen[x.edge]!.fromSide !== chosen[x.edge]!.toSide) return v;
+      const fs = chosen[x.edge]!.fromSide;
+      const ts = chosen[x.edge]!.toSide;
+      // an L (it leaves this side and turns toward its other end) sits nearer the way it turns than any U heading the
+      // same way: the U's lane runs outside the L's corner, its run passing below (or above) the L instead of across it
+      if ((fs === 'e' || fs === 'w') !== (ts === 'e' || ts === 'w')) return (v >= mid ? 2e6 : -2e6) - v;
+      if (fs !== ts) return v;
       return (v >= mid ? 1e6 : -1e6) - v;
     };
     // wires bound for the same place keep their order left to right, so the Arabic figure (laid out mirrored) runs
@@ -487,6 +494,17 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     const step = Math.min(layout.portStep ?? 2 * G, Math.max(G, Math.floor((span - 2 * G) / Math.max(1, list.length) / G) * G));
     list.forEach((s2, j) => along.set(`${s2.edge}|${s2.end}`, centre + (j - (list.length - 1) / 2) * step));
   }
+  // a straight line at `v` (y when `vertical`, else x) between two boxes runs through another tile
+  const crossesTile = (id: string, otherId: string, vertical: boolean, v: number) => {
+    const ra = rectOf(id).rect;
+    const rb = rectOf(otherId).rect;
+    const [p0, p1] = vertical ? [Math.min(ra.x + ra.w, rb.x + rb.w), Math.max(ra.x, rb.x)] : [Math.min(ra.y + ra.h, rb.y + rb.h), Math.max(ra.y, rb.y)];
+    return spec.nodes.some((nd) => {
+      if (nd.id === id || nd.id === otherId) return false;
+      const r2 = rectOf(nd.id).rect;
+      return vertical ? v > r2.y - G && v < r2.y + r2.h + G && r2.x < p1 && r2.x + r2.w > p0 : v > r2.x - G && v < r2.x + r2.w + G && r2.y < p1 && r2.y + r2.h > p0;
+    });
+  };
   // two ends that face each other across a gap and overlap along it share one line: a straight wire, never an
   // S-step from two centres that don't quite line up (only when each is the only wire on its side)
   edgesSpec.forEach((e, i) => {
@@ -514,6 +532,8 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     if (v < lo) v += G;
     if (v > hi) v -= G;
     if (v < lo || v > hi) return;
+    // (unless a tile stands on that line between them: the wire bends round it and the shared line only adds a step)
+    if (crossesTile(e.from, e.to, vertical, v)) return;
     along.set(`${i}|from`, v);
     along.set(`${i}|to`, v);
   });
@@ -541,6 +561,9 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
         if (vertical !== (otherSide === 'e' || otherSide === 'w')) continue;
         const v = along.get(`${i}|${other}`);
         if (v == null) continue;
+        // a tile across the straight line between the two ends: the wire bends round it anyway, and lining its end
+        // up only adds a step beside that tile
+        if (crossesTile(id, otherId, vertical, v)) continue;
         const [lo, hi] = range(id, vertical);
         const cur = along.get(`${i}|${end}`);
         if (opts.variant !== 'wide' && (cur == null || Math.abs(v - cur) > 2 * G)) continue;
@@ -561,6 +584,104 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
         along.set(`${i}|${end}`, t);
       }
     });
+  // a spread fed by lone ports straight across (two queues into one consumer): each of its ports takes its other
+  // end's line when they all fit on the tile, in order, a lattice step or more apart, so every wire runs straight
+  // instead of stepping to a port packed by the tile's middle
+  // a group's ports aimed at the other ends' centres: re-aimed at those ends' spread ports (a worker's middle wire of
+  // three leaves 16 px above its centre), still 2 lattice steps apart and on the group's side, so no step before it
+  if (opts.variant === 'wide')
+    for (const [k, list] of slots) {
+      const [id, side] = k.split('|') as [string, Side];
+      if (rectOf(id).isNode) continue;
+      const vertical = side === 'e' || side === 'w';
+      const [lo, hi] = range(id, vertical);
+      let prev = -Infinity;
+      const next = list.map((s2) => {
+        const otherEnd = s2.end === 'from' ? 'to' : 'from';
+        const oside = otherEnd === 'from' ? chosen[s2.edge]!.fromSide : chosen[s2.edge]!.toSide;
+        const cur = along.get(`${s2.edge}|${s2.end}`)!;
+        const o = (oside === 'e' || oside === 'w') === vertical ? along.get(`${s2.edge}|${otherEnd}`) : undefined;
+        const v = Math.max(o ?? cur, prev + 2 * G);
+        prev = v;
+        return v;
+      });
+      if (next.every((v) => v >= lo && v <= hi)) list.forEach((s2, j) => along.set(`${s2.edge}|${s2.end}`, next[j]!));
+    }
+  if (opts.variant === 'wide')
+    for (const [k, list] of slots) {
+      if (list.length < 2) continue;
+      const [id, side] = k.split('|') as [string, Side];
+      if (!rectOf(id).isNode) continue;
+      const vertical = side === 'e' || side === 'w';
+      const want = list.map((s2) => {
+        const e = edgesSpec[s2.edge]!;
+        const otherEnd = s2.end === 'from' ? 'to' : 'from';
+        const oid = otherEnd === 'from' ? e.from : e.to;
+        const oside = otherEnd === 'from' ? chosen[s2.edge]!.fromSide : chosen[s2.edge]!.toSide;
+        const opposite = (side === 'e' && oside === 'w') || (side === 'w' && oside === 'e') || (side === 'n' && oside === 's') || (side === 's' && oside === 'n');
+        if (!opposite || (slots.get(`${oid}|${oside}`)?.length ?? 0) !== 1) return NaN;
+        return along.get(`${s2.edge}|${otherEnd}`) ?? NaN;
+      });
+      if (want.some((v) => Number.isNaN(v))) continue;
+      const [lo, hi] = range(id, vertical);
+      const order = list.map((_, j) => j).sort((p, q) => want[p]! - want[q]!);
+      const ok = order.every((j, n) => want[j]! >= lo && want[j]! <= hi && (n === 0 || want[j]! - want[order[n - 1]!]! >= G));
+      if (ok) list.forEach((s2, j) => along.set(`${s2.edge}|${s2.end}`, want[j]!));
+    }
+
+  /**
+   * A tiny hook before the arrowhead (the run toward the port passes just short of it, turns away, steps across by
+   * under 16 px and comes back down to it), when the run itself ends 10 px or more from the port: the run goes on to
+   * the port's line and drops straight in. The hook only bought a longer last stub.
+   */
+  const unhook = (input: Pt[]): Pt[] => {
+    const n = input.length;
+    if (n < 5) return input;
+    const [p0, p1, p2, p3, p4] = input.slice(n - 5) as [Pt, Pt, Pt, Pt, Pt];
+    const runH = p0.y === p1.y && p1.x === p2.x && p2.y === p3.y && p3.x === p4.x;
+    const runV = p0.x === p1.x && p1.y === p2.y && p2.x === p3.x && p3.y === p4.y;
+    // (the last run keeps 20 px: its corner's 8 px round still leaves 12 straight before the head)
+    const STUB = 20;
+    // or the whole run moves out to the nearest clear lattice line that leaves the drop its 20 px (up to 8 lines out),
+    // when the corner before it is a plain turn: the run then drops in from there
+    const lifted = (q0: Pt, q1: Pt): Pt[] | null => {
+      // (desktop only: a phone's tight lanes leave no room to move a run without crossing its neighbours)
+      if (n < 6 || opts.variant !== 'wide') return null;
+      const pre = input[n - 6]!;
+      const perp = runH ? pre.x === p0.x : pre.y === p0.y;
+      if (!perp || router.costAlong(q0, q1) === Infinity || router.costAlong(pre, q0) === Infinity) return null;
+      return [...input.slice(0, n - 5), q0, q1, p4];
+    };
+    if (runH) {
+      const across = Math.abs(p3.x - p2.x);
+      const toward = Math.sign(p1.x - p0.x) === Math.sign(p4.x - p1.x);
+      const away = Math.sign(p2.y - p1.y) === -Math.sign(p4.y - p3.y);
+      if (across > 0 && across < 16 && toward && away && Math.sign(p4.y - p1.y) === Math.sign(p4.y - p3.y)) {
+        if (Math.abs(p4.y - p1.y) >= STUB) return [...input.slice(0, n - 4), { x: p4.x, y: p1.y }, p4];
+        const dy = Math.sign(p2.y - p1.y) * G;
+        for (let t = Math.round((p4.y - Math.sign(p4.y - p1.y) * STUB) / G) * G, k = 0; k < 8; t += dy, k++) {
+          if (Math.abs(p4.y - t) < STUB) continue;
+          const got = lifted({ x: p0.x, y: t }, { x: p4.x, y: t });
+          if (got) return got;
+        }
+      }
+    }
+    if (runV) {
+      const across = Math.abs(p3.y - p2.y);
+      const toward = Math.sign(p1.y - p0.y) === Math.sign(p4.y - p1.y);
+      const away = Math.sign(p2.x - p1.x) === -Math.sign(p4.x - p3.x);
+      if (across > 0 && across < 16 && toward && away && Math.sign(p4.x - p1.x) === Math.sign(p4.x - p3.x)) {
+        if (Math.abs(p4.x - p1.x) >= STUB) return [...input.slice(0, n - 4), { x: p1.x, y: p4.y }, p4];
+        const dx = Math.sign(p2.x - p1.x) * G;
+        for (let t = Math.round((p4.x - Math.sign(p4.x - p1.x) * STUB) / G) * G, k = 0; k < 8; t += dx, k++) {
+          if (Math.abs(p4.x - t) < STUB) continue;
+          const got = lifted({ x: t, y: p0.y }, { x: t, y: p4.y });
+          if (got) return got;
+        }
+      }
+    }
+    return input;
+  };
 
   /**
    * Straighten a short S-step mid-wire (two runs in the same direction offset by under 16 px, joined by a tiny
@@ -670,7 +791,7 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
       );
     });
     if (!res) throw new Error(`${spec.id}: no route ${e.from} → ${e.to}`);
-    const pts = dejog(simplify([res.start.port, ...res.pts, res.goal.port]));
+    const pts = unhook(dejog(simplify([res.start.port, ...res.pts, res.goal.port])));
     router.commit(pts.slice(1, -1));
     return { e, id: `${prefix}-e${i}`, pts, len: polyLength(pts) };
   });
@@ -831,7 +952,11 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     const within = (b: Rect, g: Rect) => b.x >= g.x && b.y >= g.y && b.x + b.w <= g.x + g.w && b.y + b.h <= g.y + g.h;
     const foreign = [...groups.values()].filter((gb) => !(ends.length === 2 && ends.every((b) => b !== gb.box && within(b, gb.box)))).map((gb) => gb.box);
 
-    hit = cands.find((c) => free(c.q, c.wires) && !titleRows.some((t) => intersects(c.q, t, 4)) && !foreign.some((g) => intersects(c.q, g, 4)));
+    // best: 12 px from every other wire too, so no wire runs close beside another wire's words
+    const roomy = (q: Rect) => !others.some((o) => intersects(q, o, 12));
+    hit = cands.find((c) => free(c.q, c.wires) && roomy(c.q) && !titleRows.some((t) => intersects(c.q, t, 4)) && !foreign.some((g) => intersects(c.q, g, 4)));
+    hit ??= cands.find((c) => free(c.q, c.wires) && roomy(c.q) && !titleRows.some((t) => intersects(c.q, t, 4)));
+    hit ??= cands.find((c) => free(c.q, c.wires) && !titleRows.some((t) => intersects(c.q, t, 4)) && !foreign.some((g) => intersects(c.q, g, 4)));
     hit ??= cands.find((c) => free(c.q, c.wires) && !titleRows.some((t) => intersects(c.q, t, 4)));
     if (!hit) {
       // last resort: the nearest free spot around the wire's middle, still clear of every node and label
