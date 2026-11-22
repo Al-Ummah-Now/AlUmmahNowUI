@@ -19,7 +19,7 @@
   --ep-tint:color-mix(in srgb,var(--fanous-color-text-primary) 7%,transparent);
   display:grid;grid-template-columns:minmax(0,1fr);place-items:center;box-sizing:border-box;width:100%;max-width:100%;overflow-x:clip;min-height:calc(100dvh - 160px);padding:clamp(24px,6vw,72px) 16px;color:var(--fanous-color-text-primary)}
 @supports (color:rgb(from red r g b)){.ep{--ep-surface:rgb(from var(--fanous-color-background) calc(r + (255 - r) * (0.119 + 0.681 * clamp(0, (0.2126 * r + 0.7152 * g + 0.0722 * b - 127.5) * 10, 1))) calc(g + (255 - g) * (0.119 + 0.681 * clamp(0, (0.2126 * r + 0.7152 * g + 0.0722 * b - 127.5) * 10, 1))) calc(b + (255 - b) * (0.119 + 0.681 * clamp(0, (0.2126 * r + 0.7152 * g + 0.0722 * b - 127.5) * 10, 1))))}}
-.ep-card{box-sizing:border-box;width:100%;max-width:600px;min-width:0;overflow-wrap:anywhere;border:1px solid var(--ep-edge);border-radius:var(--aun-radius-card,16px);background:var(--ep-surface);box-shadow:var(--ep-glow);padding:clamp(24px,4vw,40px);text-align:start}
+.ep-card{box-sizing:border-box;width:100%;max-width:640px;min-width:0;overflow-wrap:anywhere;border:1px solid var(--ep-edge);border-radius:var(--aun-radius-card,16px);background:var(--ep-surface);box-shadow:var(--ep-glow);padding:clamp(24px,4vw,40px);text-align:start}
 @media print{.ep-card{background:none;box-shadow:none}}
 .ep-head{display:grid;grid-template-columns:auto 1fr;column-gap:var(--fanous-spacing-md,12px);align-items:center}
 .ep-badge{display:grid;place-items:center;width:52px;height:52px;border-radius:14px;background:var(--fanous-color-primary);color:var(--fanous-color-on-primary);box-shadow:0 0 18px -4px color-mix(in srgb,var(--ep-c) 60%,transparent)}
@@ -58,7 +58,8 @@ html[lang=ar] .ep-code,.ep[lang=ar] .ep-code{letter-spacing:0}
 .ep-ref-hint{margin:6px 0 0;color:var(--fanous-color-text-secondary);line-height:1.5;text-wrap:balance}
 
 /* Footer: help on the start side, the actions at the end edge (main action last, filled), on one row
-   in every language: a longer help line wraps inside its own column, balanced, beside the buttons */
+   in every language. The card is 640px so the Arabic help line stays on one line beside the widest
+   pair (« حاول مرة أخرى » + « الصفحة الرئيسية »); a narrower window wraps it in its own column, balanced */
 .ep-foot{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:var(--fanous-spacing-md,12px);margin-block-start:var(--fanous-spacing-xl,24px);padding-block-start:var(--fanous-spacing-lg,16px);border-block-start:1px solid var(--fanous-color-divider)}
 .ep-help{flex:1 1 0;min-width:0;margin:0;font-size:14px;line-height:1.5;text-wrap:balance;color:var(--fanous-color-text-secondary)}
 .ep-help a{color:var(--fanous-color-link);font-weight:600;text-decoration:underline;text-underline-offset:2px;white-space:nowrap}
