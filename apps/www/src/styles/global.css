@@ -2516,6 +2516,8 @@ html[data-js] .ci-deck .tl-ov {
   align-items: baseline;
   gap: 0.25rem 1rem;
   font-size: 1.375rem;
+  /* the first result has no top padding (.articles-item:first-child): keep it off the heading */
+  margin-block-end: 1.25rem;
 }
 .search-total {
   color: var(--text-soft);
