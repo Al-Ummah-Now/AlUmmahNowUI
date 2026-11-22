@@ -57,7 +57,7 @@ export const releaseAr: typeof releaseEn = {
       signedIn: { title: 'فحص الدخول', note: 'ثم: لا بيانات اختبار' },
       media: { title: 'دخان الوسائط', note: 'حاوية حقيقية واحدة' },
     },
-    obs: { rollback: 'التراجع', dry: 'تشغيل تجريبي', status: 'الحالة' },
+    obs: { rollback: 'التراجع', dry: 'محاكاة', status: 'الحالة' },
     tag: { fail: 'عند الإخفاق', all: 'كلها ناجحة' },
   },
 };

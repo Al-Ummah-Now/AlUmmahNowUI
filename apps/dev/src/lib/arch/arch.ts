@@ -703,26 +703,35 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
   const badges: { rt: Routed; c: Pt; n: number; at: number }[] = [];
   // radius 9: a badge on one of two wires spread 16 px apart still keeps 6 px from the other
   const BR = 9;
+  // a lettered sub-step («٣ب», "3b") is a pill: two glyphs never fit an 18 px circle
+  const stepCount = new Map<number, number>();
+  for (const rt of routed) if (rt.e.step != null) stepCount.set(rt.e.step, (stepCount.get(rt.e.step) ?? 0) + 1);
+  const halfW = (rt: Routed) => ((stepCount.get(rt.e.step!) ?? 0) > 1 ? 13 : BR);
   for (const rt of routed) {
     if (rt.e.step == null || spec.badges === false) continue;
+    const HW = halfW(rt);
     let best: { c: Pt; at: number } | null = null;
     const others = [...routed.filter((x) => x !== rt).flatMap((x) => segRects(x)), ...borders];
     // the circle's own distance to every other wire (a square test lets a round badge sit 5 px from a line)
     const segs = routed.filter((x) => x !== rt).flatMap((x) => x.pts.slice(1).map((p, i) => [x.pts[i]!, p] as const));
+    // (a pill's distance is from its straight core, HW - BR either side of the centre, so it reads as a circle's)
+    const core = HW - BR;
     const wireDist = (c: Pt) =>
       Math.min(
         999,
-        ...segs.map(([a, b]) => {
-          const vx = b.x - a.x;
-          const vy = b.y - a.y;
-          const t = Math.max(0, Math.min(1, ((c.x - a.x) * vx + (c.y - a.y) * vy) / (vx * vx + vy * vy || 1)));
-          return Math.hypot(c.x - a.x - t * vx, c.y - a.y - t * vy);
-        }),
+        ...segs.flatMap(([a, b]) =>
+          [-core, -core / 2, 0, core / 2, core].map((dx) => {
+            const vx = b.x - a.x;
+            const vy = b.y - a.y;
+            const t = Math.max(0, Math.min(1, ((c.x + dx - a.x) * vx + (c.y - a.y) * vy) / (vx * vx + vy * vy || 1)));
+            return Math.hypot(c.x + dx - a.x - t * vx, c.y - a.y - t * vy);
+          }),
+        ),
       );
     const WIRE = BR + 7;
     for (let d = 22; d < rt.len - 22; d += 4) {
       const c = pointAt(rt.pts, d);
-      const q = { x: c.x - BR, y: c.y - BR, w: 2 * BR, h: 2 * BR };
+      const q = { x: c.x - HW, y: c.y - BR, w: 2 * HW, h: 2 * BR };
       // 5 px from every label and badge already placed, 6 px (and a bit) from every other wire
       if (free(q, others) && !placed.some((o) => intersects(q, o, 5)) && wireDist(c) >= WIRE) {
         best = { c, at: d };
@@ -736,7 +745,7 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
       let far = -1;
       for (let d = 4; d < rt.len - 4; d += 2) {
         const c = pointAt(rt.pts, d);
-        const q = { x: c.x - BR, y: c.y - BR, w: 2 * BR, h: 2 * BR };
+        const q = { x: c.x - HW, y: c.y - BR, w: 2 * HW, h: 2 * BR };
         // never on a tile, a title or another wire; among the rest, the farthest from any border
         if (obstacles.some((o) => intersects(q, o, CLEAR)) || placed.some((o) => intersects(q, o, 3)) || wireDist(c) < WIRE) continue;
         const k = clearance(c);
@@ -750,7 +759,7 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
         let bestK = -Infinity;
         for (let d = 4; d < rt.len - 4; d += 2) {
           const c = pointAt(rt.pts, d);
-          const q = { x: c.x - BR, y: c.y - BR, w: 2 * BR, h: 2 * BR };
+          const q = { x: c.x - HW, y: c.y - BR, w: 2 * HW, h: 2 * BR };
           if (!inCanvas(q) || obstacles.some((o) => intersects(q, o, CLEAR)) || placed.some((o) => intersects(q, o, 4))) continue;
           const k = Math.min(clearance(c), wireDist(c) - BR);
           if (k > bestK) {
@@ -761,7 +770,7 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
       }
       fb ??= { c: pointAt(rt.pts, rt.len / 2), at: rt.len / 2 };
     }
-    placed.push({ x: fb.c.x - BR, y: fb.c.y - BR, w: 2 * BR, h: 2 * BR });
+    placed.push({ x: fb.c.x - HW, y: fb.c.y - BR, w: 2 * HW, h: 2 * BR });
     badges.push({ rt, c: fb.c, n: rt.e.step, at: fb.at });
   }
 
@@ -799,8 +808,13 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
         // 8, 12 or 16 px from the wire: still within 24 px of it, with more room to clear neighbours
         for (const off of [CLEAR + 2, CLEAR + 6, CLEAR + 10]) {
           if (horiz) {
-            cands.push({ q: { x: p.x - lw / 2, y: p.y - off - lh, w: lw, h: lh }, wires: [...others, ...own] });
-            cands.push({ q: { x: p.x - lw / 2, y: p.y + off, w: lw, h: lh }, wires: [...others, ...own] });
+            // a U's run: its words inside the U (both ends below a top run, or above a bottom one), so both languages
+            // put them on the same side whatever room the canvas edge leaves
+            const above = { q: { x: p.x - lw / 2, y: p.y - off - lh, w: lw, h: lh }, wires: [...others, ...own] };
+            const below = { q: { x: p.x - lw / 2, y: p.y + off, w: lw, h: lh }, wires: [...others, ...own] };
+            const first = rt.pts[0]!;
+            const last = rt.pts[rt.pts.length - 1]!;
+            cands.push(...(first.y > p.y && last.y > p.y ? [below, above] : [above, below]));
           } else {
             const right = { x: p.x + off, y: p.y - lh / 2, w: lw, h: lh };
             const left = { x: p.x - off - lw, y: p.y - lh / 2, w: lw, h: lh };
@@ -1047,7 +1061,7 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     const same = shared.get(b.n)!;
     const sub = same.length > 1 ? (subLetters[same.indexOf(b.rt)] ?? '') : '';
     const text = formatNumber(b.n, opts.locale ?? 'en') + sub;
-    out.push(`<g class="an-badge an-f-${b.rt.e.flow}${sub ? ' an-badge-sub' : ''}" data-for="${b.rt.id}" data-covers><circle cx="${r(b.c.x)}" cy="${r(b.c.y)}" r="${BR}"/><text x="${r(b.c.x)}" y="${r(b.c.y + 4)}" text-anchor="middle"${sub && opts.locale === 'ar' ? ' direction="rtl"' : ''}>${text}</text></g>`);
+    out.push(`<g class="an-badge an-f-${b.rt.e.flow}${sub ? ' an-badge-sub' : ''}" data-for="${b.rt.id}" data-covers>${sub ? `<rect x="${r(b.c.x - 13)}" y="${r(b.c.y - BR)}" width="26" height="${2 * BR}" rx="${BR}"/>` : `<circle cx="${r(b.c.x)}" cy="${r(b.c.y)}" r="${BR}"/>`}<text x="${r(b.c.x)}" y="${r(b.c.y + 4)}" text-anchor="middle"${sub && opts.locale === 'ar' ? ' direction="rtl"' : ''}>${text}</text></g>`);
   }
   out.push('</g>');
   out.push('</svg>');

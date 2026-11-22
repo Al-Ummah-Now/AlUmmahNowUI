@@ -19,7 +19,7 @@ export const scalingAr: typeof scalingEn = {
       slots: { name: 'TranscodeSlots', role: 'كائن واحد' },
       container: { name: 'Transcoder', role: '{N=3371} على الأكثر' },
     },
-    edge: { req: 'الطلبات', socket: 'مقبس', broadcast: 'بث', view: 'مشاهدة', cas: 'كتابة مشروطة، كل {N10} ث فأكثر', job: 'مهمة تحويل', acquire: 'خانة', start: 'بدء' },
+    edge: { req: 'الطلبات', socket: 'مقبس', broadcast: 'بث', view: 'مشاهدة', cas: 'كتابة مشروطة، كل {N10} ث على الأكثر', job: 'مهمة تحويل', acquire: 'خانة', start: 'بدء' },
   },
   slot: {
     title: 'التحويل يأخذ خانة',

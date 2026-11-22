@@ -2,7 +2,10 @@
 /**
  * A sentence with inline links: `[label](https://…)` becomes a link, everything else stays text.
  * For the few places a developer would click through to a repo or a doc page; never a citation list.
+ * In Arabic, every Latin run (a name, a path, an identifier) is isolated in a <bdi> kept on one line, so the
+ * bidi algorithm never reorders it or its punctuation, and «api-videos» never breaks at its hyphen.
  */
+import { splitLatin } from '../lib/arch/text.ts';
 interface Props {
   text: string;
 }
@@ -17,4 +20,4 @@ for (const m of text.matchAll(re)) {
 }
 if (last < text.length) parts.push({ t: text.slice(last) });
 ---
-{parts.map((p) => ('t' in p ? p.t : <a href={p.href} rel="external">{p.label}</a>))}
+{parts.map((p) => ('t' in p ? splitLatin(p.t).map((q) => (q.latin ? <bdi dir="ltr" class="lr">{q.t}</bdi> : q.t)) : <a href={p.href} rel="external">{p.label}</a>))}

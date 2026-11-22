@@ -632,13 +632,15 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
     }
     // a step badge keeps 6 px from every wire but its own
     for (const badge of svg.querySelectorAll<SVGGElement>('.an-badge')) {
-      const c = bb(badge.querySelector('circle') ?? badge);
+      const c = bb(badge.querySelector('circle') ?? badge.querySelector('rect') ?? badge);
       const cx = c.x + c.w / 2;
       const cy = c.y + c.h / 2;
-      const rad = c.w / 2;
+      // a lettered sub-step is a pill: its distance is from its straight core (a circle's core is its centre)
+      const rad = c.h / 2;
+      const core = Math.max(0, c.w / 2 - rad);
       for (const p of edges) {
         if (p.id === badge.dataset.for || p.dataset.edge === badge.dataset.for) continue;
-        const d = Math.min(...pts(p, 2).map((pt) => Math.hypot(pt.x - cx, pt.y - cy))) - rad;
+        const d = Math.min(...pts(p, 2).map((pt) => Math.hypot(pt.x - Math.max(cx - core, Math.min(cx + core, pt.x)), pt.y - cy))) - rad;
         if (d < 6) {
           out.push(`${name}: step badge "${badge.textContent}" is ${Math.max(0, Math.round(d))} px from the wire ${p.dataset.from}→${p.dataset.to} (min 6)`);
           break;

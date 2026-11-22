@@ -59,6 +59,8 @@ const rails: Builder = (d) => {
       pad: 76,
       // and two dashed lanes (key, purge) inside the account beside the rails, in either language's lattice snap
       growPad: { cf: { l: 16, r: 16 } },
+      // the account's tag along its bottom edge: the stream wires climb past a bare top corner in either language
+      tagBottom: ['cf'],
       // api in the end column, over the rails' end tiles: its purge and signing-key wires turn down the lane
       // just beside it instead of crossing the whole width twice
       at: {

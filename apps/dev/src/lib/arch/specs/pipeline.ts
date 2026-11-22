@@ -63,6 +63,9 @@ export function pipeline(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
     edges,
   };
   const wide: ArchLayout = { colW: 238, rowH: 160 };
+  const ask: ArchEdge = { from: 'player', to: 'apiVideos', flow: 'request', step: 12, fromSide: 'w', toSide: 'w' };
+  const enqueue: ArchEdge = { from: 'apiVideos', to: 'queue', flow: 'async', label: e.enqueue, step: 6, fromSide: 'w', toSide: 'w' };
+  const toBunny: ArchEdge = { from: 'apiVideos', to: 'bunny', flow: 'media', label: e.encode, step: 2, fromSide: 'n', toSide: 'w' };
   const narrow: ArchLayout = {
     colW: 180,
     rowH: 100,
@@ -85,8 +88,12 @@ export function pipeline(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
       { from: 'creator', to: 'apiVideos', flow: 'media', label: e.upload, step: 1, fromSide: 's', toSide: 'n' },
       // the short enqueue U routes before the long Bunny wire, so it keeps the lane by the tiles and the Bunny wire
       // runs outside it
-      { from: 'apiVideos', to: 'queue', flow: 'async', label: e.enqueue, step: 6, fromSide: 'w', toSide: 'w' },
-      { from: 'apiVideos', to: 'bunny', flow: 'media', label: e.encode, step: 2, fromSide: 'n', toSide: 's' },
+      ...(locale === 'ar' ? [] : [enqueue]),
+      // the player's address request and the Bunny wire share the start margin: the address request takes the inner
+      // lane and the Bunny wire runs outside it, down into Bunny Stream's side, so the two never cross. The router hands
+      // the outer lane to whichever routes first in English and the inner one in Arabic (its wider labels change the
+      // costs), so the order follows the language
+      ...(locale === 'ar' ? [ask, enqueue, toBunny] : [toBunny, ask]),
       { from: 'apiVideos', to: 'originals', flow: 'media', label: e.tee, step: 3, fromSide: 'e', toSide: 'w' },
       { from: 'apiVideos', to: 'processor', flow: 'async', step: 4, fromSide: 's', toSide: 'n' },
       { from: 'processor', to: 'workersAi', flow: 'request', label: e.ai, step: 5, fromSide: 'e', toSide: 'w' },
@@ -96,7 +103,6 @@ export function pipeline(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
       { from: 'media', to: 'container', flow: 'media', label: e.start, step: 9, fromSide: 's', toSide: 'w' },
       { from: 'originals', to: 'container', flow: 'media', label: e.read, step: 10, fromSide: 'e', toSide: 'e' },
       { from: 'container', to: 'renditions', flow: 'media', label: e.write, step: 11, fromSide: 's', toSide: 'n' },
-      { from: 'player', to: 'apiVideos', flow: 'request', step: 12, fromSide: 'w', toSide: 'w' },
       { from: 'renditions', to: 'cdn', flow: 'delivery', fromSide: 'e', toSide: 'w' },
       { from: 'cdn', to: 'player', flow: 'delivery', label: e.r2, step: 13, fromSide: 's', toSide: 'e' },
       { from: 'bunny', to: 'bunnyCdn', flow: 'delivery', fromSide: 'e', toSide: 'w' },

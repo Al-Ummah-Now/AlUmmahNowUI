@@ -104,9 +104,11 @@ function sceneSpec(c: Copy, variant: string): SceneSpec {
       ],
       pipes: [
         { id: 'req', from: ['people', 'x1', 66 / 532], to: ['cf', 'x0', 266 / 362], flow: 'request', label: c.wire.requests },
-        { id: 'play', from: ['bunny', 'x0', 0.5], to: ['people', 'x1', 416 / 532], flow: 'delivery', label: c.wire.playback },
+        // level with the middle of bunny.net's edge (its y 624 + 110): one straight run, no bend before the head
+        { id: 'play', from: ['bunny', 'x0', 0.5], to: ['people', 'x1', 494 / 560], flow: 'delivery', label: c.wire.playback },
         { id: 'up', from: ['cf', 'y1', 96 / 702], to: ['bunny', 'y0', 96 / 362], flow: 'media', label: c.wire.upload },
-        { id: 'api', from: ['cf', 'x1', 186 / 362], to: ['providers', 'x0', 436 / 532], flow: 'request' },
+        // level with the middle of Cloudflare's end edge (y 195): one straight run
+        { id: 'api', from: ['cf', 'x1', 0.5], to: ['providers', 'x0', 495 / 560], flow: 'request' },
       ],
     };
   }
@@ -126,17 +128,19 @@ function sceneSpec(c: Copy, variant: string): SceneSpec {
     platforms: [
       { id: 'people', at: [0, 0], cols: 3, rows: 1, blocks: [b('browser', 'lucide/browser'), b('phone', 'lucide/smartphone'), b('tv', 'lucide/tv')], label: p.people, accent: 'var(--an-ink)', tone: 'plain', dashed: true },
       { id: 'cf', at: [0, 0], cols: 2, rows: 2, blocks: [b('workers', 'cloudflare/workers', 40), b('cdn', 'cloudflare/cache'), b('ai', 'cloudflare/workers-ai'), b('containers', 'cloudflare/containers', 36)], label: p.cfCompute, tag: 'simple-icons/cloudflare', accent: '#f6821f', tone: 'cf' },
+      { id: 'providers', at: [0, 0], cols: 3, rows: 1, blocks: [b('qf', 'lucide/book-open'), b('resend', 'simple-icons/resend'), b('github', 'simple-icons/github')], label: p.providers, accent: 'var(--an-boundary)', tone: 'prov' },
       { id: 'cfData', at: [0, 0], cols: 2, rows: 2, blocks: [b('r2', 'cloudflare/r2'), b('d1', 'cloudflare/d1'), b('kv', 'cloudflare/kv'), b('queues', 'cloudflare/queues')], label: p.cfData, tag: 'simple-icons/cloudflare', accent: '#f6821f', tone: 'cf' },
       { id: 'bunny', at: [0, 0], cols: 2, rows: 1, blocks: [b('bunnyCdn', 'brand/bunny-cdn'), b('stream', 'brand/bunny-stream', 30)], label: p.bunny, tagLogo: logo, accent: '#f29b1d', tone: 'bunny' },
-      { id: 'providers', at: [0, 0], cols: 3, rows: 1, blocks: [b('qf', 'lucide/book-open'), b('resend', 'simple-icons/resend'), b('github', 'simple-icons/github')], label: p.providers, accent: 'var(--an-boundary)', tone: 'prov' },
     ],
     pipes: [
-      // each flow between neighbours drops straight down the end side, beside the next platform's tag
+      // flows between neighbours drop straight down the end side, beside the next platform's tag; the providers sit
+      // right under compute, so Cloudflare calls them; compute reaches its data, and playback climbs from bunny.net to
+      // the people, in two lanes nested up the start side (the shorter inside)
       { id: 'req', from: ['people', 'x1', 0.12], to: ['cf', 'y0', 0], flow: 'request', label: c.wire.requests, drop: true },
-      { id: 'data', from: ['cf', 'x1', 0.12], to: ['cfData', 'y0', 0], flow: 'request', drop: true },
+      { id: 'api', from: ['cf', 'x1', 0.12], to: ['providers', 'y0', 0], flow: 'request', drop: true },
+      { id: 'data', from: ['cf', 'y1', 0.5], to: ['cfData', 'x0', 0.5], flow: 'request', lane: 14 },
       { id: 'up', from: ['cfData', 'x1', 0.24], to: ['bunny', 'y0', 0], flow: 'media', label: c.wire.upload, drop: true },
-      { id: 'play', from: ['bunny', 'x0', 0.8], to: ['people', 'y1', 0.5], flow: 'delivery', label: c.wire.playback, lane: 20 },
-      { id: 'api', from: ['bunny', 'x1', 0.12], to: ['providers', 'y0', 0], flow: 'request', drop: true },
+      { id: 'play', from: ['bunny', 'x0', 0.8], to: ['people', 'y1', 0.5], flow: 'delivery', label: c.wire.playback, lane: 30 },
     ],
   };
 }

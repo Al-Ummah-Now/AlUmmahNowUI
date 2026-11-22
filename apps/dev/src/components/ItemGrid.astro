@@ -1,4 +1,5 @@
 ---
+import Rich from './Rich.astro';
 /** Facts with a status label. The label comes only from the wiki's feature registry. */
 import type { Item, Strings } from '../i18n';
 import { feature } from '../lib/registry';
@@ -16,10 +17,10 @@ const items = all.filter((i) => !i.feature || ['live', 'ready'].includes(feature
   {items.map((item) => (
     <li class="tile">
       <div class="tile-head">
-        <h3 class="tile-title">{item.title}</h3>
+        <h3 class="tile-title"><Rich text={item.title} /></h3>
         {item.feature && <StatusChip status={feature(item.feature).status} label={t.status[feature(item.feature).status as 'live' | 'ready']} />}
       </div>
-      <p class="tile-body">{item.body}</p>
+      <p class="tile-body"><Rich text={item.body} /></p>
     </li>
   ))}
 </ul>

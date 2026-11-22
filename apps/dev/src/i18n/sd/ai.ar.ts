@@ -43,7 +43,7 @@ export const aiAr: typeof aiEn = {
       signals: { name: 'moderation_signals', role: 'الظل: يسجّل فقط' },
       admin: { name: 'مراجعة الإدارة', role: 'الأشخاص يقرّرون' },
     },
-    edge: { scan: 'فحص', consume: 'الاستهلاك', reserve: 'حجز أسوأ كلفة', translate: 'ترجمة', guard: 'الحارس', ext: 'الإضافات', settle: 'تسوية الفعلي', decide: 'ظل أو تفعيل', flag: 'علامة' },
+    edge: { scan: 'فحص', consume: 'الاستهلاك', reserve: 'حجز أسوأ كلفة', translate: 'ترجمة', guard: 'الحارس', ext: 'الإضافات', settle: 'تسوية التكلفة الفعلية', decide: 'تسجيل فقط أو تطبيق', flag: 'علامة' },
   },
   captions: {
     title: 'ترجمات نصية بلا خطأ في القرآن',

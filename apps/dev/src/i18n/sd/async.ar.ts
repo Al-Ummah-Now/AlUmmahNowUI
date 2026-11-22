@@ -7,7 +7,7 @@ export const asyncAr: typeof asyncEn = {
     lead: 'يسلّم العمّال العمل البطيء إلى Cloudflare Queues ويجيبون فورًا. لكل طابور مستهلك واحد بحجم دفعة ورصيد محاولات خاص به؛ وما يبقى فاشلًا ينتقل إلى طابور الرسائل الفاشلة، ومنه إلى صفحة الأخطاء في الإدارة مع زر إعادة الإرسال.',
     desc: 'بنية مرجعية داخل حساب Cloudflare. على جانب المنتجون: api-videos وadmin-api والمُجدوِل scheduler، ويُنتج المعالج processor وcost-monitor وauth أيضًا. في الوسط الطوابير (وكلها تبدأ بـ al-ummah-now-…): videos بدفعة {N10} و{N3} محاولات؛ وmoderation بدفعة {N5} و{N3} محاولات؛ وprocessing-check بدفعة {N10} و{N5} محاولات؛ وadmin-jobs وyt-import بدفعة {N1} و{N5} محاولات؛ وtranscode بدفعة {N1} و{N8} محاولات؛ وerrors بدفعة {N10} و{N5} محاولات. وعلى الجانب الآخر المستهلكون: المعالج يأخذ videos وmoderation، وapi-videos تأخذ processing-check وadmin-jobs وyt-import، وعامل media يأخذ transcode، وadmin-api يأخذ errors. والرسائل التي تستنفد محاولاتها تذهب إلى al-ummah-now-dlq (ولطابوري transcode وerrors طابوراهما الخاصان). يقرأ المعالج ذلك الطابور ويحفظ كل رسالة ويرفعها إلى صفحة الأخطاء في الإدارة؛ وزر إعادة الإرسال هناك يطلب من المعالج إرسالها من جديد.',
     group: { cf: 'حساب Cloudflare', producers: 'المنتجون', queues: 'الطوابير', consumers: 'المستهلكون', dead: 'الرسائل الفاشلة' },
-    caption: { producers: '+ processor، cost-monitor، auth', queues: 'كلها al-ummah-now-…', dead: 'طوابير خاصة: transcode، errors' },
+    caption: { producers: '+ processor، cost-monitor، auth', queues: 'كلها باسم al-ummah-now-…', dead: 'طوابير خاصة: transcode، errors' },
     node: {
       apiVideos: { name: 'api-videos', role: 'أحداث، مهام، رفع' },
       adminApi: { name: 'admin-api', role: 'بريد، أخطاء، أحداث' },

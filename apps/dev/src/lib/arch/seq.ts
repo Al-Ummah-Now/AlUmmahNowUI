@@ -76,6 +76,8 @@ const BR = 10;
 /** gap between a message's words and its arrow (the badge on the arrow has radius BR) */
 const LIFT = 17;
 const codeW = (s: string) => [...s].length * CS * 0.62;
+/** the widest call a desktop column grows to hold on one line */
+const CODE_CAP = 440;
 
 /** Greedy word wrap by the build-time width estimate. */
 function wrap(s: string, size: number, max: number, code = false): string[] {
@@ -125,29 +127,59 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
 
   // participants: one tile per column, names wrapped to the tile
   // tiles leave room inside their column, so a boundary on the column edges never touches them
-  // the space over a message's arrow for its words, at a column width
-  const spanOf = (s: SeqMessage, w: number) => (s.from === s.to ? w - 34 - 14 : Math.abs(col.get(s.to)! - col.get(s.from)!) * w - BR - 20);
-  // desktop columns grow (a lattice step at a time) until no code token is cut (a call may break at its spaces;
-  // only a path too long for any column breaks after a '/', on two lines at most) and every message's words
-  // fit on two lines
-  let colW = layout.colW;
+  const colW = layout.colW;
+  const nCols = spec.actors.length;
+  // desktop: each gap between two lifelines is as wide as the messages crossing it need (a long call widens only the
+  // gaps under its own arrow): every message's words fit over their arrow on two lines at most, and a call sits on one
+  // line unless it is too long for any column (a long URL then breaks at a space or after a '/', on two lines at most)
+  const gaps = Array.from({ length: nCols - 1 }, () => colW);
+  // room past the last column for a self-call there
+  let tail = 0;
+  const need = (s: SeqMessage) => {
+    let sp = 0;
+    while (wrap(s.label, LS, sp).length > 2 || (s.label && Math.max(...wrap(s.label, LS, sp).map((l) => textWidth(l, LS))) > sp)) sp += 8;
+    if (s.code) {
+      const tokens = s.code.split(' ').filter(Boolean);
+      const cw = codeW(s.code);
+      let sc = cw <= CODE_CAP ? cw : Math.max(...tokens.map(codeW));
+      if (cw > CODE_CAP) while (wrap(s.code, CS, sc, true).length > 2) sc += 8;
+      sp = Math.max(sp, sc);
+    }
+    return Math.ceil(sp);
+  };
   if (!keyMode) {
-    const fits = (w: number) =>
-      spec.steps.every((s) => {
-        if (isNote(s)) return true;
-        const span = spanOf(s, w);
-        const tokens = (s.code ?? '').split(' ').filter(Boolean);
-        const long = tokens.some((t) => codeW(t) > 300);
-        return wrap(s.label, LS, span).length <= 2 && tokens.every((t) => long || codeW(t) <= span) && (!long || wrap(s.code!, CS, span, true).length <= 2);
-      });
-    while (!fits(colW) && colW < layout.colW * 2) colW += 8;
+    const msgs = spec.steps.filter((x): x is SeqMessage => !isNote(x));
+    const order = [...msgs].sort((x, y) => Math.abs(col.get(x.to)! - col.get(x.from)!) - Math.abs(col.get(y.to)! - col.get(y.from)!));
+    for (let pass = 0; pass < 3; pass++)
+      for (const m of order) {
+        const i = Math.min(col.get(m.from)!, col.get(m.to)!);
+        const j = Math.max(col.get(m.from)!, col.get(m.to)!);
+        if (i === j) {
+          // a self-call's words run from its loop to just short of the next lifeline
+          const want = need(m) + 48;
+          if (i < nCols - 1) gaps[i] = Math.max(gaps[i]!, want);
+          else tail = Math.max(tail, want - colW);
+          continue;
+        }
+        const want = need(m) + BR + 20;
+        const have = gaps.slice(i, j).reduce((t, g) => t + g, 0);
+        if (have < want) for (let k = i; k < j; k++) gaps[k]! += Math.ceil((want - have) / (j - i));
+      }
   }
+  const centres = [PAD + colW / 2];
+  for (const g of gaps) centres.push(centres[centres.length - 1]! + g);
+  // the space over a message's arrow for its words
+  const spanOf = (s: SeqMessage) => {
+    const i = col.get(s.from)!;
+    if (s.from === s.to) return (i < nCols - 1 ? gaps[i]! : colW + tail) - 34 - 14;
+    return Math.abs(centres[col.get(s.to)!]! - centres[i]!) - BR - 20;
+  };
   const tileW = colW - (keyMode ? 16 : 20);
   const heads = spec.actors.map((a) => ({ a, name: keyMode ? [] : wrap(a.name, NS, tileW - 12), role: a.role && !keyMode ? wrap(a.role, RS, tileW - 12) : [] }));
   const headH = keyMode ? 8 + S + 4 + NS + 6 : Math.max(...heads.map((h) => 8 + S + 6 + h.name.length * (NS + LG) + h.role.length * (RS + LG) + 6));
   const headY = groupTop + tagH;
-  const baseW = PAD * 2 + colW * spec.actors.length;
-  const cx = (id: string) => PAD + colW * (col.get(id)! + 0.5);
+  const baseW = centres[nCols - 1]! + colW / 2 + tail + PAD;
+  const cx = (id: string) => centres[col.get(id)!]!;
 
   // rows
   interface Row {
@@ -179,7 +211,7 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
     const lo = self ? a + 34 : Math.min(a, b) + BR + 8;
     // desktop: the words stay over their own arrow (a self-call's words stop short of the next lifeline); the
     // columns are as wide as the words need (colW below)
-    const span = spanOf(s, colW);
+    const span = spanOf(s);
     const max = layout.narrow ? baseW - 2 * PAD - 12 : span;
     const lines = wrap(s.label, LS, max);
     const code = s.code ? wrap(s.code, CS, max, true) : [];
@@ -221,8 +253,8 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
   out.push('<g class="an-groups">');
   for (const g of groups) {
     const cs = g.members.map((m) => col.get(m)!);
-    const x0 = PAD + colW * Math.min(...cs);
-    const x1 = PAD + colW * (Math.max(...cs) + 1);
+    const x0 = centres[Math.min(...cs)]! - colW / 2;
+    const x1 = centres[Math.max(...cs)]! + colW / 2;
     const bx = opts.rtl ? W - x1 : x0;
     const bw = x1 - x0;
     out.push(`<g class="an-group an-group-boundary" data-group="${g.id}" data-members="${g.members.join(' ')}">`);

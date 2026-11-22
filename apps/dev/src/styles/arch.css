@@ -230,7 +230,8 @@ html[data-mode='dark'] .an {
   fill: color-mix(in srgb, var(--f) 55%, var(--an-ink));
   font-weight: 600;
 }
-.an .an-badge circle {
+.an .an-badge circle,
+.an .an-badge rect {
   fill: var(--f);
   stroke: var(--an-canvas);
   stroke-width: 2;
@@ -242,7 +243,6 @@ html[data-mode='dark'] .an {
 }
 .an .an-badge-sub text {
   font-size: 11px;
-  letter-spacing: -0.4px;
 }
 html[data-mode='dark'] .an .an-badge text {
   fill: #04121b;
