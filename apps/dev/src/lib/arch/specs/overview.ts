@@ -144,7 +144,8 @@ export function overview(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
       // up a lane inside the account's end side, clear of every group between
       { from: 'r2', to: 'cdn', flow: 'delivery', label: e.publicHls, fromSide: 'e', toSide: 'e' },
       { from: 'data', to: 'ops', flow: 'control', label: e.logs, fromSide: 's', toSide: 'n' },
-      { from: 'cf', to: 'bunny', flow: 'media', label: e.upload, fromSide: 'w', toSide: 'w' },
+      // the upload starts where it does on desktop, at api-videos, and climbs the start margin to bunny.net
+      { from: 'apiVideos', to: 'bunny', flow: 'media', label: e.upload, fromSide: 'w', toSide: 'w' },
       // the providers sit right under the account: a straight drop from its bottom edge (the deploy wire climbs the
       // end margin, clear of it)
       { from: 'cf', to: 'providers', flow: 'request', label: e.providers, fromSide: 's', toSide: 'n' },

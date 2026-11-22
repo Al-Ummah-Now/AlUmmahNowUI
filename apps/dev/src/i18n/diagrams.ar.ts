@@ -128,7 +128,7 @@ export const diagramsAr: typeof diagramsEn = {
       media: { name: 'عامل الوسائط', role: 'مستهلك الطابور' },
       slots: { name: 'TranscodeSlots', role: 'حدّ أدنى وأقصى' },
       container: { name: 'Transcoder', role: 'FFmpeg + صور مصغّرة' },
-      renditions: { name: 'النسخ العامة والخاصة في R2', role: 'بثّ من {tkRungLow} إلى {tkRungFull}' },
+      renditions: { name: 'النسخ العامة والخاصة في R2', role: 'بثّ من {N=360} إلى {N=1080} بكسل' },
       cdn: { name: 'Cloudflare CDN', role: 'تخزين مؤقت على الحافة' },
       processor: { name: 'المعالج', role: 'يفحص كل رفع' },
       workersAi: { name: 'Workers AI', role: 'الإشراف على كل رفع' },

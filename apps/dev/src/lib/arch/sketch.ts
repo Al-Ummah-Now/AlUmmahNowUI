@@ -150,9 +150,34 @@ export interface SketchLayout {
   topGap?: number;
   /** wires for this width (a phone column needs different ones) */
   edges?: SketchEdge[];
+  /** a phone sketch's tiles narrowed and moved off-centre by this much (drawn px), so its side lanes stay inside the cloud */
+  shiftX?: number;
 }
 
 const NODE_H = 124;
+const NAME_LH = 24;
+const NOTE_LH = 19;
+
+/** wrapped lines as tspans of one text (one block of words, not stacked texts) */
+function lines(ls: string[], x: number, y: number, lh: number, style: (l: string) => string = () => ''): string {
+  return ls.map((l, k) => `<tspan x="${Math.round(x * 10) / 10}" y="${Math.round((y + k * lh) * 10) / 10}"${style(l)}>${esc(l)}</tspan>`).join('');
+}
+
+/** greedy word wrap to a width (a single word wider than the width keeps its own line) */
+function wrapTo(text: string, size: number, bold: boolean, room: number): string[] {
+  if (textWidth(text, size, bold) <= room) return [text];
+  const lines: string[] = [];
+  let cur = '';
+  for (const w of text.split(' ')) {
+    const next = cur ? `${cur} ${w}` : w;
+    if (cur && textWidth(next, size, bold) > room) {
+      lines.push(cur);
+      cur = w;
+    } else cur = next;
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
 
 /**
  * `extra` widens the margins (screen left and right) so every curve stays inside the cloud: the first pass
@@ -176,16 +201,26 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
     try {
       return renderSketchSpecOnce(spec0, { ...layout, rowH: layout.rowH + grow }, opts, wide);
     } catch (err) {
-      if (!(err instanceof TagRoom) || tries >= 10) throw err;
+      if (!(err instanceof TagRoom) || tries >= 14) throw err;
       // taller rows first (a tag then fits in a gap between notes, inside the column: the figure stays phone-width),
       // a wider margin only when that is not enough
-      if (grow < 96 || !err.side) grow += 24;
+      // (a phone sketch keeps its 380 px: it only grows taller, unless nothing else gives the tag room)
+      if (grow < (opts.variant === 'narrow' ? 192 : 96) || !err.side) grow += 24;
       else wide[err.side] += 40;
     }
   }
 }
 
-function renderSketchSpecOnce(spec0: SketchSpec, layout: SketchLayout, opts: { rtl: boolean; variant: string }, extra = { l: 0, r: 0 }): string {
+/** a phone sketch fits the phone's figure box (the hero's 367 px fits it too): one column, narrow margins, the side note under the heading */
+const PHONE_W = 366;
+
+function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { rtl: boolean; variant: string }, extra = { l: 0, r: 0 }): string {
+  const phone = opts.variant === 'narrow';
+  // a phone column: 40 px margins (the cloud 20 px in), tiles 64 px narrower than the column so a side lane's U
+  // (up to ~43 px out) stays inside the cloud
+  // (two phone columns sit side by side with a 10 px gap)
+  const pcol = (PHONE_W - 80) / layout0.cols;
+  const layout = phone ? { ...layout0, colW: pcol, nodeW: Math.min(layout0.nodeW, pcol - (layout0.cols === 1 ? 64 : 10)) } : layout0;
   // a layout's own wires (a phone column re-routes them) keep each wire's words, colour and dash from the spec:
   // a phone figure says what the wide one says
   const inherit = (e: SketchEdge): SketchEdge => {
@@ -195,17 +230,35 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout: SketchLayout, opts: { r
   const spec = layout.edges ? { ...spec0, edges: layout.edges.map(inherit) } : spec0;
   const prefix = `${spec.id}-${opts.variant}`;
   const pen = new Pen(prefix);
-  const side = 22; // the margin the rotated side note lives in
-  const mx = 64 + (spec.around ? side : 0);
+  const side = 22; // the margin the rotated side note lives in (on a phone it is a line under the heading instead)
+  const mx = phone ? 40 : 64 + (spec.around ? side : 0);
   // margins in drawing order (before the Arabic mirror): A is the start side, B the end side
   const mxA = mx + (opts.rtl ? extra.r : extra.l);
   const mxB = mx + (opts.rtl ? extra.l : extra.r);
   // the cloud starts below the handwritten title, with its outward bumps 6 px clear of the title's letters
-  const CT = 92;
+  // a heading wider than a phone wraps to two lines; a phone's side note is a line under it
+  const headLines = (() => {
+    const words = spec.heading.split(' ');
+    if (!phone || textWidth(spec.heading, 30, true) <= PHONE_W - 40 || words.length < 2) return [spec.heading];
+    let best = 1;
+    for (let k = 1; k < words.length; k++) if (Math.abs(textWidth(words.slice(0, k).join(' '), 30, true) - textWidth(words.slice(k).join(' '), 30, true)) < Math.abs(textWidth(words.slice(0, best).join(' '), 30, true) - textWidth(words.slice(best).join(' '), 30, true))) best = k;
+    return [words.slice(0, best).join(' '), words.slice(best).join(' ')];
+  })();
+  const sideLines = phone && spec.around ? wrapTo(spec.around, 17, false, PHONE_W - 48) : [];
+  const CT = 92 + (headLines.length - 1) * 36 + sideLines.length * 26;
+  // a tile's name or note wider than the tile wraps; the tile grows by the extra lines and every row grows by the
+  // tallest tile's extra, so the gaps between rows keep their size
+  const room = layout.nodeW - 16;
+  const tileText = new Map(spec.nodes.map((n) => [n.id, { name: wrapTo(n.title, 19, true, room), note: n.note ? wrapTo(n.note, 15, false, room) : [] }]));
+  const tileH = (id: string) => {
+    const t = tileText.get(id)!;
+    return NODE_H + (t.name.length - 1) * NAME_LH + Math.max(0, t.note.length - 1) * NOTE_LH;
+  };
+  const rowH = layout.rowH + Math.max(...spec.nodes.map((n) => tileH(n.id))) - NODE_H;
   const top = CT + 22 + (layout.topGap ?? 0);
   const rows = Math.max(...spec.nodes.map((n) => (layout.at?.[n.id] ?? n.at)[1])) + 1;
   const W = Math.round(layout.cols * layout.colW + mxA + mxB);
-  const footY = top + rows * layout.rowH + 10 + (layout.footGap ?? 0);
+  const footY = top + rows * rowH + 10 + (layout.footGap ?? 0);
   const Hc = Math.round(footY + (spec.foot?.length ? 142 : 20) + 40);
   const mirror = (x: number) => (opts.rtl ? W - x : x);
   const ar = hasArabic(spec.heading);
@@ -213,9 +266,10 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout: SketchLayout, opts: { r
   const box = new Map<string, { x: number; y: number; w: number; h: number }>();
   for (const n of spec.nodes) {
     const [c, r0] = layout.at?.[n.id] ?? n.at;
-    const x = mxA + c * layout.colW + (layout.colW - layout.nodeW) / 2;
-    const y = top + r0 * layout.rowH + (layout.rowH - NODE_H) / 2;
-    box.set(n.id, { x: opts.rtl ? W - x - layout.nodeW : x, y, w: layout.nodeW, h: NODE_H });
+    const x = mxA + c * layout.colW + (layout.colW - layout.nodeW) / 2 + (opts.rtl ? -1 : 1) * (layout.shiftX ?? 0); // shiftX is drawn px; x is laid out before the mirror
+    const h = tileH(n.id);
+    const y = top + r0 * rowH + (rowH - h) / 2;
+    box.set(n.id, { x: opts.rtl ? W - x - layout.nodeW : x, y, w: layout.nodeW, h });
   }
   const foot = spec.foot ?? [];
   const footW = (W - mxA - mxB) / Math.max(1, foot.length);
@@ -255,7 +309,12 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout: SketchLayout, opts: { r
     `<title id="${prefix}-t">${esc(spec.title)}</title><desc id="${prefix}-d">${esc(spec.desc)}</desc><defs>${icons.map((i) => symbol(prefix, i)).join('')}</defs>`,
     `<rect class="an-canvas an-paper" width="${W}" height="${Hc}" rx="18"/>`,
   );
-  if (spec.around) {
+  if (spec.around && sideLines.length) {
+    const cloud0 = pen.cloud(mx - 20, CT, W - 2 * mx + 40, Hc - CT - 28);
+    const cloud = opts.rtl ? cloud0.replace(/([MQL ])(-?[\d.]+) (-?[\d.]+)/g, (_m, p, x, y) => `${p}${r(W - Number(x))} ${y}`) : cloud0;
+    o.push(`<g class="an-groups"><path class="an-sk-cloud" d="${cloud}"/></g>`);
+    o.push(`<text class="an-sk-side ${fam}" text-anchor="middle"${ar ? ' direction="rtl"' : ''}>${lines(sideLines, W / 2, 52 + (headLines.length - 1) * 36 + 34, 22)}</text>`);
+  } else if (spec.around) {
     let cloud = pen.cloud(mx - 20, CT, W - 2 * mx + 40, Hc - CT - 28);
     if (opts.rtl) cloud = cloud.replace(/([MQL ])(-?[\d.]+) (-?[\d.]+)/g, (_m, p, x, y) => `${p}${r(W - Number(x))} ${y}`);
     o.push(`<g class="an-groups"><path class="an-sk-cloud" d="${cloud}"/></g>`);
@@ -264,7 +323,7 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout: SketchLayout, opts: { r
     const sy = (CT + Hc - 28) / 2;
     o.push(`<text class="an-sk-side ${fam}" x="${sx}" y="${r(sy)}" text-anchor="middle" transform="rotate(${opts.rtl ? 90 : -90} ${sx} ${r(sy)})"${ar ? ' direction="rtl"' : ''}>${esc(spec.around)}</text>`);
   }
-  o.push(`<g data-node-label="heading"><text class="an-sk-title ${fam}" x="${r(W / 2)}" y="52" text-anchor="middle"${ar ? ' direction="rtl"' : ''}>${esc(spec.heading)}</text></g>`);
+  o.push(`<g data-node-label="heading"><text class="an-sk-title ${fam}" text-anchor="middle"${ar ? ' direction="rtl"' : ''}>${lines(headLines, W / 2, 52, 36)}</text></g>`);
 
   // first every curve, so tags can be placed clear of all of them
   type Curve = { e: SketchEdge; i: number; a: [number, number]; ctrl: [number, number]; ctrl2?: [number, number]; b: [number, number] };
@@ -338,6 +397,9 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout: SketchLayout, opts: { r
     const xs = samples.map((p) => p[0]);
     const needL = Math.ceil(Math.max(0, cloudBox.x + CL - Math.min(...xs)));
     const needR = Math.ceil(Math.max(0, Math.max(...xs) - (cloudBox.x + cloudBox.w - CL)));
+    // a phone keeps its 380 px: the tiles narrow and step away from the lanes instead (down to 150 px wide)
+    if ((needL || needR) && phone && layout.nodeW - needL - needR >= 150)
+      return renderSketchSpec(spec0, { ...layout, nodeW: layout.nodeW - needL - needR, shiftX: (layout.shiftX ?? 0) + (needL - needR) / 2 }, opts);
     if (needL || needR) return renderSketchSpec(spec0, layout, opts, { l: needL, r: needR });
   }
   const BAND = 16;
@@ -381,7 +443,7 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout: SketchLayout, opts: { r
         if (samples.some((pt) => hits(q, pt, 5))) continue;
         // never on the cloud's bumpy outline: keep clear of a band around its edges
         if (cloudBand.some((e) => overlaps(q, e, 0))) continue;
-        if (nodeBoxes.some((nb) => overlaps(q, { x: nb.x - 4, y: nb.y - 4, w: nb.w + 12, h: nb.h + 12 }, 6)) || placedTags.some((pb) => overlaps(q, pb, 6))) continue;
+        if (nodeBoxes.some((nb) => overlaps(q, { x: nb.x - 4, y: nb.y - 4, w: nb.w + 12, h: nb.h + 12 }, 6)) || placedTags.some((pb) => overlaps(q, pb, 12))) continue;
         best = q;
         break;
       }
@@ -397,7 +459,7 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout: SketchLayout, opts: { r
         const q = { x: p[0] - tw / 2, y: p[1] - th / 2, w: tw, h: th };
         if (q.x < 8 || q.y < 60 || q.x + q.w > W - 8 || q.y + q.h > Hc - 8) continue;
         if (others.some((pt) => hits(q, pt, 5)) || cloudBand.some((e) => overlaps(q, e, 0))) continue;
-        if (nodeBoxes.some((nb) => overlaps(q, { x: nb.x - 4, y: nb.y - 4, w: nb.w + 12, h: nb.h + 12 }, 6)) || placedTags.some((pb) => overlaps(q, pb, 6))) continue;
+        if (nodeBoxes.some((nb) => overlaps(q, { x: nb.x - 4, y: nb.y - 4, w: nb.w + 12, h: nb.h + 12 }, 6)) || placedTags.some((pb) => overlaps(q, pb, 12))) continue;
         best = q;
         covers = true;
         break;
@@ -426,8 +488,15 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout: SketchLayout, opts: { r
     o.push(`<rect data-box class="an-sk-hit" x="${r(b.x - 4)}" y="${r(b.y - 4)}" width="${r(b.w + 12)}" height="${b.h + 12}"/>`);
     o.push(`<path class="an-sk-mark" d="${pen.marker(b.x, b.y, b.w, b.h)}"/><path class="an-sk-line" d="${pen.rect(b.x, b.y, b.w, b.h)}"/>`);
     o.push(useIcon(prefix, n.icon, b.x + b.w / 2 - 20, b.y + 12, 40));
-    o.push(`<text class="an-sk-name ${fam}" x="${r(b.x + b.w / 2)}" y="${r(b.y + 78)}" text-anchor="middle"${hasArabic(n.title) ? ' direction="rtl"' : ''}>${esc(n.title)}</text>`);
-    if (n.note) o.push(`<text class="an-sk-note ${fam}" x="${r(b.x + b.w / 2)}" y="${r(b.y + 108)}" text-anchor="middle"${hasArabic(n.note) ? ' direction="rtl"' : ''}>${esc(n.note)}</text>`);
+    const t = tileText.get(n.id)!;
+    // a single word wider than the tile (no space to wrap at) is squeezed to fit
+    const fit = (l: string, size: number) => {
+      const w = textWidth(l, size, size === 19);
+      // (squeezed to the tile's width: the page's CSP blocks inline styles, and a font-size attribute loses to the CSS)
+      return w > b.w - 16 ? ` textLength="${Math.round(b.w - 16)}" lengthAdjust="spacingAndGlyphs"` : '';
+    };
+    o.push(`<text class="an-sk-name ${fam}" text-anchor="middle"${hasArabic(n.title) ? ' direction="rtl"' : ''}>${lines(t.name, b.x + b.w / 2, b.y + 78, NAME_LH, (l) => fit(l, 19))}</text>`);
+    if (t.note.length) o.push(`<text class="an-sk-note ${fam}" text-anchor="middle"${hasArabic(n.note!) ? ' direction="rtl"' : ''}>${lines(t.note, b.x + b.w / 2, b.y + 108 + (t.name.length - 1) * NAME_LH, NOTE_LH, (l) => fit(l, 15))}</text>`);
     o.push('</g>');
   }
   for (const f of foot) {
@@ -485,7 +554,7 @@ export function renderSketch(c: Copy, opts: { rtl: boolean; variant: string }): 
         { from: 'api', to: 'bunny', fromSide: 's', toSide: 'n' },
         { from: 'r2', to: 'plays', fromSide: 's', toSide: 'n' },
         { from: 'bunny', to: 'plays', fromSide: 's', toSide: 'n' },
-        { from: 'plays', to: 'api', fromSide: 'e', toSide: 'e', bend: 290, dashed: true, tag: c.tag.optional, tone: 'pink', tagAt: 0.85 },
+        { from: 'plays', to: 'api', fromSide: 'e', toSide: 'e', lane: 40, dashed: true, tag: c.tag.optional, tone: 'pink', tagAt: 0.85 },
         { from: 'plays', to: 'vitals', fromSide: 's', toSide: 'n', dashed: true, tag: c.tag.async, tone: 'blue', tagAt: 0.62 },
       ],
     },

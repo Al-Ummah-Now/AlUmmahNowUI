@@ -30,14 +30,28 @@ const PDI = '⁩';
 // a bracket starts a run only when Latin follows it: «(اختبار)» stays Arabic, «(api-videos)» stays whole
 // a path's leading «/» (or a name's leading «.», «.NET») and a run's trailing «-», «/», «*» or «…» belong to it: left outside the isolate, the bidi
 // algorithm moves them to the other end («/priv/*» shows as «priv/*/», «al-ummah-now-…» as «…-al-ummah-now»)
-const WORD = String.raw`(?:[A-Za-z0-9<{*$]|[(\[/.](?=[A-Za-z0-9<{*]))(?:[\w.\-/:<>{}()[\]|*?=+@#&$',…]*[A-Za-z0-9>})\]*?$'_…/\-])?`;
+const WORD = String.raw`(?:[A-Za-z0-9<{*$]|[(\[/.](?=[A-Za-z0-9<{*]))(?:[\w.\-/:<>{}()[\]|*?=+@#&$',…]*[A-Za-z0-9>})\]*?$'_…/\-#+])?`;
 // names joined by spaces are one run, so «Workers KV» keeps its order in Arabic
 const LATIN_RUN = new RegExp(`${WORD}(?: ${WORD})*`, 'g');
 
 /** Wrap every Latin run of an Arabic string in an isolate (LRI … PDI), so the bidi algorithm never reorders it. */
-export function isolateLatin(s: string): string {
-  if (!hasArabic(s)) return s;
+export function isolateLatin(s: string, always = false): string {
+  if (!always && !hasArabic(s)) return s;
   return s.replace(LATIN_RUN, (run) => `${LRI}${run}${PDI}`);
+}
+
+/** An Arabic string split into its Latin runs and the Arabic between them (for HTML: each run goes in a <bdi>). */
+export function splitLatin(s: string): { t: string; latin: boolean }[] {
+  if (!hasArabic(s)) return [{ t: s, latin: false }];
+  const out: { t: string; latin: boolean }[] = [];
+  let last = 0;
+  for (const m of s.matchAll(LATIN_RUN)) {
+    if (m.index! > last) out.push({ t: s.slice(last, m.index), latin: false });
+    out.push({ t: m[0], latin: true });
+    last = m.index! + m[0].length;
+  }
+  if (last < s.length) out.push({ t: s.slice(last), latin: false });
+  return out;
 }
 
 const unesc = (s: string) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
@@ -48,7 +62,13 @@ const unesc = (s: string) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').repla
  * (e2e/diagram-gate.ts) fails on Arabic text whose Latin runs aren't isolated.
  */
 export function finishBidi(svg: string): string {
-  return svg.replace(/<text([^>]*)>([^<]*)<\/text>/g, (m, attrs: string, body: string) => {
+  // a text wrapped into tspans (a sketch tile's lines): when its words hold Arabic, every line's Latin runs are isolated
+  // (the text itself carries direction="rtl" from the renderer), a line all in Latin too («IP» wrapped off «لكل»)
+  const wrapped = svg.replace(/<text([^>]*)>((?:<tspan[^>]*>[^<]*<\/tspan>)+)<\/text>/g, (m, attrs: string, body: string) => {
+    if (!hasArabic(unesc(body.replace(/<[^>]*>/g, '')))) return m;
+    return `<text${attrs}>${body.replace(/(<tspan[^>]*>)([^<]*)(<\/tspan>)/g, (_t, o: string, line: string, c: string) => `${o}${esc(isolateLatin(unesc(line), true))}${c}`)}</text>`;
+  });
+  return wrapped.replace(/<text([^>]*)>([^<]*)<\/text>/g, (m, attrs: string, body: string) => {
     const raw = unesc(body);
     if (!hasArabic(raw)) return m;
     let a = attrs;

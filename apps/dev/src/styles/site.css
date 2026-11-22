@@ -2155,3 +2155,8 @@ html:not([data-mode='light']) .pi-invert-dark svg {
 :lang(ar) .repo-none {
   font-style: normal;
 }
+
+/* a Latin run inside Arabic prose: one unit, never broken at its hyphen */
+bdi.lr {
+  white-space: nowrap;
+}
