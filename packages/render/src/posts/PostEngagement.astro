@@ -6,6 +6,7 @@
  */
 import { postStrings } from './strings';
 import { formatCountNoun } from '../count-nouns';
+import { metaSeparator } from '../format';
 import type { PostRef } from './types';
 import type { Locale } from '../locale';
 
@@ -13,14 +14,13 @@ interface Props { postRef: PostRef; locale: Locale; likes?: number | null; comme
 const { postRef, locale, likes = null, comments = null, commentsEnabled = true } = Astro.props;
 const t = postStrings(locale);
 // Arabic number agreement, duals and the zero phrase (../count-nouns: the platform's formatCountNoun rules)
-const likeText = typeof likes === 'number' ? formatCountNoun(locale, likes, 'like') : null;
-const commentText = commentsEnabled && typeof comments === 'number' ? formatCountNoun(locale, comments, 'comment') : null;
+const likeText = typeof likes === 'number' ? formatCountNoun(locale, likes, 'like', { compact: true }) : null;
+const commentText = commentsEnabled && typeof comments === 'number' ? formatCountNoun(locale, comments, 'comment', { compact: true }) : null;
 ---
 <aside class="post-engagement" aria-label={t.engagement} data-post-engagement={postRef.post_id}>
   {(likeText || commentText) && (
     <p class="post-engagement-counts">
-      {likeText && <span>{likeText}</span>}
-      {commentText && <span>{commentText}</span>}
+      {likeText && <span>{likeText}</span>}{likeText && commentText && metaSeparator(locale)}{commentText && <span>{commentText}</span>}
     </p>
   )}
   <a class="button button-quiet" href={postRef.videos_url}>{t.joinDiscussion}</a>

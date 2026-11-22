@@ -471,7 +471,7 @@ for (const l of ['en', 'ar'] as const) {
   });
 }
 
-// Arabic numbers in ٠–٩ and counts that agree with their nouns (packages/render/src/count-nouns.ts:
+// Arabic numbers in ٠–٩, counts that agree with their nouns and an Arabic meta line joined with «،» (packages/render/src/count-nouns.ts:
 // AlUmmahNow's formatCountNoun rules): the post with 3 likes and 1 comment, and the footer year.
 test('post counts agree with their nouns and Arabic uses ٠–٩: dates, durations and the footer year', async ({ page }) => {
   await page.goto(at(HOSTS.both, '/en/posts/post-e2e-1/'));
@@ -479,7 +479,7 @@ test('post counts agree with their nouns and Arabic uses ٠–٩: dates, duratio
   await expect(page.getByTestId('site-post').first()).not.toContainText('1 comments');
   await expect(page.locator('.site-footer .footer-base')).toHaveText(/^© \d{4} Sh\. Mustafa Elbadry$/);
   await page.goto(at(HOSTS.both, '/ar/posts/post-e2e-1/'));
-  await expect(page.getByTestId('site-post').first()).toContainText('٣ إعجابات · تعليق واحد');
+  await expect(page.getByTestId('site-post').first()).toContainText('٣ إعجابات، تعليق واحد');
   // the author's English text keeps its own direction on the Arabic site (its full stop at the end, not the start)
   const body = page.locator('[data-testid=site-post] .post-text').first();
   await expect(body).toHaveAttribute('dir', 'auto');

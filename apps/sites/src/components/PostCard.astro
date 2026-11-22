@@ -2,7 +2,7 @@
 import type { SitePost } from '../lib/data';
 import type { PageContext } from '../lib/context';
 import { formatCountNoun } from '../../../../packages/render/src/count-nouns';
-import { formatDate, plural } from '../../../../packages/render/src/format';
+import { formatDate, metaSeparator, plural } from '../../../../packages/render/src/format';
 import PostLinkCard from '../../../../packages/render/src/posts/PostLinkCard.astro';
 
 interface Props { ctx: PageContext; post: SitePost; full?: boolean }
@@ -13,6 +13,8 @@ const href = `/${locale}/posts/${post.id}/`;
 const paragraphs = (post.text ?? '').split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
 const shown = full ? paragraphs : paragraphs.slice(0, 2);
 const discussion = `${ctx.channelHref}/community`;
+// Arabic joins the parts with «،», never a dot (a dot beside Arabic digits reads as zero)
+const sep = metaSeparator(locale);
 ---
 <article class="post-card" data-testid="site-post" data-kind={post.kind}>
   {date && <p class="post-date"><a href={href}><time datetime={post.createdAt}>{formatDate(date, locale, { year: 'numeric', month: 'long', day: 'numeric' })}</time></a></p>}
@@ -60,8 +62,8 @@ const discussion = `${ctx.channelHref}/community`;
     </div>
   )}
   <p class="post-meta">
-    <span>{formatCountNoun(locale, post.likes, 'like')}</span> · <span>{formatCountNoun(locale, post.comments, 'comment')}</span>
-    {full && <> · <a href={discussion}>{t.joinDiscussion}</a></>}
-    {!full && paragraphs.length > shown.length && <> · <a href={href}>{t.more}</a></>}
+    <span>{formatCountNoun(locale, post.likes, 'like', { compact: true })}</span>{sep}<span>{formatCountNoun(locale, post.comments, 'comment', { compact: true })}</span>
+    {full && <>{sep}<a href={discussion}>{t.joinDiscussion}</a></>}
+    {!full && paragraphs.length > shown.length && <>{sep}<a href={href}>{t.more}</a></>}
   </p>
 </article>

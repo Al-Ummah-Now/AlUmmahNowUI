@@ -7,6 +7,14 @@
  * numbering system is always explicit (`ar-u-nu-arab`): plain `ar` gives 0–9 in Node and Chromium
  * but ٠–٩ in WebKit, so the Worker and the reader's browser would disagree.
  *
+ * Arabic numbers are never grouped (owner's number rule, 2026-11-21): «٤٨٨٧», «١٢٣٤٫٥», «٫» is the only
+ * mark. ICU's Arabic group mark «٬» is drawn in the same comma shape as «٫» by most Arabic fonts, so
+ * «١٬٢٣٤٫٥» reads as three numbers. Counts from 1,000 on are compact and cut, never rounded
+ * (`formatCompact`): «٤٫٨ ألف», «١٫٢ م», «١٫٢ مليار»; tables, money and sizes stay exact
+ * (`formatNumber`), ungrouped in Arabic. English keeps its grouping ("4,887") and K/M/B for counts.
+ * Arabic meta lines join with «،» (`joinMeta`), never «•» or «·». The same rules and words as
+ * AlUmmahNow shared-types locale-format and AlUmmahNowAuth packages/ui/src/format.ts.
+ *
  * Every `Intl.*` / `toLocale*String` display call goes through this module (tests/format-guard in
  * each app fails on new ones elsewhere). Ids, URLs, slugs, codes and inputs keep what was typed;
  * inputs accept ٠–٩ and `toAsciiDigits` turns them into 0–9. Same API as AlUmmahNowCMS
@@ -19,8 +27,9 @@ export const intlLocale = (lang: Lang | string): string => (lang === 'ar' ? 'ar-
 
 const isAr = (lang: Lang | string) => lang === 'ar';
 
+/** An exact number: 1234.5 → "1,234.5" / «١٢٣٤٫٥» (Arabic never grouped, whatever the options say). */
 export function formatNumber(n: number, lang: Lang | string, opts: Intl.NumberFormatOptions = {}): string {
-  return new Intl.NumberFormat(intlLocale(lang), opts).format(n);
+  return new Intl.NumberFormat(intlLocale(lang), isAr(lang) ? { ...opts, useGrouping: false } : opts).format(n);
 }
 
 /** A value for a {placeholder}: numbers are formatted for the language, anything else passes through. */
@@ -32,8 +41,83 @@ export function fill(template: string, values: Record<string, unknown>, lang: La
   return template.replace(/\{(\w+)\}/g, (m, k: string) => (values[k] === undefined || values[k] === null ? m : num(values[k], lang)));
 }
 
-/** 12345 → "12K" / «١٢ ألف». */
-export const formatCompact = (n: number, lang: Lang | string) => formatNumber(n, lang, { notation: 'compact', maximumFractionDigits: 1 });
+/** `value` cut (never rounded) to one decimal: 1.29 → 1.2, 2.999 → 2.9. */
+const cut = (value: number): number => Math.floor(value * 10 + 1e-9) / 10;
+
+interface ArabicScale { size: number; one: string; dual: string; construct: string; few: string; accusative: string }
+
+/**
+ * Arabic scale words. Thousands and billions agree with the number shown: exactly one is the word
+ * alone («ألف»), exactly two the dual alone («ألفان»; «ألفا» before a noun), whole 3–10 the plural
+ * («٣ آلاف»), decimals and 11+ the singular («١٫٣ ألف», «١١٠ ألف»), and a whole number ending in 11–99
+ * standing alone the accusative («٢٥ ألفًا»). Millions are always the digit and «م» («١ م», «١٫٢ م»).
+ */
+const AR_SCALES: readonly ArabicScale[] = [
+  { size: 1e9, one: 'مليار', dual: 'ملياران', construct: 'مليارا', few: 'مليارات', accusative: 'مليارًا' },
+  { size: 1e6, one: 'م', dual: 'م', construct: 'م', few: 'م', accusative: 'م' },
+  { size: 1e3, one: 'ألف', dual: 'ألفان', construct: 'ألفا', few: 'آلاف', accusative: 'ألفًا' },
+];
+
+/** English scales, written here rather than Intl's compact notation: ICU builds disagree on the suffix (Node "1.2K", Chromium "1.2k"). */
+const EN_SCALES: readonly (readonly [number, string])[] = [[1e12, 'T'], [1e9, 'B'], [1e6, 'M'], [1e3, 'K']];
+
+export interface CompactOptions {
+  /** A noun follows («ألفا مشاهدة», «١٢ ألف مشاهدة»): the construct dual and no accusative. Alone: «ألفان», «١٢ ألفًا». */
+  beforeNoun?: boolean;
+}
+
+function compactArabic(n: number, beforeNoun: boolean): string {
+  const abs = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  const scale = AR_SCALES.find((s) => abs >= s.size);
+  if (!scale) return formatNumber(n, 'ar', { maximumFractionDigits: 1 });
+  const shown = cut(abs / scale.size);
+  const digits = formatNumber(shown, 'ar', { maximumFractionDigits: 1 });
+  // U+00A0 keeps the number and its scale word on one line, as Intl writes it
+  if (scale.size === 1e6) return `${sign}${digits}\u00a0م`;
+  if (!sign && shown === 1) return scale.one;
+  if (!sign && shown === 2) return beforeNoun ? scale.construct : scale.dual;
+  if (!Number.isInteger(shown)) return `${sign}${digits}\u00a0${scale.one}`;
+  if (shown >= 3 && shown <= 10) return `${sign}${digits}\u00a0${scale.few}`;
+  if (!beforeNoun && shown % 100 >= 11) return `${sign}${digits}\u00a0${scale.accusative}`;
+  return `${sign}${digits}\u00a0${scale.one}`;
+}
+
+/**
+ * A count (views, likes, results, subscribers): exact under 1,000, compact from 1,000, cut to one
+ * decimal and never rounded up: 999 → "999" / «٩٩٩», 4,887 → "4.8K" / «٤٫٨ ألف», 25,000,000 →
+ * "25M" / «٢٥ م», 1,200,000,000 → "1.2B" / «١٫٢ مليار». Tables, money and sizes use `formatNumber`.
+ */
+export function formatCompact(n: number, lang: Lang | string, options: CompactOptions = {}): string {
+  const safe = Number.isFinite(n) ? n : 0;
+  if (isAr(lang)) return compactArabic(safe, options.beforeNoun === true);
+  const abs = Math.abs(safe);
+  const scale = EN_SCALES.find(([size]) => abs >= size);
+  if (!scale) return formatNumber(safe, lang, { maximumFractionDigits: 1 });
+  return `${formatNumber(Math.sign(safe) * cut(abs / scale[0]), lang, { maximumFractionDigits: 1 })}${scale[1]}`;
+}
+
+/**
+ * A figure in running prose (alummahnow.dev's copy): English exact and grouped ("1,000"), Arabic
+ * compact by the same words as `formatCompact` («ألف», «١٢ ألفًا», «١٫٢ م»).
+ */
+export function formatCount(n: number, lang: Lang | string, options: CompactOptions = {}): string {
+  return isAr(lang) ? formatCompact(n, lang, options) : formatNumber(n, lang);
+}
+
+/** The meta-line mark alone, for rows that space their parts themselves: «،» in Arabic, else `en`. */
+export const metaMark = (lang: Lang | string, en: '•' | '·' = '·'): string => (isAr(lang) ? '،' : en);
+
+/**
+ * The meta-line mark with its spacing: " · " in English, «، » in Arabic (attached to the part before
+ * it). A dot next to Arabic digits reads as zero: «عام · ١٢ ألف» reads as «١٢٠ ألف».
+ */
+export const metaSeparator = (lang: Lang | string, en: '•' | '·' = '·'): string => (isAr(lang) ? '، ' : ` ${en} `);
+
+/** The parts that are there, joined: joinMeta(['٣ إعجابات', null, 'تعليقان'], 'ar') → «٣ إعجابات، تعليقان». */
+export function joinMeta(parts: ReadonlyArray<string | null | undefined | false>, lang: Lang | string, en: '•' | '·' = '·'): string {
+  return parts.filter((p): p is string => typeof p === 'string' && p.trim() !== '').join(metaSeparator(lang, en));
+}
 
 /** 0.25 → "25%" / «٢٥٪». */
 export const formatPercent = (ratio: number, lang: Lang | string, opts: Intl.NumberFormatOptions = {}) =>

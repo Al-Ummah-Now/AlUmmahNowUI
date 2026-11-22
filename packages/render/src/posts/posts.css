@@ -25,4 +25,4 @@
 .post-kind-summary .post-kind-images-many { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .post-kind-action { margin: 0; }
 .post-engagement { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-block-start: 2rem; padding-block-start: 1rem; border-block-start: 1px solid var(--line); }
-.post-engagement-counts { display: flex; gap: 1rem; margin: 0; color: var(--text-soft); }
+.post-engagement-counts { margin: 0; color: var(--text-soft); }

@@ -3,6 +3,7 @@ import Icon from '../../components/Icon.astro';
 import SearchBox from '../../components/SearchBox.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { fmt, formatDate } from '../../i18n';
+import { formatCompact } from '../../../../../packages/render/src/format';
 import { loadChrome, markSource, requestContext, routeLocale } from '../../lib/context';
 import { stableImageUrl } from '../../lib/images';
 import { highlightParts } from '../../lib/search/highlight';
@@ -68,7 +69,7 @@ const title = searchable ? fmt(t.search.titleFor, { query: q }, locale) : t.sear
         <>
           <h2 class="search-results-heading" id="search-results-heading">
             <bdi>{fmt(t.search.resultsFor, { query: q }, locale)}</bdi>
-            <span class="search-total">{fmt(total === 1 ? t.search.totalOne : t.search.total, { count: total }, locale)}</span>
+            <span class="search-total">{fmt(total === 1 ? t.search.totalOne : t.search.total, { count: formatCompact(total, locale) }, locale)}</span>
           </h2>
           {result.data.items.length === 0 ? (
             <div class="empty">
