@@ -27,6 +27,10 @@ export interface ErrorCardStrings {
   searchPlaceholder: string;
   needHelp: string;
   contactUs: string;
+  reference: string;
+  referenceHint: string;
+  copy: string;
+  copied: string;
   errorCode: string;
   /** The tab title: "{title} | Al Ummah Now" (the same format on every app) */
   pageTitle: string;
@@ -36,9 +40,9 @@ export const ERROR_CARD_STRINGS: Record<Locale, ErrorCardStrings> = {
   en: {
     kinds: {
       notFound: { title: 'Page not found', body: 'We couldn’t find this page. The link may be wrong, or the page may have moved.' },
-      gone: { title: 'This was removed', body: 'It’s no longer on Al Ummah Now. Search for something else, or go to the home\u00a0page.' },
+      gone: { title: 'This was removed', body: 'It’s no longer on Al\u00a0Ummah\u00a0Now. Search for something else, or go to the home\u00a0page.' },
       server: { title: 'We could not load this page', body: 'Our server had a problem with this request. Please try again in a\u00a0moment.' },
-      unavailable: { title: 'Page temporarily unavailable', body: 'Our content service is not responding. Try again in a few\u00a0minutes.' },
+      unavailable: { title: 'We’ll be back shortly', body: 'Our server is not responding right now. Try again in a few\u00a0minutes.' },
     },
     goHome: 'Home page',
     goBack: 'Go back',
@@ -48,6 +52,10 @@ export const ERROR_CARD_STRINGS: Record<Locale, ErrorCardStrings> = {
     searchPlaceholder: 'Search articles, scholars and videos',
     needHelp: 'Still stuck?',
     contactUs: 'Contact us',
+    reference: 'Reference',
+    referenceHint: 'Quote this reference if you contact us, so we can find what happened.',
+    copy: 'Copy reference',
+    copied: 'Copied',
     errorCode: 'Error {code}',
     pageTitle: '{title} | Al Ummah Now',
   },
@@ -56,7 +64,7 @@ export const ERROR_CARD_STRINGS: Record<Locale, ErrorCardStrings> = {
       notFound: { title: 'الصفحة غير موجودة', body: 'لم نعثر على هذه الصفحة. ربما الرابط غير صحيح أو نُقلت الصفحة.' },
       gone: { title: 'حُذف هذا المحتوى', body: 'لم يعد موجودًا على الأمة الآن. ابحث عن شيء آخر أو انتقل إلى الصفحة\u00a0الرئيسية.' },
       server: { title: 'تعذّر تحميل هذه الصفحة', body: 'واجه الخادم مشكلة في هذا الطلب. يُرجى المحاولة بعد قليل.' },
-      unavailable: { title: 'الصفحة غير متاحة مؤقتًا', body: 'خدمة المحتوى لا تستجيب حاليًا. حاول مرة أخرى بعد دقائق.' },
+      unavailable: { title: 'سنعود بعد قليل', body: 'الخادم لا يستجيب حاليًا. حاول مرة أخرى بعد دقائق.' },
     },
     goHome: 'الصفحة الرئيسية',
     goBack: 'رجوع',
@@ -66,6 +74,10 @@ export const ERROR_CARD_STRINGS: Record<Locale, ErrorCardStrings> = {
     searchPlaceholder: 'ابحث في المقالات والعلماء والمرئيات',
     needHelp: 'ما زلت تواجه المشكلة؟',
     contactUs: 'تواصل معنا',
+    reference: 'الرقم المرجعي',
+    referenceHint: 'اذكر هذا الرقم المرجعي عند التواصل معنا لنعرف ما حدث.',
+    copy: 'انسخ الرقم المرجعي',
+    copied: 'نُسخ',
     errorCode: 'خطأ {code}',
     pageTitle: '{title} | الأمة الآن',
   },
@@ -82,6 +94,7 @@ export const ERROR_CARD_ICONS = {
   back: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
   home: '<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
   retry: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+  copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
 } as const;
 export type ErrorCardIcon = keyof typeof ERROR_CARD_ICONS;
 
@@ -115,6 +128,8 @@ export interface ErrorCardOptions {
   /** Go back: shown by the page's script when there is history (data-ep-back) */
   back?: boolean;
   contactHref?: string;
+  /** 500/503: the reference the server logged with the failure (the videos card's Reference box) */
+  reference?: string;
   /** Override the shared words */
   title?: string;
   body?: string;
@@ -147,6 +162,14 @@ export function errorCardHtml(o: ErrorCardOptions): string {
   const back = o.back
     ? `<button type="button" class="${SECONDARY}" data-ep-back hidden>${errorCardIcon('back')}<span>${escapeHtml(t.goBack)}</span></button>`
     : '';
+  // The Reference box, as on the videos card: the code, a Copy button (shown by ep-back.js when the
+  // clipboard is there) and the hint
+  const ref = o.reference
+    ? `<div class="ep-ref"><div class="ep-ref-row"><span class="ep-ref-label">${escapeHtml(t.reference)}</span>` +
+      `<code class="ep-ref-code" dir="ltr" data-testid="error-ref">${escapeHtml(o.reference)}</code>` +
+      `<button type="button" class="ep-ref-copy" data-ep-copy="${escapeHtml(o.reference)}" data-copied="${escapeHtml(t.copied)}" hidden>${errorCardIcon('copy')}<span aria-live="polite">${escapeHtml(t.copy)}</span></button></div>` +
+      `<p class="ep-ref-hint">${escapeHtml(t.referenceHint)}</p></div>`
+    : '';
   const help = o.contactHref ? `<p class="ep-help">${escapeHtml(t.needHelp)} <a href="${escapeHtml(o.contactHref)}">${escapeHtml(t.contactUs)}</a></p>` : '';
   return (
     `<div class="ep" lang="${o.locale}" dir="${dir}" data-error-status="${status}" data-testid="error-screen"${o.kind === 'server' || o.kind === 'unavailable' ? ' role="alert"' : ''}>` +
@@ -155,6 +178,7 @@ export function errorCardHtml(o: ErrorCardOptions): string {
     `<div class="ep-heading"><p class="ep-code">${escapeHtml(errorCodeLabel(o.locale, status))}</p><${h} class="ep-title" id="${id}">${escapeHtml(o.title ?? copy.title)}</${h}></div>` +
     `<p class="ep-body">${escapeHtml(o.body ?? copy.body)}</p></div>` +
     search +
+    ref +
     `<footer class="ep-foot">${help}<div class="ep-actions">${back}${(o.secondary ?? []).map((a) => button(a, SECONDARY)).join('')}${button(o.primary, PRIMARY)}</div></footer>` +
     `</section></div>`
   );

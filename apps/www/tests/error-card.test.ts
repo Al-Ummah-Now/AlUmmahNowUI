@@ -25,6 +25,24 @@ describe('the shared error card (wiki guides/error-pages.md)', () => {
     expect(errorCodeLabel('ar', 410)).toBe('خطأ ٤١٠');
   });
 
+  it('500/503: the Reference box between the body and the footer, as on the videos card', () => {
+    const html = errorCardHtml({ ...base, locale: 'en', kind: 'unavailable', primary: { label: 'Try again', href: '/en/x' }, contactHref: '/en/contact', reference: '8d1f<2>' });
+    expect(html).toContain('<span class="ep-ref-label">Reference</span>');
+    expect(html).toContain('<code class="ep-ref-code" dir="ltr" data-testid="error-ref">8d1f&lt;2&gt;</code>');
+    // Copy shows only when the page's script finds a clipboard
+    expect(html).toMatch(/<button type="button" class="ep-ref-copy" data-ep-copy="8d1f&lt;2&gt;" data-copied="Copied" hidden>/);
+    expect(html.indexOf('ep-body')).toBeLessThan(html.indexOf('ep-ref'));
+    expect(html.indexOf('ep-ref')).toBeLessThan(html.indexOf('ep-foot'));
+    expect(errorCardHtml({ ...base, locale: 'en', kind: 'notFound', primary: { label: 'x', href: '/' } })).not.toContain('ep-ref');
+  });
+
+  it('503 says the same as the videos site', () => {
+    expect(ERROR_CARD_STRINGS.en.kinds.unavailable).toEqual({ title: 'We’ll be back shortly', body: 'Our server is not responding right now. Try again in a few\u00a0minutes.' });
+    expect(ERROR_CARD_STRINGS.ar.kinds.unavailable).toEqual({ title: 'سنعود بعد قليل', body: 'الخادم لا يستجيب حاليًا. حاول مرة أخرى بعد دقائق.' });
+    // The brand never breaks across lines
+    expect(ERROR_CARD_STRINGS.en.kinds.gone.body).toContain('Al\u00a0Ummah\u00a0Now');
+  });
+
   it('escapes every value', () => {
     const html = errorCardHtml({ ...base, locale: 'en', kind: 'notFound', primary: { label: '<b>', href: '/"x' } });
     expect(html).toContain('&lt;b&gt;');
@@ -60,6 +78,7 @@ describe('the shared error card (wiki guides/error-pages.md)', () => {
     const scripts = ['www', 'sites', 'dev'].map((app) => readFileSync(new URL(`../../${app}/public/ep-back.js`, import.meta.url), 'utf8'));
     expect(new Set(scripts).size).toBe(1);
     expect(scripts[0]).toContain("querySelectorAll('[data-ep-back]')");
+    expect(scripts[0]).toContain("querySelectorAll('[data-ep-copy]')");
   });
 
   it('the vendored sheet has no animation (reduced motion by default)', () => {

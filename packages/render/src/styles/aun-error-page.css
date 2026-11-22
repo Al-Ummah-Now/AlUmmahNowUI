@@ -1,26 +1,27 @@
 /* The error card (Al Ummah Now error-page family, wiki guides/error-pages.md): 404, 410, 500, a
-   crashed page, sign-in failed. One frosted-glass card with a golden edge and glow on the lantern
-   street, the same on every app. Used as is by the videos site and admin; www, scholar sites, the dev site,
+   crashed page, sign-in failed. One solid card with a golden edge and glow on the lantern street,
+   the same colour on every app (owner, 2026-11-22: the street never shows through a card). Used as is by the videos site and admin; www, scholar sites, the dev site,
    Auth and the CMS vendor it byte for byte (never edit a vendored copy). The buttons are the family's
    own too (.ep-btn-primary / .ep-btn-secondary): no app's button classes go on the card, so the gold,
    height, shape and type are the same everywhere.
-   --fanous-* tokens only; the glass reads the Surfaces primitive's --aun-glass-* tokens when the app
-   has them (packages/fanous-tokens/surfaces) and falls back to the theme surface, translucent. Logical
-   properties (one sheet for en and ar), no animation, a near-opaque card without blur support. */
-/* The glass: the Surfaces primitive's tokens when the app has them, else the theme's own surface,
-   translucent (the surface token already follows the theme and Light/Dark in every app, so this sheet
-   needs no mode selector), a gold edge and a soft gold glow at rest. */
+   --fanous-* tokens only; the edge and glow read the Surfaces primitive's --aun-glass-* tokens when the
+   app has them (packages/fanous-tokens/surfaces). Logical properties (one sheet for en and ar), no
+   animation, no blur. */
+/* The card: the videos site's card colour, worked out here from the page colour so every app gets the
+   same one whatever its mode selector is (.dark, data-mode, prefers-color-scheme): a dark page lifted
+   11.9% toward white (the glass base, 14% white, blended 85% over the page), a light page 80% white.
+   The page's luminance picks between them. A browser without relative colours gets the theme surface,
+   also solid. A gold edge and a soft gold glow at rest. */
 .ep{--ep-c:var(--fanous-color-primary,#e8b477);
-  --ep-surface:var(--aun-glass-surface,color-mix(in srgb,var(--fanous-color-surface) 72%,transparent));
+  --ep-surface:var(--fanous-color-surface);
   --ep-edge:var(--aun-glass-edge,color-mix(in srgb,var(--ep-c) 55%,var(--fanous-color-surface)));
   --ep-glow:var(--aun-glass-glow,0 0 28px -4px color-mix(in srgb,var(--ep-c) 45%,transparent));
   --ep-tint:color-mix(in srgb,var(--fanous-color-text-primary) 7%,transparent);
   display:grid;grid-template-columns:minmax(0,1fr);place-items:center;box-sizing:border-box;width:100%;max-width:100%;overflow-x:clip;min-height:calc(100dvh - 160px);padding:clamp(24px,6vw,72px) 16px;color:var(--fanous-color-text-primary)}
-.ep-card{box-sizing:border-box;width:100%;max-width:600px;min-width:0;overflow-wrap:anywhere;border:1px solid var(--ep-edge);border-radius:var(--aun-radius-card,16px);background:var(--ep-surface);box-shadow:var(--ep-glow);-webkit-backdrop-filter:var(--aun-glass-blur,blur(20px) saturate(1.6));backdrop-filter:var(--aun-glass-blur,blur(20px) saturate(1.6));padding:clamp(24px,4vw,40px);text-align:start}
-@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.ep-card{background:var(--fanous-color-surface)}}
-@media(prefers-reduced-transparency:reduce){.ep-card{background:var(--fanous-color-surface)}}
-@media print{.ep-card{background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}}
-.ep-head{display:grid;grid-template-columns:auto 1fr;column-gap:var(--fanous-spacing-md,16px);align-items:center}
+@supports (color:rgb(from red r g b)){.ep{--ep-surface:rgb(from var(--fanous-color-background) calc(r + (255 - r) * (0.119 + 0.681 * clamp(0, (0.2126 * r + 0.7152 * g + 0.0722 * b - 127.5) * 10, 1))) calc(g + (255 - g) * (0.119 + 0.681 * clamp(0, (0.2126 * r + 0.7152 * g + 0.0722 * b - 127.5) * 10, 1))) calc(b + (255 - b) * (0.119 + 0.681 * clamp(0, (0.2126 * r + 0.7152 * g + 0.0722 * b - 127.5) * 10, 1))))}}
+.ep-card{box-sizing:border-box;width:100%;max-width:600px;min-width:0;overflow-wrap:anywhere;border:1px solid var(--ep-edge);border-radius:var(--aun-radius-card,16px);background:var(--ep-surface);box-shadow:var(--ep-glow);padding:clamp(24px,4vw,40px);text-align:start}
+@media print{.ep-card{background:none;box-shadow:none}}
+.ep-head{display:grid;grid-template-columns:auto 1fr;column-gap:var(--fanous-spacing-md,12px);align-items:center}
 .ep-badge{display:grid;place-items:center;width:52px;height:52px;border-radius:14px;background:var(--fanous-color-primary);color:var(--fanous-color-on-primary);box-shadow:0 0 18px -4px color-mix(in srgb,var(--ep-c) 60%,transparent)}
 .ep-badge svg{width:26px;height:26px}
 .ep-heading,.ep-head,.ep-search,.ep-foot,.ep-actions{min-width:0}
@@ -29,7 +30,7 @@ html[lang=ar] .ep-code,.ep[lang=ar] .ep-code{letter-spacing:0}
 .ep-title{margin:0;font-family:inherit;font-size:clamp(24px,3vw,30px);font-weight:700;line-height:1.25;letter-spacing:normal;text-wrap:balance;color:var(--fanous-color-text-primary)}
 .ep[lang=ar] .ep-title{line-height:1.45}
 /* Balanced lines: a two- or three-line body never ends on one lone word */
-.ep-body{grid-column:1/-1;margin:var(--fanous-spacing-md,16px) 0 0;max-width:60ch;font-size:17px;line-height:1.65;text-wrap:balance;color:var(--fanous-color-text-secondary)}
+.ep-body{grid-column:1/-1;margin:var(--fanous-spacing-md,12px) 0 0;max-width:60ch;font-size:17px;line-height:1.65;text-wrap:balance;color:var(--fanous-color-text-secondary)}
 .ep[lang=ar] .ep-body{line-height:1.9}
 
 .ep-search{display:flex;gap:var(--fanous-spacing-sm,8px);margin-block-start:var(--fanous-spacing-xl,24px)}
@@ -53,13 +54,14 @@ html[lang=ar] .ep-code,.ep[lang=ar] .ep-code{letter-spacing:0}
 .ep-ref-copy{display:inline-flex;align-items:center;gap:6px;margin-inline-start:auto;min-height:36px;padding-inline:10px;border:0;border-radius:999px;background:transparent;color:var(--fanous-color-link);font:inherit;font-weight:600;cursor:pointer}
 .ep-ref-copy svg{width:16px;height:16px}
 @media(hover:hover){.ep-ref-copy:hover{background:var(--ep-tint)}}
-.ep-ref-hint{margin:6px 0 0;color:var(--fanous-color-text-secondary);line-height:1.5}
+.ep-ref-hint{margin:6px 0 0;color:var(--fanous-color-text-secondary);line-height:1.5;text-wrap:balance}
 
-/* Footer: help on the start side, the actions at the end edge (main action last, filled) */
-.ep-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--fanous-spacing-md,16px);margin-block-start:var(--fanous-spacing-xl,24px);padding-block-start:var(--fanous-spacing-lg,20px);border-block-start:1px solid var(--fanous-color-divider)}
-.ep-help{margin:0;font-size:14px;color:var(--fanous-color-text-secondary)}
+/* Footer: help on the start side, the actions at the end edge (main action last, filled), on one row
+   in every language: a longer help line wraps inside its own column, balanced, beside the buttons */
+.ep-foot{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:var(--fanous-spacing-md,12px);margin-block-start:var(--fanous-spacing-xl,24px);padding-block-start:var(--fanous-spacing-lg,16px);border-block-start:1px solid var(--fanous-color-divider)}
+.ep-help{flex:1 1 0;min-width:0;margin:0;font-size:14px;line-height:1.5;text-wrap:balance;color:var(--fanous-color-text-secondary)}
 .ep-help a{color:var(--fanous-color-link);font-weight:600;text-decoration:underline;text-underline-offset:2px;white-space:nowrap}
-.ep-actions{display:flex;flex-wrap:wrap;gap:var(--fanous-spacing-sm,8px);margin-inline-start:auto}
+.ep-actions{display:flex;flex:none;flex-wrap:nowrap;gap:var(--fanous-spacing-sm,8px);margin-inline-start:auto}
 .ep :focus-visible{outline:2px solid var(--fanous-color-focus-ring);outline-offset:2px}
 
 @media(max-width:520px){
@@ -67,6 +69,7 @@ html[lang=ar] .ep-code,.ep[lang=ar] .ep-code{letter-spacing:0}
   .ep-search{flex-direction:column}
   .ep-search-btn{justify-content:center}
   .ep-foot{flex-direction:column-reverse;align-items:stretch}
+  .ep-help{flex:none}
   .ep-actions{flex-direction:column-reverse;margin-inline-start:0}
   .ep-actions .ep-btn{width:100%}
 }
