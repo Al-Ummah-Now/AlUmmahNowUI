@@ -210,6 +210,7 @@ const shapeOf = (blocks: Block[]) => blocks.map((b) => `${b.label.split(' ')[0]}
 async function shootFrames(page: Page, tag: string, blocks: Block[], head: number, groups: number[][]): Promise<Frame[]> {
   const base = page.viewportSize()!;
   const frames: Frame[] = [];
+  let regroups = 0;
   for (let k = 0; k < groups.length; k++) {
     const g = groups[k]!;
     const first = k === 0;
@@ -229,6 +230,7 @@ async function shootFrames(page: Page, tag: string, blocks: Block[], head: numbe
     type Spot = { sy: number; side: [number, number][]; eTop: number; clipBottom: number };
     let pick: Spot | null = null;
     let fallback: Spot | null = null;
+    let topFails = false;
     for (const d of first ? [0] : [0, -2, 2, -4, 4, -6, 6, -8, 8, -10, 10, -12, 12, -14, 14, -16, -18, -20, -22, -24, -26, -28, -30]) {
       // the header's lower edge lands 16px above the first block, or in the gap above it when that gap is narrower
       await page.evaluate((top) => window.scrollTo(0, top), first ? 0 : Math.max(y - 16, prev + 2) - head + d);
@@ -252,6 +254,7 @@ async function shootFrames(page: Page, tag: string, blocks: Block[], head: numbe
       // 16 px under the last block, or the view's foot when that's nearer; never past the next block's top
       const cb = free(Math.min(hi, last - sy + 16), Math.min(hi, Math.ceil(last - sy + 2)), hi);
       const got = { sy, side, eTop: Math.round(eTop ?? topWant), clipBottom: Math.round(Math.min(vh, cb ?? Math.min(hi, last - sy + 16))) };
+      if (!fallback) topFails = eTop === null;
       fallback ??= got;
       if (eTop !== null && cb !== null) {
         pick = got;
@@ -260,12 +263,30 @@ async function shootFrames(page: Page, tag: string, blocks: Block[], head: numbe
     }
     // no clean edge anywhere (a gap too narrow beside the list's end): the frame hands its last block to the next one
     // (the plan is shared, so the other language follows)
-    if (!pick && g.length > 1) {
-      // a card goes with the rest of its row
-      const moved = [g.pop()!];
-      while (g.length > 1 && Math.abs(blocks[g[g.length - 1]!]!.top - blocks[moved[0]!]!.top) <= 1) moved.unshift(g.pop()!);
-      if (k + 1 < groups.length) groups[k + 1]!.unshift(...moved);
-      else groups.push(moved);
+    // a card goes with the rest of its row; a frame that is one row only takes in the next frame instead. A top
+    // edge with no clean spot joins the frame to the one before it. Regrouping is capped, so the walk always ends
+    // (anything left is a defect the proof reports)
+    const lastTop = blocks[g[g.length - 1]!]!.top;
+    const row = g.filter((i) => Math.abs(blocks[i]!.top - lastTop) <= 1);
+    if (!pick && regroups < 40 && topFails && k > 0) {
+      regroups++;
+      groups[k - 1] = [...groups[k - 1]!, ...g];
+      groups.splice(k, 1);
+      if (vh !== base.height) await page.setViewportSize(base);
+      frames.pop();
+      k -= 2;
+      continue;
+    }
+    if (!pick && regroups < 40 && (row.length < g.length || k + 1 < groups.length)) {
+      regroups++;
+      if (row.length < g.length) {
+        groups[k] = g.filter((i) => !row.includes(i));
+        if (k + 1 < groups.length) groups[k + 1]!.unshift(...row);
+        else groups.push(row);
+      } else {
+        groups[k] = [...g, ...groups[k + 1]!];
+        groups.splice(k + 1, 1);
+      }
       if (vh !== base.height) await page.setViewportSize(base);
       k--;
       continue;
