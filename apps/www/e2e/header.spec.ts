@@ -58,6 +58,8 @@ for (const l of LOCALES) {
   });
 
   test(`${l}: one line on every screen, full width, one typeface; below 1024px the menu panel holds the links and search`, async ({ page }) => {
+    // 13 widths, each opening the sheet and the panel: a minute is not enough on WebKit
+    test.slow();
     const rtl = l === 'ar';
     for (const [w, bar] of [[1440, 64], [1280, 64], [1024, 64], [1023, 64], [800, 64], [640, 64], [639, 56], [480, 56], [430, 56], [412, 56], [390, 56], [360, 56], [320, 56]] as const) {
       await page.setViewportSize({ width: w, height: 844 });
@@ -121,6 +123,7 @@ for (const l of LOCALES) {
   });
 
   test(`${l}: signed in, still one line from 320px to 1440px`, async ({ page }) => {
+    test.slow();
     await signedIn(page);
     for (const [w, bar] of [[1440, 64], [1280, 64], [1024, 64], [1023, 64], [800, 64], [640, 64], [639, 56], [480, 56], [430, 56], [412, 56], [390, 56], [360, 56], [320, 56]] as const) {
       await page.setViewportSize({ width: w, height: 844 });
