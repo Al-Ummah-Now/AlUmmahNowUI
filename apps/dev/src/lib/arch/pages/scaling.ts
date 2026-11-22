@@ -49,23 +49,20 @@ const copies: Builder = (d) => {
       rowH: 100,
       iconSize: 34,
       pad: 44,
-      at: stack([
-        [['users'], 0],
-        [['workers'], 1.75],
-        [['sockets', 'topics'], 2.3],
-        [['views', 'videoJson'], 2.3],
-        [['queue', 'container'], 2.3],
-        [['slots'], 1.45],
-      ]),
+      // a lane inside the account down each side: the view wire on the left, the transcode job on the right
+      growPad: { cf: { l: 24, r: 24 } },
+      // Video JSON under the views (its long "conditional write" words beside the wire, in the empty column); the
+      // queue under the job lane on the right, so the job lands clear of the group's title
+      at: { users: [0.5, 0], workers: [0.5, 2.4], sockets: [0, 4.7], topics: [1, 4.7], views: [0, 7], videoJson: [0, 8.6], queue: [1, 10.9], container: [0, 10.9], slots: [1, 12.35] },
       edges: [
-        { from: 'users', to: 'workers', flow: 'request', label: e.req, fromSide: 's', toSide: 'n' },
-        { from: 'workers', to: 'sockets', flow: 'request', label: e.socket, fromSide: 's', toSide: 'n' },
+        { from: 'users', to: 'workers', flow: 'request', fromSide: 's', toSide: 'n' },
+        { from: 'workers', to: 'sockets', flow: 'request', fromSide: 's', toSide: 'n' },
         { from: 'topics', to: 'sockets', flow: 'delivery', fromSide: 'w', toSide: 'e' },
-        { from: 'workers', to: 'views', flow: 'request', label: e.view, fromSide: 'w', toSide: 'w' },
-        { from: 'views', to: 'videoJson', flow: 'async', fromSide: 'e', toSide: 'w' },
-        { from: 'workers', to: 'queue', flow: 'async', label: e.job, fromSide: 'e', toSide: 'e' },
-        { from: 'queue', to: 'slots', flow: 'control', label: e.acquire, fromSide: 's', toSide: 'n' },
-        { from: 'queue', to: 'container', flow: 'media', label: e.start, fromSide: 'e', toSide: 'w' },
+        { from: 'workers', to: 'views', flow: 'request', fromSide: 'w', toSide: 'w' },
+        { from: 'views', to: 'videoJson', flow: 'async', fromSide: 's', toSide: 'n' },
+        { from: 'workers', to: 'queue', flow: 'async', fromSide: 'e', toSide: 'n' },
+        { from: 'queue', to: 'slots', flow: 'control', fromSide: 's', toSide: 'n' },
+        { from: 'queue', to: 'container', flow: 'media', fromSide: 'w', toSide: 'e' },
       ],
     },
   };
@@ -170,7 +167,7 @@ const fixes: Builder = (d) => {
       cols: 1,
       at: { blind: [0, 0], cas: [0, 1], shards: [0, 2], upsert: [0, 3], sockets: [0, 4], limiter: [0, 5], reserve: [0, 6] },
       // one column: each wire bows out through the margin at its own distance
-      edges: around.map((to, i) => ({ from: 'blind', to, fromSide: 'w' as const, toSide: 'w' as const, bend: 34 + i * 14 })),
+      edges: around.map((to, i) => ({ from: 'blind', to, fromSide: 'w' as const, toSide: 'w' as const, lane: 18 + i * 14 })),
     },
   };
 };

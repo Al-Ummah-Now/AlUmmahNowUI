@@ -33,7 +33,7 @@ const monitor: Builder = (d) => {
         { id: 'collector', label: c.group.collector, members: ['cron', 'worker', 'jobs'] },
         { id: 'admin', label: c.group.admin, members: ['api', 'page', 'mail'] },
         { id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', members: ['collector', 'graphql', 'd1', 'admin'] },
-        { id: 'bunnyNet', label: c.group.bunny, kind: 'platform', tagLogo: { id: 'brand/bunnynet-logo-dark', w: 66, h: 19 }, accent: '#f29b1d', members: ['bunny'] },
+        { id: 'bunnyNet', label: c.group.bunny, kind: 'platform', tagLogo: { id: 'brand/bunnynet-logo-dark', w: 66, h: 19 }, tagEnd: true, accent: '#f29b1d', members: ['bunny'] },
       ],
       edges: [
         { from: 'cron', to: 'worker', flow: 'control', label: e.wake, fromSide: 'e', toSide: 'w' },
@@ -61,7 +61,7 @@ const monitor: Builder = (d) => {
         [['graphql', 'd1'], 1.95],
         [['page', 'api'], 1.95],
         [['mail'], 1.05],
-        [['resend', 'admins'], 2.2],
+        [['admins', 'resend'], 2.2],
         [['bunny'], 2.0],
       ]),
       edges: [
@@ -73,7 +73,8 @@ const monitor: Builder = (d) => {
         { from: 'page', to: 'api', flow: 'request', fromSide: 'e', toSide: 'w' },
         { from: 'api', to: 'mail', flow: 'async', label: e.alert, fromSide: 's', toSide: 'e' },
         { from: 'mail', to: 'resend', flow: 'async', label: e.send, fromSide: 's', toSide: 'n' },
-        { from: 'resend', to: 'admins', flow: 'delivery', label: e.email, fromSide: 'e', toSide: 'w' },
+        { from: 'resend', to: 'admins', flow: 'delivery', label: e.email, fromSide: 'w', toSide: 'e' },
+        { from: 'admins', to: 'page', flow: 'request', label: e.open, fromSide: 'n', toSide: 's' },
         { from: 'worker', to: 'bunny', flow: 'request', label: e.charges, fromSide: 'e', toSide: 'e' },
       ],
     },
@@ -115,17 +116,18 @@ const cheap: Builder = (d) => {
   const narrowEdges: SketchEdge[] = levers.map((id, i) => {
     if (i === 0) return { from: id, to: 'budget', fromSide: 'n', toSide: 's' };
     const left = i % 2 === 1;
-    const k = 34 + Math.floor((i - 1) / 2) * 18;
-    return { from: id, to: 'budget', fromSide: left ? 'w' : 'e', toSide: left ? 'w' : 'e', bend: left ? -k : k };
+    // each side's wires nest down their own lanes, 14 px apart
+    return { from: id, to: 'budget', fromSide: left ? 'w' : 'e', toSide: left ? 'w' : 'e', lane: 18 + Math.floor((i - 1) / 2) * 14 };
   });
   return {
     kind: 'sketch',
     spec,
     wide: { colW: 360, rowH: 200, nodeW: 250, cols: 3 },
     narrow: {
-      colW: 280,
+      // tiles wide enough for the longest title with room inside its border («عيّنات سرعة الصفحات، ١ من ٢٠»)
+      colW: 300,
       rowH: 160,
-      nodeW: 250,
+      nodeW: 276,
       cols: 1,
       at: Object.fromEntries([['budget', [0, 0]], ...levers.map((id, i) => [id, [0, i + 1]])]) as Record<string, [number, number]>,
       edges: narrowEdges,

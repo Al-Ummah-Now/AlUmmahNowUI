@@ -57,10 +57,12 @@ class Pen {
     ];
     return `M${p.map(([a, b]) => `${r(a)} ${r(b)}`).join(' L')} Z`;
   }
-  /** arrow along a gentle curve through an optional control point; returns the shaft and the head */
-  arrow(x1: number, y1: number, x2: number, y2: number, ctrl?: [number, number]): { shaft: string; head: string } {
-    const [cx, cy] = ctrl ?? [(x1 + x2) / 2 + this.j(6), (y1 + y2) / 2 + this.j(6)];
-    const shaft = `M${r(x1)} ${r(y1)} Q${r(cx)} ${r(cy)} ${r(x2)} ${r(y2)}`;
+  /** arrow along a gentle curve through an optional control point (two: a cubic); returns the shaft and the head */
+  arrow(x1: number, y1: number, x2: number, y2: number, ctrl?: [number, number], ctrl2?: [number, number]): { shaft: string; head: string } {
+    const c1 = ctrl ?? [(x1 + x2) / 2 + this.j(6), (y1 + y2) / 2 + this.j(6)];
+    // the head points along the curve's last tangent: from the last control point
+    const [cx, cy] = ctrl2 ?? c1;
+    const shaft = ctrl2 ? `M${r(x1)} ${r(y1)} C${r(c1[0])} ${r(c1[1])} ${r(cx)} ${r(cy)} ${r(x2)} ${r(y2)}` : `M${r(x1)} ${r(y1)} Q${r(cx)} ${r(cy)} ${r(x2)} ${r(y2)}`;
     const a = Math.atan2(y2 - cy, x2 - cx);
     const L = 11;
     const head = [0.48, -0.48].map((d) => `M${r(x2)} ${r(y2)} L${r(x2 - Math.cos(a + d) * L + this.j(0.8))} ${r(y2 - Math.sin(a + d) * L + this.j(0.8))}`).join(' ');
@@ -117,6 +119,11 @@ export interface SketchEdge {
   tone?: Tone;
   /** moves the tag along the curve (0–1, default 0.5) */
   tagAt?: number;
+  /** a U through a lane this far out from the start side (a phone fan-out): out sideways, along the lane, and in;
+   * wires sharing a start nest, the widest lane on the outermost port */
+  lane?: number;
+  /** a relation, not a flow ("neither grants the other"): no arrowhead */
+  noHead?: boolean;
 }
 export interface SketchSpec {
   id: string;
@@ -151,8 +158,41 @@ const NODE_H = 124;
  * `extra` widens the margins (screen left and right) so every curve stays inside the cloud: the first pass
  * measures how far the curves bow out and, when one would run along the outline, draws again with the room.
  */
+/** A tag with no room beside its curve: which drawn side its curve bows to (a margin), or none (a wire down the middle). */
+class TagRoom extends Error {
+  constructor(msg: string, readonly side: 'l' | 'r' | null) {
+    super(msg);
+  }
+}
+
+/**
+ * A sketch whose tag finds no room beside its curve is drawn again with more room: taller rows (more gap between
+ * the notes) first, then, for a curve bowing out through a margin, that margin widened.
+ */
 export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: { rtl: boolean; variant: string }, extra = { l: 0, r: 0 }): string {
-  const spec = layout.edges ? { ...spec0, edges: layout.edges } : spec0;
+  let grow = 0;
+  const wide = { ...extra };
+  for (let tries = 0; ; tries++) {
+    try {
+      return renderSketchSpecOnce(spec0, { ...layout, rowH: layout.rowH + grow }, opts, wide);
+    } catch (err) {
+      if (!(err instanceof TagRoom) || tries >= 10) throw err;
+      // taller rows first (a tag then fits in a gap between notes, inside the column: the figure stays phone-width),
+      // a wider margin only when that is not enough
+      if (grow < 96 || !err.side) grow += 24;
+      else wide[err.side] += 40;
+    }
+  }
+}
+
+function renderSketchSpecOnce(spec0: SketchSpec, layout: SketchLayout, opts: { rtl: boolean; variant: string }, extra = { l: 0, r: 0 }): string {
+  // a layout's own wires (a phone column re-routes them) keep each wire's words, colour and dash from the spec:
+  // a phone figure says what the wide one says
+  const inherit = (e: SketchEdge): SketchEdge => {
+    const base = spec0.edges.find((s) => s.from === e.from && s.to === e.to);
+    return base ? { tag: base.tag, tone: base.tone, dashed: base.dashed, noHead: base.noHead, ...e } : e;
+  };
+  const spec = layout.edges ? { ...spec0, edges: layout.edges.map(inherit) } : spec0;
   const prefix = `${spec.id}-${opts.variant}`;
   const pen = new Pen(prefix);
   const side = 22; // the margin the rotated side note lives in
@@ -227,7 +267,7 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
   o.push(`<g data-node-label="heading"><text class="an-sk-title ${fam}" x="${r(W / 2)}" y="52" text-anchor="middle"${ar ? ' direction="rtl"' : ''}>${esc(spec.heading)}</text></g>`);
 
   // first every curve, so tags can be placed clear of all of them
-  type Curve = { e: SketchEdge; i: number; a: [number, number]; ctrl: [number, number]; b: [number, number] };
+  type Curve = { e: SketchEdge; i: number; a: [number, number]; ctrl: [number, number]; ctrl2?: [number, number]; b: [number, number] };
   const curves: Curve[] = spec.edges.map((e, i) => {
     const bf = box.get(e.from)!;
     const bt = box.get(e.to)!;
@@ -239,6 +279,12 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
     const ny = (b[0] - a[0]) / len;
     return { e, i, a, b, ctrl: [(a[0] + b[0]) / 2 + nx * bend, (a[1] + b[1]) / 2 + ny * bend] };
   });
+  // a laned U: both control points on the lane line, level with each end (the curve's widest point is 3/4 of the way)
+  const laneOf = (c: Curve) => {
+    const bf = box.get(c.e.from)!;
+    const dir = c.a[0] < bf.x + bf.w / 2 ? -1 : 1;
+    return dir * (c.e.lane ?? 0) / 0.75;
+  };
   // two curves meeting at one point of a tile's side read as one line: spread them 12 px apart along the side
   {
     const ends = curves.flatMap((c) => [
@@ -255,17 +301,34 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
       const p = x.c[x.k];
       // the side the point is on: along a vertical side spread in y, along a horizontal one in x
       const vertical = Math.abs(p[0] - bx.x) < 10 || Math.abs(p[0] - (bx.x + bx.w)) < 10;
+      // laned wires meeting at one point nest without crossing: along the side, first those whose other end is
+      // above (innermost lane first), then those whose other end is below (outermost lane first)
+      if (vertical && group.every((y) => y.c.e.lane != null)) {
+        const up = (y: (typeof group)[number]) => (y.k === 'a' ? y.c.b : y.c.a)[1] < p[1];
+        const key = (y: (typeof group)[number]) => (up(y) ? -1e4 + y.c.e.lane! : 1e4 - y.c.e.lane!);
+        group.sort((u, v) => key(u) - key(v));
+      }
+      // (arrowheads meeting one side sit 20 px apart: closer, their 11 px barbs read as one pile)
+      const gap = group.every((y) => y.k === 'b') ? 20 : 12;
       group.forEach((y, j) => {
-        const off = (j - (group.length - 1) / 2) * 12;
+        const off = (j - (group.length - 1) / 2) * gap;
         const q = y.c[y.k];
         y.c[y.k] = vertical ? [q[0], q[1] + off] : [q[0] + off, q[1]];
       });
     }
   }
-  const at = (c: Curve, t: number): [number, number] => [
-    (1 - t) * (1 - t) * c.a[0] + 2 * (1 - t) * t * c.ctrl[0] + t * t * c.b[0],
-    (1 - t) * (1 - t) * c.a[1] + 2 * (1 - t) * t * c.ctrl[1] + t * t * c.b[1],
-  ];
+  // the lane's control points, once the ends have been spread
+  for (const c of curves) {
+    if (c.e.lane == null) continue;
+    const d = laneOf(c);
+    c.ctrl = [c.a[0] + d, c.a[1]];
+    c.ctrl2 = [c.b[0] + d, c.b[1]];
+  }
+  const at = (c: Curve, t: number): [number, number] => {
+    const u = 1 - t;
+    if (c.ctrl2) return [0, 1].map((k) => u * u * u * c.a[k]! + 3 * u * u * t * c.ctrl[k]! + 3 * u * t * t * c.ctrl2![k]! + t * t * t * c.b[k]!) as [number, number];
+    return [u * u * c.a[0] + 2 * u * t * c.ctrl[0] + t * t * c.b[0], u * u * c.a[1] + 2 * u * t * c.ctrl[1] + t * t * c.b[1]];
+  };
   const samples = curves.flatMap((c) => Array.from({ length: 61 }, (_, k) => at(c, k / 60)));
   // the cloud keeps the base margin; extra room goes between it and the tiles
   const cloudBox = spec.around ? { x: mx - 20, y: CT, w: W - 2 * mx + 40, h: Hc - CT - 28 } : null;
@@ -295,9 +358,9 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
   const tags: string[] = [];
   o.push('<g class="an-edges">');
   curves.forEach((c) => {
-    const { e, i, a, b, ctrl } = c;
-    const { shaft, head } = pen.arrow(a[0], a[1], b[0], b[1], ctrl);
-    o.push(`<path id="${prefix}-e${i}" data-edge="${prefix}-e${i}" data-from="${e.from}" data-to="${e.to}" class="an-edge an-sk-arrow${e.dashed ? ' an-sk-dashed' : ''}" d="${shaft}"/><path class="an-sk-head" d="${head}"/>`);
+    const { e, i, a, b, ctrl, ctrl2 } = c;
+    const { shaft, head } = pen.arrow(a[0], a[1], b[0], b[1], ctrl, ctrl2);
+    o.push(`<path id="${prefix}-e${i}" data-edge="${prefix}-e${i}" data-from="${e.from}" data-to="${e.to}" class="an-edge an-sk-arrow${e.dashed ? ' an-sk-dashed' : ''}"${e.noHead ? ' data-nohead' : ''} d="${shaft}"/>${e.noHead ? '' : `<path class="an-sk-head" d="${head}"/>`}`);
     if (!e.tag) return;
     // a tag sits beside its curve, never on it: try both sides at a few points along it
     const tw = textWidth(e.tag, 15, true) + 18;
@@ -324,11 +387,32 @@ export function renderSketchSpec(spec0: SketchSpec, layout: SketchLayout, opts: 
       }
       if (best) break;
     }
-    if (!best) throw new Error(`${spec.id}/${opts.variant}: no room beside its curve for the tag "${e.tag}"`);
+    // no room beside it: on it, an opaque tag over its own curve's middle stretch (as the flat diagrams label a
+    // crowded wire), still clear of every other curve, tile, tag and the cloud's outline
+    let covers = false;
+    if (!best) {
+      const others = curves.filter((x) => x !== c).flatMap((x) => Array.from({ length: 61 }, (_, k) => at(x, k / 60)));
+      for (const t of [0.5, 0.42, 0.58, 0.34, 0.66, 0.28, 0.72]) {
+        const p = at(c, t);
+        const q = { x: p[0] - tw / 2, y: p[1] - th / 2, w: tw, h: th };
+        if (q.x < 8 || q.y < 60 || q.x + q.w > W - 8 || q.y + q.h > Hc - 8) continue;
+        if (others.some((pt) => hits(q, pt, 5)) || cloudBand.some((e) => overlaps(q, e, 0))) continue;
+        if (nodeBoxes.some((nb) => overlaps(q, { x: nb.x - 4, y: nb.y - 4, w: nb.w + 12, h: nb.h + 12 }, 6)) || placedTags.some((pb) => overlaps(q, pb, 6))) continue;
+        best = q;
+        covers = true;
+        break;
+      }
+    }
+    if (!best) {
+      // a bow through a margin: widen that margin (curves are in drawn coordinates; extra.l widens the drawn left in
+      // both languages, as the mirror swaps the margins too)
+      const side = Math.abs(c.ctrl[0] - W / 2) < 40 ? null : c.ctrl[0] < W / 2 ? 'l' : 'r';
+      throw new TagRoom(`${spec.id}/${opts.variant}: no room beside its curve for the tag "${e.tag}"`, side);
+    }
     placedTags.push(best);
     const px = best.x + tw / 2;
     const py = best.y + th / 2;
-    tags.push(`<g class="an-sk-tag an-sk-${e.tone ?? 'blue'}" data-for="${prefix}-e${i}"><path class="an-sk-mark" d="${pen.marker(px - tw / 2 - 4, py - 15, tw, 26)}"/><path class="an-sk-line" d="${pen.rect(px - tw / 2, py - 14, tw, 26)}"/><text class="${fam}" x="${r(px)}" y="${r(py + 4)}" text-anchor="middle"${hasArabic(e.tag) ? ' direction="rtl"' : ''}>${esc(e.tag)}</text></g>`);
+    tags.push(`<g class="an-sk-tag an-sk-${e.tone ?? 'blue'}" data-for="${prefix}-e${i}"${covers ? ' data-covers' : ''}>${covers ? `<rect class="an-sk-tag-bg" x="${r(px - tw / 2)}" y="${r(py - 14)}" width="${r(tw)}" height="26"/>` : ''}<path class="an-sk-mark" d="${pen.marker(px - tw / 2 - 4, py - 15, tw, 26)}"/><path class="an-sk-line" d="${pen.rect(px - tw / 2, py - 14, tw, 26)}"/><text class="${fam}" x="${r(px)}" y="${r(py + 4)}" text-anchor="middle"${hasArabic(e.tag) ? ' direction="rtl"' : ''}>${esc(e.tag)}</text></g>`);
   });
   o.push('</g><g class="an-motion" aria-hidden="true">');
   spec.edges.forEach((e, i) => {

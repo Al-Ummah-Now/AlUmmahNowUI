@@ -119,6 +119,32 @@ export function joinMeta(parts: ReadonlyArray<string | null | undefined | false>
   return parts.filter((p): p is string => typeof p === 'string' && p.trim() !== '').join(metaSeparator(lang, en));
 }
 
+/**
+ * A count in running text, by the owner's number rule (2026-11-21): English as usual ("1,000"); Arabic never
+ * grouped, and from a thousand in words, cut (never rounded up) to one decimal: «ألف», «ألفان» («ألفا» before a
+ * noun), «٣ آلاف»…«١٠ آلاف», «١٢ ألفًا» standing alone, «١٫٣ ألف»; millions «١٫٢ م»; «مليار / ملياران /
+ * ٣ مليارات». `beforeNoun`: the count is followed by what it counts («ألف مشاهدة», «١٢ ألف نيورون»).
+ */
+export function formatCount(n: number, lang: Lang | string, opts: { beforeNoun?: boolean } = {}): string {
+  if (!isAr(lang)) return formatNumber(n, lang);
+  const plain = (v: number) => formatNumber(v, lang, { useGrouping: false, maximumFractionDigits: 1 });
+  if (Math.abs(n) < 1000) return plain(n);
+  const cut = (v: number) => Math.trunc(v * 10) / 10;
+  // one, two, three to ten, and whole numbers ending in 11–99 standing alone each take their own form
+  const words = (v: number, one: string, two: string, few: string, many: string) => {
+    if (v === 1) return one;
+    if (v === 2) return opts.beforeNoun ? two.replace(/ن$/, '') : two;
+    if (Number.isInteger(v) && v >= 3 && v <= 10) return `${plain(v)} ${few}`;
+    if (!opts.beforeNoun && Number.isInteger(v) && v % 100 >= 11) return `${plain(v)} ${many}ًا`;
+    return `${plain(v)} ${many}`;
+  };
+  const a = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (a < 1e6) return sign + words(cut(a / 1e3), 'ألف', 'ألفان', 'آلاف', 'ألف');
+  if (a < 1e9) return `${sign}${plain(cut(a / 1e6))} م`;
+  return sign + words(cut(a / 1e9), 'مليار', 'ملياران', 'مليارات', 'مليار');
+}
+
 /** 0.25 → "25%" / «٢٥٪». */
 export const formatPercent = (ratio: number, lang: Lang | string, opts: Intl.NumberFormatOptions = {}) =>
   formatNumber(ratio, lang, { style: 'percent', maximumFractionDigits: 1, ...opts });

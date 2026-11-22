@@ -3,7 +3,7 @@ export const scalingEn = {
   copies: {
     title: 'Many copies at once',
     lead: 'Cloudflare runs every Worker as many copies in many places at the same time. Anything that must add up exactly gets a named owner: sockets and view counts live on named Durable Object shards, and transcodes wait for a slot under a hard ceiling.',
-    desc: 'Viewers and creators reach the Workers, which run as many isolates at once. Inside the Cloudflare account three groups show where many copies meet one truth. Realtime: sockets spread over shard objects named sockets:<n>, eight by default and sixty-four at most, and per-channel topic directories forward a broadcast only to shards with a subscriber. Counting: each view goes to one of four views:<videoId>:<shard> objects, which write back to the video JSON at most every ten seconds with a compare-and-swap on its version tag. Transcoding: jobs wait on the transcode queue, consumed ten at a time per environment, take a slot from the single TranscodeSlots object and only then start a Transcoder container; production allows at most {N3371} containers.',
+    desc: 'Viewers and creators reach the Workers, which run as many isolates at once. Inside the Cloudflare account three groups show where many copies meet one truth. Realtime: sockets spread over shard objects named sockets:<n>, eight by default and sixty-four at most, and per-channel topic directories forward a broadcast only to shards with a subscriber. Counting: each view goes to one of four views:<videoId>:<shard> objects, which write back to the video JSON at most every ten seconds with a compare-and-swap on its version tag. Transcoding: jobs wait on the transcode queue, consumed ten at a time per environment, take a slot from the single TranscodeSlots object and only then start a Transcoder container; production allows at most {N=3371} containers.',
     group: { cf: 'Cloudflare account', realtime: 'Realtime', counting: 'Counting', transcode: 'Transcoding' },
     caption: { realtime: 'a full shard sends you to the next', counting: 'a thousand parallel views count exactly', transcode: 'admin min–max under the ceiling' },
     node: {
@@ -15,14 +15,14 @@ export const scalingEn = {
       videoJson: { name: 'Video JSON', role: 'R2 · conditional write' },
       queue: { name: 'Transcode queue', role: '{N10} at once per env' },
       slots: { name: 'TranscodeSlots', role: 'one object' },
-      container: { name: 'Transcoder', role: 'at most {N3371}' },
+      container: { name: 'Transcoder', role: 'at most {N=3371}' },
     },
     edge: { req: 'requests', socket: 'socket', broadcast: 'broadcast', view: 'view', cas: 'conditional write · ≤ {N10} s', job: 'transcode job', acquire: 'slot', start: 'start' },
   },
   slot: {
     title: 'A transcode takes a slot',
     lead: 'The admin sets how many transcodes may run at once, as a range. One TranscodeSlots object hands out leases: a job without one waits and asks again, and the range grows while jobs wait. A lease that nobody renews lapses, so a crashed job can never hold a slot for good.',
-    desc: 'Numbered steps. 1: api-videos puts the job on the transcode queue. 2: the media Worker consumes it. 3: it asks TranscodeSlots for a slot. 4: with no free slot the message comes back in sixty seconds without using up a delivery; with a slot the media Worker starts the Transcoder container. 5: the Transcoder renews its lease every minute. 6: it writes the renditions to R2. 7: it gives the slot back when the job is ready, has failed for good or was cancelled. The admin range sets how many slots are allowed: min normally, growing by one per job start or finish while jobs wait, up to max; a lease nobody renews lapses after ten minutes. Production allows at most {N3371} containers.',
+    desc: 'Numbered steps. 1: api-videos puts the job on the transcode queue. 2: the media Worker consumes it. 3: it asks TranscodeSlots for a slot. 4: with no free slot the message comes back in sixty seconds without using up a delivery; with a slot the media Worker starts the Transcoder container. 5: the Transcoder renews its lease every minute. 6: it writes the renditions to R2. 7: it gives the slot back when the job is ready, has failed for good or was cancelled. The admin range sets how many slots are allowed: min normally, growing by one per job start or finish while jobs wait, up to max; a lease nobody renews lapses after ten minutes. Production allows at most {N=3371} containers.',
     group: { cf: 'Cloudflare account' },
     node: {
       api: { name: 'api-videos', role: 'enqueues the job' },
@@ -30,7 +30,7 @@ export const scalingEn = {
       media: { name: 'Consumer', role: 'asks for a slot' },
       slots: { name: 'TranscodeSlots', role: 'lease lapses in {N10} min' },
       range: { name: 'Admin range', role: 'min–max at once' },
-      container: { name: 'Transcoder', role: 'standard-4 · ≤ {N3371}' },
+      container: { name: 'Transcoder', role: 'standard-4 · ≤ {N=3371}' },
       r2: { name: 'R2 renditions', role: 'pub/ · priv/' },
     },
     edge: { enqueue: 'enqueue', deliver: 'deliver', acquire: 'acquire', wait: 'no slot: again in {N60} s', start: 'start', renew: 'renew every minute', write: 'renditions', release: 'release', allowed: 'allowed slots' },

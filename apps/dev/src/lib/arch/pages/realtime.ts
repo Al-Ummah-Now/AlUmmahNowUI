@@ -110,7 +110,7 @@ const views: Builder = (d) => {
         { from: 'player', to: 'api', flow: 'request', label: e.view, step: 1, fromSide: 'e', toSide: 'w' },
         { from: 'api', to: 'shards', flow: 'request', label: e.inc, step: 2, fromSide: 'e', toSide: 'w' },
         { from: 'shards', to: 'record', flow: 'control', label: e.flush, step: 3, fromSide: 'e', toSide: 'w' },
-        { from: 'api', to: 'player', flow: 'delivery', label: e.answer, step: 4, fromSide: 's', toSide: 's' },
+        { from: 'api', to: 'player', flow: 'request', label: e.answer, step: 4, fromSide: 's', toSide: 's' },
       ],
     },
     wide: { colW: 250, rowH: 120, pad: 56 },
@@ -118,6 +118,8 @@ const views: Builder = (d) => {
       colW: 180,
       rowH: 100,
       iconSize: 34,
+      // the request and its answer run side by side into the account across its top edge: the tag sits below
+      tagBottom: ['cf'],
       at: stack([
         [['player'], 0],
         [['api'], 2.4],
@@ -129,7 +131,8 @@ const views: Builder = (d) => {
         { from: 'player', to: 'api', flow: 'request', label: e.view, step: 1, fromSide: 's', toSide: 'n' },
         { from: 'api', to: 'shards', flow: 'request', label: e.inc, step: 2, fromSide: 's', toSide: 'n' },
         { from: 'shards', to: 'record', flow: 'control', label: e.flush, step: 3, fromSide: 's', toSide: 'n' },
-        { from: 'api', to: 'player', flow: 'delivery', label: e.answer, step: 4, fromSide: 'e', toSide: 'e' },
+        // the answer climbs straight back beside the request: the two wires side by side, each with its words outside
+        { from: 'api', to: 'player', flow: 'request', label: e.answer, step: 4, fromSide: 'n', toSide: 's' },
       ],
     },
   };
@@ -177,13 +180,14 @@ const sketch: Builder = (d) => {
       cols: 1,
       at: Object.fromEntries([['worker', at(0, 0)], ...order.map((id, i) => [id, at(0, i + 1)])]),
       edges: [
-        { from: 'worker', to: 'opens', fromSide: 'w', toSide: 'w', bend: 34 },
-        { from: 'worker', to: 'tokens', fromSide: 'w', toSide: 'w', bend: 48 },
-        { from: 'worker', to: 'shard', fromSide: 'e', toSide: 'e', bend: -40 },
-        { from: 'shard', to: 'msgs', fromSide: 'w', toSide: 'w', bend: 34 },
-        { from: 'shard', to: 'attach', fromSide: 'w', toSide: 'w', bend: 48 },
-        { from: 'shard', to: 'dir', fromSide: 'e', toSide: 'e', bend: -54 },
-        { from: 'coal', to: 'shard', fromSide: 'e', toSide: 'e', bend: 70, dashed: true },
+        // side wires nest down their own lanes (sketch `lane`), the longer one outside
+        { from: 'worker', to: 'opens', fromSide: 'w', toSide: 'w', lane: 18 },
+        { from: 'worker', to: 'tokens', fromSide: 'w', toSide: 'w', lane: 32 },
+        { from: 'worker', to: 'shard', fromSide: 'e', toSide: 'e', lane: 18 },
+        { from: 'shard', to: 'msgs', fromSide: 'w', toSide: 'w', lane: 18 },
+        { from: 'shard', to: 'attach', fromSide: 'w', toSide: 'w', lane: 32 },
+        { from: 'shard', to: 'dir', fromSide: 'e', toSide: 'e', lane: 18 },
+        { from: 'coal', to: 'shard', fromSide: 'e', toSide: 'e', lane: 32, dashed: true },
       ],
     },
   };

@@ -5,7 +5,7 @@
  */
 import { stack, type ArchEdge, type ArchLayout, type ArchSpec } from '../arch.ts';
 import type { diagramsEn } from '../../../i18n/diagrams.en.ts';
-import { aiChecksUsd, aiRateLine } from './costs.ts';
+import { aiChecksUsd, aiMeterLine, aiRateLine } from './costs.ts';
 
 type Copy = typeof diagramsEn.overview;
 
@@ -36,7 +36,7 @@ export function overview(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
       node('media', 'cloudflare/workers', [2.3, 3]),
       node('container', 'cloudflare/containers', [3.3, 3]),
       node('slots', 'cloudflare/durable-objects', [4.3, 3]),
-      { ...node('workersAi', 'cloudflare/workers-ai', [5.85, 2.5]), rate: [aiRateLine(cc, locale)], meter: { lane: 'ai', usd: aiChecksUsd() } },
+      { ...node('workersAi', 'cloudflare/workers-ai', [5.85, 2.4]), rate: [aiRateLine(cc, locale), aiMeterLine(cc)], meter: { lane: 'ai', usd: aiChecksUsd() } },
       node('r2', 'cloudflare/r2', [7.15, 0]),
       node('d1', 'cloudflare/d1', [7.15, 1]),
       node('kv', 'cloudflare/kv', [7.15, 2]),
@@ -47,7 +47,7 @@ export function overview(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
       node('status', 'cloudflare/workers', [5.3, 4.15]),
       node('bunnyCdn', 'brand/bunny-cdn', [-0.3, 2.35]),
       node('bunnyStream', 'brand/bunny-stream', [-0.3, 3.35]),
-      node('ci', 'simple-icons/githubactions', [-0.75, 4.5]),
+      node('ci', 'simple-icons/githubactions', [-0.75, 4.35]),
       node('qf', 'lucide/book-open', [8.85, 0.5]),
       node('resend', 'simple-icons/resend', [8.85, 1.5]),
       node('push', 'lucide/bell', [8.85, 2.5]),
@@ -77,10 +77,11 @@ export function overview(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
     { from: 'front', to: 'apis', flow: 'request', label: e.bindings, fromSide: 's', toSide: 'n' },
     { from: 'apis', to: 'data', flow: 'request', label: e.data, fromSide: 'e', toSide: 'w' },
     { from: 'apiVideos', to: 'bunny', flow: 'media', label: e.upload, fromSide: 'w', toSide: 'e' },
-    { from: 'bunnyCdn', to: 'clients', flow: 'delivery', label: e.signedHls, fromSide: 'n', toSide: 's' },
+    // up the outside: Bunny's tag fills the top of its narrow box, so a wire out of the top would thread around it
+    { from: 'bunnyCdn', to: 'clients', flow: 'delivery', label: e.signedHls, fromSide: 'w', toSide: 'w' },
     { from: 'r2', to: 'cdn', flow: 'delivery', label: e.publicHls, fromSide: 'n', toSide: 'n' },
     { from: 'queues', to: 'async', flow: 'async', label: e.consume, fromSide: 'w', toSide: 'e' },
-    { from: 'async', to: 'ai', flow: 'request', label: e.ai, fromSide: 'e', toSide: 'w' },
+    { from: 'async', to: 'ai', flow: 'async', label: e.ai, fromSide: 'e', toSide: 'w' },
     { from: 'media', to: 'container', flow: 'media', fromSide: 'e', toSide: 'w' },
     { from: 'media', to: 'slots', flow: 'control', label: e.slot, fromSide: 'n', toSide: 'n' },
     { from: 'cf', to: 'providers', flow: 'request', label: e.providers, fromSide: 'e', toSide: 'w' },
@@ -91,24 +92,30 @@ export function overview(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
   // Arabic group titles take a taller line: more room between stacked groups, so the wire between them reads
   const wide: ArchLayout = { colW: 230, rowH: locale === 'ar' ? 212 : 186 };
 
-  // phone: two columns, the same groups stacked in reading order; each gap holds its wire's label beside the wire
+  // phone: two columns, the same groups stacked in reading order; each gap holds its wire's label beside the wire.
+  // Bunny sits on top: its signed stream drops straight into the clients, and the upload climbs a short margin
   const at = stack([
-    [['browsers', 'apps'], 0],
-    [['cdn', 'turnstile'], 2.5],
+    [['bunnyCdn', 'bunnyStream'], 0],
+    [['browsers', 'apps'], 2.3],
+    // the cache centred: both clients come down into its top
+    [['cdn'], 2.3],
+    [['turnstile'], 1.05],
     [['www', 'videos'], 1.8],
     [['adminWeb', 'cms'], 1.05],
     [['apiVideos', 'adminApi'], 2.3],
     [['auth', 'realtime'], 1.05],
     [['processor', 'scheduler'], 2.3],
-    [['costMonitor', 'media'], 1.05],
-    [['container', 'slots'], 1.05],
+    [['costMonitor'], 1.05],
+    // the media runner centred over what it starts: the container and the slot it leases
+    [['media'], 1.05],
+    [['container', 'slots'], 1.6],
     [['workersAi'], 2.5],
-    [['r2', 'd1'], 2.4],
+    [['d1', 'r2'], 2.4],
     [['kv', 'queues'], 1.05],
     [['logs', 'analytics'], 1.8],
     [['secrets', 'status'], 1.05],
-    [['bunnyCdn', 'bunnyStream'], 2.3],
-    [['qf', 'resend'], 2.05],
+    // room under the account for the providers wire's words beside it
+    [['qf', 'resend'], 2.6],
     [['push', 'google'], 1.05],
     [['ci'], 1.8],
   ]);
@@ -119,17 +126,28 @@ export function overview(c: Copy, cc: typeof diagramsEn.costs, locale: 'en' | 'a
     iconSize: 36,
     nameSize: 13,
     roleSize: 11.5,
+    growPad: { cf: { r: 28 } },
+    // the account's tag along its bottom edge: the clients' wires come in across a bare top edge
+    tagBottom: ['cf'],
     edges: [
-      { from: 'clients', to: 'edge', flow: 'request', label: e.https, fromSide: 's', toSide: 'n' },
+      { from: 'bunnyCdn', to: 'clients', flow: 'delivery', label: e.signedHls, fromSide: 's', toSide: 'n' },
+      // both clients come down into the CDN's top edge: Arabic's wider tiles leave no room to turn into its sides
+      { from: 'browsers', to: 'cdn', flow: 'request', label: e.https, fromSide: 's', toSide: 'n' },
+      { from: 'apps', to: 'cdn', flow: 'request', fromSide: 's', toSide: 'n' },
       { from: 'edge', to: 'front', flow: 'request', label: e.routes, fromSide: 's', toSide: 'n' },
       { from: 'front', to: 'apis', flow: 'request', label: e.bindings, fromSide: 's', toSide: 'n' },
       { from: 'apis', to: 'async', flow: 'async', label: e.consume, fromSide: 's', toSide: 'n' },
-      { from: 'async', to: 'ai', flow: 'request', label: e.ai, fromSide: 's', toSide: 'n' },
+      { from: 'media', to: 'container', flow: 'media', fromSide: 'w', toSide: 'n' },
+      { from: 'media', to: 'slots', flow: 'control', label: e.slot, fromSide: 'e', toSide: 'n' },
+      { from: 'async', to: 'ai', flow: 'async', label: e.ai, fromSide: 's', toSide: 'n' },
       { from: 'ai', to: 'data', flow: 'request', label: e.data, fromSide: 's', toSide: 'n' },
+      // up a lane inside the account's end side, clear of every group between
+      { from: 'r2', to: 'cdn', flow: 'delivery', label: e.publicHls, fromSide: 'e', toSide: 'e' },
       { from: 'data', to: 'ops', flow: 'control', label: e.logs, fromSide: 's', toSide: 'n' },
-      { from: 'cf', to: 'bunny', flow: 'media', label: e.upload, fromSide: 's', toSide: 'n' },
-      // opposite margins in both languages: the providers wire on the start side, the deploy wire on the end side, never crossing
-      { from: 'cf', to: 'providers', flow: 'request', label: e.providers, fromSide: 'w', toSide: 'w' },
+      { from: 'cf', to: 'bunny', flow: 'media', label: e.upload, fromSide: 'w', toSide: 'w' },
+      // the providers sit right under the account: a straight drop from its bottom edge (the deploy wire climbs the
+      // end margin, clear of it)
+      { from: 'cf', to: 'providers', flow: 'request', label: e.providers, fromSide: 's', toSide: 'n' },
       { from: 'ci', to: 'cf', flow: 'control', label: e.deploy, fromSide: 'e', toSide: 'e' },
     ],
   };

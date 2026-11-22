@@ -94,6 +94,17 @@ function wrap(s: string, size: number, max: number, code = false): string[] {
     } else line = next;
   }
   if (line) out.push(line);
+  // no scrap on the last line ("8", «أولًا» alone): the line before gives up its last word when the last line
+  // still fits (only at a space: a path piece keeps its place)
+  if (out.length > 1 && width(out[out.length - 1]!) < max / 3) {
+    const prev = out[out.length - 2]!;
+    const cut = prev.lastIndexOf(' ');
+    const moved = `${prev.slice(cut + 1)} ${out[out.length - 1]}`;
+    if (cut > 0 && width(moved) <= max) {
+      out[out.length - 2] = prev.slice(0, cut);
+      out[out.length - 1] = moved;
+    }
+  }
   return out;
 }
 
@@ -114,12 +125,29 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
 
   // participants: one tile per column, names wrapped to the tile
   // tiles leave room inside their column, so a boundary on the column edges never touches them
-  const tileW = layout.colW - (keyMode ? 16 : 20);
+  // the space over a message's arrow for its words, at a column width
+  const spanOf = (s: SeqMessage, w: number) => (s.from === s.to ? w - 34 - 14 : Math.abs(col.get(s.to)! - col.get(s.from)!) * w - BR - 20);
+  // desktop columns grow (a lattice step at a time) until no code token is cut (a call may break at its spaces;
+  // only a path too long for any column breaks after a '/', on two lines at most) and every message's words
+  // fit on two lines
+  let colW = layout.colW;
+  if (!keyMode) {
+    const fits = (w: number) =>
+      spec.steps.every((s) => {
+        if (isNote(s)) return true;
+        const span = spanOf(s, w);
+        const tokens = (s.code ?? '').split(' ').filter(Boolean);
+        const long = tokens.some((t) => codeW(t) > 300);
+        return wrap(s.label, LS, span).length <= 2 && tokens.every((t) => long || codeW(t) <= span) && (!long || wrap(s.code!, CS, span, true).length <= 2);
+      });
+    while (!fits(colW) && colW < layout.colW * 2) colW += 8;
+  }
+  const tileW = colW - (keyMode ? 16 : 20);
   const heads = spec.actors.map((a) => ({ a, name: keyMode ? [] : wrap(a.name, NS, tileW - 12), role: a.role && !keyMode ? wrap(a.role, RS, tileW - 12) : [] }));
   const headH = keyMode ? 8 + S + 4 + NS + 6 : Math.max(...heads.map((h) => 8 + S + 6 + h.name.length * (NS + LG) + h.role.length * (RS + LG) + 6));
   const headY = groupTop + tagH;
-  const baseW = PAD * 2 + layout.colW * spec.actors.length;
-  const cx = (id: string) => PAD + layout.colW * (col.get(id)! + 0.5);
+  const baseW = PAD * 2 + colW * spec.actors.length;
+  const cx = (id: string) => PAD + colW * (col.get(id)! + 0.5);
 
   // rows
   interface Row {
@@ -137,8 +165,8 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
   for (const s of spec.steps) {
     if (isNote(s)) {
       // on a phone a note spans the whole canvas, so it stays a line or two
-      const x0 = keyMode ? PAD + 4 : Math.min(cx(s.over[0]), cx(s.over[1])) - layout.colW / 2 + 10;
-      const x1 = keyMode ? baseW - PAD - 4 : Math.max(cx(s.over[0]), cx(s.over[1])) + layout.colW / 2 - 10;
+      const x0 = keyMode ? PAD + 4 : Math.min(cx(s.over[0]), cx(s.over[1])) - colW / 2 + 10;
+      const x1 = keyMode ? baseW - PAD - 4 : Math.max(cx(s.over[0]), cx(s.over[1])) + colW / 2 - 10;
       const lines = wrap(s.note, RS, x1 - x0 - 20);
       const h = lines.length * (RS + LG + 2) + 14;
       rows.push({ s, y, lines, code: [], lx: x0 });
@@ -149,8 +177,9 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
     const b = cx(s.to);
     const self = s.from === s.to;
     const lo = self ? a + 34 : Math.min(a, b) + BR + 8;
-    // desktop: the words stay over their own arrow (a self-call's words stop short of the next lifeline)
-    const span = self ? layout.colW - 34 - 14 : Math.abs(b - a) - BR - 20;
+    // desktop: the words stay over their own arrow (a self-call's words stop short of the next lifeline); the
+    // columns are as wide as the words need (colW below)
+    const span = spanOf(s, colW);
     const max = layout.narrow ? baseW - 2 * PAD - 12 : span;
     const lines = wrap(s.label, LS, max);
     const code = s.code ? wrap(s.code, CS, max, true) : [];
@@ -192,8 +221,8 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
   out.push('<g class="an-groups">');
   for (const g of groups) {
     const cs = g.members.map((m) => col.get(m)!);
-    const x0 = PAD + layout.colW * Math.min(...cs);
-    const x1 = PAD + layout.colW * (Math.max(...cs) + 1);
+    const x0 = PAD + colW * Math.min(...cs);
+    const x1 = PAD + colW * (Math.max(...cs) + 1);
     const bx = opts.rtl ? W - x1 : x0;
     const bw = x1 - x0;
     out.push(`<g class="an-group an-group-boundary" data-group="${g.id}" data-members="${g.members.join(' ')}">`);
@@ -243,8 +272,8 @@ export function renderSeq(spec: SeqSpec, layout: SeqLayout, opts: SeqOpts): stri
     if (!isNote(row.s)) continue;
     const s = row.s;
     // on a phone a note spans the whole canvas, so it stays a line or two
-    const x0 = keyMode ? PAD + 4 : Math.min(cx(s.over[0]), cx(s.over[1])) - layout.colW / 2 + 10;
-    const x1 = keyMode ? W - PAD - 4 : Math.max(cx(s.over[0]), cx(s.over[1])) + layout.colW / 2 - 10;
+    const x0 = keyMode ? PAD + 4 : Math.min(cx(s.over[0]), cx(s.over[1])) - colW / 2 + 10;
+    const x1 = keyMode ? W - PAD - 4 : Math.max(cx(s.over[0]), cx(s.over[1])) + colW / 2 - 10;
     const h = row.lines.length * (RS + LG + 2) + 14;
     const bx = opts.rtl ? W - x1 : x0;
     out.push(`<rect class="an-seq-note-box" x="${r(bx)}" y="${r(row.y)}" width="${r(x1 - x0)}" height="${r(h)}" rx="8"/>`);

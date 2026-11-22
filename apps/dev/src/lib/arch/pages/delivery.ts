@@ -44,8 +44,10 @@ const rails: Builder = (d) => {
         { from: 'edge', to: 'viewers', flow: 'delivery', fromSide: 'w', toSide: 'e', stream: true },
         { from: 'library', to: 'bunnyCdn', flow: 'delivery', fromSide: 'w', toSide: 'e' },
         { from: 'bunnyCdn', to: 'viewers', flow: 'delivery', fromSide: 'w', toSide: 'e', stream: true },
-        { from: 'api', to: 'privRail', flow: 'control', label: e.key, fromSide: 'e', toSide: 's' },
-        { from: 'api', to: 'pubRail', flow: 'control', label: e.purge, fromSide: 'e', toSide: 'e' },
+        // each control wire ends at the box it acts on: the signing key at the media Worker, the purge at R2 public's
+        // cached copies; the key leaves from the top so the two never cross
+        { from: 'api', to: 'worker', flow: 'control', label: e.key, fromSide: 'n', toSide: 's' },
+        { from: 'api', to: 'pub', flow: 'control', label: e.purge, fromSide: 'e', toSide: 'e' },
       ],
     },
     wide: { colW: 200, rowH: 165 },
@@ -53,17 +55,26 @@ const rails: Builder = (d) => {
       colW: 180,
       rowH: 100,
       iconSize: 34,
-      at: stack([
-        [['viewers'], 0],
-        [['api'], 2.3],
-        [['cache', 'domain'], 1.95],
-        [['pub'], 1.05],
-        [['edge', 'worker'], 1.95],
-        [['priv'], 1.05],
-        [['bunnyCdn', 'library'], 2.5],
-      ]),
+      // three stream wires climb the outer lane to the viewers: room for three lanes outside the account boundary
+      pad: 76,
+      // and two dashed lanes (key, purge) inside the account beside the rails, in either language's lattice snap
+      growPad: { cf: { l: 16, r: 16 } },
+      // api in the end column, over the rails' end tiles: its purge and signing-key wires turn down the lane
+      // just beside it instead of crossing the whole width twice
+      at: {
+        ...stack([
+          [['viewers'], 0],
+          [['api'], 2.9],
+          [['cache', 'domain'], 1.95],
+          [['pub'], 1.05],
+          [['edge', 'worker'], 1.95],
+          [['priv'], 1.05],
+          [['bunnyCdn', 'library'], 2.5],
+        ]),
+        api: [1, 2.9],
+      },
       edges: [
-        { from: 'viewers', to: 'api', flow: 'request', label: e.ask, fromSide: 's', toSide: 'n' },
+        { from: 'viewers', to: 'api', flow: 'request', label: e.ask, fromSide: 's', toSide: 'w' },
         { from: 'pub', to: 'domain', flow: 'delivery', fromSide: 'e', toSide: 's' },
         { from: 'domain', to: 'cache', flow: 'delivery', fromSide: 'w', toSide: 'e' },
         { from: 'cache', to: 'viewers', flow: 'delivery', label: e.hls, fromSide: 'w', toSide: 'w', stream: true },
@@ -72,6 +83,8 @@ const rails: Builder = (d) => {
         { from: 'edge', to: 'viewers', flow: 'delivery', fromSide: 'w', toSide: 'w', stream: true },
         { from: 'library', to: 'bunnyCdn', flow: 'delivery', fromSide: 'w', toSide: 'e' },
         { from: 'bunnyCdn', to: 'viewers', flow: 'delivery', fromSide: 'w', toSide: 'w', stream: true },
+        // the nearer U first: it takes the inner lane, and the signing key nests outside it
+        { from: 'api', to: 'pub', flow: 'control', label: e.purge, fromSide: 'e', toSide: 'e' },
         { from: 'api', to: 'worker', flow: 'control', label: e.key, fromSide: 'e', toSide: 'e' },
       ],
     },
@@ -108,6 +121,8 @@ const miss: Builder = (d, locale) => {
       colW: 180,
       rowH: 100,
       iconSize: 34,
+      // two lanes down each side: room for them and their words
+      pad: 56,
       at: stack([
         [['player'], 0],
         [['edge'], 2],
@@ -163,7 +178,7 @@ const caches: Builder = (d) => {
       cols: 1,
       at: { api: [0, 0], settings: [0, 1], jwks: [0, 2], revoked: [0, 3], share: [0, 4], mp4: [0, 5] },
       // one column: each wire bows out through the margin at its own distance
-      edges: ['settings', 'jwks', 'revoked', 'share', 'mp4'].map((to, i) => ({ from: 'api', to, fromSide: 'w' as const, toSide: 'w' as const, bend: 34 + i * 16 })),
+      edges: ['settings', 'jwks', 'revoked', 'share', 'mp4'].map((to, i) => ({ from: 'api', to, fromSide: 'w' as const, toSide: 'w' as const, lane: 18 + i * 14 })),
     },
   };
 };

@@ -134,6 +134,8 @@ function leaves(v: unknown, path = ''): [string, string][] {
 const prose = (s: string) =>
   s
     .replace(/https?:\/\/\S+/g, '')
+    // the dev copy's number placeholders: {N1000}, and {N=3371} for an exact figure
+    .replace(/\{N=?[\d.]+\}/g, '')
     .replace(/\b(?:[A-Za-z][A-Za-z0-9.-]*\d[A-Za-z0-9.-]*|\d+(?:\.\d+)+)\b/g, '');
 
 describe('Arabic UI strings have no hard-coded numbers (placeholders instead)', () => {

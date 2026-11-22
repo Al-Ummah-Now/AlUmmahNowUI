@@ -84,6 +84,7 @@ const stores: Builder = (d) => {
       ]),
       edges: [
         { from: 'apiVideos', to: 'r2', flow: 'request', label: e.records, fromSide: 'w', toSide: 'w' },
+        { from: 'apiVideos', to: 'd1', flow: 'request', fromSide: 'w', toSide: 'w' },
         { from: 'processor', to: 'd1', flow: 'async', label: e.rows, fromSide: 'e', toSide: 'e' },
         { from: 'auth', to: 'kv', flow: 'control', fromSide: 'w', toSide: 'w' },
         { from: 'comms', to: 'do', flow: 'request', fromSide: 'e', toSide: 'e' },
@@ -190,7 +191,7 @@ const sketch: Builder = (d) => {
       nodeW: 250,
       cols: 1,
       at: { api: [0, 0], r2: [0, 1], d1: [0, 2], kv: [0, 3], dobj: [0, 4], ae: [0, 5] },
-      edges: ['r2', 'd1', 'kv', 'dobj', 'ae'].map((to, i) => ({ from: 'api', to, fromSide: 'w' as const, toSide: 'w' as const, bend: 34 + i * 16 })),
+      edges: ['r2', 'd1', 'kv', 'dobj', 'ae'].map((to, i) => ({ from: 'api', to, fromSide: 'w' as const, toSide: 'w' as const, lane: 18 + i * 14 })),
     },
   };
 };
