@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ERROR_CARD_STRINGS, errorCardHtml, errorCodeLabel } from '../../../packages/render/src/error-page';
 
-const base = { buttonClass: { primary: 'button button-quiet', secondary: 'button button-outline' } } as const;
+const base = { buttonClass: { primary: 'button button-primary', secondary: 'button button-outline' } } as const;
 
 describe('the shared error card (wiki guides/error-pages.md)', () => {
   it('404: code line, one h1, search, Go back (hidden until there is history), home last', () => {

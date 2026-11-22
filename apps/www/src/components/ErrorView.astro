@@ -16,7 +16,8 @@ const home = { label: t.goHome, href: `/${locale}/`, icon: 'home' as const };
 const html = errorCardHtml({
   locale,
   kind: card,
-  buttonClass: { primary: 'button button-quiet', secondary: 'button button-outline' },
+  // Gold for the card's one main action, as on every app's error page; the rest outlined
+  buttonClass: { primary: 'button button-primary', secondary: 'button button-outline' },
   // 404: the site search and the way home; 500/503: try the same page again, or home
   primary: card === 'notFound' ? home : { label: t.tryAgain, href: Astro.url.pathname, icon: 'retry' },
   secondary: card === 'notFound' ? [] : [home],
