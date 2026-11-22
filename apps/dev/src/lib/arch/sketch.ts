@@ -119,6 +119,8 @@ export interface SketchEdge {
   tone?: Tone;
   /** moves the tag along the curve (0–1, default 0.5) */
   tagAt?: number;
+  /** the tag tilts along a slanted stretch even where a level spot is near: both languages draw it the same way */
+  tagTilt?: boolean;
   /** a U through a lane this far out from the start side (a phone fan-out): out sideways, along the lane, and in;
    * wires sharing a start nest, the widest lane on the outermost port */
   lane?: number;
@@ -196,7 +198,18 @@ function wrapTo(text0: string, size: number, bold: boolean, room: number): strin
     if (greedy(words, size, bold, mid).length <= first.length) hi = mid;
     else lo = mid;
   }
-  return greedy(words, size, bold, hi);
+  const lines = greedy(words, size, bold, hi);
+  // never one lone word on the last line: the word before it comes down too, when that line still fits
+  for (let k = lines.length - 1; k > 0; k--) {
+    const prev = lines[k - 1]!.split(' ');
+    if (lines[k]!.includes(' ') || prev.length < 2) break;
+    const moved = `${prev[prev.length - 1]} ${lines[k]}`;
+    if (textWidth(moved, size, bold) > room) break;
+    lines[k - 1] = prev.slice(0, -1).join(' ');
+    lines[k] = moved;
+  }
+  // a list that wraps stacks its items: no «·» left hanging at a line's end
+  return lines.map((l, k) => (k < lines.length - 1 ? l.replace(/[\s\u00a0]+[·•]$/, '') : l));
 }
 
 /**
@@ -388,6 +401,12 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
         const up = (y: (typeof group)[number]) => (y.k === 'a' ? y.c.b : y.c.a)[1] < p[1];
         const key = (y: (typeof group)[number]) => (up(y) ? -1e4 + y.c.e.lane! : 1e4 - y.c.e.lane!);
         group.sort((u, v) => key(u) - key(v));
+      } else if (vertical && group.every((y) => y.c.e.fromSide === y.c.e.toSide)) {
+        // bows out of this side and back into the same side elsewhere nest the same way: the one reaching farthest
+        // starts farthest from where they head, so it bows round the others instead of leaving over the top of them
+        const other = (y: (typeof group)[number]) => (y.k === 'a' ? y.c.b : y.c.a)[1];
+        const key = (y: (typeof group)[number]) => (other(y) < p[1] ? -1e4 - other(y) : 1e4 - other(y));
+        group.sort((u, v) => key(u) - key(v));
       } else {
         // the rest in the order their other ends lie along the side, so no two cross at the tile (the Arabic mirror
         // reverses where the sources sit, not the list order)
@@ -398,7 +417,9 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
       // pile; a head beside a plain start 18 px, two starts 12 px, two laned starts 16 px, as a fan stays 12 px apart
       // out to its lanes)
       const laned = group.every((y) => y.c.e.lane != null);
-      const steps: number[] = group.map((y, j) => (j === 0 ? 0 : y.k === 'b' && group[j - 1]!.k === 'b' ? 28 : y.k === 'b' || group[j - 1]!.k === 'b' ? 18 : laned ? 16 : 12));
+      // (two bows leaving one side head out at nearly the same angle: 24 px apart, or they run as one line for a while)
+      const bows = !laned && vertical && group.every((y) => y.c.e.fromSide === y.c.e.toSide);
+      const steps: number[] = group.map((y, j) => (j === 0 ? 0 : y.k === 'b' && group[j - 1]!.k === 'b' ? 28 : bows ? 24 : y.k === 'b' || group[j - 1]!.k === 'b' ? 18 : laned ? 16 : 12));
       const pos = steps.map((_, j) => steps.slice(0, j + 1).reduce((t, v) => t + v, 0));
       const mid = pos[pos.length - 1]! / 2;
       group.forEach((y, j) => {
@@ -506,6 +527,8 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
     // first 17 to 24 px from its own curve (the pen's outline overshoots the box by about 3) and 12 px from every other
     // one; where a fan leaves no such room, 13 to 24 px from its own and still 12 from the rest, then 8, and only
     // then just clear of them
+    // (a tag set to tilt looks along the whole curve for a tilted spot before it settles for a level one)
+    for (const tiltOnly of e.tagTilt ? [true, false] : [false])
     for (const [ownMin, otherMin] of [[17, 12], [13, 12], [13, 8], [13, 0]] as const) {
     if (best) break;
     for (const t of [e.tagAt ?? 0.5, 0.45, 0.55, 0.4, 0.6, 0.35, 0.65, 0.3, 0.7, 0.25, 0.75, 0.2, 0.8, 0.15, 0.85, 0.1, 0.9]) {
@@ -536,14 +559,14 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
         if (cloudBand.some((e) => overlaps(q, e, 0))) continue;
         if (nodeBoxes.some((nb) => overlaps(q, { x: nb.x - 4, y: nb.y - 4, w: nb.w + 12, h: nb.h + 12 }, 6)) || placedTags.some((pb) => overlaps(q, pb, 12))) continue;
         const d = Math.min(...ownPts(c).map(([x, y]) => Math.hypot(x - cx, y - cy)));
-        if (!pick || d < pick.d - 0.5) pick = { q, d, rot: 0 };
+        if (!tiltOnly && (!pick || d < pick.d - 0.5)) pick = { q, d, rot: 0 };
       }
       // beside a slanted stretch no level spot keeps the tag's middle near the line (it meets the line only at a
       // corner and reads as detached): the tag tilts to the line, as a hand-drawn label would, 16 to 24 px off it
       let rot = Math.atan2(q2[1] - p[1], q2[0] - p[0]);
       if (rot > Math.PI / 2) rot -= Math.PI;
       if (rot < -Math.PI / 2) rot += Math.PI;
-      if (Math.abs(rot) > 0.1 && Math.abs(rot) < 1.05 && (!pick || pick.d > th / 2 + 34)) {
+      if (Math.abs(rot) > 0.1 && Math.abs(rot) < 1.05 && (!pick || pick.d > th / 2 + 34 || tiltOnly)) {
         const cs = Math.cos(rot);
         const sn = Math.sin(rot);
         for (const [s, gap] of [18, 20, 22, 24].flatMap((g) => [[side, g], [-side, g]]) as [number, number][]) {

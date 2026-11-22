@@ -25,9 +25,9 @@ const copies: Builder = (d) => {
         node('videoJson', 'cloudflare/r2', n.videoJson, [4.35, 1.35]),
         // transcoding in one row under the account's middle: the queue between the slots it asks and the Transcoder it
         // starts, both straight across, out to the far column: no empty corner
-        node('slots', 'cloudflare/durable-objects', n.slots, [1.3, 2.7]),
-        node('queue', 'cloudflare/queues', n.queue, [3.15, 2.7]),
-        node('container', 'cloudflare/containers', n.container, [4.35, 2.7]),
+        node('slots', 'cloudflare/durable-objects', n.slots, [1.3, 2.6]),
+        node('queue', 'cloudflare/queues', n.queue, [3.15, 2.6]),
+        node('container', 'cloudflare/containers', n.container, [4.35, 2.6]),
       ],
       groups: [
         { id: 'realtime', label: c.group.realtime, caption: c.caption.realtime, members: ['sockets', 'topics'] },
@@ -167,7 +167,7 @@ const fixes: Builder = (d) => {
     wide: { colW: 340, rowH: 200, nodeW: 240, cols: 3 },
     narrow: {
       colW: 280,
-      rowH: 160,
+      rowH: 170,
       nodeW: 250,
       cols: 1,
       at: { blind: [0, 0], cas: [0, 1], shards: [0, 2], upsert: [0, 3], sockets: [0, 4], limiter: [0, 5], reserve: [0, 6] },

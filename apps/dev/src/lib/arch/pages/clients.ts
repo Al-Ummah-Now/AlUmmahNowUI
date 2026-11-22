@@ -61,7 +61,7 @@ const map: Builder = (d) => {
       rowH: 100,
       iconSize: 34,
       // Bunny's tag sits top-left in its box: room on the left keeps it off the uploads wire dropping into the tile
-      growPad: { bunnyNet: { l: 64, r: 64 } },
+      growPad: { bunnyNet: { l: 64, r: 64 }, cf: { l: 24 } },
       at: stack([
         [['browsers', 'embeds'], 0],
         [['www', 'videos'], 2.7],
@@ -80,8 +80,8 @@ const map: Builder = (d) => {
         { from: 'sites', to: 'apis', flow: 'request', label: e.bindings, fromSide: 's', toSide: 'n' },
         { from: 'apis', to: 'r2', flow: 'media', label: e.media, fromSide: 's', toSide: 'n' },
         { from: 'native', to: 'core', flow: 'request', label: e.uniffi, fromSide: 's', toSide: 'n' },
-        { from: 'core', to: 'apiVideos', flow: 'request', label: e.api, fromSide: 'w', toSide: 'w' },
         { from: 'core', to: 'auth', flow: 'request', label: e.signIn, fromSide: 'w', toSide: 'w' },
+        { from: 'core', to: 'apiVideos', flow: 'request', label: e.api, fromSide: 'w', toSide: 'w' },
         { from: 'importer', to: 'r2', flow: 'media', label: e.upload, fromSide: 'e', toSide: 'e' },
         { from: 'importer', to: 'bunny', flow: 'media', label: e.upload, fromSide: 's', toSide: 'n' },
       ],

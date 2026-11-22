@@ -22,14 +22,16 @@ const map: Builder = (d) => {
         node('limits', 'lucide/gauge', n.limits, [1.35, 0]),
         node('worker', 'cloudflare/workers', n.worker, [1.35, 1]),
         node('dir', DO, n.dir, [2.75, 0.2]),
-        node('coalescer', DO, n.coalescer, [2.75, 1.45]),
+        node('coalescer', DO, n.coalescer, [2.75, 1.35]),
         node('s0', DO, n.s0, [4.15, 0]),
         node('s1', DO, n.s1, [4.15, 1]),
         node('sn', DO, n.sn, [4.15, 2]),
         node('apiVideos', 'cloudflare/workers', n.apiVideos, [1.35, 3.1]),
         node('processor', 'cloudflare/workers', n.processor, [1.35, 4.1]),
         node('views', DO, n.views, [4.15, 3.1]),
-        node('record', 'cloudflare/r2', n.record, [5.55, 3.1]),
+        // the record in the account's bottom row beside the producers, the counter's flush stepping down into it: beside
+        // the counter, the column above it stood empty the height of the shards
+        node('record', 'cloudflare/r2', n.record, [2.75, 4.1]),
       ],
       groups: [
         { id: 'shards', label: c.group.shards, caption: c.caption.shards, members: ['s0', 's1', 'sn'] },
@@ -49,7 +51,7 @@ const map: Builder = (d) => {
         { from: 'coalescer', to: 'dir', flow: 'async', label: e.paced, fromSide: 'n', toSide: 's' },
         { from: 'dir', to: 'shards', flow: 'async', label: e.forward, fromSide: 'e', toSide: 'w' },
         { from: 'apiVideos', to: 'views', flow: 'request', label: e.counter, fromSide: 'e', toSide: 'w' },
-        { from: 'views', to: 'record', flow: 'control', label: e.flush, fromSide: 'e', toSide: 'w' },
+        { from: 'views', to: 'record', flow: 'control', label: e.flush, fromSide: 's', toSide: 'e' },
       ],
     },
     wide: { colW: 240, rowH: 140 },
@@ -77,7 +79,7 @@ const map: Builder = (d) => {
         { from: 'dir', to: 'shards', flow: 'async', label: e.forward, fromSide: 's', toSide: 'n' },
         { from: 'worker', to: 'shards', flow: 'request', label: e.shard, fromSide: 'w', toSide: 'w' },
         { from: 'apiVideos', to: 'views', flow: 'request', label: e.counter, fromSide: 'e', toSide: 'e' },
-        { from: 'views', to: 'record', flow: 'control', label: e.flush, fromSide: 's', toSide: 'n' },
+        { from: 'views', to: 'record', flow: 'control', label: e.flush, fromSide: 's', toSide: 'e' },
       ],
     },
   };
@@ -166,7 +168,7 @@ const sketch: Builder = (d) => {
       { from: 'worker', to: 'shard', fromSide: 's', toSide: 'n' },
       { from: 'shard', to: 'msgs', fromSide: 'w', toSide: 'e' },
       { from: 'shard', to: 'attach', fromSide: 'e', toSide: 'w' },
-      { from: 'shard', to: 'dir', fromSide: 's', toSide: 'n', bend: -30, tag: c.tag.join, tone: 'green', tagAt: 0.45 },
+      { from: 'shard', to: 'dir', fromSide: 's', toSide: 'n', bend: -30, tag: c.tag.join, tone: 'green', tagAt: 0.45, tagTilt: true },
       { from: 'coal', to: 'shard', fromSide: 'n', toSide: 's', bend: -30, dashed: true },
     ] as SketchEdge[],
   };

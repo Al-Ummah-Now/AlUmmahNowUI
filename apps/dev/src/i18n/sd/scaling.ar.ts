@@ -47,7 +47,7 @@ export const scalingAr: typeof scalingEn = {
       blind: { title: 'كاتبون عمي', note: 'قراءة، تعديل، كتابة' },
       cas: { title: 'المقارنة ثم التبديل', note: 'كتابة فقط إن لم يتغيّر، ثم إعادة' },
       shards: { title: 'عدّادات مجزّأة', note: '{N4} أجزاء لكل مرئي' },
-      upsert: { title: 'إدراج أو تحديث بالدفعات', note: 'D1، حتى {N500} صف للعبارة' },
+      upsert: { title: 'إدراج أو تحديث مجمّع', note: 'D1، حتى {N500} صف للعبارة' },
       sockets: { title: 'أجزاء المقابس', note: 'لا كائن عامًّا واحدًا' },
       limiter: { title: 'ربط تحديد المعدّل', note: 'لا عدّاد KV متسابق' },
       reserve: { title: 'احجز ثم سوِّ', note: 'ميزانية الذكاء بتحديث واحد' },

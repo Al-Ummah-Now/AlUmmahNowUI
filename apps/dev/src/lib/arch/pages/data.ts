@@ -68,6 +68,8 @@ const stores: Builder = (d) => {
       colW: 180,
       rowH: 100,
       iconSize: 34,
+      // room inside the account's side for the search-rows words beside the outer lane, clear of the dashed edge
+      growPad: { cf: { l: 6 } },
       at: stack([
         [['apiVideos', 'processor'], 0],
         [['auth', 'comms'], 1.05],

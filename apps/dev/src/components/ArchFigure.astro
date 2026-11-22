@@ -52,7 +52,8 @@ const uid = `${id}-${headingId ?? 'fig'}`;
       {scenarioLabels(dg.costs, locale).map((s, i) => (
         <label class="an-scenario">
           <input type="radio" name="an-scenario" value={s.id} checked={i === 0} id={`${uid}-${s.id}`} />
-          <span>{s.label}</span>
+          {/* each value («٢٠ ساعة مرفوعة»، "2,000 viewer-hours") stays on one line: the label breaks only between them */}
+          <span>{s.label.split(/(?<=[،,:؛])\s+/).map((part, k) => (<>{k > 0 && ' '}<span class="an-nw">{part}</span></>))}</span>
         </label>
       ))}
     </fieldset>

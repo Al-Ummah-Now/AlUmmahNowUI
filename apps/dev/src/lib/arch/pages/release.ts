@@ -40,7 +40,9 @@ const train: Builder = (d) => {
         { from: 'build', to: 'stage', flow: 'request', label: e.deploy, step: 2, fromSide: 'e', toSide: 'w' },
         { from: 'stage', to: 'stageE2E', flow: 'request', label: e.test, step: 3, fromSide: 's', toSide: 'n' },
         { from: 'stage', to: 'secrets', flow: 'request', label: e.check, step: 3, fromSide: 's', toSide: 'n' },
-        { from: 'gates', to: 'zero', flow: 'request', label: e.pass, step: 4, fromSide: 'w', toSide: 'w' },
+        // straight down from the gates into the candidate: down the start margin it would continue the local tests'
+        // wire on the same line and read as one
+        { from: 'gates', to: 'zero', flow: 'request', label: e.pass, step: 4, fromSide: 's', toSide: 'n' },
         { from: 'zero', to: 'full', flow: 'request', label: e.promote, step: 5, fromSide: 'e', toSide: 'w' },
         { from: 'full', to: 'media', flow: 'media', label: e.media, step: 6, fromSide: 'e', toSide: 'w' },
         { from: 'full', to: 'rollback', flow: 'control', label: e.fail, step: 7, fromSide: 's', toSide: 'w' },
@@ -52,8 +54,10 @@ const train: Builder = (d) => {
       colW: 180,
       rowH: 100,
       iconSize: 34,
-      // two lanes down the end margin: the local tests wire outside, the stage tests wire inside it
+      // the local tests wire down the start margin alone; the stage tests wire drops into its tile from above, past
+      // the gates' title, which stands at the far end
       pad: 48,
+      titleEnd: ['gates'],
       at: stack([
         [['tag', 'build'], 0],
         [['stage'], 1.25],
@@ -65,10 +69,8 @@ const train: Builder = (d) => {
       edges: [
         { from: 'tag', to: 'build', flow: 'request', label: e.build, step: 1, fromSide: 'e', toSide: 'w' },
         { from: 'build', to: 'stage', flow: 'request', label: e.deploy, step: 2, fromSide: 's', toSide: 'e' },
-        // into the two gate tiles from their outer sides: a wire from above would cross the gates' title. The stage
-        // tests wire routes before the local tests one, so it keeps the lane by the tiles and the longer wire runs outside
-        { from: 'stage', to: 'stageE2E', flow: 'request', label: e.test, step: 3, fromSide: 'w', toSide: 'w' },
         { from: 'tag', to: 'localE2E', flow: 'request', label: e.local, step: 1, fromSide: 'w', toSide: 'w' },
+        { from: 'stage', to: 'stageE2E', flow: 'request', label: e.test, step: 3, fromSide: 'w', toSide: 'n' },
         { from: 'stage', to: 'secrets', flow: 'request', label: e.check, step: 3, fromSide: 'e', toSide: 'e' },
         { from: 'gates', to: 'zero', flow: 'request', label: e.pass, step: 4, fromSide: 's', toSide: 'n' },
         { from: 'zero', to: 'full', flow: 'request', label: e.promote, step: 5, fromSide: 'e', toSide: 'w' },
@@ -107,9 +109,10 @@ const who: Builder = (d) => {
         { id: 'github', label: c.group.github, kind: 'platform', tag: 'simple-icons/github', members: ['mono', 'auth', 'ui', 'dev', 'cms', 'actions'] },
         { id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', members: ['qa', 'stage', 'prod', 'status'] },
       ],
-      // the five release triggers fan in along the top of GitHub Actions (the engine spreads the ports)
+      // the five release triggers fan in along the top of GitHub Actions (the engine spreads the ports); the outer repo
+      // on each side routes first and takes the run nearer Actions, so the inner one's run passes above it, not across
       edges: [
-        ...(['mono', 'auth', 'ui', 'dev', 'cms'] as const).map((from) => ({ from, to: 'actions', flow: 'request' as const, fromSide: 's' as const, toSide: 'n' as const })),
+        ...(['mono', 'auth', 'ui', 'cms', 'dev'] as const).map((from) => ({ from, to: 'actions', flow: 'request' as const, fromSide: 's' as const, toSide: 'n' as const })),
         { from: 'actions', to: 'cf', flow: 'control', label: e.release, fromSide: 's', toSide: 'n' },
         { from: 'stage', to: 'prod', flow: 'control', label: e.promote, fromSide: 'e', toSide: 'w' },
         { from: 'status', to: 'prod', flow: 'request', label: e.checks, fromSide: 'w', toSide: 'e' },
