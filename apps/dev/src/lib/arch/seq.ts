@@ -79,17 +79,34 @@ const codeW = (s: string) => [...s].length * CS * 0.62;
 /** the widest call a desktop column grows to hold on one line */
 const CODE_CAP = 440;
 
-/** Greedy word wrap by the build-time width estimate. */
+/**
+ * Greedy word wrap by the build-time width estimate. Code is then balanced: the narrowest width that
+ * keeps the same number of lines, so a long route splits near its middle and no piece of it
+ * ("seg_<n>.m4s", "reason=stall_timeout") is left alone on a short last line.
+ */
 function wrap(s0: string, size: number, max: number, code = false): string[] {
+  const first = greedyWrap(s0, size, max, code);
+  if (!code || first.length < 2) return first;
+  let best = first;
+  for (let m = max - 4; m > 0; m -= 4) {
+    const next = greedyWrap(s0, size, m, code);
+    if (next.length !== first.length) break;
+    best = next;
+  }
+  return best;
+}
+
+function greedyWrap(s0: string, size: number, max: number, code = false): string[] {
   const s = code ? s0 : bindPhrases(s0);
   const width = (x: string) => (code ? codeW(x) : textWidth(x, size));
   if (width(s) <= max) return [s];
   const out: string[] = [];
   let line = '';
   // a path longer than the line breaks after a '/', never in the middle of a name
-  const words = s.split(' ').flatMap((w) => (code && width(w) > max ? w.split(/(?<=[/.(?&])/) : [w]));
+  // (or before its query: "…/playback" | "?exclude=…")
+  const words = s.split(' ').flatMap((w) => (code && width(w) > max ? w.split(/(?<=[/.(&])|(?=\?)/) : [w]));
   for (const w of words) {
-    const glue = code && /[/.(?&]$/.test(line) ? '' : ' ';
+    const glue = code && (/[/.(&]$/.test(line) || w.startsWith('?')) ? '' : ' ';
     const next = line ? `${line}${glue}${w}` : w;
     if (line && width(next) > max) {
       out.push(line);

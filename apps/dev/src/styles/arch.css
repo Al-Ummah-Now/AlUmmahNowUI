@@ -1080,6 +1080,8 @@ html[data-mode='dark'] .an-iso .an-iso-shadow {
 .an-terms {
   margin: 0;
   max-width: 72ch;
+  /* no word alone on the last line («.Cloudflare» under the rest) */
+  text-wrap: pretty;
   font-size: 0.9rem;
   color: var(--muted);
 }

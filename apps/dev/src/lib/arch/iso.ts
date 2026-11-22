@@ -135,12 +135,13 @@ function sceneSpec(c: Copy, variant: string): SceneSpec {
     pipes: [
       // flows between neighbours drop straight down the end side, beside the next platform's tag; the providers sit
       // right under compute, so Cloudflare calls them; compute reaches its data, and playback climbs from bunny.net to
-      // the people, in two lanes nested up the start side (the shorter inside)
+      // the people, in two lanes nested up the start side (the shorter inside), far enough apart that their glows
+      // never meet into one doubled line
       { id: 'req', from: ['people', 'x1', 0.12], to: ['cf', 'y0', 0], flow: 'request', label: c.wire.requests, drop: true },
       { id: 'api', from: ['cf', 'x1', 0.12], to: ['providers', 'y0', 0], flow: 'request', drop: true },
-      { id: 'data', from: ['cf', 'y1', 0.5], to: ['cfData', 'x0', 0.5], flow: 'request', lane: 14 },
+      { id: 'data', from: ['cf', 'y1', 0.5], to: ['cfData', 'x0', 0.5], flow: 'request', lane: 16 },
       { id: 'up', from: ['cfData', 'x1', 0.24], to: ['bunny', 'y0', 0], flow: 'media', label: c.wire.upload, drop: true },
-      { id: 'play', from: ['bunny', 'x0', 0.8], to: ['people', 'y1', 0.5], flow: 'delivery', label: c.wire.playback, lane: 30 },
+      { id: 'play', from: ['bunny', 'x0', 0.8], to: ['people', 'y1', 0.5], flow: 'delivery', label: c.wire.playback, lane: 62 },
     ],
   };
 }

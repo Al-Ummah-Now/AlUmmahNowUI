@@ -16,8 +16,8 @@ const map: Builder = (d) => {
       desc: c.desc,
       motion: 'pulses',
       nodes: [
-        node('resend', 'simple-icons/resend', n.resend, [0, 0]),
-        node('apps', 'lucide/users', n.apps, [-0.3, 1.42]),
+        node('resend', 'simple-icons/resend', n.resend, [-0.75, 0]),
+        node('apps', 'lucide/users', n.apps, [-0.75, 1.3]),
         node('turnstile', 'cloudflare/turnstile', n.turnstile, [1.4, 0]),
         node('limiters', 'cloudflare/waf', n.limiters, [2.6, 0]),
         node('issuer', 'cloudflare/workers', n.issuer, [1.4, 1.3]),
@@ -26,9 +26,10 @@ const map: Builder = (d) => {
         node('kvStore', 'cloudflare/kv', n.kvStore, [3.8, 0]),
         node('d1', 'cloudflare/d1', n.d1, [3.8, 1.3]),
         node('revKv', 'cloudflare/kv', n.revKv, [3.8, 2.6]),
-        // under the clients, near the apps: the token arrives short, the check runs along the bottom up into the
-        // revocations, and the account needs no column of its own for it
-        node('videos', 'cloudflare/workers', n.videos, [1.4, 3.95]),
+        // inside the account, left of Auth on the clients' bottom row: the token drops from the apps into it, the
+        // check runs under Auth up into the revocations, and the figure needs no fourth row (an outside column
+        // of two boxes beside four rows left a block of nothing under the apps)
+        node('videos', 'cloudflare/workers', n.videos, [0.3, 2.6]),
       ],
       groups: [
         { id: 'auth', label: c.group.auth, caption: c.caption.auth, pad: 28, members: ['turnstile', 'limiters', 'issuer', 'profile', 'authAdmin', 'kvStore', 'd1', 'revKv'] },
@@ -45,11 +46,13 @@ const map: Builder = (d) => {
         { from: 'issuer', to: 'kvStore', flow: 'request', fromSide: 'e', toSide: 'w' },
         { from: 'issuer', to: 'd1', flow: 'request', fromSide: 'e', toSide: 'w' },
         { from: 'issuer', to: 'revKv', flow: 'async', label: e.revoke, fromSide: 'e', toSide: 'w' },
-        { from: 'videos', to: 'revKv', flow: 'request', label: e.check, fromSide: 'e', toSide: 's' },
+        // its words under the run along Auth's foot: above it they would sit inside Auth
+        { from: 'videos', to: 'revKv', flow: 'request', label: e.check, fromSide: 's', toSide: 's', labelBelow: true },
         { from: 'apps', to: 'videos', flow: 'request', label: e.token, fromSide: 's', toSide: 'w' },
       ],
     },
-    wide: { colW: 300, rowH: 170, pad: 40 },
+    // room under the run along Auth's foot for its words
+    wide: { colW: 300, rowH: 170, pad: 40, growPad: { cf: { b: 16 } } },
     narrow: {
       colW: 180,
       rowH: 100,
@@ -97,7 +100,10 @@ const signin: Builder = (d) => {
       hop: 1.1,
       nodes: [
         node('user', 'lucide/browser', n.user, [0, 0]),
-        node('resend', 'simple-icons/resend', n.resend, [1.1, -1.2]),
+        // in the channel between the browser's redirect and the app's exchanges, outside the account: the code e-mail
+        // drops from the issuer's foot outside the app's exchanges and runs straight in, the browser's two wires keep
+        // the issuer's side to themselves (straight), and the figure needs no row above for it
+        node('resend', 'simple-icons/resend', n.resend, [1.1, 1.0]),
         node('issuer', 'cloudflare/workers', n.issuer, [2.2, 0]),
         // the stores one gap beside the issuer and the API, the refresh tokens' store halfway down between them: no
         // empty block inside the account
@@ -110,7 +116,7 @@ const signin: Builder = (d) => {
       groups: [{ id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', tagEnd: true, members: ['issuer', 'd1', 'api', 'revKv'] }],
       edges: [
         { from: 'user', to: 'issuer', flow: 'request', label: e.authorize, step: 1, fromSide: 'e', toSide: 'w' },
-        { from: 'issuer', to: 'resend', flow: 'async', label: e.email, step: 2, fromSide: 'n', toSide: 'e' },
+        { from: 'issuer', to: 'resend', flow: 'async', label: e.email, step: 2, fromSide: 's', toSide: 'e' },
         { from: 'issuer', to: 'user', flow: 'request', label: e.redirect, step: 3, fromSide: 'w', toSide: 'e' },
         { from: 'user', to: 'app', flow: 'request', label: e.callback, step: 4, fromSide: 's', toSide: 'n' },
         { from: 'app', to: 'issuer', flow: 'request', label: e.exchange, step: 5, fromSide: 'e', toSide: 's' },
@@ -202,7 +208,7 @@ const roles: Builder = (d) => {
         { from: 'record', to: 'can', fromSide: 's', toSide: 'n' },
         // the farther wire first (its end spreads to the outer side) and bowed in proportion to its length, so the two
         // leave at the same angle and never cross
-        { from: 'channelRoles', to: 'record', fromSide: 'w', toSide: 'w', bend: 110 },
+        { from: 'channelRoles', to: 'record', fromSide: 'w', toSide: 'w', bend: 140 },
         { from: 'channelRoles', to: 'token', fromSide: 'w', toSide: 'w', bend: 30 },
       ],
     },

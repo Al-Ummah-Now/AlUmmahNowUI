@@ -54,7 +54,13 @@ export interface ArchEdge {
   to: string;
   flow: Flow;
   label?: string;
+  /** a horizontal run's label goes below the wire first (a run along a group's foot would otherwise put its
+   *  words inside that group) */
+  labelBelow?: boolean;
   step?: number;
+  /** where along the wire (0–1 of its length) the step badge is sought first, instead of near its start: a wire
+   *  that leaves beside a sibling takes its badge out on its own run */
+  badgeAt?: number;
   fromSide?: Side | Side[];
   toSide?: Side | Side[];
   /** marching-light stream on top of the wire */
@@ -76,8 +82,8 @@ export interface ArchLayout {
   pad?: number;
   /** edges replaced in this layout (e.g. fewer wires on a phone) */
   edges?: ArchEdge[];
-  /** extra room inside a boundary's side (pre-mirror left/right), added when a margin wire's label needs it */
-  growPad?: Record<string, { l?: number; r?: number }>;
+  /** extra room inside a boundary's side (pre-mirror left/right, or bottom), added when a margin wire's label needs it */
+  growPad?: Record<string, { l?: number; r?: number; b?: number }>;
   /** boundaries whose corner tag sits on the bottom edge here: wires come in across a bare top edge */
   tagBottom?: string[];
   /** groups whose title sits at the far end of the top edge here: a wire drops in across the near corner */
@@ -285,7 +291,7 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     const x0 = Math.min(...rects.map((q) => q.x)) - pad - (layout.growPad?.[g.id]?.l ?? 0);
     const y0 = Math.min(...rects.map((q) => q.y)) - top;
     let x1 = Math.max(...rects.map((q) => q.x + q.w)) + pad + (layout.growPad?.[g.id]?.r ?? 0);
-    const y1 = Math.max(...rects.map((q) => q.y + q.h)) + bottom;
+    const y1 = Math.max(...rects.map((q) => q.y + q.h)) + bottom + (layout.growPad?.[g.id]?.b ?? 0);
     const lw = g.tagLogo ? g.tagLogo.w + 24 : big ? textWidth(g.label, 12.5, true) + (g.tag ? 30 : 0) + 20 : textWidth(g.label, 12.5, true) + 4;
     // a boundary's tag sits inside its box, clear of the border (never on it)
     // a group is at least as wide as its title, with 6 px clear of each border
@@ -893,7 +899,13 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
         ),
       );
     const WIRE = BR + 7;
-    for (let d = 22; d < rt.len - 22; d += 4) {
+    const ds: number[] = [];
+    for (let d = 22; d < rt.len - 22; d += 4) ds.push(d);
+    if (rt.e.badgeAt != null) {
+      const want = rt.len * rt.e.badgeAt;
+      ds.sort((p, q) => Math.abs(p - want) - Math.abs(q - want));
+    }
+    for (const d of ds) {
       const c = pointAt(rt.pts, d);
       const q = { x: c.x - HW, y: c.y - BR, w: 2 * HW, h: 2 * BR };
       // 5 px from every label and badge already placed, 6 px (and a bit) from every other wire
@@ -980,7 +992,7 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
             const first = rt.pts[0]!;
             const last = rt.pts[rt.pts.length - 1]!;
             // (or in a group whose runs take their words below here: the title row above leaves one language no room)
-            const under = groupsBelow.some((g) => p.x > g.x && p.x < g.x + g.w && p.y > g.y && p.y < g.y + g.h);
+            const under = rt.e.labelBelow || groupsBelow.some((g) => p.x > g.x && p.x < g.x + g.w && p.y > g.y && p.y < g.y + g.h);
             cands.push(...((first.y > p.y && last.y > p.y) || under ? [below, above] : [above, below]));
           } else {
             const right = { x: p.x + off, y: p.y - lh / 2, w: lw, h: lh };
@@ -1244,8 +1256,12 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
   for (const b of badges) {
     const same = shared.get(b.n)!;
     const sub = same.length > 1 ? (subLetters[same.indexOf(b.rt)] ?? '') : '';
-    const text = formatNumber(b.n, opts.locale ?? 'en') + sub;
-    out.push(`<g class="an-badge an-f-${b.rt.e.flow}${sub ? ' an-badge-sub' : ''}" data-for="${b.rt.id}" data-covers>${sub ? `<rect x="${r(b.c.x - 13)}" y="${r(b.c.y - BR)}" width="26" height="${2 * BR}" rx="${BR}"/>` : `<circle cx="${r(b.c.x)}" cy="${r(b.c.y)}" r="${BR}"/>`}<text x="${r(b.c.x)}" y="${r(b.c.y + 4)}" text-anchor="middle"${sub && opts.locale === 'ar' ? ' direction="rtl"' : ''}>${text}</text></g>`);
+    // Arabic «٢ب» reads digit first, so the digit sits on the right. Bidi resolution of a two-glyph
+    // text was not reliable (one badge drew «ب٢»), so the badge is drawn left-to-right with
+    // bidi-override and its glyphs in visual order: letter, then digit.
+    const ar = sub && opts.locale === 'ar';
+    const text = ar ? sub + formatNumber(b.n, 'ar') : formatNumber(b.n, opts.locale ?? 'en') + sub;
+    out.push(`<g class="an-badge an-f-${b.rt.e.flow}${sub ? ' an-badge-sub' : ''}" data-for="${b.rt.id}" data-covers>${sub ? `<rect x="${r(b.c.x - 13)}" y="${r(b.c.y - BR)}" width="26" height="${2 * BR}" rx="${BR}"/>` : `<circle cx="${r(b.c.x)}" cy="${r(b.c.y)}" r="${BR}"/>`}<text x="${r(b.c.x)}" y="${r(b.c.y + 4)}" text-anchor="middle"${ar ? ' direction="ltr" unicode-bidi="bidi-override"' : ''}>${text}</text></g>`);
   }
   out.push('</g>');
   out.push('</svg>');

@@ -3,11 +3,12 @@ export const scalingEn = {
   copies: {
     title: 'Many copies at once',
     lead: 'Cloudflare runs every Worker as many copies in many places at the same time. Anything that must add up exactly gets a named owner: sockets and view counts live on named Durable Object shards, and transcodes wait for a slot under a hard ceiling.',
-    desc: 'Viewers and creators reach the Workers, which run as many isolates at once. Inside the Cloudflare account three groups show where many copies meet one truth. Realtime: sockets spread over shard objects named sockets:<n>, eight by default and sixty-four at most, and per-channel topic directories forward a broadcast only to shards with a subscriber. Counting: each view goes to one of four views:<videoId>:<shard> objects, which write back to the video JSON at most every ten seconds with a compare-and-swap on its version tag. Transcoding: jobs wait on the transcode queue, consumed ten at a time per environment, take a slot from the single TranscodeSlots object and only then start a Transcoder container; production allows at most {N=3371} containers.',
+    desc: 'Viewers send requests and creators send uploads to the Workers, which run as many isolates at once. Inside the Cloudflare account three groups show where many copies meet one truth. Realtime: sockets spread over shard objects named sockets:<n>, eight by default and sixty-four at most, and per-channel topic directories forward a broadcast only to shards with a subscriber. Counting: each view goes to one of four views:<videoId>:<shard> objects, which write back to the video JSON at most every ten seconds with a compare-and-swap on its version tag. Transcoding: jobs wait on the transcode queue, consumed ten at a time per environment, take a slot from the single TranscodeSlots object and only then start a Transcoder container; production allows at most {N=3371} containers.',
     group: { cf: 'Cloudflare account', realtime: 'Realtime', counting: 'Counting', transcode: 'Transcoding' },
     caption: { realtime: 'a full shard sends you to the next', counting: 'a thousand parallel views count exactly', transcode: 'admin min–max under the ceiling' },
     node: {
-      users: { name: 'Viewers & creators', role: 'web · apps' },
+      users: { name: 'Viewers', role: 'web · apps' },
+      creators: { name: 'Creators', role: 'Studio uploads' },
       workers: { name: 'Workers', role: 'many isolates at once' },
       sockets: { name: 'sockets:<n>', role: '{N8} by default · {N64} max' },
       topics: { name: 'topic:<channel>', role: 'subscribed shards' },
@@ -17,7 +18,7 @@ export const scalingEn = {
       slots: { name: 'TranscodeSlots', role: 'one object' },
       container: { name: 'Transcoder', role: 'at most {N=3371}' },
     },
-    edge: { req: 'requests', socket: 'socket', broadcast: 'broadcast', view: 'view', cas: 'conditional write · ≤ {N10} s', job: 'transcode job', acquire: 'slot', start: 'start' },
+    edge: { req: 'requests', upload: 'uploads', socket: 'socket', broadcast: 'broadcast', view: 'view', cas: 'conditional write · ≤ {N10} s', job: 'transcode job', acquire: 'slot', start: 'start' },
   },
   slot: {
     title: 'A transcode takes a slot',
