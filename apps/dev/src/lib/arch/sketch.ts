@@ -121,6 +121,9 @@ export interface SketchEdge {
   tagAt?: number;
   /** the tag tilts along a slanted stretch even where a level spot is near: both languages draw it the same way */
   tagTilt?: boolean;
+  /** the tag's middle this many px below the middle of the gap between the foot of one tile and the head of the one
+   * below it: two tags stacked in one gap sit the same distance apart in both languages, whatever their widths */
+  tagGap?: [string, string, number];
   /** a U through a lane this far out from the start side (a phone fan-out): out sideways, along the lane, and in;
    * wires sharing a start nest, the widest lane on the outermost port */
   lane?: number;
@@ -518,6 +521,7 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
     // a tag sits beside its curve, never on it: try both sides at a few points along it
     const tw = textWidth(e.tag, 15, true) + 18;
     const th = 26;
+    const gapY = e.tagGap ? (box.get(e.tagGap[0])!.y + box.get(e.tagGap[0])!.h + box.get(e.tagGap[1])!.y) / 2 + e.tagGap[2] : null;
     let best: Box | null = null;
     // a tag along a slanted stretch is drawn tilted to it, by this many radians (0: level)
     let bestRot = 0;
@@ -548,7 +552,7 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
       for (const [s, gap] of [15, 18, 21, 12, 24, 9, 27, 30, 6, 34].flatMap((g) => [[side, g], [-side, g]]) as [number, number][]) {
         const half = Math.abs(dir[0]) * (tw / 2) + Math.abs(dir[1]) * (th / 2);
         const cx = p[0] + dir[0] * (half + gap) * s;
-        const cy = p[1] + dir[1] * (half + gap) * s;
+        const cy = gapY ?? p[1] + dir[1] * (half + gap) * s;
         const q = { x: cx - tw / 2, y: cy - th / 2, w: tw, h: th };
         if (q.x < 8 || q.y < 60 || q.x + q.w > W - 8 || q.y + q.h > Hc - 8) continue;
         const own = dist(q, ownPts(c));
@@ -566,7 +570,7 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
       let rot = Math.atan2(q2[1] - p[1], q2[0] - p[0]);
       if (rot > Math.PI / 2) rot -= Math.PI;
       if (rot < -Math.PI / 2) rot += Math.PI;
-      if (Math.abs(rot) > 0.1 && Math.abs(rot) < 1.05 && (!pick || pick.d > th / 2 + 34 || tiltOnly)) {
+      if (gapY === null && Math.abs(rot) > 0.1 && Math.abs(rot) < 1.05 && (!pick || pick.d > th / 2 + 34 || tiltOnly)) {
         const cs = Math.cos(rot);
         const sn = Math.sin(rot);
         for (const [s, gap] of [18, 20, 22, 24].flatMap((g) => [[side, g], [-side, g]]) as [number, number][]) {

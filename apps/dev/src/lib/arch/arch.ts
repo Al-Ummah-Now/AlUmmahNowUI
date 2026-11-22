@@ -61,6 +61,8 @@ export interface ArchEdge {
   /** where along the wire (0–1 of its length) the step badge is sought first, instead of near its start: a wire
    *  that leaves beside a sibling takes its badge out on its own run */
   badgeAt?: number;
+  /** where along the wire (0–1 of its length) its words are sought first: both languages label it in the same gap */
+  labelAt?: number;
   fromSide?: Side | Side[];
   toSide?: Side | Side[];
   /** marching-light stream on top of the wire */
@@ -78,6 +80,8 @@ export interface ArchLayout {
   roleSize?: number;
   /** group ids to leave out in this layout */
   hideGroups?: string[];
+  /** groups drawn without their caption here (it repeats what a boundary drawn here already says) */
+  hideCaptions?: string[];
   /** canvas margin (default 28); more when wires arc around the outside */
   pad?: number;
   /** edges replaced in this layout (e.g. fewer wires on a phone) */
@@ -95,6 +99,9 @@ export interface ArchLayout {
   /** widest spacing between wires leaving one side of a tile (default 2 lattice steps): more where a middle
    * wire's words sit on its own line between two neighbours */
   portStep?: number;
+  /** a label beside a wire between groups keeps this far from every group it isn't in (default 4): in the middle
+   * of the gap, not against one side of it */
+  labelClear?: number;
 }
 export interface ArchSpec {
   id: string;
@@ -274,7 +281,9 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
   }
 
   // 2. groups around their members (inner first)
-  const groupSpecs = spec.groups.filter((g) => !layout.hideGroups?.includes(g.id));
+  const groupSpecs = spec.groups
+    .filter((g) => !layout.hideGroups?.includes(g.id))
+    .map((g) => (layout.hideCaptions?.includes(g.id) ? { ...g, caption: undefined } : g));
   const groups = new Map<string, GroupBox>();
   const depthOf = (g: ArchGroup): number => 1 + Math.max(0, ...g.members.map((m) => groupSpecs.find((x) => x.id === m)).filter(Boolean).map((x) => depthOf(x!)));
   const ordered = [...groupSpecs].sort((a, b) => depthOf(a) - depthOf(b));
@@ -978,7 +987,9 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     for (const s of order) {
       const horiz = s.a.y === s.b.y;
       // middle first, then outwards: a short segment may hold a label that overhangs its ends
-      for (const t of [0.5, 0.38, 0.62, 0.26, 0.74, 0.14, 0.86, 0.05, 0.95, 0.2, 0.8, 0.32, 0.68, 0.44, 0.56]) {
+      // (kept clear of the groups, a label needs finer steps along a long run to find the middle of a gap)
+      const fine = layout.labelClear && s.len > 0 ? Array.from({ length: Math.floor(s.len / 4) }, (_, k) => (k * 4) / s.len) : [];
+      for (const t of [0.5, 0.38, 0.62, 0.26, 0.74, 0.14, 0.86, 0.05, 0.95, 0.2, 0.8, 0.32, 0.68, 0.44, 0.56, ...fine]) {
         const p = { x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t };
         if (!horiz && s.len < 10) continue;
         const own = segRects(rt);
@@ -1004,6 +1015,12 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     }
     // never on a wire or a group's border: a label always sits beside its line
     for (const c of cands) c.wires.push(...borders);
+    if (rt.e.labelAt !== undefined) {
+      const aim = pointAt(rt.pts, rt.len * rt.e.labelAt);
+      const far = (c: { q: Rect }) => Math.hypot(c.q.x + c.q.w / 2 - aim.x, c.q.y + c.q.h / 2 - aim.y);
+      cands.sort((p, q) => far(p) - far(q));
+    }
+    const clear = layout.labelClear ?? 4;
     // first choice: outside every group the wire doesn't run inside (a wire between two groups is labelled in
     // the gap between them, not inside one of them), and never in a group's title row
     const ends = [rt.e.from, rt.e.to].map((id) => nodes.get(id)?.box ?? groups.get(id)?.box).filter(Boolean) as Rect[];
@@ -1013,9 +1030,9 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     // best: 12 px from every other wire too, so no wire runs close beside another wire's words
     const ownSegs = segRects(rt);
     const roomy = (q: Rect) => !others.some((o) => intersects(q, o, 12)) && !ownSegs.some((o) => intersects(q, o, 11.5));
-    hit = cands.find((c) => free(c.q, c.wires) && roomy(c.q) && !titleRows.some((t) => intersects(c.q, t, 4)) && !foreign.some((g) => intersects(c.q, g, 4)));
+    hit = cands.find((c) => free(c.q, c.wires) && roomy(c.q) && !titleRows.some((t) => intersects(c.q, t, 4)) && !foreign.some((g) => intersects(c.q, g, clear)));
     hit ??= cands.find((c) => free(c.q, c.wires) && roomy(c.q) && !titleRows.some((t) => intersects(c.q, t, 4)));
-    hit ??= cands.find((c) => free(c.q, c.wires) && !titleRows.some((t) => intersects(c.q, t, 4)) && !foreign.some((g) => intersects(c.q, g, 4)));
+    hit ??= cands.find((c) => free(c.q, c.wires) && !titleRows.some((t) => intersects(c.q, t, 4)) && !foreign.some((g) => intersects(c.q, g, clear)));
     hit ??= cands.find((c) => free(c.q, c.wires) && !titleRows.some((t) => intersects(c.q, t, 4)));
     if (!hit) {
       // last resort: the nearest free spot around the wire's middle, still clear of every node and label
@@ -1040,6 +1057,9 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     let covers = false;
     if (!hit) {
       const lh = 17;
+      // the wire runs on into both ends of the pill: Arabic words take the wider measure plus room, so the line
+      // stops about 8 px short of them on each side (as the Latin pill's do)
+      if (lwAr !== lw0) lw = lwAr + 12;
       const others = routed.filter((x) => x !== rt).flatMap((x) => segRects(x));
       const segs = rt.pts.slice(1).map((p, i) => ({ a: rt.pts[i]!, b: p, len: Math.abs(p.x - rt.pts[i]!.x) + Math.abs(p.y - rt.pts[i]!.y), at: 0 }));
       let run = 0;

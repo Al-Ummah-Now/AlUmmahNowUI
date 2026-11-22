@@ -38,10 +38,10 @@ const train: Builder = (d) => {
         { from: 'tag', to: 'build', flow: 'request', label: e.build, step: 1, fromSide: 'e', toSide: 'w' },
         { from: 'tag', to: 'localE2E', flow: 'request', label: e.local, step: 1, fromSide: 'w', toSide: 'w' },
         { from: 'build', to: 'stage', flow: 'request', label: e.deploy, step: 2, fromSide: 'e', toSide: 'w' },
+        // both step-3 badges just under Stage, side by side at one height in both languages (the two drops leave
+        // far enough apart for that)
         { from: 'stage', to: 'stageE2E', flow: 'request', label: e.test, step: 3, fromSide: 's', toSide: 'n' },
-        // its badge on its own drop into the secrets checks, like the stage tests' on theirs: by its start it would
-        // sit against the stage tests' wire beside it
-        { from: 'stage', to: 'secrets', flow: 'request', label: e.check, step: 3, fromSide: 's', toSide: 'n', badgeAt: 0.92 },
+        { from: 'stage', to: 'secrets', flow: 'request', label: e.check, step: 3, fromSide: 's', toSide: 'n' },
         // straight down from the gates into the candidate: down the start margin it would continue the local tests'
         // wire on the same line and read as one
         { from: 'gates', to: 'zero', flow: 'request', label: e.pass, step: 4, fromSide: 's', toSide: 'n' },
@@ -51,7 +51,8 @@ const train: Builder = (d) => {
         { from: 'media', to: 'rollback', flow: 'control', fromSide: 's', toSide: 'e' },
       ],
     },
-    wide: { colW: 240, rowH: 160, pad: 56, iconSize: 46, nameSize: 14.5, roleSize: 12.5 },
+    // the two drops out of Stage spread apart, so they read as two wires and each carries its badge
+    wide: { colW: 240, rowH: 160, pad: 56, iconSize: 46, nameSize: 14.5, roleSize: 12.5, portStep: 56 },
     narrow: {
       colW: 180,
       rowH: 100,

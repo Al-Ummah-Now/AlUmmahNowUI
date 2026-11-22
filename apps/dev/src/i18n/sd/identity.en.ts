@@ -5,7 +5,7 @@ export const identityEn = {
     lead: 'One issuer signs everyone in for every app. Its own account page and admin are clients like any other app. Users, sessions and refresh tokens live in its D1 database; revocations are copied to KV, which the videos services read on every request.',
     desc: 'The apps on the left sign in through the issuer at auth.*, sending a one-time PKCE proof. Inside the Cloudflare account, the Auth group holds the issuer, the profile app and the auth admin (both OAuth clients of the issuer), Turnstile in monitor mode and the rate limiters in front of the issuer, and three stores: AUTH_STORAGE in KV, the AUTH_DB D1 database where refresh tokens rotate, and the TOKEN_REVOCATIONS KV namespace. The issuer sends email codes through Resend. The apps call the videos services with a fifteen-minute access token, and the videos services check the revocation KV. Auth depends on no app.',
     group: { cf: 'Cloudflare account', auth: 'Auth', videos: 'Videos' },
-    caption: { auth: 'auth depends on no app' },
+    caption: { auth: 'auth depends on no app', videos: 'same Cloudflare account' },
     node: {
       apps: { name: 'Apps', role: 'web · native · TV' },
       resend: { name: 'Resend', role: 'email codes' },

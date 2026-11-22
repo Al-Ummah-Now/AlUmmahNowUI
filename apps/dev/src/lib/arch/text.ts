@@ -34,10 +34,36 @@ const WORD = String.raw`(?:[A-Za-z0-9<{*$]|[(\[/.](?=[A-Za-z0-9<{*]))(?:[\w.\-/:
 // names joined by spaces are one run, so «Workers KV» keeps its order in Arabic
 const LATIN_RUN = new RegExp(`${WORD}(?: ${WORD})*`, 'g');
 
+/**
+ * A run's bracket that its partner doesn't close inside the run («(Next.js على Workers)»: "(Next.js" … "Workers)")
+ * stays outside the isolate, with the Arabic, so the pair resolves right to left around the words; a bracket the run
+ * closes itself («(api-videos)») stays in.
+ */
+function trimBrackets(run: string): [string, string, string] {
+  let pre = '';
+  let post = '';
+  let core = run;
+  const open = (c: string) => (c === '(' ? ')' : c === '[' ? ']' : '');
+  if (open(core[0] ?? '') && !core.includes(open(core[0]!))) {
+    pre = core[0]!;
+    core = core.slice(1);
+  }
+  const last = core[core.length - 1] ?? '';
+  const opener = last === ')' ? '(' : last === ']' ? '[' : '';
+  if (opener && !core.includes(opener)) {
+    post = last;
+    core = core.slice(0, -1);
+  }
+  return [pre, core, post];
+}
+
 /** Wrap every Latin run of an Arabic string in an isolate (LRI … PDI), so the bidi algorithm never reorders it. */
 export function isolateLatin(s: string, always = false): string {
   if (!always && !hasArabic(s)) return s;
-  return s.replace(LATIN_RUN, (run) => `${LRI}${run}${PDI}`);
+  return s.replace(LATIN_RUN, (run) => {
+    const [pre, core, post] = trimBrackets(run);
+    return `${pre}${LRI}${core}${PDI}${post}`;
+  });
 }
 
 /** An Arabic string split into its Latin runs and the Arabic between them (for HTML: each run goes in a <bdi>). */
@@ -46,11 +72,22 @@ export function splitLatin(s: string): { t: string; latin: boolean }[] {
   const out: { t: string; latin: boolean }[] = [];
   let last = 0;
   for (const m of s.matchAll(LATIN_RUN)) {
-    if (m.index! > last) out.push({ t: s.slice(last, m.index), latin: false });
-    out.push({ t: m[0], latin: true });
+    const [pre, core, post] = trimBrackets(m[0]);
+    const before = s.slice(last, m.index) + pre;
+    if (before) {
+      const prev = out[out.length - 1];
+      if (prev && !prev.latin) prev.t += before;
+      else out.push({ t: before, latin: false });
+    }
+    out.push({ t: core, latin: true });
+    if (post) out.push({ t: post, latin: false });
     last = m.index! + m[0].length;
   }
-  if (last < s.length) out.push({ t: s.slice(last), latin: false });
+  if (last < s.length) {
+    const prev = out[out.length - 1];
+    if (prev && !prev.latin) prev.t += s.slice(last);
+    else out.push({ t: s.slice(last), latin: false });
+  }
   return out;
 }
 
