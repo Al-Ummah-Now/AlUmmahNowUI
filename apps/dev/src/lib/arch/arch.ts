@@ -343,7 +343,8 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
       { x: b.x + b.w, y: b.y, w: 0, h: b.h },
     ])
       // an account boundary is a long dashed line: a wire running beside it reads as part of it, so keep well off
-      gb.g.kind === 'boundary' ? router.penalise(rc, 11, 40) : router.penalise(rc, 9, 12);
+      if (gb.g.kind === 'boundary') router.penalise(rc, 11, 40);
+      else router.penalise(rc, 9, 12);
   }
   // nothing runs along the drawing's own edges: a scroll box opens on a cut wire otherwise
   router.penalise({ x: 0, y: 0, w: W, h: 0 }, 10, 200);
