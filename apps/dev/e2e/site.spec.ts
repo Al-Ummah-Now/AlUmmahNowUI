@@ -38,7 +38,7 @@ test('/ redirects to /en/; unknown paths are a real 404 page in both languages',
   await expect(page.locator('.ep[lang=en] h1')).toHaveText('Page not found');
   await expect(page.locator('.ep[lang=ar] h2')).toHaveText('الصفحة غير موجودة');
   await expect(page.locator('.ep[lang=ar] .ep-code')).toHaveText('خطأ ٤٠٤');
-  await expect(page.locator('meta[name=robots]')).toHaveAttribute('content', 'noindex');
+  await expect(page.locator('meta[name=robots]')).toHaveAttribute('content', 'noindex, nofollow');
   const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
   expect(axe.violations).toEqual([]);
 });
