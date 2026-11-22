@@ -113,7 +113,7 @@ const device: Builder = (d) => {
         { from: 'tv', to: 'api', flow: 'request', label: e.call, step: 7, fromSide: 'w', toSide: 'e' },
       ],
     },
-    wide: { colW: 210, rowH: 170, pad: 84 },
+    wide: { colW: 210, rowH: 170, pad: 100 },
     narrow: {
       // the code and token steps run down side by side between the TV and the issuer: a wide column gives each its words
       colW: 270,

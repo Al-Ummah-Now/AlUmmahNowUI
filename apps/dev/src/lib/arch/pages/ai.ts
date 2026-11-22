@@ -147,8 +147,8 @@ const scan: Builder = (d) => {
         { from: 'processor', to: 'guard', flow: 'request', step: 5, fromSide: 'e', toSide: 'e' },
         { from: 'processor', to: 'ext', flow: 'request', label: e.ext, step: 6, fromSide: 'e', toSide: 'e' },
         // settle returns under the tiles: two wires side by side have no room for both step badges
-        { from: 'processor', to: 'budget', flow: 'control', label: e.settle, step: 7, fromSide: 's', toSide: 's' },
         { from: 'processor', to: 'signals', flow: 'async', label: e.decide, step: 8, fromSide: 's', toSide: 'n' },
+        { from: 'processor', to: 'budget', flow: 'control', label: e.settle, step: 7, fromSide: 's', toSide: 's' },
         { from: 'signals', to: 'admin', flow: 'request', label: e.flag, step: 9, fromSide: 's', toSide: 'n' },
       ],
     },

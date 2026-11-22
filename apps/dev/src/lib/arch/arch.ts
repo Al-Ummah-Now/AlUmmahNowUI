@@ -277,7 +277,7 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     const pad = g.pad ?? (big ? 18 : 12);
     const low = big && !!layout.tagBottom?.includes(g.id);
     // room for the title above the members, clear of the border (Arabic line boxes are taller)
-    const top = low ? pad + 10 : big ? 58 : opts.locale === 'ar' ? 42 : 34;
+    const top = low ? pad + 10 : big ? 58 : opts.locale === 'ar' ? 46 : 34;
     // a caption sits along the bottom, clear of the border (Arabic line boxes are taller)
     const bottom = low ? 58 : g.caption ? (opts.locale === 'ar' ? 34 : 28) : pad;
     const x0 = Math.min(...rects.map((q) => q.x)) - pad - (layout.growPad?.[g.id]?.l ?? 0);
@@ -478,7 +478,20 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     };
     // wires bound for the same place keep their order left to right, so the Arabic figure (laid out mirrored) runs
     // them right to left: the same wires sit side by side in the same order in both languages
-    list.sort((p, q) => key(p) - key(q) || (opts.rtl && !vertical ? q.edge - p.edge : 0));
+    // two L wires between the same two tiles nest: the same wire takes the port nearest the other tile at both ends
+    // (otherwise the upper one's run would reach the outer lane and cross the lower one's rise)
+    const isL = (x: { edge: number }) => (chosen[x.edge]!.fromSide === 'e' || chosen[x.edge]!.fromSide === 'w') !== (chosen[x.edge]!.toSide === 'e' || chosen[x.edge]!.toSide === 'w');
+    // and two L wires turning the same way toward ends level with each other: the one that turns sooner (its end
+    // nearer) takes the port on the side they turn to, so its run passes inside the other's corner
+    const lTie = (p: { edge: number; other: Pt }, q: { edge: number; other: Pt }) => {
+      if (!isL(p) || !isL(q)) return 0;
+      const toward = (vertical ? p.other.y : p.other.x) >= mid;
+      if (p.other.x === q.other.x && p.other.y === q.other.y) return toward ? q.edge - p.edge : p.edge - q.edge;
+      if ((vertical ? p.other.y : p.other.x) !== (vertical ? q.other.y : q.other.x)) return 0;
+      const far = (x: { other: Pt }) => Math.abs((vertical ? x.other.x : x.other.y) - (vertical ? own.x + own.w / 2 : own.y + own.h / 2));
+      return toward ? far(q) - far(p) : far(p) - far(q);
+    };
+    list.sort((p, q) => key(p) - key(q) || lTie(p, q) || (opts.rtl && !vertical ? q.edge - p.edge : 0));
     if (!isNode) {
       // each wire faces its other end; keep 2 lattice steps apart
       let prev = -Infinity;
@@ -926,8 +939,8 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
         const p = { x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t };
         if (!horiz && s.len < 10) continue;
         const own = segRects(rt);
-        // 8, 12 or 16 px from the wire: still within 24 px of it, with more room to clear neighbours
-        for (const off of [CLEAR + 2, CLEAR + 6, CLEAR + 10]) {
+        // 12, 16 or 20 px from the wire to the pill's edge: clearly beside it, still within 24 px of it
+        for (const off of [12, 16, 20]) {
           if (horiz) {
             // a U's run: its words inside the U (both ends below a top run, or above a bottom one), so both languages
             // put them on the same side whatever room the canvas edge leaves
@@ -953,7 +966,8 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     const foreign = [...groups.values()].filter((gb) => !(ends.length === 2 && ends.every((b) => b !== gb.box && within(b, gb.box)))).map((gb) => gb.box);
 
     // best: 12 px from every other wire too, so no wire runs close beside another wire's words
-    const roomy = (q: Rect) => !others.some((o) => intersects(q, o, 12));
+    const ownSegs = segRects(rt);
+    const roomy = (q: Rect) => !others.some((o) => intersects(q, o, 12)) && !ownSegs.some((o) => intersects(q, o, 11.5));
     hit = cands.find((c) => free(c.q, c.wires) && roomy(c.q) && !titleRows.some((t) => intersects(c.q, t, 4)) && !foreign.some((g) => intersects(c.q, g, 4)));
     hit ??= cands.find((c) => free(c.q, c.wires) && roomy(c.q) && !titleRows.some((t) => intersects(c.q, t, 4)));
     hit ??= cands.find((c) => free(c.q, c.wires) && !titleRows.some((t) => intersects(c.q, t, 4)) && !foreign.some((g) => intersects(c.q, g, 4)));
@@ -963,12 +977,14 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
       // last resort: the nearest free spot beside any point of the wire, still clear of every node, line and label
       const own = segRects(rt);
       // a label stays within 24 px of its wire, and never in a group's title row
-      for (let rad = 8; rad <= 24 && !hit; rad += 4)
+      // its pill 12 to 24 px from the wire
+      for (let rad = 12; rad <= 48 && !hit; rad += 4)
         for (const f of [0.5, 0.3, 0.7, 0.15, 0.85])
           for (let k = 0; k < 24 && !hit; k++) {
             const mid = pointAt(rt.pts, rt.len * f);
             const a = (k / 24) * Math.PI * 2;
             const q = { x: mid.x + Math.cos(a) * rad - lw / 2, y: mid.y + Math.sin(a) * rad - lh / 2, w: lw, h: lh };
+            if (own.some((o) => intersects(q, o, 11.5)) || !own.some((o) => intersects(q, o, 24))) continue;
             if (free(q, [...others, ...own, ...borders]) && !titleRows.some((t) => intersects(q, t, 4))) hit = { q, wires: [] };
           }
     }
@@ -1099,8 +1115,12 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
       out.push(`<text class="an-group-label" x="${r(x)}" y="${r(label.y + 13)}" text-anchor="${opts.rtl ? 'end' : 'start'}">${esc(g.label)}</text>`);
     }
     if (g.caption && gb.caption) {
-      const x = opts.rtl ? gb.caption.x + gb.caption.w : gb.caption.x;
-      out.push(`<text class="an-group-caption" x="${r(x)}" y="${r(gb.caption.y + 11.5)}" text-anchor="${opts.rtl ? 'end' : 'start'}">${esc(g.caption)}</text>`);
+      // a centred caption anchors on its middle, so a mixed Arabic and Latin line (whose width is only estimated)
+      // still stands in the centre
+      const mid = layout.captionMid?.includes(g.id);
+      const x = mid ? gb.caption.x + gb.caption.w / 2 : opts.rtl ? gb.caption.x + gb.caption.w : gb.caption.x;
+      const anchor = mid ? 'middle' : opts.rtl ? 'end' : 'start';
+      out.push(`<text class="an-group-caption" x="${r(x)}" y="${r(gb.caption.y + 11.5)}" text-anchor="${anchor}">${esc(g.caption)}</text>`);
     }
     out.push('</g>');
   }
@@ -1178,9 +1198,15 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     out.push(`<g class="an-elabel an-f-${l.rt.e.flow}${l.covers ? ' an-elabel-on' : ''}" data-for="${l.rt.id}"${l.covers ? ' data-covers' : ''}><rect class="an-elabel-bg" x="${r(l.rect.x)}" y="${r(l.rect.y)}" width="${r(l.rect.w)}" height="${l.rect.h}" rx="${l.rect.h / 2}"/><text x="${r(l.rect.x + l.rect.w / 2)}" y="${r(l.rect.y + 12.5)}" text-anchor="middle" font-size="${LS}"${hasArabic(l.text) ? ' direction="rtl"' : ''}>${esc(l.text)}</text></g>`);
   }
   // two wires on one step (parallel branches fire together) read as sub-steps, never as one number twice: 3a, 3b
-  // («٣أ», «٣ب»), lettered in wire order
+  // («٣أ», «٣ب»), lettered in the figure's own wire order, so a phone layout that routes them in another order
+  // letters them the same as the wide one
   const shared = new Map<number, Routed[]>();
   for (const b of badges) shared.set(b.n, [...(shared.get(b.n) ?? []), b.rt]);
+  const specOrder = (rt: Routed) => {
+    const k = spec.edges.findIndex((x) => x.from === rt.e.from && x.to === rt.e.to && x.step === rt.e.step);
+    return k < 0 ? Infinity : k;
+  };
+  for (const list of shared.values()) list.sort((p, q) => specOrder(p) - specOrder(q));
   const subLetters = opts.locale === 'ar' ? ['أ', 'ب', 'ج', 'د'] : ['a', 'b', 'c', 'd'];
   for (const b of badges) {
     const same = shared.get(b.n)!;

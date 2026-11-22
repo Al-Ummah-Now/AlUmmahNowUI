@@ -72,7 +72,8 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
       const used = found.x;
       const meanings = [t, ...pair].map((x) => (ar ? x.ar : x.en).toLowerCase());
       const meaning = meanings[0]!;
-      const around = text.slice(Math.max(0, m.index - near), m.index + used.abbr.length + near).toLowerCase();
+      // (text nodes join with a space: a Latin run isolated in its own <bdi> leaves two between words)
+      const around = text.slice(Math.max(0, m.index - near), m.index + used.abbr.length + near).replace(/\s+/g, ' ').toLowerCase();
       // explained in the copy's own words: in parentheses right after it, or it is the parenthesis after its explanation
       const explained = /^\s*\(/.test(text.slice(m.index + used.abbr.length)) || /\(\s*$/.test(text.slice(0, m.index));
       // first used in a figure: that figure's "In this figure" line names it
@@ -99,6 +100,15 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
     const xs = pts.map((p) => p.x);
     const ys = pts.map((p) => p.y);
     return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+  };
+  // a point of the svg's user space within `pad` px of an element's own box, measured in the element's frame: a
+  // tilted sketch tag is tested as the tilted box it draws, not the upright box around it
+  const within = (el: SVGGraphicsElement, pt: DOMPoint, pad: number): boolean => {
+    const b = el.getBBox();
+    const m = el.getCTM();
+    const root = el.ownerSVGElement?.getCTM();
+    const q = m && root ? new DOMPoint(pt.x, pt.y).matrixTransform(root.inverse().multiply(m).inverse()) : pt;
+    return q.x > b.x - pad && q.x < b.x + b.width + pad && q.y > b.y - pad && q.y < b.y + b.height + pad;
   };
   const inside = (a: B, b: B, tol = 0.5) => a.x >= b.x - tol && a.y >= b.y - tol && a.x + a.w <= b.x + b.w + tol && a.y + a.h <= b.y + b.h + tol;
   const hit = (a: B, b: B, tol = 0.5) => a.x < b.x + b.w - tol && b.x < a.x + a.w - tol && a.y < b.y + b.h - tol && b.y < a.y + a.h - tol;
@@ -188,7 +198,7 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
         const box = { x: b.x + 1.5, y: b.y + 1.5, w: b.w - 3, h: b.h - 3 };
         for (let d = 0; d <= len; d += 2) {
           const pt = p.getPointAtLength(d);
-          if (pt.x > box.x && pt.x < box.x + box.w && pt.y > box.y && pt.y < box.y + box.h) {
+          if (pt.x > box.x && pt.x < box.x + box.w && pt.y > box.y && pt.y < box.y + box.h && within(t, pt, -1.5)) {
             out.push(`${name}: edge ${p.dataset.from}→${p.dataset.to} runs through the text "${t.textContent}"`);
             break;
           }
@@ -360,7 +370,7 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
         const len = p.getTotalLength();
         for (let d = 0; d <= len; d += 2) {
           const pt = p.getPointAtLength(d);
-          if (pt.x > near.x && pt.x < near.x + near.w && pt.y > near.y && pt.y < near.y + near.h) {
+          if (pt.x > near.x && pt.x < near.x + near.w && pt.y > near.y && pt.y < near.y + near.h && within(t, pt, CLEAR - 0.5)) {
             out.push(`${name}: label "${t.textContent}" is within ${CLEAR} px of the wire ${p.dataset.from}→${p.dataset.to}`);
             break;
           }

@@ -66,9 +66,10 @@ const map: Builder = (d) => {
       colW: 186,
       rowH: 104,
       iconSize: 34,
-      // a lane inside the account's end side for the status report, and its tag along the bottom edge so the
-      // clients' wires come in across a bare top edge
-      growPad: { cf: { l: 28, r: 28 } },
+      // two lanes inside the account's end side, for the status report and the Bunny tee, the outer one well in from
+      // the border (where the tee leaves, the border's rounded corner never meets it), and its tag along the bottom edge
+      // so the clients' wires come in across a bare top edge
+      growPad: { cf: { l: 28, r: 36 } },
       tagBottom: ['cf'],
       at: stack([
         [['studio', 'player'], 0],

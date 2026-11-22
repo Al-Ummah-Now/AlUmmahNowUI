@@ -8,7 +8,7 @@
  * gate (e2e/diagram-gate.ts), no inline styles (CSP style-src 'self'), motion only under
  * .an-motion (hidden for prefers-reduced-motion).
  */
-import { esc, hasArabic, textWidth } from './text.ts';
+import { bindPhrases, esc, hasArabic, textWidth } from './text.ts';
 import { r, symbol, useIcon, type IconId } from './icons.ts';
 import { formatNumber } from '../../../../../packages/render/src/format.ts';
 import type { Flow } from './arch.ts';
@@ -80,7 +80,8 @@ const codeW = (s: string) => [...s].length * CS * 0.62;
 const CODE_CAP = 440;
 
 /** Greedy word wrap by the build-time width estimate. */
-function wrap(s: string, size: number, max: number, code = false): string[] {
+function wrap(s0: string, size: number, max: number, code = false): string[] {
+  const s = code ? s0 : bindPhrases(s0);
   const width = (x: string) => (code ? codeW(x) : textWidth(x, size));
   if (width(s) <= max) return [s];
   const out: string[] = [];

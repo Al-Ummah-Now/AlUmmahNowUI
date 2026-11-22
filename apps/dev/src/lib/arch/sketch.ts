@@ -6,7 +6,7 @@
  */
 import type { diagramsEn } from '../../i18n/diagrams.en.ts';
 import { r, symbol, useIcon } from './icons.ts';
-import { esc, hasArabic, textWidth } from './text.ts';
+import { bindPhrases, esc, hasArabic, textWidth } from './text.ts';
 
 type Copy = typeof diagramsEn.sketch;
 
@@ -163,12 +163,11 @@ function lines(ls: string[], x: number, y: number, lh: number, style: (l: string
   return ls.map((l, k) => `<tspan x="${Math.round(x * 10) / 10}" y="${Math.round((y + k * lh) * 10) / 10}"${style(l)}>${esc(l)}</tspan>`).join('');
 }
 
-/** greedy word wrap to a width (a single word wider than the width keeps its own line) */
-function wrapTo(text: string, size: number, bold: boolean, room: number): string[] {
-  if (textWidth(text, size, bold) <= room) return [text];
+/** greedy word wrap at a width (a single word wider than the width keeps its own line) */
+function greedy(words: string[], size: number, bold: boolean, room: number): string[] {
   const lines: string[] = [];
   let cur = '';
-  for (const w of text.split(' ')) {
+  for (const w of words) {
     const next = cur ? `${cur} ${w}` : w;
     if (cur && textWidth(next, size, bold) > room) {
       lines.push(cur);
@@ -177,6 +176,27 @@ function wrapTo(text: string, size: number, bold: boolean, room: number): string
   }
   if (cur) lines.push(cur);
   return lines;
+}
+
+/**
+ * Word wrap to a width with balanced lines: as few lines as the greedy wrap needs, at the narrowest width that still
+ * gives that many, so the last line is never one lone word. A value («١ من ٢٠», «٩٠ يومًا», "can(role, capability)")
+ * never splits (bindPhrases).
+ */
+function wrapTo(text0: string, size: number, bold: boolean, room: number): string[] {
+  const text = bindPhrases(text0);
+  if (textWidth(text, size, bold) <= room) return [text];
+  const words = text.split(' ');
+  const first = greedy(words, size, bold, room);
+  let lo = Math.max(...words.map((w) => textWidth(w, size, bold)));
+  let hi = room;
+  if (lo >= hi) return first;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) / 2;
+    if (greedy(words, size, bold, mid).length <= first.length) hi = mid;
+    else lo = mid;
+  }
+  return greedy(words, size, bold, hi);
 }
 
 /**
@@ -326,7 +346,9 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
   o.push(`<g data-node-label="heading"><text class="an-sk-title ${fam}" text-anchor="middle"${ar ? ' direction="rtl"' : ''}>${lines(headLines, W / 2, 52, 36)}</text></g>`);
 
   // first every curve, so tags can be placed clear of all of them
-  type Curve = { e: SketchEdge; i: number; a: [number, number]; ctrl: [number, number]; ctrl2?: [number, number]; b: [number, number] };
+  // a laned edge is a U (`u`: out to its lane, along it, back in, round corners) so a fan's wires keep one spacing
+  // all the way; `uPath` is how it is drawn and `u` the same line sampled densely
+  type Curve = { e: SketchEdge; i: number; a: [number, number]; ctrl: [number, number]; ctrl2?: [number, number]; b: [number, number]; u?: [number, number][]; uPath?: string; uIn?: [number, number] };
   const curves: Curve[] = spec.edges.map((e, i) => {
     const bf = box.get(e.from)!;
     const bt = box.get(e.to)!;
@@ -386,14 +408,45 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
       });
     }
   }
-  // the lane's control points, once the ends have been spread
+  // the lane's U, once the ends have been spread
+  const r1 = r;
   for (const c of curves) {
     if (c.e.lane == null) continue;
     const d = laneOf(c);
     c.ctrl = [c.a[0] + d, c.a[1]];
     c.ctrl2 = [c.b[0] + d, c.b[1]];
+    const dir = Math.sign(d) || 1;
+    const lx = c.a[0] + d * 0.75;
+    const vs = Math.sign(c.b[1] - c.a[1]) || 1;
+    const r = Math.max(2, Math.min(14, Math.abs(d * 0.75) * 0.8, Math.abs(c.b[1] - c.a[1]) / 2));
+    const p1: [number, number] = [lx - dir * r, c.a[1]];
+    const k1: [number, number] = [lx, c.a[1]];
+    const p2: [number, number] = [lx, c.a[1] + vs * r];
+    const p3: [number, number] = [lx, c.b[1] - vs * r];
+    const k2: [number, number] = [lx, c.b[1]];
+    const p4: [number, number] = [c.b[0] + (lx - c.b[0]) - dir * r, c.b[1]];
+    const line = (p: [number, number], q: [number, number]) => {
+      const n = Math.max(2, Math.ceil(Math.hypot(q[0] - p[0], q[1] - p[1]) / 4));
+      return Array.from({ length: n }, (_, k) => [p[0] + ((q[0] - p[0]) * k) / n, p[1] + ((q[1] - p[1]) * k) / n] as [number, number]);
+    };
+    const quad = (p: [number, number], k: [number, number], q: [number, number]) =>
+      Array.from({ length: 8 }, (_, j) => {
+        const t = j / 8;
+        return [(1 - t) * (1 - t) * p[0] + 2 * (1 - t) * t * k[0] + t * t * q[0], (1 - t) * (1 - t) * p[1] + 2 * (1 - t) * t * k[1] + t * t * q[1]] as [number, number];
+      });
+    c.u = [...line(c.a, p1), ...quad(p1, k1, p2), ...line(p2, p3), ...quad(p3, k2, p4), ...line(p4, c.b), c.b];
+    c.uPath = `M${r1(c.a[0])} ${r1(c.a[1])} L${r1(p1[0])} ${r1(p1[1])} Q${r1(k1[0])} ${r1(k1[1])} ${r1(p2[0])} ${r1(p2[1])} L${r1(p3[0])} ${r1(p3[1])} Q${r1(k2[0])} ${r1(k2[1])} ${r1(p4[0])} ${r1(p4[1])} L${r1(c.b[0])} ${r1(c.b[1])}`;
+    c.uIn = p4;
   }
   const at = (c: Curve, t: number): [number, number] => {
+    if (c.u) {
+      const i = Math.min(c.u.length - 1, Math.max(0, t * (c.u.length - 1)));
+      const k = Math.floor(i);
+      const f = i - k;
+      const p = c.u[k]!;
+      const q = c.u[Math.min(c.u.length - 1, k + 1)]!;
+      return [p[0] + (q[0] - p[0]) * f, p[1] + (q[1] - p[1]) * f];
+    }
     const u = 1 - t;
     if (c.ctrl2) return [0, 1].map((k) => u * u * u * c.a[k]! + 3 * u * u * t * c.ctrl[k]! + 3 * u * t * t * c.ctrl2![k]! + t * t * t * c.b[k]!) as [number, number];
     return [u * u * c.a[0] + 2 * u * t * c.ctrl[0] + t * t * c.b[0], u * u * c.a[1] + 2 * u * t * c.ctrl[1] + t * t * c.b[1]];
@@ -436,38 +489,88 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
   o.push('<g class="an-edges">');
   curves.forEach((c) => {
     const { e, i, a, b, ctrl, ctrl2 } = c;
-    const { shaft, head } = pen.arrow(a[0], a[1], b[0], b[1], ctrl, ctrl2);
+    const drawn = pen.arrow(a[0], a[1], b[0], b[1], ctrl, c.uIn ?? ctrl2);
+    const shaft = c.uPath ?? drawn.shaft;
+    const head = drawn.head;
     o.push(`<path id="${prefix}-e${i}" data-edge="${prefix}-e${i}" data-from="${e.from}" data-to="${e.to}" class="an-edge an-sk-arrow${e.dashed ? ' an-sk-dashed' : ''}"${e.noHead ? ' data-nohead' : ''} d="${shaft}"/>${e.noHead ? '' : `<path class="an-sk-head" d="${head}"/>`}`);
     if (!e.tag) return;
     // a tag sits beside its curve, never on it: try both sides at a few points along it
     const tw = textWidth(e.tag, 15, true) + 18;
     const th = 26;
     let best: Box | null = null;
-    // first 12 to 20 px out and 12 px from every other curve; where a fan leaves no such room, 8 px out and 5 px clear
-    for (const roomy of [true, false]) {
+    // a tag along a slanted stretch is drawn tilted to it, by this many radians (0: level)
+    let bestRot = 0;
+    // the box's true distance to a set of points (the drawn curve, sampled): a bow curves away from its tangent, so
+    // the offset along the normal alone can leave a tag touching the curve or far from it
+    const dist = (q: Box, pts: [number, number][]) => Math.min(...pts.map(([x, y]) => Math.hypot(Math.max(q.x - x, 0, x - q.x - q.w), Math.max(q.y - y, 0, y - q.y - q.h))));
+    // first 17 to 24 px from its own curve (the pen's outline overshoots the box by about 3) and 12 px from every other
+    // one; where a fan leaves no such room, 13 to 24 px from its own and still 12 from the rest, then 8, and only
+    // then just clear of them
+    for (const [ownMin, otherMin] of [[17, 12], [13, 12], [13, 8], [13, 0]] as const) {
     if (best) break;
     for (const t of [e.tagAt ?? 0.5, 0.45, 0.55, 0.4, 0.6, 0.35, 0.65, 0.3, 0.7, 0.25, 0.75, 0.2, 0.8, 0.15, 0.85, 0.1, 0.9]) {
       const p = at(c, t);
       const q2 = at(c, Math.min(1, t + 0.01));
       const dl = Math.hypot(q2[0] - p[0], q2[1] - p[1]) || 1;
       const n: [number, number] = [-(q2[1] - p[1]) / dl, (q2[0] - p[0]) / dl];
-      // 12 to 20 px between the tag and its curve: beside it, never far from it (the gate allows 24); the pen's rough
-      // outline overshoots the box by a few px, so less reads as touching
-      const half = Math.abs(n[0]) * (tw / 2) + Math.abs(n[1]) * (th / 2);
-      for (const [s, gap] of (roomy ? [[1, 12], [-1, 12], [1, 16], [-1, 16], [1, 20], [-1, 20]] : [[1, 8], [-1, 8], [1, 14], [-1, 14], [1, 20], [-1, 20]]) as [number, number][]) {
-        const cx = p[0] + n[0] * (half + gap) * s;
-        const cy = p[1] + n[1] * (half + gap) * s;
+      // along the normal, and straight above or below or to either side: beside a slanted curve a wide tag pushed out
+      // along the normal touches the curve only at a corner and reads as detached; of the spots that fit, the one whose
+      // middle sits nearest the curve
+      const dirs: [number, number][] = [n, [0, Math.sign(n[1]) || 1], [Math.sign(n[0]) || 1, 0]];
+      // the mirror turns the curve's normal over: the Arabic figure tries the sides the other way round, so a tag
+      // lands on the same side of its curve in both languages
+      const side = opts.rtl ? -1 : 1;
+      let pick: { q: Box; d: number; rot: number } | null = null;
+      for (const dir of dirs)
+      for (const [s, gap] of [15, 18, 21, 12, 24, 9, 27, 30, 6, 34].flatMap((g) => [[side, g], [-side, g]]) as [number, number][]) {
+        const half = Math.abs(dir[0]) * (tw / 2) + Math.abs(dir[1]) * (th / 2);
+        const cx = p[0] + dir[0] * (half + gap) * s;
+        const cy = p[1] + dir[1] * (half + gap) * s;
         const q = { x: cx - tw / 2, y: cy - th / 2, w: tw, h: th };
         if (q.x < 8 || q.y < 60 || q.x + q.w > W - 8 || q.y + q.h > Hc - 8) continue;
+        const own = dist(q, ownPts(c));
+        if (own < ownMin || own > 24) continue;
+        if (otherMin && dist(q, otherPts(c)) < otherMin) continue;
         if (samples.some((pt) => hits(q, pt, 5))) continue;
-        // 12 px from every other curve when it can (no wire runs close beside another wire's words), 10 px from its
-        // own where it bends back toward a tile
-        if (roomy && (otherPts(c).some((pt) => hits(q, pt, 12)) || ownPts(c).some((pt) => hits(q, pt, 10)))) continue;
         // never on the cloud's bumpy outline: keep clear of a band around its edges
         if (cloudBand.some((e) => overlaps(q, e, 0))) continue;
         if (nodeBoxes.some((nb) => overlaps(q, { x: nb.x - 4, y: nb.y - 4, w: nb.w + 12, h: nb.h + 12 }, 6)) || placedTags.some((pb) => overlaps(q, pb, 12))) continue;
-        best = q;
-        break;
+        const d = Math.min(...ownPts(c).map(([x, y]) => Math.hypot(x - cx, y - cy)));
+        if (!pick || d < pick.d - 0.5) pick = { q, d, rot: 0 };
+      }
+      // beside a slanted stretch no level spot keeps the tag's middle near the line (it meets the line only at a
+      // corner and reads as detached): the tag tilts to the line, as a hand-drawn label would, 16 to 24 px off it
+      let rot = Math.atan2(q2[1] - p[1], q2[0] - p[0]);
+      if (rot > Math.PI / 2) rot -= Math.PI;
+      if (rot < -Math.PI / 2) rot += Math.PI;
+      if (Math.abs(rot) > 0.1 && Math.abs(rot) < 1.05 && (!pick || pick.d > th / 2 + 34)) {
+        const cs = Math.cos(rot);
+        const sn = Math.sin(rot);
+        for (const [s, gap] of [18, 20, 22, 24].flatMap((g) => [[side, g], [-side, g]]) as [number, number][]) {
+          const cx = p[0] + n[0] * (th / 2 + gap) * s;
+          const cy = p[1] + n[1] * (th / 2 + gap) * s;
+          // distance from a point to the tilted box, in the box's own frame
+          const local = (pts: [number, number][]) =>
+            Math.min(...pts.map(([x, y]) => Math.hypot(Math.max(Math.abs((x - cx) * cs + (y - cy) * sn) - tw / 2, 0), Math.max(Math.abs(-(x - cx) * sn + (y - cy) * cs) - th / 2, 0))));
+          const w2 = tw * Math.abs(cs) + th * Math.abs(sn);
+          const h2 = tw * Math.abs(sn) + th * Math.abs(cs);
+          const q = { x: cx - w2 / 2, y: cy - h2 / 2, w: w2, h: h2 };
+          if (q.x < 8 || q.y < 60 || q.x + q.w > W - 8 || q.y + q.h > Hc - 8) continue;
+          const own = local(ownPts(c));
+          // (the pen's outline overshoots the box by about 3: 16 keeps the drawn tag 12 or more off its line)
+          if (own < 16 || own > 24) continue;
+          if (otherMin && local(otherPts(c)) < otherMin) continue;
+          if (local(samples) < 5) continue;
+          if (cloudBand.some((e) => overlaps(q, e, 0))) continue;
+          if (nodeBoxes.some((nb) => overlaps(q, { x: nb.x - 4, y: nb.y - 4, w: nb.w + 12, h: nb.h + 12 }, 6)) || placedTags.some((pb) => overlaps(q, pb, 12))) continue;
+          const d = Math.min(...ownPts(c).map(([x, y]) => Math.hypot(x - cx, y - cy)));
+          if (!pick || d < pick.d - 0.5) pick = { q, d, rot };
+          break;
+        }
+      }
+      if (pick) {
+        best = pick.q;
+        bestRot = pick.rot;
       }
       if (best) break;
     }
@@ -495,9 +598,11 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
       throw new TagRoom(`${spec.id}/${opts.variant}: no room beside its curve for the tag "${e.tag}"`, side);
     }
     placedTags.push(best);
-    const px = best.x + tw / 2;
-    const py = best.y + th / 2;
-    tags.push(`<g class="an-sk-tag an-sk-${e.tone ?? 'blue'}" data-for="${prefix}-e${i}"${covers ? ' data-covers' : ''}>${covers ? `<rect class="an-sk-tag-bg" x="${r(px - tw / 2)}" y="${r(py - 14)}" width="${r(tw)}" height="26"/>` : ''}<path class="an-sk-mark" d="${pen.marker(px - tw / 2 - 4, py - 15, tw, 26)}"/><path class="an-sk-line" d="${pen.rect(px - tw / 2, py - 14, tw, 26)}"/><text class="${fam}" x="${r(px)}" y="${r(py + 4)}" text-anchor="middle"${hasArabic(e.tag) ? ' direction="rtl"' : ''}>${esc(e.tag)}</text></g>`);
+    // the box's middle (a tilted tag's box is the bounds of the turned tag)
+    const px = best.x + best.w / 2;
+    const py = best.y + best.h / 2;
+    const tilt = bestRot ? ` transform="rotate(${r((bestRot * 180) / Math.PI)} ${r(px)} ${r(py)})"` : '';
+    tags.push(`<g class="an-sk-tag an-sk-${e.tone ?? 'blue'}" data-for="${prefix}-e${i}"${covers ? ' data-covers' : ''}${tilt}>${covers ? `<rect class="an-sk-tag-bg" x="${r(px - tw / 2)}" y="${r(py - 14)}" width="${r(tw)}" height="26"/>` : ''}<path class="an-sk-mark" d="${pen.marker(px - tw / 2 - 4, py - 15, tw, 26)}"/><path class="an-sk-line" d="${pen.rect(px - tw / 2, py - 14, tw, 26)}"/><text class="${fam}" x="${r(px)}" y="${r(py + 4)}" text-anchor="middle"${hasArabic(e.tag) ? ' direction="rtl"' : ''}>${esc(e.tag)}</text></g>`);
   });
   o.push('</g><g class="an-motion" aria-hidden="true">');
   spec.edges.forEach((e, i) => {

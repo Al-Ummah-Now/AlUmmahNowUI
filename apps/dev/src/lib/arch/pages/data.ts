@@ -54,14 +54,16 @@ const stores: Builder = (d) => {
       ],
       edges: [
         { from: 'apiVideos', to: 'r2', flow: 'request', label: e.records, fromSide: 's', toSide: 'n' },
-        { from: 'apiVideos', to: 'd1', flow: 'request', label: e.search, fromSide: 'e', toSide: 'n' },
+        { from: 'apiVideos', to: 'd1', flow: 'request', label: e.search, fromSide: 's', toSide: 'n' },
         { from: 'processor', to: 'd1', flow: 'async', label: e.rows, fromSide: 's', toSide: 'n' },
         { from: 'auth', to: 'kv', flow: 'control', label: e.revoke, fromSide: 's', toSide: 'n' },
         { from: 'comms', to: 'do', flow: 'request', label: e.sockets, fromSide: 's', toSide: 'n' },
         { from: 'web', to: 'ae', flow: 'control', label: e.vitals, fromSide: 's', toSide: 'n' },
       ],
     },
-    wide: { colW: 200, rowH: 112 },
+    // D1's title at the far end of its top: the search rows wire drops into the near end in one bend, clear of the
+    // notifications wire
+    wide: { colW: 200, rowH: 112, titleEnd: ['d1'] },
     narrow: {
       colW: 180,
       rowH: 100,
@@ -129,19 +131,26 @@ const write: Builder = (d) => {
         { from: 'realtime', to: 'subscribers', flow: 'delivery', label: e.bell, step: 7, fromSide: 'e', toSide: 'w' },
       ],
     },
-    wide: { colW: 200, rowH: 170 },
+    // the conditional write and the event leave api-videos' side together: room between them for the event's badge
+    wide: { colW: 200, rowH: 170, portStep: 24 },
     narrow: {
       colW: 180,
       rowH: 100,
       iconSize: 34,
-      at: stack([
-        [['creator'], 0],
-        [['api'], 2.2],
-        [['r2', 'search'], 1.6],
-        [['processor', 'queue'], 1.6],
-        [['notif', 'realtime'], 1.6],
-        [['subscribers'], 2.2],
-      ]),
+      // the creator and api a little toward the queue: room between the record write's drop and the event wire for
+      // the record write's words
+      at: {
+        ...stack([
+          [['creator'], 0],
+          [['api'], 2.2],
+          [['r2', 'search'], 1.6],
+          [['processor', 'queue'], 1.6],
+          [['notif', 'realtime'], 1.6],
+          [['subscribers'], 2.2],
+        ]),
+        creator: [0.58, 0],
+        api: [0.58, 2.2],
+      },
       edges: [
         { from: 'creator', to: 'api', flow: 'request', label: e.publish, step: 1, fromSide: 's', toSide: 'n' },
         { from: 'api', to: 'r2', flow: 'request', label: e.cas, step: 2, fromSide: 'w', toSide: 'n' },

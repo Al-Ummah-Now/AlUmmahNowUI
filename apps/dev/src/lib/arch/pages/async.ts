@@ -143,7 +143,8 @@ const fail: Builder = (d) => {
       edges: [
         { from: 'producer', to: 'queue', flow: 'async', label: e.event, step: 1, fromSide: 's', toSide: 'n' },
         { from: 'queue', to: 'consumer', flow: 'async', label: e.batch, step: 2, fromSide: 's', toSide: 'n' },
-        { from: 'consumer', to: 'queue', flow: 'control', label: e.retry, step: 3, fromSide: 'w', toSide: 'w' },
+        // the retry U turns back up the channel between the columns: the start margin is the re-send wire's, so the two never cross
+        { from: 'consumer', to: 'queue', flow: 'control', label: e.retry, step: 3, fromSide: 'e', toSide: 'e' },
         { from: 'queue', to: 'dlq', flow: 'control', step: 4, fromSide: 'e', toSide: 'w' },
         { from: 'dlq', to: 'dlqConsumer', flow: 'async', label: e.read, step: 5, fromSide: 's', toSide: 'n' },
         { from: 'dlqConsumer', to: 'deadLetters', flow: 'async', label: e.store, step: 6, fromSide: 's', toSide: 'n' },

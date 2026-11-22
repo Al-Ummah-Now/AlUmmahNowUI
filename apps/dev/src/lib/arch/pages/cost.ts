@@ -49,26 +49,32 @@ const monitor: Builder = (d) => {
         { from: 'resend', to: 'admins', flow: 'delivery', label: e.email, fromSide: 'e', toSide: 'w' },
       ],
     },
-    wide: { colW: 190, rowH: 150 },
+    // the charges wire drops into Bunny's top: the bunny.net tag sits on the group's bottom edge, clear of it
+    wide: { colW: 190, rowH: 150, tagBottom: ['bunnyNet'] },
     narrow: {
       colW: 180,
       rowH: 100,
       iconSize: 34,
       pad: 40,
-      at: stack([
-        [['cron', 'worker'], 0],
-        [['jobs'], 1.05],
-        [['graphql', 'd1'], 1.95],
-        [['page', 'api'], 1.95],
-        [['mail'], 1.05],
-        [['admins', 'resend'], 2.2],
-        [['bunny'], 2.0],
-      ]),
+      // the jobs queue sits under Cron: its wire leaves cost-monitor's bottom and turns in, beside the usage and rows
+      // wires that drop from cost-monitor to the stores
+      at: {
+        ...stack([
+          [['cron', 'worker'], 0],
+          [['jobs'], 1.15],
+          [['graphql', 'd1'], 1.85],
+          [['page', 'api'], 1.95],
+          [['mail'], 1.05],
+          [['admins', 'resend'], 2.2],
+          [['bunny'], 2.0],
+        ]),
+        jobs: [0, 1.15],
+      },
       edges: [
         { from: 'cron', to: 'worker', flow: 'control', label: e.wake, fromSide: 'e', toSide: 'w' },
         { from: 'worker', to: 'jobs', flow: 'async', fromSide: 's', toSide: 'e' },
-        { from: 'collector', to: 'graphql', flow: 'request', label: e.usage, fromSide: 's', toSide: 'n' },
-        { from: 'collector', to: 'd1', flow: 'async', label: e.rows, fromSide: 's', toSide: 'n' },
+        { from: 'worker', to: 'graphql', flow: 'request', label: e.usage, fromSide: 's', toSide: 'n' },
+        { from: 'worker', to: 'd1', flow: 'async', label: e.rows, fromSide: 's', toSide: 'n' },
         { from: 'api', to: 'd1', flow: 'request', label: e.read, fromSide: 'n', toSide: 's' },
         { from: 'page', to: 'api', flow: 'request', fromSide: 'e', toSide: 'w' },
         { from: 'api', to: 'mail', flow: 'async', label: e.alert, fromSide: 's', toSide: 'e' },

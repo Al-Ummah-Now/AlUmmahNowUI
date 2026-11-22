@@ -64,10 +64,11 @@ const train: Builder = (d) => {
       ]),
       edges: [
         { from: 'tag', to: 'build', flow: 'request', label: e.build, step: 1, fromSide: 'e', toSide: 'w' },
-        { from: 'tag', to: 'localE2E', flow: 'request', label: e.local, step: 1, fromSide: 'w', toSide: 'w' },
         { from: 'build', to: 'stage', flow: 'request', label: e.deploy, step: 2, fromSide: 's', toSide: 'e' },
-        // into the two gate tiles from their outer sides: a wire from above would cross the gates' title
+        // into the two gate tiles from their outer sides: a wire from above would cross the gates' title. The stage
+        // tests wire routes before the local tests one, so it keeps the lane by the tiles and the longer wire runs outside
         { from: 'stage', to: 'stageE2E', flow: 'request', label: e.test, step: 3, fromSide: 'w', toSide: 'w' },
+        { from: 'tag', to: 'localE2E', flow: 'request', label: e.local, step: 1, fromSide: 'w', toSide: 'w' },
         { from: 'stage', to: 'secrets', flow: 'request', label: e.check, step: 3, fromSide: 'e', toSide: 'e' },
         { from: 'gates', to: 'zero', flow: 'request', label: e.pass, step: 4, fromSide: 's', toSide: 'n' },
         { from: 'zero', to: 'full', flow: 'request', label: e.promote, step: 5, fromSide: 'e', toSide: 'w' },
@@ -160,11 +161,11 @@ const gates: Builder = (d) => {
       sk('stageE2E', 'lucide/list-ordered', 'blue', [0, 1]),
       sk('local', 'lucide/laptop', 'blue', [1, 1]),
       sk('secrets', 'cloudflare/secrets-store', 'blue', [2, 1]),
-      // the rollout sits under the middle test, so the three tests fan into it from both sides and above (from the far
-      // column a wire would arrive flat along its top); the chain goes on to the end side and down
-      sk('smoke', 'cloudflare/workers', 'green', [1, 2]),
-      sk('signedIn', 'lucide/user', 'green', [2, 2]),
-      sk('media', 'cloudflare/containers', 'green', [2, 3]),
+      // production runs as one row under the tests, start to end: the three tests fan into the rollout, and no row
+      // below is left half empty
+      sk('smoke', 'cloudflare/workers', 'green', [0, 2]),
+      sk('signedIn', 'lucide/user', 'green', [1, 2]),
+      sk('media', 'cloudflare/containers', 'green', [2, 2]),
     ],
     foot: [
       { id: 'status', icon: 'lucide/activity', title: c.obs.status },
@@ -178,11 +179,11 @@ const gates: Builder = (d) => {
       { from: 'tag', to: 'stageE2E', fromSide: 's', toSide: 'n', bend: 40 },
       { from: 'tag', to: 'local', fromSide: 's', toSide: 'n', bend: -24 },
       { from: 'tag', to: 'secrets', fromSide: 's', toSide: 'n' },
-      { from: 'stageE2E', to: 'smoke', fromSide: 's', toSide: 'n' },
-      { from: 'local', to: 'smoke', fromSide: 's', toSide: 'n', tag: c.tag.all, tone: 'green', tagAt: 0.45 },
-      { from: 'secrets', to: 'smoke', fromSide: 's', toSide: 'n' },
+      { from: 'stageE2E', to: 'smoke', fromSide: 's', toSide: 'n', tag: c.tag.all, tone: 'green', tagAt: 0.5 },
+      { from: 'local', to: 'smoke', fromSide: 's', toSide: 'n', bend: 6 },
+      { from: 'secrets', to: 'smoke', fromSide: 's', toSide: 'n', bend: 36 },
       { from: 'smoke', to: 'signedIn', fromSide: 'e', toSide: 'w' },
-      { from: 'signedIn', to: 'media', fromSide: 's', toSide: 'n' },
+      { from: 'signedIn', to: 'media', fromSide: 'e', toSide: 'w' },
       { from: 'media', to: 'rollback', fromSide: 's', toSide: 'n', dashed: true, tag: c.tag.fail, tone: 'pink', tagAt: 0.5 },
     ],
   };

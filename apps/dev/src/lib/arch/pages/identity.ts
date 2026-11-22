@@ -23,10 +23,10 @@ const map: Builder = (d) => {
         node('issuer', 'cloudflare/workers', n.issuer, [1.4, 1.3]),
         node('profile', 'cloudflare/workers', n.profile, [1.4, 2.6]),
         node('authAdmin', 'cloudflare/workers', n.authAdmin, [2.6, 2.6]),
-        node('kvStore', 'cloudflare/kv', n.kvStore, [4.25, 0]),
-        node('d1', 'cloudflare/d1', n.d1, [4.25, 1.3]),
-        node('revKv', 'cloudflare/kv', n.revKv, [4.25, 2.6]),
-        node('videos', 'cloudflare/workers', n.videos, [5.45, 2.6]),
+        node('kvStore', 'cloudflare/kv', n.kvStore, [3.8, 0]),
+        node('d1', 'cloudflare/d1', n.d1, [3.8, 1.3]),
+        node('revKv', 'cloudflare/kv', n.revKv, [3.8, 2.6]),
+        node('videos', 'cloudflare/workers', n.videos, [5.0, 2.6]),
       ],
       groups: [
         { id: 'auth', label: c.group.auth, caption: c.caption.auth, pad: 28, members: ['turnstile', 'limiters', 'issuer', 'profile', 'authAdmin', 'kvStore', 'd1', 'revKv'] },
@@ -95,18 +95,20 @@ const signin: Builder = (d) => {
       hop: 1.1,
       nodes: [
         node('user', 'lucide/browser', n.user, [0, 0]),
-        node('resend', 'simple-icons/resend', n.resend, [2.2, -1.45]),
+        node('resend', 'simple-icons/resend', n.resend, [1.1, -1.2]),
         node('issuer', 'cloudflare/workers', n.issuer, [2.2, 0]),
-        // the stores one gap beside the issuer and the API: no empty column inside the account
-        node('d1', 'cloudflare/d1', n.d1, [3.4, 0]),
-        node('app', 'lucide/smartphone', n.app, [-0.3, 1.8]),
+        // the stores one gap beside the issuer and the API, the refresh tokens' store halfway down between them: no
+        // empty block inside the account
+        node('d1', 'cloudflare/d1', n.d1, [3.4, 1.3]),
+        // straight under the browser: the callback lands on the app's middle, clear of the wires leaving its side
+        node('app', 'lucide/smartphone', n.app, [0, 1.8]),
         node('api', 'cloudflare/workers', n.api, [2.2, 2.6]),
         node('revKv', 'cloudflare/kv', n.revKv, [3.4, 2.6]),
       ],
       groups: [{ id: 'cf', label: c.group.cf, kind: 'boundary', tag: 'simple-icons/cloudflare', tagEnd: true, members: ['issuer', 'd1', 'api', 'revKv'] }],
       edges: [
         { from: 'user', to: 'issuer', flow: 'request', label: e.authorize, step: 1, fromSide: 'e', toSide: 'w' },
-        { from: 'issuer', to: 'resend', flow: 'async', label: e.email, step: 2, fromSide: 'n', toSide: 's' },
+        { from: 'issuer', to: 'resend', flow: 'async', label: e.email, step: 2, fromSide: 'n', toSide: 'e' },
         { from: 'issuer', to: 'user', flow: 'request', label: e.redirect, step: 3, fromSide: 'w', toSide: 'e' },
         { from: 'user', to: 'app', flow: 'request', label: e.callback, step: 4, fromSide: 's', toSide: 'n' },
         { from: 'app', to: 'issuer', flow: 'request', label: e.exchange, step: 5, fromSide: 'e', toSide: 's' },
@@ -114,11 +116,11 @@ const signin: Builder = (d) => {
         { from: 'app', to: 'api', flow: 'request', label: e.call, step: 7, fromSide: 's', toSide: 'w' },
         { from: 'api', to: 'revKv', flow: 'request', label: e.check, step: 8, fromSide: 'e', toSide: 'w' },
         { from: 'app', to: 'issuer', flow: 'request', label: e.refresh, step: 9, fromSide: 'e', toSide: 's' },
-        { from: 'issuer', to: 'd1', flow: 'request', step: 10, fromSide: 'e', toSide: 'w' },
+        { from: 'issuer', to: 'd1', flow: 'request', step: 10, fromSide: 'e', toSide: 'n' },
       ],
     },
     // the app's three exchanges run as one bundle: room between them for the middle wire's words on its line
-    wide: { colW: 300, rowH: 160, pad: 40, portStep: 32 },
+    wide: { colW: 300, rowH: 136, pad: 40, portStep: 32 },
     narrow: {
       colW: 180,
       rowH: 100,

@@ -16,16 +16,18 @@ const copies: Builder = (d) => {
       desc: c.desc,
       motion: 'pulses',
       nodes: [
-        node('users', 'lucide/users', n.users, [0, 1.35]),
-        node('workers', 'cloudflare/workers', n.workers, [1.3, 1.35]),
+        // the Workers halfway between the realtime and counting rows: both wires leave as short Ls, no empty corner
+        node('users', 'lucide/users', n.users, [0, 0.7]),
+        node('workers', 'cloudflare/workers', n.workers, [1.3, 0.7]),
         node('sockets', 'cloudflare/durable-objects', n.sockets, [3.15, 0]),
         node('topics', 'cloudflare/durable-objects', n.topics, [4.35, 0]),
         node('views', 'cloudflare/durable-objects', n.views, [3.15, 1.35]),
         node('videoJson', 'cloudflare/r2', n.videoJson, [4.35, 1.35]),
-        // transcoding under the Workers (the job drops straight in), out to the counting column: no empty corner
-        node('queue', 'cloudflare/queues', n.queue, [1.3, 2.7]),
-        node('container', 'cloudflare/containers', n.container, [3.15, 2.7]),
-        node('slots', 'cloudflare/durable-objects', n.slots, [1.3, 3.7]),
+        // transcoding in one row under the account's middle: the queue between the slots it asks and the Transcoder it
+        // starts, both straight across, out to the far column: no empty corner
+        node('slots', 'cloudflare/durable-objects', n.slots, [1.3, 2.7]),
+        node('queue', 'cloudflare/queues', n.queue, [3.15, 2.7]),
+        node('container', 'cloudflare/containers', n.container, [4.35, 2.7]),
       ],
       groups: [
         { id: 'realtime', label: c.group.realtime, caption: c.caption.realtime, members: ['sockets', 'topics'] },
@@ -40,7 +42,7 @@ const copies: Builder = (d) => {
         { from: 'workers', to: 'views', flow: 'request', label: e.view, fromSide: 'e', toSide: 'w' },
         { from: 'views', to: 'videoJson', flow: 'async', label: e.cas, fromSide: 'e', toSide: 'w' },
         { from: 'workers', to: 'queue', flow: 'async', label: e.job, fromSide: 's', toSide: 'n' },
-        { from: 'queue', to: 'slots', flow: 'control', label: e.acquire, fromSide: 's', toSide: 'n' },
+        { from: 'queue', to: 'slots', flow: 'control', label: e.acquire, fromSide: 'w', toSide: 'e' },
         { from: 'queue', to: 'container', flow: 'media', label: e.start, fromSide: 'e', toSide: 'w' },
       ],
     },

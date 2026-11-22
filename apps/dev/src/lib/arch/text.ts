@@ -81,3 +81,20 @@ export function finishBidi(svg: string): string {
     return `<text${a}>${esc(isolateLatin(raw))}</text>`;
   });
 }
+
+const NBSP = ' ';
+const NUM = '[0-9\u0660-\u0669](?:[0-9\u0660-\u0669.,\u066b%]*[0-9\u0660-\u0669%])?';
+/**
+ * Words that read as one value never split across lines: a ratio («١ من ٢٠», "1 in 20"), a number and its unit
+ * («٩٠ يومًا», "30 s"), «كل» or "every" and the word after it («كل ساعة»), and a code call's arguments
+ * ("can(role, capability)"). The spaces inside become no-break spaces.
+ */
+export function bindPhrases(s: string): string {
+  return s
+    .replace(new RegExp(`(${NUM}) (in|of|من|/) (${NUM})`, 'g'), `$1${NBSP}$2${NBSP}$3`)
+    .replace(new RegExp(`(^|[\\s(])(${NUM}) (?=[^\\s\\d٠-٩·•،,;:]{1,9}(?:[\\s.,،؛:)]|$))`, 'g'), `$1$2${NBSP}`)
+    .replace(/(^|\s)(كل|every) (?=\S)/g, `$1$2${NBSP}`)
+    // a list separator stays on the line of the word before it, so no line starts with «·»
+    .replace(/ ([·•]) /g, `${NBSP}$1 `)
+    .replace(/\(([^()]{1,40})\)/g, (m: string, inner: string) => (/[A-Za-z_]\w*,/.test(inner) ? `(${inner.replace(/ /g, NBSP)})` : m));
+}
