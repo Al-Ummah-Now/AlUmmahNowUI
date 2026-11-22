@@ -2466,6 +2466,8 @@ html[data-js] .ci-deck .tl-ov {
   border-radius: 2px;
   /* room either side so the letters and the punctuation after the word don't sit on the box edge */
   padding-inline: 0.15em;
+  /* and outside it on the following side, where a «:» or «.» comes straight after the word */
+  margin-inline-end: 0.2em;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
