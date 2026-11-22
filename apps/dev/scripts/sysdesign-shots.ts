@@ -210,7 +210,8 @@ const shapeOf = (blocks: Block[]) => blocks.map((b) => `${b.label.split(' ')[0]}
 async function shootFrames(page: Page, tag: string, blocks: Block[], head: number, groups: number[][]): Promise<Frame[]> {
   const base = page.viewportSize()!;
   const frames: Frame[] = [];
-  for (const [k, g] of groups.entries()) {
+  for (let k = 0; k < groups.length; k++) {
+    const g = groups[k]!;
     const first = k === 0;
     const y = first ? 0 : blocks[g[0]!]!.top;
     const last = Math.max(...g.map((i) => blocks[i]!.bottom));
@@ -256,6 +257,18 @@ async function shootFrames(page: Page, tag: string, blocks: Block[], head: numbe
         pick = got;
         break;
       }
+    }
+    // no clean edge anywhere (a gap too narrow beside the list's end): the frame hands its last block to the next one
+    // (the plan is shared, so the other language follows)
+    if (!pick && g.length > 1) {
+      // a card goes with the rest of its row
+      const moved = [g.pop()!];
+      while (g.length > 1 && Math.abs(blocks[g[g.length - 1]!]!.top - blocks[moved[0]!]!.top) <= 1) moved.unshift(g.pop()!);
+      if (k + 1 < groups.length) groups[k + 1]!.unshift(...moved);
+      else groups.push(moved);
+      if (vh !== base.height) await page.setViewportSize(base);
+      k--;
+      continue;
     }
     const { sy, side, eTop, clipBottom } = pick ?? fallback!;
     if (!pick) await page.evaluate((top) => window.scrollTo(0, top), sy);
