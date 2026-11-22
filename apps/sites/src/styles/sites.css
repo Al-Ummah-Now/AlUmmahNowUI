@@ -7,6 +7,8 @@
 @import '../../../../packages/render/src/styles/fanous-themes.generated.css';
 /* The header contract (AlUmmahNow docs/design/NAV.md "Header"), vendored by www's sync-fanous (check:fanous) */
 @import '../../../www/src/styles/aun-nav.generated.css';
+/* the header controls' fonts, served from public/aun-nav/fonts (vendored with it) */
+@import '../../../www/src/styles/aun-nav-fonts.generated.css';
 /* Cards, panels, menus and buttons: frosted glass with the golden edge, flat Material everything else */
 @import '../../../../packages/render/src/styles/aun-surfaces.generated.css';
 @import '../../../../packages/render/src/styles/fanous-street.generated.css';

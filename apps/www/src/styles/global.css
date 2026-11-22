@@ -2,6 +2,8 @@
 @import '../../../../packages/render/src/styles/fanous-themes.generated.css';
 /* The header account button and menus: the shared nav contract (AlUmmahNow docs/design/NAV.md) */
 @import './aun-nav.generated.css';
+/* the header controls' fonts (the themes' body fonts), served from public/aun-nav/fonts */
+@import './aun-nav-fonts.generated.css';
 /* Cards, panels, menus and buttons: frosted glass with the golden edge, flat Material everything else (AlUmmahNow packages/fanous-tokens/surfaces) */
 @import '../../../../packages/render/src/styles/aun-surfaces.generated.css';
 /* The header bar's www parts (links, search, account, Light / Dark): shared with apps/dev */
@@ -83,9 +85,7 @@ html[data-theme] {
   --line: var(--fanous-color-divider);
   --control-line: var(--fanous-color-outline);
   --focus-color: var(--fanous-color-focus-ring);
-  --header-bg: var(--fanous-c-nav-bg);
   --header-line: var(--fanous-c-nav-border);
-  --header-shadow: 0 8px 24px -18px rgb(0 0 0 / 0.6);
   --page-head-bg: var(--fanous-color-surface);
   --page-head-glow: 0.12;
   /* lantern light on reading pages (CMS pages, articles) on the lantern street: faint by day */
@@ -132,7 +132,6 @@ html[data-theme] {
     /* lantern light falling from the top corners onto the night */
     --page-bg: radial-gradient(60rem 28rem at 12% -6rem, color-mix(in srgb, var(--fanous-color-primary) 9%, transparent), transparent 70%),
       radial-gradient(50rem 26rem at 88% -4rem, color-mix(in srgb, var(--fanous-color-primary) 6%, transparent), transparent 70%);
-    --header-shadow: 0 1px 0 rgb(255 255 255 / 0.03), 0 8px 24px -16px rgb(0 0 0 / 0.8);
     --page-head-bg: var(--fanous-color-surface);
     --hero-glow: 0.16;
     --reading-glow: 0.6;
@@ -161,7 +160,6 @@ html[data-theme][data-mode='dark'] {
   color-scheme: dark;
   --page-bg: radial-gradient(60rem 28rem at 12% -6rem, color-mix(in srgb, var(--fanous-color-primary) 9%, transparent), transparent 70%),
     radial-gradient(50rem 26rem at 88% -4rem, color-mix(in srgb, var(--fanous-color-primary) 6%, transparent), transparent 70%);
-  --header-shadow: 0 1px 0 rgb(255 255 255 / 0.03), 0 8px 24px -16px rgb(0 0 0 / 0.8);
   --page-head-bg: var(--fanous-color-surface);
   --hero-glow: 0.16;
   --reading-glow: 0.6;

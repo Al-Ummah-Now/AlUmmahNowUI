@@ -79,14 +79,12 @@ describe('dev header = www header', () => {
     }
   });
 
-  it('defines the page tokens header.css reads with www’s values, in both modes', () => {
-    const names = ['--header-bg', '--header-shadow', '--color-lantern'];
+  it('defines the page tokens header.css reads with www’s values', () => {
+    // the band, edge and control font are the shared contract's (aun-nav theme header block), not page tokens
+    const names = ['--color-lantern'];
     // www spreads them over @theme (fonts), :root (layout) and html[data-theme] (colour roles)
     const wwwRoot = { ...tokens(WWW_CSS, '@theme'), ...tokens(WWW_CSS, ':root'), ...tokens(WWW_CSS, 'html[data-theme]') };
     const devRoot = tokens(DEV_CSS, ':root');
     for (const n of names) expect(devRoot[n], n).toBe(wwwRoot[n]);
-    const wwwDark = tokens(WWW_CSS, "html[data-theme][data-mode='dark']")['--header-shadow'];
-    expect(tokens(DEV_CSS, "html[data-mode='dark']")['--header-shadow']).toBe(wwwDark);
-    expect(tokens(DEV_CSS.replace(/\n {2}/g, '\n'), "html:not([data-mode='light'])")['--header-shadow']).toBe(wwwDark);
   });
 });

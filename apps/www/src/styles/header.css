@@ -4,7 +4,8 @@
  * and Sign in / account controls are the shared contract (AlUmmahNow docs/design/NAV.md "Header":
  * aun-nav.generated.css, markup from packages/render/src/nav/header.js); this file holds only what
  * www adds: its header tokens, its own links and search in the primary slot and in the menu panel.
- * Page tokens it reads: --header-bg, --header-shadow, --color-lantern.
+ * Page tokens it reads: --color-lantern. The bar's band, edge and control font are the contract's
+ * (the theme header block of aun-nav.generated.css), the same as in every app.
  * Breakpoints are the contract's only: 1024, 768, 640 and 400px.
  */
 
@@ -32,11 +33,6 @@
 }
 
 /* ---------- bar (.aun-header: 64px, 56px below 640px, sticky, full width, one typeface) ---------- */
-.site-header {
-  /* the page's header material */
-  --aun-header-bg: var(--header-bg);
-  box-shadow: var(--header-shadow);
-}
 /* one typeface: the page's `:lang(ar) { font-family }` (global.css) would otherwise give every Arabic
    element in the header www's own stack; inside the header they keep the contract's (.aun-header) */
 .site-header :lang(ar) {

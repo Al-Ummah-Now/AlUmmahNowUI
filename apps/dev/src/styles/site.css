@@ -67,23 +67,19 @@
   --gutter: clamp(1rem, 4vw, 2.5rem);
 
   /* The header (www's header.css) reads these; www's values, checked by tests/header.test.ts */
-  --header-bg: var(--fanous-c-nav-bg);
   --header-line: var(--fanous-c-nav-border);
-  --header-shadow: 0 8px 24px -18px rgb(0 0 0 / 0.6);
   --color-lantern: var(--fanous-c-nav-active-text);
   --band: clamp(56px, 8vw, 104px);
 }
 
 /* Dark mode overrides for this site's own derived tokens (the Fanous ones switch by themselves) */
 html[data-mode='dark'] {
-  --header-shadow: 0 1px 0 rgb(255 255 255 / 0.03), 0 8px 24px -16px rgb(0 0 0 / 0.8);
   --shadow: 0 1px 0 rgb(251 198 97 / 0.08) inset, 0 18px 40px -20px rgb(0 0 0 / 0.7);
   --edge: color-mix(in srgb, var(--gold) 22%, var(--line));
   --edge-strong: color-mix(in srgb, var(--gold) 45%, var(--line));
 }
 @media (prefers-color-scheme: dark) {
   html:not([data-mode='light']) {
-    --header-shadow: 0 1px 0 rgb(255 255 255 / 0.03), 0 8px 24px -16px rgb(0 0 0 / 0.8);
     --shadow: 0 1px 0 rgb(251 198 97 / 0.08) inset, 0 18px 40px -20px rgb(0 0 0 / 0.7);
     --edge: color-mix(in srgb, var(--gold) 22%, var(--line));
     --edge-strong: color-mix(in srgb, var(--gold) 45%, var(--line));
