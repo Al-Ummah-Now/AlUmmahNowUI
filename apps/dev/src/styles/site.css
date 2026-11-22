@@ -2200,10 +2200,3 @@ html:not([data-mode='light']) .pi-invert-dark svg {
 bdi.lr {
   white-space: nowrap;
 }
-/* a long path breaks after a slash on a narrow card, each piece kept whole */
-bdi.lr-path {
-  white-space: normal;
-}
-bdi.lr-path > span {
-  white-space: nowrap;
-}

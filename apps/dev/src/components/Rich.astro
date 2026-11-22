@@ -19,20 +19,12 @@ for (const m of text.matchAll(re)) {
   last = m.index! + m[0].length;
 }
 if (last < text.length) parts.push({ t: text.slice(last) });
-// a long path («/priv/<token>/<videoId>/…») may break after its slashes on a narrow card, never inside a piece
-const pathPieces = (run: string): string[] | null => {
-  if (run.length < 22 || !run.includes('/')) return null;
-  const pieces = run.split(/(?<=\/)/).filter(Boolean);
-  return pieces.length > 1 ? pieces : null;
-};
 ---
 {parts.map((p) =>
   't' in p ? (
     splitLatin(p.t).map((q) =>
       !q.latin ? (
         q.t
-      ) : pathPieces(q.t) ? (
-        <bdi dir="ltr" class="lr lr-path">{pathPieces(q.t)!.map((piece, i) => (i ? [<wbr />, <span>{piece}</span>] : <span>{piece}</span>))}</bdi>
       ) : (
         <bdi dir="ltr" class="lr">{q.t}</bdi>
       ),
