@@ -283,9 +283,9 @@ export const en = {
       { title: 'Production at {rolloutStart}', body: 'The new version is uploaded with no traffic and smoke-tested.' },
       { title: '{rolloutFull} or roll back', body: 'Traffic moves over, the smoke runs again, a failure rolls back automatically, and a dry run proves the rollback target.' },
     ],
-    costTitle: 'Built to a cost cap',
+    costTitle: 'Built for low unit costs',
     costBody:
-      'The whole platform is designed to stay under a fixed monthly cost cap set by the owner. Transcoding containers are billed only while a job runs, and cost lines such as container time, storage and requests are measured on the admin Delivery, Operations and Costs pages — with a budget meter, a forecast and opt-in alerts.',
+      'The platform is designed to keep per-video and per-view costs low. Transcoding containers are billed only while a job runs, and cost lines such as container time, storage and requests are measured on the admin Delivery, Operations and Costs pages — with spend tracking, a forecast and opt-in alerts.',
     statusTitle: 'Public status page',
     statusBody: 'status.alummahnow.net checks the public services every two minutes and lists incidents and maintenance, in Arabic and English.',
     statusLink: { label: 'Open the status page', href: STATUS_PAGE },
@@ -329,7 +329,7 @@ export const en = {
       },
       {
         title: 'Observability',
-        body: 'Workers Logs keep every warning and error (sampled fully, logged sparingly — production logs warn only). Crashes and failed jobs reach the admin Errors page with a Retry button, one page load in twenty reports Core Web Vitals, the status page checks the public services every two minutes, and a cost dashboard watches the budget.',
+        body: 'Workers Logs keep every warning and error (sampled fully, logged sparingly — production logs warn only). Crashes and failed jobs reach the admin Errors page with a Retry button, one page load in twenty reports Core Web Vitals, the status page checks the public services every two minutes, and a cost dashboard watches platform spend.',
       },
     ] as Item[],
     pagesTitle: 'Pages in this section',
@@ -342,7 +342,7 @@ export const en = {
       { title: 'Realtime', body: 'Socket shards, topic directories and view counters.', href: 'realtime/' },
       { title: 'Identity & security', body: 'One sign-in, short-lived tokens, two permission systems.', href: 'identity/' },
       { title: 'AI usage', body: 'Where AI runs, which models, and the budget that bounds it.', href: 'ai/' },
-      { title: 'Cost', body: 'A fixed monthly budget, watched hourly, with alerts.', href: 'cost/' },
+      { title: 'Cost', body: 'Low per-video and per-view costs, watched hourly, with alerts.', href: 'cost/' },
       { title: 'Scaling', body: 'What scales by itself, and the work that keeps it safe.', href: 'scaling/' },
       { title: 'Clients', body: 'The web apps, embeds on other sites and the bulk importer.', href: 'clients/' },
       { title: 'Release & quality', body: 'Tags, gates, stage, a {N0}% promotion and automatic rollback.', href: 'release/' },
@@ -443,12 +443,12 @@ export const en = {
 
     cost: {
       title: 'Cost',
-      description: 'How Al Ummah Now stays within a fixed monthly budget: per-second containers, warn-only logs, sampled analytics, bounded retention — and an hourly collector feeding the admin Costs page with a forecast and alerts.',
-      heroTitle: 'A fixed budget, watched hourly',
-      heroLead: 'The platform runs under a fixed monthly budget cap set by the owner. A collector reads usage every hour into its own database, and the admin Costs page shows the month against the budget, a forecast, and opt-in alerts. No figures are published here; the mechanisms are what matter.',
+      description: 'How Al Ummah Now keeps per-video and per-view costs low: per-second containers, warn-only logs, sampled analytics, bounded retention — and an hourly collector feeding the admin Costs page with a forecast and alerts.',
+      heroTitle: 'Low unit costs, watched hourly',
+      heroLead: 'The platform is designed for low per-video and per-view costs. A collector reads usage every hour into its own database, and the admin Costs page tracks monthly spend, a forecast, and opt-in alerts.',
       stagesTitle: 'The choices that keep it small',
       stages: [
-        { title: 'The dashboard', body: 'Super admins set a read-only Cloudflare token on the Costs page (sealed, audited, tested). The page shows month-to-date against the budget, the forecast, products, environments and top movers; budget, spike and weekly-digest alerts go by email to admins who opt in, and to the Errors page.', feature: 'cost-budget' },
+        { title: 'The dashboard', body: 'Super admins set a read-only Cloudflare token on the Costs page (sealed, audited, tested). The page shows month-to-date spend, the forecast, products, environments and top movers; spend, spike and weekly-digest alerts go by email to admins who opt in, and to the Errors page.', feature: 'cost-budget' },
         { title: 'Pay for work, not for idleness', body: 'Transcoding runs on Cloudflare Containers, billed per second while a job runs; instances that are not running cost nothing. Code runs on Workers, where idle is free and requests are cheap. An idle site — like this one, static assets only — costs nothing at all.' },
         { title: 'Logs that whisper', body: 'Production logs warn and error only, one line per request or job, with full sampling so no error is dropped but nothing chatty is written. Under test load QA, our test environment, serves about ten million requests a day — a talkative log level would be the biggest line on the bill.' },
         { title: 'Measured, not modelled', body: 'Page speed from real visits is sampled one page load in twenty; the AI budget reserves before it spends; test accounts are never transcoded; kept originals expire (thirty days minimum, ninety at most); QA’s own usage was cut deliberately. Every choice here is visible on an admin page, not a hunch.' },

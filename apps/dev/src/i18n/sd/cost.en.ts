@@ -2,8 +2,8 @@
 export const costEn = {
   monitor: {
     title: 'How the bill is watched',
-    lead: 'A small Worker with no public address collects usage every hour into its own database. The admin Costs page reads it: month to date against the budget, a forecast, and which products and environments moved. Admins who opt in get an email when an alert opens.',
-    desc: 'Inside the Cloudflare account, cron triggers wake al-ummah-cost-monitor hourly and once a day. It puts its jobs on the al-ummah-cost-jobs queue, with retries and a dead-letter queue, and runs them: one Cloudflare GraphQL query per run for platform usage across production, stage and QA, plus Containers usage, Bunny charges and the number of emails Resend sent. Rows land in the al-ummah-now-costs D1 database. The admin-api Worker reads them for the admin Costs page, which shows month to date against the budget, the forecast, products, environments and top movers. When the hourly alert check opens a budget, forecast or spike alert, admin-api puts one email per opted-in admin on its mail queue and Resend sends it. A job that fails for good is flagged on the admin Errors page.',
+    lead: 'A small Worker with no public address collects usage every hour into its own database. The admin Costs page reads it: month-to-date spend, a forecast, and which products and environments moved. Admins who opt in get an email when an alert opens.',
+    desc: 'Inside the Cloudflare account, cron triggers wake al-ummah-cost-monitor hourly and once a day. It puts its jobs on the al-ummah-cost-jobs queue, with retries and a dead-letter queue, and runs them: one Cloudflare GraphQL query per run for platform usage across production, stage and QA, plus Containers usage, Bunny charges and the number of emails Resend sent. Rows land in the al-ummah-now-costs D1 database. The admin-api Worker reads them for the admin Costs page, which shows month-to-date spend, the forecast, products, environments and top movers. When the hourly alert check opens a spend, forecast or spike alert, admin-api puts one email per opted-in admin on its mail queue and Resend sends it. A job that fails for good is flagged on the admin Errors page.',
     group: { cf: 'Cloudflare account', collector: 'Collector · no public route', admin: 'Videos admin', bunny: 'bunny.net' },
     node: {
       cron: { name: 'Cron triggers', role: 'hourly · daily' },
@@ -12,22 +12,22 @@ export const costEn = {
       graphql: { name: 'Cloudflare GraphQL', role: 'one query per run' },
       d1: { name: 'al-ummah-now-costs', role: 'hourly and daily rows' },
       api: { name: 'admin-api', role: 'alert check' },
-      page: { name: 'Costs page', role: ['month to date vs budget', 'forecast · top movers'] },
+      page: { name: 'Costs page', role: ['month-to-date spend', 'forecast · top movers'] },
       mail: { name: 'Mail queue', role: 'one email per admin' },
       bunny: { name: 'Bunny', role: 'daily charges' },
       resend: { name: 'Resend', role: 'sends the alerts' },
-      admins: { name: 'Opted-in admins', role: 'budget · spike · digest' },
+      admins: { name: 'Opted-in admins', role: 'spend · spike · digest' },
     },
     edge: { wake: 'wake', jobs: 'jobs', usage: 'usage', charges: 'charges', rows: 'rows', read: 'read', open: 'open', alert: 'alert opened', send: 'send', email: 'email' },
   },
   cheap: {
     title: 'How the platform stays cheap',
     lead: 'Nothing waits on a server that bills by the hour. Each line of the bill is kept small on purpose, and the whole of it is watched every hour.',
-    desc: 'A hand-drawn sketch. In the middle, the monthly budget, watched hourly. Around it, the choices that keep it small: transcoding on Cloudflare Containers billed per second while a job runs, never a rented server; production logs at warning level with no invocation logs; real-user monitoring from one page load in twenty; originals kept {N30} to {N90} days, not forever; AI under daily neuron caps; release tests that transcode a single short clip; and this developer site served as static files with no Worker script, so an idle site costs nothing.',
+    desc: 'A hand-drawn sketch. In the middle, monthly spend, watched hourly. Around it, the choices that keep it small: transcoding on Cloudflare Containers billed per second while a job runs, never a rented server; production logs at warning level with no invocation logs; real-user monitoring from one page load in twenty; originals kept {N30} to {N90} days, not forever; AI under daily neuron caps; release tests that transcode a single short clip; and this developer site served as static files with no Worker script, so an idle site costs nothing.',
     heading: 'How the platform stays cheap',
-    around: 'watched every hour against the budget',
+    around: 'watched every hour',
     node: {
-      budget: { title: 'Monthly budget', note: 'watched hourly' },
+      budget: { title: 'Monthly spend', note: 'watched hourly' },
       containers: { title: 'Per-second containers', note: 'no rented servers' },
       logs: { title: 'Warn-only logs', note: 'no invocation logs' },
       rum: { title: 'Page-speed samples, {N1} in {N20}', note: 'from real visits' },
