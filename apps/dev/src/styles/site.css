@@ -789,7 +789,7 @@ html[lang='ar'] .hero-wordmark {
 @media (max-width: 640px) {
   .tiles-2,
   .tiles-3 {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 .tile {
@@ -2215,4 +2215,11 @@ bdi.lr {
 /* a link with the word before it and its full stop, or an HTTP route: one unit on its line */
 span.nb {
   white-space: nowrap;
+}
+
+/* long routes and URLs wrap cleanly inside narrow phone cards instead of widening the viewport */
+bdi.lr-wrap,
+span.nb-wrap {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
