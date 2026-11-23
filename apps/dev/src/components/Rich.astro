@@ -3,33 +3,74 @@
  * A sentence with inline links: `[label](https://…)` becomes a link, everything else stays text.
  * For the few places a developer would click through to a repo or a doc page; never a citation list.
  * In Arabic, every Latin run (a name, a path, an identifier) is isolated in a <bdi> kept on one line, so the
- * bidi algorithm never reorders it or its punctuation, and «api-videos» never breaks at its hyphen.
+ * bidi algorithm never reorders it or its punctuation, and «api-videos» never breaks at its hyphen. A link keeps the
+ * word before it and the punctuation after it on its line (a path never ends a paragraph alone), its Latin label
+ * isolated left to right so the full stop stays outside it. An HTTP route («GET /api/videos/:id») is one unit in
+ * both languages.
  */
-import { splitLatin } from '../lib/arch/text.ts';
+import { splitLatin, hasArabic } from '../lib/arch/text.ts';
 interface Props {
   text: string;
 }
 const { text } = Astro.props;
-const parts: ({ t: string } | { label: string; href: string })[] = [];
+type Piece = { t: string; latin: boolean; route?: boolean };
+type Part = { pieces: Piece[] } | { before: string; label: string; href: string; after: string };
+const ROUTE = /\b(?:GET|POST|PUT|PATCH|DELETE|HEAD) \/[^\s,;،؛]*[^\s.,;:،؛)]/g;
+const arabic = hasArabic(text);
+// plain text: Latin runs isolated in Arabic; routes kept whole everywhere
+const piecesOf = (s: string): Piece[] =>
+  splitLatin(s).flatMap((q) => {
+    if (q.latin) return [{ ...q, route: false }];
+    const out: Piece[] = [];
+    let at = 0;
+    for (const m of q.t.matchAll(ROUTE)) {
+      if (m.index! > at) out.push({ t: q.t.slice(at, m.index), latin: false });
+      out.push({ t: m[0], latin: false, route: true });
+      at = m.index! + m[0].length;
+    }
+    if (at < q.t.length) out.push({ t: q.t.slice(at), latin: false });
+    return out;
+  });
+const raw: ({ t: string } | { label: string; href: string })[] = [];
 const re = /\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g;
 let last = 0;
 for (const m of text.matchAll(re)) {
-  if (m.index! > last) parts.push({ t: text.slice(last, m.index) });
-  parts.push({ label: m[1]!, href: m[2]! });
+  if (m.index! > last) raw.push({ t: text.slice(last, m.index) });
+  raw.push({ label: m[1]!, href: m[2]! });
   last = m.index! + m[0].length;
 }
-if (last < text.length) parts.push({ t: text.slice(last) });
+if (last < text.length) raw.push({ t: text.slice(last) });
+// a link takes the last word of the text before it and the punctuation that follows it
+for (let i = 0; i < raw.length; i++) {
+  const p = raw[i]!;
+  if (!('href' in p)) continue;
+  const prev = raw[i - 1];
+  const next = raw[i + 1];
+  let before = '';
+  let after = '';
+  if (prev && 't' in prev) {
+    const m = /(\S+\s+)$/.exec(prev.t);
+    if (m) {
+      before = m[1]!;
+      prev.t = prev.t.slice(0, -before.length);
+    }
+  }
+  if (next && 't' in next) {
+    const m = /^[.,;:!?،؛)]+/.exec(next.t);
+    if (m) {
+      after = m[0];
+      next.t = next.t.slice(after.length);
+    }
+  }
+  Object.assign(p, { before, after });
+}
+const parts: Part[] = raw.map((p) => ('href' in p ? (p as Part) : { pieces: piecesOf(p.t) }));
+const latinLabel = (s: string) => arabic && !hasArabic(s);
 ---
 {parts.map((p) =>
-  't' in p ? (
-    splitLatin(p.t).map((q) =>
-      !q.latin ? (
-        q.t
-      ) : (
-        <bdi dir="ltr" class="lr">{q.t}</bdi>
-      ),
-    )
+  'pieces' in p ? (
+    p.pieces.map((q) => (q.latin ? <bdi dir="ltr" class="lr">{q.t}</bdi> : q.route ? <span class="nb">{q.t}</span> : q.t))
   ) : (
-    <a href={p.href} rel="external">{p.label}</a>
+    <span class="nb">{p.before && piecesOf(p.before).map((q) => (q.latin ? <bdi dir="ltr" class="lr">{q.t}</bdi> : q.t))}<a href={p.href} rel="external">{latinLabel(p.label) ? <bdi dir="ltr">{p.label}</bdi> : p.label}</a>{p.after}</span>
   ),
 )}

@@ -325,7 +325,7 @@ export const en = {
       },
       {
         title: 'Providers',
-        body: 'Bunny Stream encodes and stores one copy of every upload. Workers AI runs moderation checks, transcription and translation within daily neuron budgets. The Quran Foundation supplies the official Quran text and translations, Resend sends the email, and APNs, FCM and WNS deliver push.',
+        body: 'Bunny Stream encodes and stores one copy of every upload. Workers AI runs moderation of each upload, transcription and translation within daily neuron budgets. The Quran Foundation supplies the official Quran text and translations, Resend sends the email, and APNs, FCM and WNS deliver push.',
       },
       {
         title: 'Observability',

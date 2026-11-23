@@ -9,7 +9,7 @@ const stores: Builder = (d) => {
   const n = c.node;
   const e = c.edge;
   // workers across the top, one store kind per column underneath
-  const y0 = 1.9;
+  const y0 = 2.1;
   return {
     kind: 'arch',
     spec: {
@@ -188,9 +188,9 @@ const sketch: Builder = (d) => {
       { id: 'ae', icon: 'cloudflare/analytics', title: n.ae.title, note: n.ae.note, tone: 'blue' as const, at: [2, 2] as [number, number] },
     ],
     edges: [
-      { from: 'api', to: 'r2', fromSide: 'w' as const, toSide: 's' as const, bend: 30, tag: c.tag.whole, tone: 'green' as const, tagAt: 0.45 },
+      { from: 'api', to: 'r2', fromSide: 'w' as const, toSide: 's' as const, bend: 30, tag: c.tag.whole, tone: 'green' as const, tagAt: 0.45, tagTilt: true },
       { from: 'api', to: 'kv', fromSide: 'n' as const, toSide: 's' as const },
-      { from: 'api', to: 'd1', fromSide: 'e' as const, toSide: 's' as const, bend: -30, tag: c.tag.sql, tone: 'blue' as const, tagAt: 0.45 },
+      { from: 'api', to: 'd1', fromSide: 'e' as const, toSide: 's' as const, bend: -30, tag: c.tag.sql, tone: 'blue' as const, tagAt: 0.45, tagTilt: true },
       { from: 'api', to: 'dobj', fromSide: 'w' as const, toSide: 'n' as const, bend: -30 },
       { from: 'api', to: 'ae', fromSide: 'e' as const, toSide: 'n' as const, bend: 30 },
     ],

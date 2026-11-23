@@ -2211,3 +2211,8 @@ html:not([data-mode='light']) .pi-invert-dark svg {
 bdi.lr {
   white-space: nowrap;
 }
+
+/* a link with the word before it and its full stop, or an HTTP route: one unit on its line */
+span.nb {
+  white-space: nowrap;
+}
