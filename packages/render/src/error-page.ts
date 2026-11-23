@@ -52,7 +52,7 @@ export const ERROR_CARD_STRINGS: Record<Locale, ErrorCardStrings> = {
     kinds: {
       notFound: { title: 'Page not found', body: 'We couldn’t find this page. The link may be wrong, or the page may have moved.' },
       gone: { title: 'This was removed', body: 'It’s no longer on Al\u00a0Ummah\u00a0Now. Search for something else, or go to the home\u00a0page.' },
-      server: { title: 'We could not load this page', body: 'Our server had a problem with this request. Please try again in a\u00a0moment.' },
+      server: { title: 'We could not load this page', body: 'Our server had a problem with this request. It has been reported. Please try again in a\u00a0moment.' },
       unavailable: { title: 'We’ll be back shortly', body: 'Our server is not responding right now. Try again in a few\u00a0minutes.' },
     },
     goHome: 'Home page',
@@ -74,7 +74,7 @@ export const ERROR_CARD_STRINGS: Record<Locale, ErrorCardStrings> = {
     kinds: {
       notFound: { title: 'الصفحة غير موجودة', body: 'لم نعثر على هذه الصفحة. ربما الرابط غير صحيح أو نُقلت الصفحة.' },
       gone: { title: 'حُذف هذا المحتوى', body: 'لم يعد موجودًا على الأمة الآن. ابحث عن شيء آخر أو انتقل إلى الصفحة\u00a0الرئيسية.' },
-      server: { title: 'تعذّر تحميل هذه الصفحة', body: 'واجه الخادم مشكلة في هذا الطلب. يُرجى المحاولة بعد قليل.' },
+      server: { title: 'تعذّر تحميل هذه الصفحة', body: 'واجه الخادم مشكلة في هذا الطلب، وقد أُبلغ عنها. يُرجى المحاولة بعد قليل.' },
       unavailable: { title: 'سنعود بعد قليل', body: 'الخادم لا يستجيب حاليًا. حاول مرة أخرى بعد دقائق.' },
     },
     goHome: 'الصفحة الرئيسية',

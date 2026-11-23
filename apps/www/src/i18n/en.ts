@@ -143,7 +143,7 @@ export const en = {
     notFoundTitle: 'Page not found',
     notFoundBody: 'We couldn’t find this page. The link may be wrong, or the page may have moved.',
     serverTitle: 'We could not load this page',
-    serverBody: 'Our server had a problem with this request. Please try again in a moment.',
+    serverBody: 'Our server had a problem with this request. It has been reported. Please try again in a moment.',
     unavailableTitle: 'We’ll be back shortly',
     unavailableBody: 'Our server is not responding right now. Try again in a few minutes.',
     goHome: 'Go to the home page',
