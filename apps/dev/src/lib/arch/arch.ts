@@ -1276,12 +1276,15 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
   for (const b of badges) {
     const same = shared.get(b.n)!;
     const sub = same.length > 1 ? (subLetters[same.indexOf(b.rt)] ?? '') : '';
-    // Arabic «٢ب» reads digit first, so the digit sits on the right. Bidi resolution of a two-glyph
-    // text was not reliable (one badge drew «ب٢»), so the badge is drawn left-to-right with
-    // bidi-override and its glyphs in visual order: letter, then digit.
+    // Arabic «٢ب» reads digit first, so the digit sits on the right and the letter on the left. Bidi and shaping
+    // of a two-glyph text are not reliable (with or without bidi-override, a joining «ب» drew on the other side
+    // of its digit than a non-joining «أ»), so the two glyphs are two texts placed at their own x.
     const ar = sub && opts.locale === 'ar';
-    const text = ar ? sub + formatNumber(b.n, 'ar') : formatNumber(b.n, opts.locale ?? 'en') + sub;
-    out.push(`<g class="an-badge an-f-${b.rt.e.flow}${sub ? ' an-badge-sub' : ''}" data-for="${b.rt.id}" data-covers>${sub ? `<rect x="${r(b.c.x - 13)}" y="${r(b.c.y - BR)}" width="26" height="${2 * BR}" rx="${BR}"/>` : `<circle cx="${r(b.c.x)}" cy="${r(b.c.y)}" r="${BR}"/>`}<text x="${r(b.c.x)}" y="${r(b.c.y + 4)}" text-anchor="middle"${ar ? ' direction="ltr" unicode-bidi="bidi-override"' : ''}>${text}</text></g>`);
+    const y = r(b.c.y + 4);
+    const label = ar
+      ? `<text x="${r(b.c.x - 5)}" y="${y}" text-anchor="middle">${sub}</text><text x="${r(b.c.x + 5.5)}" y="${y}" text-anchor="middle">${formatNumber(b.n, 'ar')}</text>`
+      : `<text x="${r(b.c.x)}" y="${y}" text-anchor="middle">${formatNumber(b.n, opts.locale ?? 'en') + sub}</text>`;
+    out.push(`<g class="an-badge an-f-${b.rt.e.flow}${sub ? ' an-badge-sub' : ''}" data-for="${b.rt.id}" data-covers>${sub ? `<rect x="${r(b.c.x - 13)}" y="${r(b.c.y - BR)}" width="26" height="${2 * BR}" rx="${BR}"/>` : `<circle cx="${r(b.c.x)}" cy="${r(b.c.y)}" r="${BR}"/>`}${label}</g>`);
   }
   out.push('</g>');
   out.push('</svg>');

@@ -194,6 +194,8 @@ function planFrames(blocks: Block[], head: number, vh: number, H: number, endSid
     }
     // never inside a row of cards: the row opens on its first card
     while (i > 0 && !blocks[i - 1]!.tall && Math.abs(blocks[i - 1]!.top - blocks[i]!.top) <= 1) i--;
+    // and a section's heading opens the frame with its first row (the view grows to hold it)
+    while (i > 0 && blocks[i - 1]!.heading) i--;
     endAt = i;
   }
   const groups: number[][] = [];
@@ -221,6 +223,9 @@ function planFrames(blocks: Block[], head: number, vh: number, H: number, endSid
   // a sliver (a terms line alone before a drawing too tall to frame) joins the frame before it, grown to hold it
   const span = (g: number[]) => Math.max(...g.map((i) => blocks[i]!.bottom)) - Math.min(...g.map((i) => blocks[i]!.top));
   for (let k = groups.length - 2; k >= 1; k--) if (span(groups[k]!) < 160) groups.splice(k - 1, 2, [...groups[k - 1]!, ...groups[k]!]);
+  // a heading never ends a frame: it moves on to open the next one with its section
+  for (let k = 0; k + 1 < groups.length; k++)
+    while (groups[k]!.length > 1 && blocks[groups[k]![groups[k]!.length - 1]!]!.heading) groups[k + 1]!.unshift(groups[k]!.pop()!);
   return groups;
 }
 /** frame plans by page and width, made on the first language shot and reused for the other */
@@ -338,6 +343,9 @@ async function shootFrames(page: Page, tag: string, blocks: Block[], head: numbe
     const { sy, side, eTop, clipBottom } = pick ?? fallback!;
     if (process.env.DEBUG_FRAMES) console.log(`${tag} f${k + 1} g=[${g.join(',')}] y=${y} last=${last} prev=${prev} next=${nextTop} vh=${vh} sy=${sy} hEdge=${sy + head} bottom=${sy + clipBottom} pick=${!!pick} anyTop=${anyTop} regroups=${regroups}`);
     if (!pick) await page.evaluate((top) => window.scrollTo(0, top), sy);
+    // a resize or scroll repaints over the next frames: two animation frames and the fonts settle the paint first
+    // (round 18 caught a frame whose legend swatches had not painted yet)
+    await page.evaluate(() => document.fonts.ready.then(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => ok(null))))));
     const clipTop = 0;
     const file = join(out, `${tag}-frame-${String(k + 1).padStart(2, '0')}.png`);
     await page.screenshot({ path: file, clip: { x: 0, y: clipTop, width: base.width, height: clipBottom - clipTop } });
@@ -425,6 +433,9 @@ function proveFrames(tag: string, blocks: Block[], frames: Frame[], head: number
       if (b.top < f.top - 1 && b.bottom > f.top + 1) fail(`${base(f.file)} opens inside “${b.label}”`);
       if (b.top < f.bottom - 1 && b.bottom > f.bottom + 1) fail(`${base(f.file)} ends inside “${b.label}”`);
     }
+    // a heading opens its section's frame, never ends the one before
+    const lastIn = inside.reduce<Block | null>((m, b) => (!m || b.bottom > m.bottom ? b : m), null);
+    if (lastIn?.heading) fail(`${base(f.file)} ends on the heading “${lastIn.label}”, its section in the next frame`);
     // drawn ink keeps 8 px to a clipped edge: a block whole in the frame sits 8 px or more inside it
     if (inside.length && f.bottom < H - 1 && f.bottom - Math.max(...inside.map((b) => b.bottom)) < 8) fail(`${base(f.file)}: its last block ends ${Math.round(f.bottom - Math.max(...inside.map((b) => b.bottom)))} px from the bottom edge (min 8)`);
     if (i > 0 && inside.length && Math.min(...inside.map((b) => b.top)) - f.top < 8) fail(`${base(f.file)}: its first block starts ${Math.round(Math.min(...inside.map((b) => b.top)) - f.top)} px under the header (min 8)`);

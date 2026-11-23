@@ -5,8 +5,8 @@
  * In Arabic, every Latin run (a name, a path, an identifier) is isolated in a <bdi> kept on one line, so the
  * bidi algorithm never reorders it or its punctuation, and «api-videos» never breaks at its hyphen. A link keeps the
  * word before it and the punctuation after it on its line (a path never ends a paragraph alone), its Latin label
- * isolated left to right so the full stop stays outside it. An HTTP route («GET /api/videos/:id») is one unit in
- * both languages.
+ * isolated left to right so the full stop stays outside it. An HTTP route («GET /api/videos/:id») or a code token
+ * («views:<videoId>:<shard>», «apps/media») is one unit in both languages.
  */
 import { splitLatin, hasArabic } from '../lib/arch/text.ts';
 interface Props {
@@ -16,6 +16,9 @@ const { text } = Astro.props;
 type Piece = { t: string; latin: boolean; route?: boolean };
 type Part = { pieces: Piece[] } | { before: string; label: string; href: string; after: string };
 const ROUTE = /\b(?:GET|POST|PUT|PATCH|DELETE|HEAD) \/[^\s,;،؛]*[^\s.,;:،؛)]/g;
+// a code token (an object name with its key parts, a path): «views:<videoId>:<shard>», «apps/media»
+const CODE = /(?<![\w<>/:])(?:[A-Za-z_][\w.-]*(?:[:/][\w<>.-]*[\w>])+|<\w+>(?::<?\w+>?)*)/g;
+const UNIT = new RegExp(`${ROUTE.source}|${CODE.source}`, 'g');
 const arabic = hasArabic(text);
 // plain text: Latin runs isolated in Arabic; routes kept whole everywhere
 const piecesOf = (s: string): Piece[] =>
@@ -23,7 +26,7 @@ const piecesOf = (s: string): Piece[] =>
     if (q.latin) return [{ ...q, route: false }];
     const out: Piece[] = [];
     let at = 0;
-    for (const m of q.t.matchAll(ROUTE)) {
+    for (const m of q.t.matchAll(UNIT)) {
       if (m.index! > at) out.push({ t: q.t.slice(at, m.index), latin: false });
       out.push({ t: m[0], latin: false, route: true });
       at = m.index! + m[0].length;
