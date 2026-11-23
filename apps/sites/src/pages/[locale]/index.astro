@@ -8,7 +8,7 @@ import { channelPosts, channelVideos, homePage } from '../../lib/data';
 import { alternates, canonicalUrl, siteName } from '../../lib/seo';
 
 const ctx = pageContext(Astro);
-if (!ctx) return new Response('Not found', { status: 404 });
+if (!ctx) return Astro.rewrite('/404');
 const { site, locale, t } = ctx;
 const [videos, posts, home] = await Promise.all([
   channelVideos(ctx.data, site.channel.id, { limit: 8 }),

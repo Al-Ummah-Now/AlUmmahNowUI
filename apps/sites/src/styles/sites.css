@@ -74,12 +74,21 @@ html[data-theme][data-mode='dark'] {
 *::after {
   box-sizing: border-box;
 }
+/* The footer always reaches the bottom of the window: on a short page (a 404 on a phone) main takes the
+   free height, so no empty band shows under the footer */
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font);
   line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+body > main {
+  flex: 1 0 auto;
 }
 html[lang='ar'] body {
   font-family: var(--font-ar);

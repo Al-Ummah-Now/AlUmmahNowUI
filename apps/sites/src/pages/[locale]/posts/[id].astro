@@ -6,10 +6,10 @@ import { sitePost } from '../../../lib/data';
 import { alternates, canonicalUrl, siteName } from '../../../lib/seo';
 
 const ctx = pageContext(Astro);
-if (!ctx) return new Response('Not found', { status: 404 });
+if (!ctx) return Astro.rewrite('/404');
 const { site, locale } = ctx;
 const post = await sitePost(ctx.data, site.channel.id, Astro.params.id ?? '');
-if (!post) return new Response('Not found', { status: 404 });
+if (!post) return Astro.rewrite('/404');
 const path = `posts/${post.id}/`;
 // Posts are canonical on the site (SS7), whichever host kind it has
 const canonical = canonicalUrl(site, locale, path, ctx.scheme);

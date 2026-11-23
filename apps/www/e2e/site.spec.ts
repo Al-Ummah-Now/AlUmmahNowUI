@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test';
 import { AUTH_URL, CLIENT_ID, LOCALES, REDIRECT_URI } from './env';
 
 const HEADINGS = {
-  en: { articles: 'Articles', videos: 'Videos', notFound: 'We could not find that page' },
-  ar: { articles: 'المقالات', videos: 'المرئيات', notFound: 'لم نعثر على هذه الصفحة' },
+  en: { articles: 'Articles', videos: 'Videos', notFound: 'Page not found' },
+  ar: { articles: 'المقالات', videos: 'المرئيات', notFound: 'الصفحة غير موجودة' },
 };
 
 test.describe('rendering', () => {
@@ -36,7 +36,14 @@ test.describe('rendering', () => {
       expect(res?.status()).toBe(404);
       await expect(page.locator('html')).toHaveAttribute('lang', l);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(HEADINGS[l].notFound);
-      await expect(page.getByRole('link', { name: l === 'en' ? 'Go to the home page' : 'الذهاب إلى الصفحة الرئيسية' })).toHaveAttribute('href', `/${l}/`);
+      // The shared error card (wiki guides/error-pages.md): code line, search, home, noindex
+      const card = page.getByTestId('error-screen');
+      await expect(card).toHaveAttribute('data-error-status', '404');
+      await expect(card.getByText(l === 'en' ? 'Error 404' : 'خطأ ٤٠٤')).toBeVisible();
+      await expect(card.getByRole('search').getByRole('searchbox')).toBeVisible();
+      await expect(card.getByRole('link', { name: l === 'en' ? 'Home page' : 'الصفحة الرئيسية' })).toHaveAttribute('href', `/${l}/`);
+      await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+      expect(await card.evaluate((el) => [...el.querySelectorAll('*')].filter((e) => getComputedStyle(e).animationName !== 'none').length)).toBe(0);
     });
   }
 
