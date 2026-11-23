@@ -89,6 +89,14 @@
 .site-header .aun-search-input:focus-visible {
   outline: none;
 }
+/* The focused pill is one layer: the contract's border plus inset ring are two 1px strokes, and at a
+   fractional pixel ratio (Pixel 7, 2.625x) they draw as two thin lines with a seam (AUDIT-2 #143).
+   One 2px outline inside the edge covers the border in the same colour. */
+.site-header .aun-search:focus-within {
+  box-shadow: none;
+  outline: 2px solid var(--fanous-c-upload-focus);
+  outline-offset: -2px;
+}
 .site-header .aun-search-submit {
   border-start-end-radius: var(--fanous-radius-full, 999px);
   border-end-end-radius: var(--fanous-radius-full, 999px);

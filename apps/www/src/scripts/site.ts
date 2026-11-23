@@ -19,6 +19,7 @@ import { initFacades } from './facade';
 import { initSearchBoxes } from './search-combobox';
 import { fitBrand } from '../../../../packages/render/src/brand-fit';
 import { coverBar, fitToViewport } from '../../../../packages/render/src/menu-fit';
+import { fitName } from '../../../../packages/render/src/name-fit';
 import { initTheme } from './theme';
 import { startStreet } from '../../../../packages/render/src/themes/fanous-street.generated.js';
 import {
@@ -220,6 +221,8 @@ function buildMenu(root: HTMLElement, me: Me, result: AccountsResult, focusButto
   button.append(avatarEl(avatar, name));
   const label = el('span', { class: 'account-label aun-acct-name', dir: 'auto' }, name);
   button.append(el('span', { class: 'visually-hidden' }, `${d.labelMenu}: `), label);
+  // cut by us, not by the ellipsis, so it sits 8px from the avatar in every theme (name-fit.ts)
+  fitName(label, name);
   const caret = document.getElementById('caret-icon') as HTMLTemplateElement | null;
   if (caret) {
     const svg = caret.content.cloneNode(true) as DocumentFragment;

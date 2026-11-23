@@ -447,6 +447,8 @@ a:hover {
   max-width: 38rem;
   color: var(--hero-text);
   font-size: 1.125rem;
+  /* no lone last word («والإنجليزية.» alone on the Arabic hero's last line, AUDIT-2 #143) */
+  text-wrap: balance;
 }
 .hero-actions {
   display: flex;

@@ -180,6 +180,28 @@ test('signed in: the account button (name hidden below 768px) opens the menu', a
   await expect(page.locator('#account-menu')).toBeVisible();
 });
 
+test('signed in: a long Arabic name on an English page is cut to fit, 8px from the avatar in every theme', async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 1366) < 768, 'the name is hidden below 768px');
+  const name = 'استوديو النور للبث والمرئيات الإسلامية';
+  await page.route((u) => u.origin === WWW_URL && u.pathname === '/auth/me', (r) =>
+    r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ signedIn: true, sub: 'u1', name, email: 'n@example.com', roles: [], canEditContent: false, profile: { displayName: name } }) }),
+  );
+  const cors = { 'access-control-allow-origin': WWW_URL, 'access-control-allow-credentials': 'true', 'content-type': 'application/json' };
+  await page.route(`${AUTH_URL}/session/accounts`, (r) => r.fulfill({ status: 200, headers: cors, body: JSON.stringify({ accounts: [{ userId: 'u1', isActive: true, email: 'n@example.com', name }] }) }));
+  await page.goto('/en/');
+  const button = page.locator('#account .aun-acct-btn');
+  await expect(button).toHaveAccessibleName(new RegExp(name));
+  for (const theme of ['fawanees', 'lantern', 'nahas', 'zujaj']) {
+    await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme);
+    await page.evaluate(() => document.fonts.ready);
+    // our cut, not the ellipsis: nothing overflows, so no slack collects beside the avatar
+    await expect.poll(() => button.locator('.aun-acct-name').evaluate((e) => e.scrollWidth - e.clientWidth), theme).toBeLessThanOrEqual(1);
+    const gap = await button.evaluate((b) => b.querySelector('.aun-acct-name')!.getBoundingClientRect().left - b.querySelector('.aun-avatar')!.getBoundingClientRect().right);
+    expect(gap, theme).toBeCloseTo(8, 0);
+    await expect(button.locator('.aun-acct-name [aria-hidden="true"]')).toHaveText(/…$/);
+  }
+});
+
 for (const scheme of ['light', 'dark'] as const) {
   for (const l of LOCALES) {
     test(`axe (WCAG 2.2 AA), header only: ${l} ${scheme}, signed out and signed in with the menu open`, async ({ page }) => {

@@ -7,6 +7,7 @@
  */
 import { fitBrand } from '../../../../packages/render/src/brand-fit';
 import { fitToViewport } from '../../../../packages/render/src/menu-fit';
+import { fitName } from '../../../../packages/render/src/name-fit';
 import { displayLabel, type MeProfileView } from '../../../../packages/render/src/profile-name';
 
 const root = document.documentElement;
@@ -45,7 +46,8 @@ fitBrand();
 /** Name and email of this browser's session, on the button and in the menu's "who" row. */
 function fillAccount(name: string, email: string | null): void {
   const shown = name || email || '';
-  document.querySelectorAll<HTMLElement>('[data-account-name]').forEach((el) => (el.textContent = shown));
+  // the button's name is cut by us, not by the ellipsis, so it sits 8px from the avatar in every theme (name-fit.ts)
+  document.querySelectorAll<HTMLElement>('[data-account-name]').forEach((el) => (el.classList.contains('aun-acct-name') ? fitName(el, shown) : (el.textContent = shown)));
   document.querySelectorAll<HTMLElement>('[data-account-initial]').forEach((el) => (el.textContent = (Array.from(shown.trim())[0] ?? '?').toUpperCase()));
   const signedInAs = document.querySelector<HTMLElement>('[data-account-signed-in-as]');
   if (signedInAs) signedInAs.textContent = (signedInAs.dataset.template ?? '{name}').replace('{name}', shown);
