@@ -174,10 +174,12 @@ export function errorCardHtml(o: ErrorCardOptions): string {
     ? `<button type="button" class="${SECONDARY}" data-ep-back hidden>${errorCardIcon('back')}<span>${escapeHtml(t.goBack)}</span></button>`
     : '';
   // The Reference box, as on the videos card: the code, a Copy button (shown by ep-back.js when the
-  // clipboard is there) and the hint
+  // clipboard is there) and the hint. The code is lang="zxx" (no language): it is a code in any
+  // locale, and an Arabic page's `:lang(ar) { font-family }` rule (www global.css) would otherwise
+  // tie the monospace rule and win by load order
   const ref = o.reference
     ? `<div class="ep-ref"><div class="ep-ref-row"><span class="ep-ref-label">${escapeHtml(t.reference)}</span>` +
-      `<code class="ep-ref-code" dir="ltr" data-testid="error-ref">${escapeHtml(o.reference)}</code>` +
+      `<code class="ep-ref-code" dir="ltr" lang="zxx" translate="no" data-testid="error-ref">${escapeHtml(o.reference)}</code>` +
       `<button type="button" class="ep-ref-copy" data-ep-copy="${escapeHtml(o.reference)}" data-copied="${escapeHtml(t.copied)}" hidden>${errorCardIcon('copy')}<span aria-live="polite">${escapeHtml(t.copy)}</span></button></div>` +
       `<p class="ep-ref-hint">${escapeHtml(t.referenceHint)}</p></div>`
     : '';

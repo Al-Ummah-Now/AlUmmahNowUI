@@ -28,7 +28,7 @@ describe('the shared error card (wiki guides/error-pages.md)', () => {
   it('500/503: the Reference box between the body and the footer, as on the videos card', () => {
     const html = errorCardHtml({ ...base, locale: 'en', kind: 'unavailable', primary: { label: 'Try again', href: '/en/x' }, contactHref: '/en/contact', reference: '8d1f<2>' });
     expect(html).toContain('<span class="ep-ref-label">Reference</span>');
-    expect(html).toContain('<code class="ep-ref-code" dir="ltr" data-testid="error-ref">8d1f&lt;2&gt;</code>');
+    expect(html).toContain('<code class="ep-ref-code" dir="ltr" lang="zxx" translate="no" data-testid="error-ref">8d1f&lt;2&gt;</code>');
     // Copy shows only when the page's script finds a clipboard
     expect(html).toMatch(/<button type="button" class="ep-ref-copy" data-ep-copy="8d1f&lt;2&gt;" data-copied="Copied" hidden>/);
     expect(html.indexOf('ep-body')).toBeLessThan(html.indexOf('ep-ref'));
