@@ -17,15 +17,18 @@
   --ep-edge:var(--aun-glass-edge,color-mix(in srgb,var(--ep-c) 55%,var(--fanous-color-surface)));
   --ep-glow:var(--aun-glass-glow,0 0 28px -4px color-mix(in srgb,var(--ep-c) 45%,transparent));
   --ep-tint:color-mix(in srgb,var(--fanous-color-text-primary) 7%,transparent);
-  display:grid;grid-template-columns:minmax(0,1fr);place-items:center;box-sizing:border-box;width:100%;max-width:100%;overflow-x:clip;min-height:calc(100dvh - 160px);padding:clamp(24px,6vw,72px) 16px;color:var(--fanous-color-text-primary)}
+  display:grid;grid-template-columns:minmax(0,1fr);place-items:center;box-sizing:border-box;width:100%;max-width:100%;overflow-x:clip;min-height:calc(100dvh - 160px);padding:clamp(24px,6vw,72px) 16px;line-height:1.5;color:var(--fanous-color-text-primary)}
 @supports (color:rgb(from red r g b)){.ep{--ep-surface:rgb(from var(--fanous-color-background) calc(r + (255 - r) * (0.119 + 0.681 * clamp(0, (0.2126 * r + 0.7152 * g + 0.0722 * b - 127.5) * 10, 1))) calc(g + (255 - g) * (0.119 + 0.681 * clamp(0, (0.2126 * r + 0.7152 * g + 0.0722 * b - 127.5) * 10, 1))) calc(b + (255 - b) * (0.119 + 0.681 * clamp(0, (0.2126 * r + 0.7152 * g + 0.0722 * b - 127.5) * 10, 1))))}}
 .ep-card{box-sizing:border-box;width:100%;max-width:640px;min-width:0;overflow-wrap:anywhere;border:1px solid var(--ep-edge);border-radius:var(--aun-radius-card,16px);background:var(--ep-surface);box-shadow:var(--ep-glow);padding:clamp(24px,4vw,40px);text-align:start}
 @media print{.ep-card{background:none;box-shadow:none}}
+/* One street on every error page: the videos site's faint lanterns (--fanous-street-faint, the theme's opacity at
+   which every text colour keeps 4.5:1), whatever the app shows elsewhere (AUDIT-2: Auth and www were lit, videos dim) */
+html.fanous-street:has(.ep){--fanous-street-opacity:var(--fanous-street-faint,1)}
 .ep-head{display:grid;grid-template-columns:auto 1fr;column-gap:var(--fanous-spacing-md,12px);align-items:center}
 .ep-badge{display:grid;place-items:center;width:52px;height:52px;border-radius:14px;background:var(--fanous-color-primary);color:var(--fanous-color-on-primary);box-shadow:0 0 18px -4px color-mix(in srgb,var(--ep-c) 60%,transparent)}
 .ep-badge svg{width:26px;height:26px}
 .ep-heading,.ep-head,.ep-search,.ep-foot,.ep-actions{min-width:0}
-.ep-code{margin:0 0 2px;font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--fanous-color-text-secondary)}
+.ep-code{margin:0 0 2px;font-size:13px;font-weight:600;line-height:1.5;letter-spacing:.06em;color:var(--fanous-color-text-secondary)}
 html[lang=ar] .ep-code,.ep[lang=ar] .ep-code{letter-spacing:0}
 .ep-title{margin:0;font-family:inherit;font-size:clamp(24px,3vw,30px);font-weight:700;line-height:1.25;letter-spacing:normal;text-wrap:balance;color:var(--fanous-color-text-primary)}
 .ep[lang=ar] .ep-title{line-height:1.45}
@@ -78,6 +81,7 @@ html[lang=ar] .ep-code,.ep[lang=ar] .ep-code{letter-spacing:0}
   /* The reference on one line and Copy on the next, starting under the label (its icon on the label's
      edge): wrapped by flex, Copy floated alone at the end edge, far from what it copies */
   .ep-ref-row{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:8px;row-gap:2px}
-  .ep-ref-code{overflow-wrap:anywhere}
+  /* justify-self: the code (dir=ltr) sits right after its label in Arabic too, not at the far edge */
+  .ep-ref-code{justify-self:start;overflow-wrap:anywhere}
   .ep-ref-copy{grid-column:1/-1;justify-self:start;margin-inline:-10px 0}
 }
