@@ -9,7 +9,7 @@ import '../styles/arch.css';
 import { diagram, type DiagramId } from '../lib/arch/all';
 import { laneTotals, scenarioLabels } from '../lib/arch/specs/costs';
 import { formatUsd } from '../lib/arch/cost';
-import { formatNumber } from '../../../../packages/render/src/format.ts';
+import { fill, formatNumber } from '../../../../packages/render/src/format.ts';
 import { strings } from '../i18n';
 import Rich from './Rich.astro';
 import type { Locale } from '../lib/pages';
@@ -42,8 +42,11 @@ const compareRows = [
   { lane: 'shared', label: dg.costs.lane.shared },
 ] as const;
 const uid = `${id}-${headingId ?? 'fig'}`;
+const svgTitle = /<title[^>]*>([^<]+)<\/title>/.exec(d.wide)?.[1] ?? '';
+const diagramTitle = title ?? svgTitle;
+const expandAriaLabel = fill(dg.viewer.expandDiagram, { title: diagramTitle || dg.viewer.viewerLabel }, locale);
 ---
-<figure class="an-figure" aria-labelledby={headingId} data-unknown-label={dg.costs.unknown}>
+<figure class="an-figure" aria-labelledby={headingId} data-unknown-label={dg.costs.unknown} data-diagram-title={diagramTitle} data-viewer-i18n={JSON.stringify(dg.viewer)}>
   {title && <h2 id={headingId} class="h2">{title}</h2>}
   {lead && <p class="section-lead"><Rich text={lead} /></p>}
   {costs && (
@@ -71,10 +74,19 @@ const uid = `${id}-${headingId ?? 'fig'}`;
     )
   ))}
   <div class:list={['an-frame', bleed && 'an-bleed']}>
-    {/* natural size, never shrunk: a figure wider than the column scrolls sideways (with a hint) */}
-    <p class="an-scroll-hint" hidden>{lg.scroll}</p>
-    <div class="an-wide an-scroll" tabindex="0" role="region" aria-label={title ?? lg.title} set:html={d.wide} />
-    <div class="an-narrow an-scroll" tabindex="0" role="region" aria-label={title ?? lg.title} set:html={d.narrow} />
+    <div class="an-frame-bar">
+      <button type="button" class="an-expand-btn" data-diagram-expand aria-label={expandAriaLabel} title={expandAriaLabel}>
+        <svg class="an-btn-ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 3 21 3 21 9" />
+          <polyline points="9 21 3 21 3 15" />
+          <line x1="21" y1="3" x2="14" y2="10" />
+          <line x1="3" y1="21" x2="10" y2="14" />
+        </svg>
+        <span>{dg.viewer.expand}</span>
+      </button>
+    </div>
+    <div class="an-wide an-diagram-surface" set:html={d.wide} />
+    <div class="an-narrow an-diagram-surface" set:html={d.narrow} />
   </div>
   {costs && (
     <section class="an-compare an-legend-wrap" aria-label={dg.costs.compare}>
@@ -100,5 +112,5 @@ const uid = `${id}-${headingId ?? 'fig'}`;
 </figure>
 <script>
   import '../scripts/meters.ts';
-  import '../scripts/figure-scroll.ts';
+  import '../scripts/diagram-viewer.ts';
 </script>

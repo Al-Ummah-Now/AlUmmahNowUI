@@ -153,9 +153,9 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
     const texts = [...svg.querySelectorAll<SVGTextElement>('text')].filter((t) => !t.closest('.an-motion') && t.textContent?.trim());
     const tb = texts.map((t) => ({ t, b: bb(t) }));
     for (const { t } of tb) {
-      // drawn at natural size: every label at least 11 px on screen
-      const px = parseFloat(getComputedStyle(t).fontSize) * scale;
-      if (px < 10.9) out.push(`${name}: text "${t.textContent}" renders at ${px.toFixed(1)} px (min 11)`);
+      // authored size at 1:1 (expanded view): every label at least 11 px
+      const px = parseFloat(getComputedStyle(t).fontSize);
+      if (px < 10.9) out.push(`${name}: text "${t.textContent}" has font-size ${px.toFixed(1)} px (min 11)`);
       // Arabic with Latin runs: each run isolated (LRI … PDI)
       const raw = t.textContent ?? '';
       if (/[\u0600-\u06ff]/.test(raw) && /[A-Za-z]/.test(raw.replace(/\u2066[^\u2069]*\u2069/g, ''))) out.push(`${name}: Arabic text "${raw}" has a Latin run that isn't isolated`);
@@ -514,40 +514,18 @@ export function gateInBrowser(opts: { glossary?: { abbr: string; en: string; ar:
         if (gap < 6) out.push(`${name}: the title "${title.textContent}" is ${Math.round(gap)} px from the cloud outline (min 6)`);
       }
     }
-    // a wide figure in a sideways-scroll box opens on its drawing, never on empty canvas: a tile shows
+    // responsive figure: no horizontal or vertical scrollbars, and the drawing fits inside its frame
     {
-      const box = svg.closest<HTMLElement>('.an-scroll');
-      if (box && box.scrollWidth > box.clientWidth + 1) {
-        const vr = box.getBoundingClientRect();
-        const seen = nodes.some((g) => {
-          const r2 = (g.querySelector('[data-box]') ?? g).getBoundingClientRect();
-          const w = Math.min(r2.right, vr.right) - Math.max(r2.left, vr.left);
-          return w >= Math.min(r2.width, vr.width) * 0.6;
-        });
-        if (!seen) out.push(`${name}: its scroll box opens on empty canvas (no tile in view)`);
+      const frame = svg.closest<HTMLElement>('.an-frame');
+      const surface = svg.closest<HTMLElement>('.an-diagram-surface');
+      if (frame) {
+        if (frame.scrollWidth > frame.clientWidth + 1) out.push(`${name}: figure overflows horizontally (${frame.scrollWidth} > ${frame.clientWidth})`);
+        if (svg.getBoundingClientRect().width > frame.getBoundingClientRect().width + 1) out.push(`${name}: svg wider than its frame`);
       }
-    }
-    // at the position its scroll box opens on, the drawing keeps 12 px from the box's start edge (nothing hidden
-    // past it, nothing touching it); a figure that fits keeps 12 px from both edges
-    {
-      const box = svg.closest<HTMLElement>('.an-scroll');
-      if (box) {
-        const vr = box.getBoundingClientRect();
-        const rtl = getComputedStyle(box).direction === 'rtl' || document.documentElement.dir === 'rtl';
-        const fits = box.scrollWidth <= box.clientWidth + 1;
-        const SEL = '.an-edge, [data-group] > rect, [data-group] polygon, [data-tag] rect, .an-iso-tag rect, [data-node] [data-box], [data-node] .an-node-box, [data-for], .an-sk-cloud, .an-sk-side, .an-sk-title, .an-lifeline, .an-seq-note-box';
-        const near: string[] = [];
-        for (const el of svg.querySelectorAll<SVGGraphicsElement>(SEL)) {
-          if (el.closest('.an-motion')) continue;
-          const r2 = el.getBoundingClientRect();
-          if (!r2.width && !r2.height) continue;
-          const startGap = rtl ? vr.right - r2.right : r2.left - vr.left;
-          const endGap = rtl ? r2.left - vr.left : vr.right - r2.right;
-          const what = el.closest('[data-group]')?.getAttribute('data-group') ?? el.closest('[data-node]')?.getAttribute('data-node') ?? el.closest('[data-tag]')?.getAttribute('data-tag') ?? (el.textContent ?? el.getAttribute('class') ?? '').trim().slice(0, 30);
-          if (startGap < 11.5) near.push(`${what} ${startGap < 0 ? 'hidden past' : `${Math.round(startGap)} px from`} the start edge`);
-          else if (fits && endGap < 11.5) near.push(`${what} ${Math.round(endGap)} px from the end edge`);
+      if (surface) {
+        if (surface.scrollWidth > surface.clientWidth + 1 || surface.scrollHeight > surface.clientHeight + 1) {
+          out.push(`${name}: diagram surface has scroll overflow (${surface.scrollWidth}x${surface.scrollHeight} > ${surface.clientWidth}x${surface.clientHeight})`);
         }
-        if (near.length) out.push(`${name}: at its opening scroll position, ${[...new Set(near)].slice(0, 3).join('; ')}`);
       }
     }
     // a phone sequence figure: a message's words never sit over a lifeline (desktop wraps them within their arrow)
