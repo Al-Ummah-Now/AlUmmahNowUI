@@ -190,7 +190,7 @@ const sketch: Builder = (d) => {
     edges: [
       { from: 'api', to: 'r2', fromSide: 'w' as const, toSide: 's' as const, bend: 30, tag: c.tag.whole, tone: 'green' as const, tagAt: 0.45, tagTilt: true },
       { from: 'api', to: 'kv', fromSide: 'n' as const, toSide: 's' as const },
-      { from: 'api', to: 'd1', fromSide: 'e' as const, toSide: 's' as const, bend: -30, tag: c.tag.sql, tone: 'blue' as const, tagAt: 0.45, tagTilt: true },
+      { from: 'api', to: 'd1', fromSide: 'e' as const, toSide: 's' as const, bend: -30, tag: c.tag.sql, tone: 'blue' as const, tagAt: 0.75, tagTilt: true },
       { from: 'api', to: 'dobj', fromSide: 'w' as const, toSide: 'n' as const, bend: -30 },
       { from: 'api', to: 'ae', fromSide: 'e' as const, toSide: 'n' as const, bend: 30 },
     ],
