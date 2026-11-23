@@ -69,11 +69,20 @@ for (let i = 0; i < raw.length; i++) {
 }
 const parts: Part[] = raw.map((p) => ('href' in p ? (p as Part) : { pieces: piecesOf(p.t) }));
 const latinLabel = (s: string) => arabic && !hasArabic(s);
+const longRun = (s: string) => s.length > 24;
 ---
 {parts.map((p) =>
   'pieces' in p ? (
-    p.pieces.map((q) => (q.latin ? <bdi dir="ltr" class="lr">{q.t}</bdi> : q.route ? <span class="nb">{q.t}</span> : q.t))
+    p.pieces.map((q) =>
+      q.latin ? (
+        <bdi dir="ltr" class={longRun(q.t) ? 'lr lr-wrap' : 'lr'}>{q.t}</bdi>
+      ) : q.route ? (
+        <span class={longRun(q.t) ? 'nb nb-wrap' : 'nb'}>{q.t}</span>
+      ) : (
+        q.t
+      ),
+    )
   ) : (
-    <span class="nb">{p.before && piecesOf(p.before).map((q) => (q.latin ? <bdi dir="ltr" class="lr">{q.t}</bdi> : q.t))}<a href={p.href} rel="external">{latinLabel(p.label) ? <bdi dir="ltr">{p.label}</bdi> : p.label}</a>{p.after}</span>
+    <span class="nb">{p.before && piecesOf(p.before).map((q) => (q.latin ? <bdi dir="ltr" class={longRun(q.t) ? 'lr lr-wrap' : 'lr'}>{q.t}</bdi> : q.t))}<a href={p.href} rel="external">{latinLabel(p.label) ? <bdi dir="ltr">{p.label}</bdi> : p.label}</a>{p.after}</span>
   ),
 )}
