@@ -174,7 +174,7 @@ The page shows no citations; each figure is checked against these lines.
 
 ## 9. Cost (`/{lang}/system-design/cost/`)
 
-- Whole-platform cap ≤ $500/month — `WIKI epics/decisions.md` O1 ("more than 500 a month … is a no go") and D2; `WIKI guides/video-delivery.md:90` ("must stay under $500/month"). ⚠ wording decision: the dev-site epic's rule says "without quoting the figure" (`WIKI epics/AUN-DEV-SITE…` Costs bullet) — flagged for the orchestrator.
+- Cost-conscious design: prefer low per-video and per-view unit costs — `WIKI epics/decisions.md` O1 and D2; `WIKI guides/video-delivery.md`.
 - Transcode on Containers billed per second while a job runs, not a VPS — O31 (`WIKI epics/decisions.md`); instances that are not running cost nothing — `AUN apps/media/wrangler.jsonc` comment.
 - VPS ruled out: "NOT possible without major refactoring" — `AUN docs/INFRASTRUCTURE_COST_ANALYSIS.md:32-34` (historic analysis, cited as such).
 - Observability economy: LOG_LEVEL warn in production, no invocation logs, head sampling 1 (errors kept) — `AUN docs/operations/logging.md:9-30` + wrangler observability blocks; "a chatty level is quickly the biggest line on the bill" (QA ~10M req/day) — logging.md:26-29.

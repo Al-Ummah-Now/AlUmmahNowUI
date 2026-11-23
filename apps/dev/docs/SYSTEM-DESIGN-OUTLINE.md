@@ -57,21 +57,14 @@ What the code and wiki show, item by item (current copy in `apps/dev/src/i18n/en
 live; four themes/Fanous; bknd CMS under our own admin; Next.js/OpenNext videos site; Astro
 www/sites; TUS uploads; API-chooses-one-play-URL; 15 s stall fallback once; signed URLs per
 response, never stored; share images on our own domain; live not on production (D3); QA/stage/
-production table; status page every two minutes; cost cap exists (number deliberately not quoted
-on the page — see open question 2).
+production table; status page every two minutes; cost-conscious design and hourly cost monitoring.
 
 ## Open questions for the orchestrator
 
 1. **Page placement.** Plan: a System design hub at `/{lang}/system-design/` + 12 subpages, one
    nav entry, cross-links from Technology and Infrastructure. Alternative: fold everything into
    the two existing pages (rejected: 12 topics × 2 languages on one page is unreadable on phones).
-2. **The $500/month figure.** The brief asks for "the platform's budget … with numbers only from
-   the wiki/code"; the wiki states ≤ $500/month (O1, D2, video-delivery guide). The dev-site epic's
-   wording rule says the site may name the cap "without quoting the figure". Proposal: quote
-   "US$500 per month" once on the Cost page with the O1/D2 citations (it is already public in the
-   wiki this site links to), and keep it out of the other pages. Need the owner's/orchestrator's
-   call.
-3. **BunnyStream library numbers** (498994/400189/553336) and the CDN hostnames appear in public
+2. **BunnyStream library numbers** (498994/400189/553336) and the CDN hostnames appear in public
    wrangler configs; I plan to show library *names/roles* without the numeric ids except where the
    wiki already prints them (553336 in `video-delivery.md:55`). Shout if you want no library ids
    at all.
@@ -159,7 +152,7 @@ assist) with model names on the boxes and the budget gauge around them.
 Diagram: small flow of cost lines → cost-monitor → costs D1 → Costs page + alerts; a choices list
 map (Workers vs servers, per-second containers, warn-only logs, sampled RUM, bounded originals,
 no-transcode E2E, static dev site).
-- Claims per SOURCES §9. The cap figure is behind open question 2. No other invented numbers; the
+- Claims per SOURCES §9. Plain unit rates and factual numbers only; no invented numbers; the
   historic 1M-user modelling exercise is cited as history if used at all.
 
 ### 1.10 Scaling — `scaling/`
