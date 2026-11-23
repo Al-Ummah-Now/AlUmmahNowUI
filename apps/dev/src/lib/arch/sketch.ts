@@ -123,6 +123,9 @@ export interface SketchEdge {
   tagTilt?: boolean;
   /** the tag stays level wherever it lands (never tilted to a slanted stretch): both languages draw it level */
   tagLevel?: boolean;
+  /** the tag sits on its own curve (an opaque pill over it) instead of beside it: where another wire runs near, a tag
+   *  beside the curve could read as that wire's */
+  tagOn?: boolean;
   /** the tag's middle this many px below the middle of the gap between the foot of one tile and the head of the one
    * below it: two tags stacked in one gap sit the same distance apart in both languages, whatever their widths */
   tagGap?: [string, string, number];
@@ -542,7 +545,7 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
     // one; where a fan leaves no such room, 13 to 24 px from its own and still 12 from the rest, then 8, and only
     // then just clear of them
     // (a tag set to tilt looks along the whole curve for a tilted spot before it settles for a level one)
-    for (const tiltOnly of e.tagTilt ? [true, false] : [false])
+    for (const tiltOnly of e.tagOn ? [] : e.tagTilt ? [true, false] : [false])
     for (const [ownMin, otherMin] of [[17, 12], [13, 12], [13, 8], [13, 0]] as const) {
     if (best) break;
     for (const t of [e.tagAt ?? 0.5, 0.45, 0.55, 0.4, 0.6, 0.35, 0.65, 0.3, 0.7, 0.25, 0.75, 0.2, 0.8, 0.15, 0.85, 0.1, 0.9]) {
@@ -618,7 +621,7 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
     let covers = false;
     if (!best) {
       const others = curves.filter((x) => x !== c).flatMap((x) => Array.from({ length: 61 }, (_, k) => at(x, k / 60)));
-      for (const t of [0.5, 0.42, 0.58, 0.34, 0.66, 0.28, 0.72]) {
+      for (const t of [...(e.tagOn && e.tagAt !== undefined ? [e.tagAt] : []), 0.5, 0.42, 0.58, 0.34, 0.66, 0.28, 0.72]) {
         const p = at(c, t);
         const q = { x: p[0] - tw / 2, y: p[1] - th / 2, w: tw, h: th };
         if (q.x < 8 || q.y < 60 || q.x + q.w > W - 8 || q.y + q.h > Hc - 8) continue;
