@@ -205,13 +205,15 @@ const roles: Builder = (d) => {
       edges: [
         { from: 'siteRoles', to: 'channelRoles', fromSide: 'e', toSide: 'e', bend: 70, tagAt: 0.3, tagGap: ['channelRoles', 'siteRoles', 20] },
         { from: 'siteRoles', to: 'token', fromSide: 's', toSide: 'n' },
-        { from: 'token', to: 'transfer', fromSide: 's', toSide: 'n' },
+        // the token's short wire to the transfer bows out through the right margin (clear of "neither grants the
+        // other", which ends higher up): the gap's middle stays empty, so "stored in" beside channel roles' long wire
+        // on the left reads only as that wire's
+        { from: 'token', to: 'transfer', fromSide: 'e', toSide: 'e', bend: -40 },
         { from: 'transfer', to: 'record', fromSide: 's', toSide: 'n' },
         { from: 'record', to: 'can', fromSide: 's', toSide: 'n' },
         // the farther wire first (its end spreads to the outer side) and bowed in proportion to its length, so the two
-        // leave at the same angle and never cross; "stored in" sits on the outer wire itself where it runs alone down the
-        // margin (beside it, the words would sit next to the token → transfer arrow and read as that route)
-        { from: 'channelRoles', to: 'record', fromSide: 'w', toSide: 'w', bend: 120, tagOn: true, tagAt: 0.6 },
+        // leave at the same angle and never cross; "stored in" beside the outer one in the gap under the token
+        { from: 'channelRoles', to: 'record', fromSide: 'w', toSide: 'w', bend: 120, tagGap: ['token', 'transfer', 0] },
         { from: 'channelRoles', to: 'token', fromSide: 'w', toSide: 'w', bend: 50, tagAt: 0.2, tagGap: ['channelRoles', 'siteRoles', -36] },
       ],
     },
