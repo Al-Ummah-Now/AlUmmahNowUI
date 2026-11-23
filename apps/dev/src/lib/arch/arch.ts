@@ -244,11 +244,13 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     if (need) layout = { ...layout, colW: Math.max(layout.colW, Math.ceil(need)) };
   }
   const tileW = Math.max(layout.tileMin ?? 0, Math.min(widest, layout.colW - 46));
+  const roleGap = opts.locale === 'ar' ? 0 : 2;
   // one tile height per diagram, so icons, names and wires line up along a row
   const nodeH = (n: ArchNode) => {
     const roles = n.role ? (Array.isArray(n.role) ? n.role : [n.role]) : [];
     const LG = lgOf(n);
-    return 8 + S + 7 + NS + LG + roles.length * (RS + LG) + (n.rate ?? []).length * (RT + LG + 2) + (n.meter || n.total ? MS + 3 + LG : 0) + (n.list?.length ? 9 + n.list.length * (FS + LG + 2) : 0) + 6;
+    const extraRoles = Math.max(0, roles.length - 1) * roleGap;
+    return 8 + S + 7 + NS + LG + roles.length * (RS + LG) + extraRoles + (n.rate ?? []).length * (RT + LG + 2) + (n.meter || n.total ? MS + 3 + LG : 0) + (n.list?.length ? 9 + n.list.length * (FS + LG + 2) : 0) + 6;
   };
   // per row (same grid y): tiles side by side share a height
   const rowOf = (n: ArchNode) => (layout.at?.[n.id] ?? n.at)[1];
@@ -265,8 +267,8 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     const box = { x: cx - w / 2, y: cy - h / 2, w, h };
     const lines: NodeBox['lines'] = [{ text: n.name, y: box.y + 8 + S + 7 + NS - 2, size: NS, bold: true }];
     const LG = lgOf(n);
-    roles.forEach((x, i) => lines.push({ text: x, y: box.y + 8 + S + 7 + NS + LG + (i + 1) * (RS + LG) - LG, size: RS, bold: false }));
-    let ly = box.y + 8 + S + 7 + NS + LG + roles.length * (RS + LG);
+    roles.forEach((x, i) => lines.push({ text: x, y: box.y + 8 + S + 7 + NS + LG + (i + 1) * (RS + LG) - LG + i * roleGap, size: RS, bold: false }));
+    let ly = box.y + 8 + S + 7 + NS + LG + roles.length * (RS + LG) + Math.max(0, roles.length - 1) * roleGap;
     rates.forEach((x) => {
       ly += RT + LG + 2;
       lines.push({ text: x, y: ly - 3, size: RT, bold: false, kind: 'rate' });

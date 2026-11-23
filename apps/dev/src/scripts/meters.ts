@@ -77,11 +77,17 @@ const figures = () => [...document.querySelectorAll<HTMLElement>('.an-figure')];
 
 function frame() {
   for (const fig of figures()) paintFigure(fig, false);
+  for (const svg of document.querySelectorAll<SVGSVGElement>('[data-diagram-viewer]:not([hidden]) svg.an[data-cycle]')) {
+    if (svg.querySelector('[data-meter]')) paint(svg, false);
+  }
   if (!reduce.matches) requestAnimationFrame(frame);
 }
 
 function start() {
   for (const fig of figures()) paintFigure(fig, true);
+  for (const svg of document.querySelectorAll<SVGSVGElement>('[data-diagram-viewer]:not([hidden]) svg.an[data-cycle]')) {
+    if (svg.querySelector('[data-meter]')) paint(svg, true);
+  }
   if (!reduce.matches) requestAnimationFrame(frame);
 }
 
@@ -91,6 +97,9 @@ document.addEventListener('change', (e) => {
   scenario = input.value;
   for (const s of document.querySelectorAll<SVGSVGElement>('svg.an[data-cycle]')) if (!reduce.matches) s.setCurrentTime(0);
   for (const fig of figures()) paintFigure(fig, reduce.matches);
+  for (const svg of document.querySelectorAll<SVGSVGElement>('[data-diagram-viewer]:not([hidden]) svg.an[data-cycle]')) {
+    if (svg.querySelector('[data-meter]')) paint(svg, reduce.matches);
+  }
 });
 reduce.addEventListener('change', start);
 start();
