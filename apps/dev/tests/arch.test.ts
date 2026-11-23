@@ -47,4 +47,22 @@ describe('system design diagrams', () => {
         writeFileSync(join(dir, `${id}-${locale}.html`), html);
       }
   });
+
+  it('Arabic sub-step badges draw the letter left of the digit as two placed glyphs, never one bidi run', () => {
+    let seen = 0;
+    for (const id of DIAGRAMS) {
+      const d = diagram(id, 'ar');
+      for (const svg of [d.wide, d.narrow])
+        for (const m of svg.matchAll(/<g class="an-badge[^"]*an-badge-sub[^"]*"[^>]*>(.*?)<\/g>/g)) {
+          const texts = [...m[1]!.matchAll(/<text x="([\d.-]+)"[^>]*>([^<]*)<\/text>/g)];
+          expect(texts).toHaveLength(2);
+          const [letter, digit] = texts as [RegExpMatchArray, RegExpMatchArray];
+          expect(letter[2]).toMatch(/^[أبجد]$/);
+          expect(digit[2]).toMatch(/^[٠-٩]+$/);
+          expect(Number(letter[1])).toBeLessThan(Number(digit[1]));
+          seen++;
+        }
+    }
+    expect(seen).toBeGreaterThan(0);
+  });
 });
