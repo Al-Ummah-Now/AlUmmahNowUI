@@ -121,6 +121,8 @@ export interface SketchEdge {
   tagAt?: number;
   /** the tag tilts along a slanted stretch even where a level spot is near: both languages draw it the same way */
   tagTilt?: boolean;
+  /** the tag stays level wherever it lands (never tilted to a slanted stretch): both languages draw it level */
+  tagLevel?: boolean;
   /** the tag's middle this many px below the middle of the gap between the foot of one tile and the head of the one
    * below it: two tags stacked in one gap sit the same distance apart in both languages, whatever their widths */
   tagGap?: [string, string, number];
@@ -579,7 +581,7 @@ function renderSketchSpecOnce(spec0: SketchSpec, layout0: SketchLayout, opts: { 
       let rot = Math.atan2(q2[1] - p[1], q2[0] - p[0]);
       if (rot > Math.PI / 2) rot -= Math.PI;
       if (rot < -Math.PI / 2) rot += Math.PI;
-      if (gapY === null && Math.abs(rot) > 0.1 && Math.abs(rot) < 1.05 && (!pick || pick.d > th / 2 + 34 || tiltOnly)) {
+      if (gapY === null && !e.tagLevel && Math.abs(rot) > 0.1 && Math.abs(rot) < 1.05 && (!pick || pick.d > th / 2 + 34 || tiltOnly)) {
         const cs = Math.cos(rot);
         const sn = Math.sin(rot);
         for (const [s, gap] of [18, 20, 22, 24].flatMap((g) => [[side, g], [-side, g]]) as [number, number][]) {

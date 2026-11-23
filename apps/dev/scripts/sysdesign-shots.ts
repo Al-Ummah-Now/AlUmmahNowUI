@@ -71,7 +71,11 @@ await new Promise<void>((ok) => server.listen(0, '127.0.0.1', ok));
 const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
 
 const browser = await chromium.launch();
-const WIDTHS = { desktop: { width: 1440, height: 900, dsf: 2 }, phone: { width: 412, height: 915, dsf: 3 } } as const;
+const ALL_WIDTHS = { desktop: { width: 1440, height: 900, dsf: 2 }, phone: { width: 412, height: 915, dsf: 3 } } as const;
+const widthsArg = process.argv.find((a) => a.startsWith('--widths='));
+const WIDTHS = Object.fromEntries(Object.entries(ALL_WIDTHS).filter(([w]) => !widthsArg || widthsArg.slice(9).split(',').includes(w))) as Partial<typeof ALL_WIDTHS>;
+const modesArg = process.argv.find((a) => a.startsWith('--modes='));
+const MODES = (['dark', 'light'] as const).filter((m) => !modesArg || modesArg.slice(8).split(',').includes(m));
 const name = (slug: string) => (slug ? slug.replace(/\/$/, '') : 'hub');
 const defects: string[] = [];
 
@@ -82,7 +86,24 @@ type Page = Awaited<ReturnType<Awaited<ReturnType<typeof browser.newContext>>['n
  * and the header are not blocks; the sidebar is checked on its own.
  */
 type Block = { top: number; bottom: number; heading: boolean; label: string; diagram: string | null; tall: boolean };
-type Frame = { file: string; sy: number; top: number; bottom: number; side: [number, number][] };
+type Side = { rows: [number, number][] };
+type Frame = { file: string; sy: number; top: number; bottom: number; side: Side };
+/**
+ * The one rule for where a clipped frame edge may meet the page list (shooter and proof both use it): nowhere across
+ * it. Its items touch, so an edge between two of them leaves the last line shown with no margin; the list as a whole
+ * keeps 4 px of drawn ink to the edge, and Arabic glyphs hang about 3 px past their line box, so 7 px from its box (the
+ * active item's pill is inside it).
+ */
+const sideCut = (c: number, side: Side) => {
+  const { rows } = side;
+  if (!rows.length) return null;
+  const lt = Math.min(...rows.map(([t]) => t));
+  const lb = Math.max(...rows.map(([, b]) => b));
+  if (c > lt - 7 && c < lb + 7) return `crosses the page list (${lt}–${lb}, with 7 px to spare, at edge ${Math.round(c)})`;
+  return null;
+};
+/** a line of the page list cut through (the header's edge at the page's foot may pass between lines: the header covers them) */
+const rowCut = (c: number, side: Side) => side.rows.some(([t, b]) => c > t + 0.5 && c < b - 0.5);
 async function readBlocks(page: Page) {
   return page.evaluate(() => {
     const head = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
@@ -134,36 +155,39 @@ async function readBlocks(page: Page) {
     const H = document.scrollingElement!.scrollHeight;
     const was = window.scrollY;
     window.scrollTo(0, H);
-    const endSide = [...document.querySelectorAll('.sd-aside .sd-nav-title, .sd-aside li')]
+    const y = window.scrollY;
+    const endRows = [...document.querySelectorAll('.sd-aside .sd-nav-title, .sd-aside li')]
       .map((el) => el.getBoundingClientRect())
       .filter((r) => r.height > 0)
-      .map((r) => [Math.round(r.top + window.scrollY), Math.round(r.bottom + window.scrollY)] as [number, number]);
+      .map((r) => [Math.round(r.top + y), Math.round(r.bottom + y)] as [number, number]);
+    const endSide = { rows: endRows };
     window.scrollTo(0, was);
     return { head, blocks, H, endSide };
   });
 }
-const sideRects = (page: Page) =>
-  page.evaluate(() =>
-    [...document.querySelectorAll('.sd-aside .sd-nav-title, .sd-aside li')]
+const sideRects = (page: Page): Promise<Side> =>
+  page.evaluate(() => {
+    const rows = [...document.querySelectorAll('.sd-aside .sd-nav-title, .sd-aside li')]
       .map((el) => el.getBoundingClientRect())
       .filter((r) => r.height > 0)
-      .map((r) => [Math.round(r.top), Math.round(r.bottom)] as [number, number]),
-  );
+      .map((r) => [Math.round(r.top), Math.round(r.bottom)] as [number, number]);
+    return { rows };
+  });
 /**
  * The page top to bottom as groups of blocks, one group per frame: each group opens on the first block no group holds
  * yet and takes every block after it that fits whole in a view below the sticky header, never ending on a heading
  * (its section opens the next group). The pager and the footer always share the last group. A figure taller than the
  * view is in no group: its standalone capture shows it whole.
  */
-function planFrames(blocks: Block[], head: number, vh: number, H: number, endSide: [number, number][]): number[][] {
+function planFrames(blocks: Block[], head: number, vh: number, H: number, endSide: Side): number[][] {
   const flow = blocks.map((b, i) => ({ b, i })).filter((x) => !x.b.tall);
   // the end frame holds the pager and the footer, opening on the nearest whole block above them whose top edge cuts no
   // line of the page list as it sits at the page's foot
   let endAt = blocks.findIndex((b) => /^(nav|div|section)\.sd-pager|^footer/.test(b.label));
-  if (endAt > 0 && endSide.length) {
-    const cuts = (e: number) => endSide.some(([t, b]) => e > t + 0.5 && e < b - 0.5);
+  if (endAt > 0 && endSide.rows.length) {
+    const cuts = (e: number) => rowCut(e, endSide);
     let i = endAt;
-    while (i > 0 && cuts(blocks[i]!.top - 16)) {
+    while (i > 0 && (cuts(blocks[i]!.top - 16) || blocks[i]!.top - 16 > H - vh + head)) {
       const j = i - 1;
       if (blocks[j]!.tall) break;
       i = j;
@@ -207,7 +231,7 @@ const shapeOf = (blocks: Block[]) => blocks.map((b) => `${b.label.split(' ')[0]}
  * last; a group taller than the view gets a taller viewport rather than a second frame. A clipped edge moves (within
  * the gap between blocks) to a spot where it cuts no line of the page list.
  */
-async function shootFrames(page: Page, tag: string, blocks: Block[], head: number, groups: number[][]): Promise<Frame[]> {
+async function shootFrames(page: Page, tag: string, blocks: Block[], head: number, H: number, groups: number[][]): Promise<Frame[]> {
   const base = page.viewportSize()!;
   const frames: Frame[] = [];
   let regroups = 0;
@@ -216,7 +240,11 @@ async function shootFrames(page: Page, tag: string, blocks: Block[], head: numbe
     const first = k === 0;
     const y = first ? 0 : blocks[g[0]!]!.top;
     const last = Math.max(...g.map((i) => blocks[i]!.bottom));
-    const need = first ? last + 16 : last - y + head + 32;
+    const prev = Math.max(0, ...blocks.filter((b) => b.bottom <= y + 1).map((b) => b.bottom));
+    // the end frame (it reaches the page's foot) can't scroll past the foot: its view is made tall enough that the
+    // header's edge still lands just above its first block, and its bottom is the page's end
+    const end = !first && last >= H - 2;
+    const need = first ? last + 16 : end ? H - Math.max(y - 16, prev + 2) + head : last - y + head + 32;
     const vh = Math.max(base.height, Math.ceil(need));
     if (vh !== base.height) {
       await page.setViewportSize({ width: base.width, height: vh });
@@ -224,13 +252,15 @@ async function shootFrames(page: Page, tag: string, blocks: Block[], head: numbe
       if (again.length !== blocks.length || g.some((i) => Math.abs(again[i]!.top - blocks[i]!.top) > 1)) defects.push(`${tag}: the page moved when the view grew for frame ${k + 1}`);
     }
     const nextTop = Math.min(...blocks.filter((b) => b.top > last - 1).map((b) => b.top), Infinity);
-    const prev = Math.max(0, ...blocks.filter((b) => b.bottom <= y + 1).map((b) => b.bottom));
     // the page list stays pinned while the page scrolls under it: when a gap between blocks is narrower than a line
     // of the list, scrolling a few px moves the gap onto the line between two items
-    type Spot = { sy: number; side: [number, number][]; eTop: number; clipBottom: number };
+    type Spot = { sy: number; side: Side; eTop: number; clipBottom: number };
     let pick: Spot | null = null;
     let fallback: Spot | null = null;
-    let topFails = false;
+    let anyTop = false;
+    // a bottom edge with room under the last block, all of it across the page list: the frame is too short to clear
+    // the list, so it takes in the next frame rather than shedding rows
+    let shortForList = false;
     for (const d of first ? [0] : [0, -2, 2, -4, 4, -6, 6, -8, 8, -10, 10, -12, 12, -14, 14, -16, -18, -20, -22, -24, -26, -28, -30]) {
       // the header's lower edge lands 16px above the first block, or in the gap above it when that gap is narrower
       await page.evaluate((top) => window.scrollTo(0, top), first ? 0 : Math.max(y - 16, prev + 2) - head + d);
@@ -238,9 +268,7 @@ async function shootFrames(page: Page, tag: string, blocks: Block[], head: numbe
       const side = await sideRects(page);
       // the line between two items of the list is free; only a cut through an item's own box is not
       // the list's first and last lines also keep 4px of margin to an edge
-      const listTop = Math.min(...side.map(([t]) => t));
-      const listBottom = Math.max(...side.map(([, b]) => b));
-      const inside = (c: number) => side.some(([t, b]) => c > t + 0.5 && c < b - 0.5) || (side.length > 0 && ((c > listTop - 4 && c < listTop + 0.5) || (c > listBottom - 0.5 && c < listBottom + 4)));
+      const inside = (c: number) => sideCut(c, side) !== null;
       const free = (want: number, lo: number, hi: number) => {
         for (let e = 0; e <= Math.max(want - lo, hi - want, 0); e++) {
           if (want - e >= lo && want - e <= hi && !inside(want - e)) return want - e;
@@ -248,13 +276,18 @@ async function shootFrames(page: Page, tag: string, blocks: Block[], head: numbe
         }
         return null;
       };
-      const topWant = first ? head : Math.max(head, y - sy - 16);
-      const eTop = first ? head : free(topWant, Math.max(head, prev - sy + 2), y - sy - 2);
+      // every frame keeps the header: its lower edge is the frame's top, so it must sit in the gap above the first block
+      // (past the previous block's foot, within 48 px of this one); the list is pinned below the header, never cut by it
+      const topWant = head;
+      const hEdge = sy + head;
+      const eTop = first || (hEdge >= prev + 1 && hEdge <= y - 8 && y - hEdge <= 48) ? head : null;
       const hi = Math.min(vh, Math.floor(nextTop - sy - 2));
-      // 16 px under the last block, or the view's foot when that's nearer; never past the next block's top
-      const cb = free(Math.min(hi, last - sy + 16), Math.min(hi, Math.ceil(last - sy + 2)), hi);
+      // 16 px under the last block, or the view's foot when that's nearer; never past the next block's top, and never
+      // nearer the last block than 8 px (a badge or a descender is drawn to its box's edge)
+      const cb = end ? vh : free(Math.min(hi, last - sy + 16), Math.ceil(last - sy + 8), hi);
+      if (cb === null && hi >= Math.ceil(last - sy + 8)) shortForList = true;
       const got = { sy, side, eTop: Math.round(eTop ?? topWant), clipBottom: Math.round(Math.min(vh, cb ?? Math.min(hi, last - sy + 16))) };
-      if (!fallback) topFails = eTop === null;
+      if (eTop !== null) anyTop = true;
       fallback ??= got;
       if (eTop !== null && cb !== null) {
         pick = got;
@@ -266,9 +299,10 @@ async function shootFrames(page: Page, tag: string, blocks: Block[], head: numbe
     // a card goes with the rest of its row; a frame that is one row only takes in the next frame instead. A top
     // edge with no clean spot joins the frame to the one before it. Regrouping is capped, so the walk always ends
     // (anything left is a defect the proof reports)
+    if (!pick && process.env.DEBUG_FRAMES) console.log(`${tag} f${k + 1} FAIL g=[${g.join(',')}] y=${y} last=${last} prev=${prev} next=${nextTop} vh=${vh} anyTop=${anyTop} fallback=${JSON.stringify(fallback)}`);
     const lastTop = blocks[g[g.length - 1]!]!.top;
     const row = g.filter((i) => Math.abs(blocks[i]!.top - lastTop) <= 1);
-    if (!pick && regroups < 40 && topFails && k > 0) {
+    if (!pick && regroups < 40 && !anyTop && k > 0) {
       regroups++;
       groups[k - 1] = [...groups[k - 1]!, ...g];
       groups.splice(k, 1);
@@ -279,10 +313,20 @@ async function shootFrames(page: Page, tag: string, blocks: Block[], head: numbe
     }
     if (!pick && regroups < 40 && (row.length < g.length || k + 1 < groups.length)) {
       regroups++;
-      if (row.length < g.length) {
-        groups[k] = g.filter((i) => !row.includes(i));
-        if (k + 1 < groups.length) groups[k + 1]!.unshift(...row);
-        else groups.push(row);
+      if (row.length < g.length && !(shortForList && k + 1 < groups.length)) {
+        // the row moves on, and so does a heading it leaves at the frame's end (a section opens the frame after it)
+        const moved = [...row];
+        const rest = g.filter((i) => !row.includes(i));
+        while (rest.length && blocks[rest[rest.length - 1]!]!.heading) moved.unshift(rest.pop()!);
+        if (k + 1 < groups.length) groups[k + 1]!.unshift(...moved);
+        else groups.push(moved);
+        if (rest.length) groups[k] = rest;
+        else {
+          groups.splice(k, 1);
+          if (vh !== base.height) await page.setViewportSize(base);
+          k--;
+          continue;
+        }
       } else {
         groups[k] = [...g, ...groups[k + 1]!];
         groups.splice(k + 1, 1);
@@ -292,8 +336,9 @@ async function shootFrames(page: Page, tag: string, blocks: Block[], head: numbe
       continue;
     }
     const { sy, side, eTop, clipBottom } = pick ?? fallback!;
+    if (process.env.DEBUG_FRAMES) console.log(`${tag} f${k + 1} g=[${g.join(',')}] y=${y} last=${last} prev=${prev} next=${nextTop} vh=${vh} sy=${sy} hEdge=${sy + head} bottom=${sy + clipBottom} pick=${!!pick} anyTop=${anyTop} regroups=${regroups}`);
     if (!pick) await page.evaluate((top) => window.scrollTo(0, top), sy);
-    const clipTop = eTop <= head ? 0 : eTop;
+    const clipTop = 0;
     const file = join(out, `${tag}-frame-${String(k + 1).padStart(2, '0')}.png`);
     await page.screenshot({ path: file, clip: { x: 0, y: clipTop, width: base.width, height: clipBottom - clipTop } });
     frames.push({ file, sy, top: sy + Math.max(eTop, head), bottom: sy + clipBottom, side });
@@ -301,7 +346,7 @@ async function shootFrames(page: Page, tag: string, blocks: Block[], head: numbe
   }
   return frames;
 }
-async function walkPage(page: Page, tag: string, key: string, blocks: Block[], head: number, H: number, endSide: [number, number][]): Promise<{ frames: Frame[]; note: string }> {
+async function walkPage(page: Page, tag: string, key: string, blocks: Block[], head: number, H: number, endSide: Side): Promise<{ frames: Frame[]; note: string }> {
   const shape = shapeOf(blocks);
   const prior = plans.get(key);
   let note = 'plan made here';
@@ -343,9 +388,10 @@ async function walkPage(page: Page, tag: string, key: string, blocks: Block[], h
     note = `plan shared with the first language (lined up: ${a.length - map.size} block(s) only there, ${b.length - map.size} only here)`;
   } else {
     groups = planFrames(blocks, head, page.viewportSize()!.height, H, endSide);
+    if (process.env.DEBUG_FRAMES) console.log(`${tag} PLAN ${JSON.stringify(groups)} blocks=${JSON.stringify(blocks.map((b, i) => `${i}:${b.top}-${b.bottom}${b.heading ? "H" : ""}${b.tall ? "!" : ""}`))}`);
     plans.set(key, { groups, shape });
   }
-  return { frames: await shootFrames(page, tag, blocks, head, groups), note };
+  return { frames: await shootFrames(page, tag, blocks, head, H, groups), note };
 }
 /**
  * Proof the frames cover the page, checked from what was shot, not from how it was planned: (1) every block whole in
@@ -379,14 +425,16 @@ function proveFrames(tag: string, blocks: Block[], frames: Frame[], head: number
       if (b.top < f.top - 1 && b.bottom > f.top + 1) fail(`${base(f.file)} opens inside “${b.label}”`);
       if (b.top < f.bottom - 1 && b.bottom > f.bottom + 1) fail(`${base(f.file)} ends inside “${b.label}”`);
     }
+    // drawn ink keeps 8 px to a clipped edge: a block whole in the frame sits 8 px or more inside it
+    if (inside.length && f.bottom < H - 1 && f.bottom - Math.max(...inside.map((b) => b.bottom)) < 8) fail(`${base(f.file)}: its last block ends ${Math.round(f.bottom - Math.max(...inside.map((b) => b.bottom)))} px from the bottom edge (min 8)`);
+    if (i > 0 && inside.length && Math.min(...inside.map((b) => b.top)) - f.top < 8) fail(`${base(f.file)}: its first block starts ${Math.round(Math.min(...inside.map((b) => b.top)) - f.top)} px under the header (min 8)`);
     if (i > 0 && inside.length && Math.min(...inside.map((b) => b.top)) - f.top > 48) fail(`${base(f.file)} opens on an empty band of ${Math.round(Math.min(...inside.map((b) => b.top)) - f.top)} px`);
     if (inside.length && f.bottom < H - 1 && f.bottom - Math.max(...inside.map((b) => b.bottom)) > 48) fail(`${base(f.file)} ends on an empty band of ${Math.round(f.bottom - Math.max(...inside.map((b) => b.bottom)))} px`);
-    for (const [t, b] of f.side)
-      for (const e of [f.top - f.sy, f.bottom - f.sy]) if (t < e - 0.5 && b > e + 0.5) fail(`${base(f.file)} cuts a line of the page list (${t}–${b} at edge ${Math.round(e)})`);
-    if (f.side.length) {
-      const lt = Math.min(...f.side.map(([t]) => t));
-      const lb = Math.max(...f.side.map(([, b]) => b));
-      for (const e of [f.top - f.sy, f.bottom - f.sy]) if ((e > lt - 4 && e < lt - 0.5) || (e > lb + 0.5 && e < lb + 4)) fail(`${base(f.file)}: the page list ends ${Math.round(Math.min(Math.abs(e - lt), Math.abs(e - lb)))} px from an edge (min 4)`);
+    // the top edge under the header is the header's own edge: the list scrolls beneath it, so only a clipped top counts
+    const edges = [...(f.top - f.sy > head + 0.5 ? [f.top - f.sy] : []), f.bottom - f.sy];
+    for (const e of edges) {
+      const why = sideCut(e, f.side);
+      if (why) fail(`${base(f.file)}: ${why}`);
     }
   });
   return [`## ${tag}`, '', `${frames.length} frames · header ${Math.round(head)} px · page ${H} px · ${note}`, '', '| block (px) | block | shown whole in |', '|---|---|---|', ...rows, ''].join('\n');
@@ -396,7 +444,7 @@ const frameCounts = new Map<string, number>();
 
 for (const slug of PAGES)
   for (const lang of LANGS)
-    for (const mode of ['dark', 'light'] as const)
+    for (const mode of MODES)
       for (const [w, vp] of Object.entries(WIDTHS)) {
         const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: vp.dsf, colorScheme: mode, reducedMotion: 'reduce' });
         // stills show the final state with no moving dots over the arrowheads; recordings use their own context
@@ -532,7 +580,7 @@ if (RECORD) {
   // one recording per animated diagram: dark, desktop, English; plus the pipeline on a phone
   /** what to film: the svg, the whole figure (with the comparison bars), or one lane group */
   type Target = 'svg' | 'figure' | { group: string };
-  const jobs: { slug: string; id: string; w: keyof typeof WIDTHS; secs: number; target?: Target; name?: string }[] = [
+  const jobs: { slug: string; id: string; w: keyof typeof ALL_WIDTHS; secs: number; target?: Target; name?: string }[] = [
     { slug: 'video-pipeline/', id: 'costs', w: 'desktop', secs: 0, target: 'figure', name: 'costs-both' },
     { slug: 'video-pipeline/', id: 'costs', w: 'desktop', secs: 0, target: { group: 'laneBunny' }, name: 'costs-bunny' },
     { slug: 'video-pipeline/', id: 'costs', w: 'desktop', secs: 0, target: { group: 'laneR2' }, name: 'costs-r2' },
@@ -556,7 +604,7 @@ if (RECORD) {
   ];
   for (const mode of ['dark', 'light'] as const)
     for (const j of jobs.filter((x) => !ONLY || ONLY.has(x.id))) {
-      const vp = WIDTHS[j.w];
+      const vp = ALL_WIDTHS[j.w];
       const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, deviceScaleFactor: j.w === 'phone' ? 2 : 1.5, colorScheme: mode });
       await ctx.addInitScript((m) => localStorage.setItem('aun_mode', m), mode);
       const page = await ctx.newPage();
@@ -622,6 +670,7 @@ await browser.close();
 server.close();
 if (coverage.length) writeFileSync(join(out, 'COVERAGE.md'), [`# Frame coverage`, '', 'Every block on every page, and the frames that show it whole. Written by scripts/sysdesign-shots.ts, which fails the run when a block is missing, two frames repeat or overlap, the languages differ in frame count, an edge cuts a block or a line of the page list, or a frame opens or ends on an empty band.', '', ...coverage].join('\n'));
 if (defects.length) {
+  writeFileSync(join(out, 'DEFECTS.txt'), defects.join('\n') + '\n');
   console.error(defects.join('\n'));
   console.error(`GATE FAILED: ${defects.length} defects`);
   process.exit(1);

@@ -311,7 +311,7 @@ html[data-mode='dark'] .an .an-edge {
 .an-figure {
   margin: 0;
   display: grid;
-  gap: 14px;
+  gap: 20px;
 }
 .an-frame {
   /* the drawing's own canvas is the card: no second frame around it */

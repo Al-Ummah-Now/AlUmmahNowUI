@@ -200,8 +200,9 @@ const roles: Builder = (d) => {
       cols: 1,
       at: { channelRoles: [0, 0], siteRoles: [0, 1.4], token: [0, 2.4], transfer: [0, 3.4], record: [0, 4.4], can: [0, 5.4] },
       // one column, every wire the wide figure draws: the two role systems next to each other at the top ("neither
-      // grants the other" bows out to the right), the token and ownership chain straight down, and channel roles' two
-      // long wires nested down the left margin; the two relation tags stacked in the gap, lined up on the start side
+      // grants the other" bows out to the right), the token and ownership chain straight down, "never in a token" down the
+      // left margin and channel roles → record down the right; the two relation tags stacked in the gap, lined up on
+      // the start side
       edges: [
         { from: 'siteRoles', to: 'channelRoles', fromSide: 'e', toSide: 'e', bend: 70, tagAt: 0.3, tagGap: ['channelRoles', 'siteRoles', 20], tagStart: 106, tagEnd: 308 },
         { from: 'siteRoles', to: 'token', fromSide: 's', toSide: 'n' },
@@ -210,7 +211,10 @@ const roles: Builder = (d) => {
         { from: 'record', to: 'can', fromSide: 's', toSide: 'n' },
         // the farther wire first (its end spreads to the outer side) and bowed in proportion to its length, so the two
         // leave at the same angle and never cross
-        { from: 'channelRoles', to: 'record', fromSide: 'w', toSide: 'w', bend: 120 },
+        // channel roles → channel record down the right margin, outside "neither grants the other": the left margin
+        // keeps only "never in a token", and "stored in" sits beside its own wire in the gap under the token, well away
+        // from the token → transfer arrow
+        { from: 'channelRoles', to: 'record', fromSide: 'e', toSide: 'e', bend: -130, tagGap: ['token', 'transfer', 0] },
         { from: 'channelRoles', to: 'token', fromSide: 'w', toSide: 'w', bend: 50, tagAt: 0.2, tagGap: ['channelRoles', 'siteRoles', -36], tagStart: 106, tagEnd: 308 },
       ],
     },
