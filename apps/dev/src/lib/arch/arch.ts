@@ -1282,7 +1282,7 @@ function renderArchOnce(spec: ArchSpec, layout: ArchLayout, opts: RenderOpts): s
     const ar = sub && opts.locale === 'ar';
     const y = r(b.c.y + 4);
     const label = ar
-      ? `<text x="${r(b.c.x - 5)}" y="${y}" text-anchor="middle">${sub}</text><text x="${r(b.c.x + 5.5)}" y="${y}" text-anchor="middle">${formatNumber(b.n, 'ar')}</text>`
+      ? `<text x="${r(b.c.x - 3.5)}" y="${y}" text-anchor="middle">${sub}</text><text x="${r(b.c.x + 3.5)}" y="${y}" text-anchor="middle">${formatNumber(b.n, 'ar')}</text>`
       : `<text x="${r(b.c.x)}" y="${y}" text-anchor="middle">${formatNumber(b.n, opts.locale ?? 'en') + sub}</text>`;
     out.push(`<g class="an-badge an-f-${b.rt.e.flow}${sub ? ' an-badge-sub' : ''}" data-for="${b.rt.id}" data-covers>${sub ? `<rect x="${r(b.c.x - 13)}" y="${r(b.c.y - BR)}" width="26" height="${2 * BR}" rx="${BR}"/>` : `<circle cx="${r(b.c.x)}" cy="${r(b.c.y)}" r="${BR}"/>`}${label}</g>`);
   }
