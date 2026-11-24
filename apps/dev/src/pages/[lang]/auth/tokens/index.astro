@@ -1,0 +1,36 @@
+---
+import Base from '../../../../layouts/Base.astro';
+import PageHero from '../../../../components/PageHero.astro';
+import AuthShell from '../../../../components/AuthShell.astro';
+import ItemGrid from '../../../../components/ItemGrid.astro';
+import SdDiagram from '../../../../components/SdDiagram.astro';
+import { strings } from '../../../../i18n';
+import type { Locale } from '../../../../lib/pages';
+import { localePaths } from '../../../../lib/static-paths';
+
+export const getStaticPaths = localePaths;
+const locale = Astro.params.lang as Locale;
+const t = strings(locale);
+const p = t.auth.tokens;
+const d = t.diagrams.pages.auth;
+---
+<Base locale={locale} slug="auth/tokens" title={p.title} description={p.description}>
+  <PageHero title={p.heroTitle} lead={p.heroLead} section />
+  <AuthShell locale={locale} slug="auth/tokens" t={t}>
+    <SdDiagram id="auth-check" locale={locale} title={d.check.title} lead={d.check.lead} why={d.check.why} tradeoff={d.check.tradeoff} />
+    <section class="band band-raised" aria-labelledby="claims-h">
+      <div class="wrap">
+        <h2 id="claims-h" class="h2">{p.claimsTitle}</h2>
+        <ItemGrid items={p.claims} t={t} cols={3} />
+      </div>
+    </section>
+    <SdDiagram id="auth-keys" locale={locale} title={d.keys.title} lead={d.keys.lead} why={d.keys.why} tradeoff={d.keys.tradeoff} />
+    <SdDiagram id="auth-end" locale={locale} title={d.end.title} lead={d.end.lead} why={d.end.why} tradeoff={d.end.tradeoff} raised />
+    <section class="band" aria-labelledby="checks-h">
+      <div class="wrap">
+        <h2 id="checks-h" class="h2">{p.checksTitle}</h2>
+        <ItemGrid items={p.checks} t={t} />
+      </div>
+    </section>
+  </AuthShell>
+</Base>

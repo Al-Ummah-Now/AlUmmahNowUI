@@ -37,5 +37,23 @@ saveSession(next.tokens); // before using either`,
 const url = new URL('https://auth.alummahnow.net/logout');
 url.searchParams.set('return', HOME_URL);
 return redirect(url);`,
+  device: `const started = await client.device.start();
+if (started.err) return showError(started.err.error);
+
+const { userCode, verificationURI, verificationURIComplete } = started.device;
+show(userCode, verificationURI, qr(verificationURIComplete ?? verificationURI));
+
+const approved = await client.device.poll(started.device, { signal });
+if (approved.err) return showError(approved.err.error); // access_denied, expired_token
+saveSession(approved.tokens);`,
+  own: `const client = createClient({
+  clientID: env.AUTH_CLIENT_ID,
+  clientSecret: env.AUTH_CLIENT_SECRET,
+  issuer: 'https://auth.alummahnow.net',
+});
+
+const own = await client.clientCredentials({ scopes: ['users:read'] });
+if (own.err) throw own.err;
+const { access, expiresIn } = own.token; // keep it until it is about to expire`,
 } as const;
 export type Sample = keyof typeof SAMPLES;

@@ -32,6 +32,9 @@ export const PAGES = [
   'system-design/release',
   'auth',
   'auth/web',
+  'auth/native',
+  'auth/servers',
+  'auth/tokens',
   'open-source',
   'contact',
 ] as const;

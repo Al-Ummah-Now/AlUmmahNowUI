@@ -1,0 +1,40 @@
+---
+import Base from '../../../../layouts/Base.astro';
+import PageHero from '../../../../components/PageHero.astro';
+import AuthShell from '../../../../components/AuthShell.astro';
+import CodeBlock from '../../../../components/CodeBlock.astro';
+import ItemGrid from '../../../../components/ItemGrid.astro';
+import Rich from '../../../../components/Rich.astro';
+import SdDiagram from '../../../../components/SdDiagram.astro';
+import { strings } from '../../../../i18n';
+import type { Locale } from '../../../../lib/pages';
+import { localePaths } from '../../../../lib/static-paths';
+import { SAMPLES } from '../../../../lib/auth/samples';
+
+export const getStaticPaths = localePaths;
+const locale = Astro.params.lang as Locale;
+const t = strings(locale);
+const p = t.auth.native;
+const d = t.diagrams.pages.auth;
+---
+<Base locale={locale} slug="auth/native" title={p.title} description={p.description}>
+  <PageHero title={p.heroTitle} lead={p.heroLead} section />
+  <AuthShell locale={locale} slug="auth/native" t={t}>
+    <SdDiagram id="auth-native" locale={locale} title={d.native.title} lead={d.native.lead} why={d.native.why} tradeoff={d.native.tradeoff} />
+    <section class="band band-raised" aria-labelledby="rules-h">
+      <div class="wrap">
+        <h2 id="rules-h" class="h2">{p.rulesTitle}</h2>
+        <ItemGrid items={p.rules} t={t} cols={3} />
+      </div>
+    </section>
+    <SdDiagram id="auth-passkey" locale={locale} title={d.passkey.title} lead={d.passkey.lead} why={d.passkey.why} tradeoff={d.passkey.tradeoff} />
+    <SdDiagram id="auth-device" locale={locale} title={d.device.title} lead={d.device.lead} why={d.device.why} tradeoff={d.device.tradeoff} raised />
+    <section class="band" aria-labelledby="device-h">
+      <div class="wrap">
+        <h2 id="device-h" class="h2">{p.deviceTitle}</h2>
+        <p class="section-lead"><Rich text={p.deviceLead} /></p>
+        <CodeBlock code={SAMPLES.device} label={p.deviceTitle} t={t} locale={locale} />
+      </div>
+    </section>
+  </AuthShell>
+</Base>

@@ -1,0 +1,46 @@
+---
+import Base from '../../../../layouts/Base.astro';
+import PageHero from '../../../../components/PageHero.astro';
+import AuthShell from '../../../../components/AuthShell.astro';
+import CodeBlock from '../../../../components/CodeBlock.astro';
+import ItemGrid from '../../../../components/ItemGrid.astro';
+import Rich from '../../../../components/Rich.astro';
+import SdDiagram from '../../../../components/SdDiagram.astro';
+import { strings } from '../../../../i18n';
+import type { Locale } from '../../../../lib/pages';
+import { localePaths } from '../../../../lib/static-paths';
+import { SAMPLES } from '../../../../lib/auth/samples';
+
+export const getStaticPaths = localePaths;
+const locale = Astro.params.lang as Locale;
+const t = strings(locale);
+const p = t.auth.servers;
+const d = t.diagrams.pages.auth;
+---
+<Base locale={locale} slug="auth/servers" title={p.title} description={p.description}>
+  <PageHero title={p.heroTitle} lead={p.heroLead} section />
+  <AuthShell locale={locale} slug="auth/servers" t={t}>
+    <SdDiagram id="auth-own" locale={locale} title={d.own.title} lead={d.own.lead} why={d.own.why} tradeoff={d.own.tradeoff} />
+    <section class="band band-raised" aria-labelledby="own-h">
+      <div class="wrap">
+        <h2 id="own-h" class="h2">{p.ownTitle}</h2>
+        <p class="section-lead"><Rich text={p.ownLead} /></p>
+        <CodeBlock code={SAMPLES.own} label={p.ownTitle} t={t} locale={locale} />
+      </div>
+    </section>
+    <SdDiagram id="auth-pass" locale={locale} title={d.pass.title} lead={d.pass.lead} why={d.pass.why} tradeoff={d.pass.tradeoff} />
+    <SdDiagram id="auth-direct" locale={locale} title={d.direct.title} lead={d.direct.lead} why={d.direct.why} tradeoff={d.direct.tradeoff} raised />
+    <section class="band" aria-labelledby="other-h">
+      <div class="wrap">
+        <h2 id="other-h" class="h2">{p.otherTitle}</h2>
+        <p class="section-lead"><Rich text={p.otherLead} /></p>
+      </div>
+    </section>
+    <section class="band band-raised" aria-labelledby="rules-h">
+      <div class="wrap">
+        <h2 id="rules-h" class="h2">{p.rulesTitle}</h2>
+        <ItemGrid items={p.rules} t={t} />
+      </div>
+    </section>
+  </AuthShell>
+</Base>

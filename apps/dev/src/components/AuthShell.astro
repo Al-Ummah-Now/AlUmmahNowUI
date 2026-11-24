@@ -10,7 +10,7 @@ interface Props {
 }
 const { locale, slug, t } = Astro.props;
 const n = t.auth.nav;
-const title: Record<AuthPage, string> = { auth: n.hub, 'auth/web': n.web };
+const title: Record<AuthPage, string> = { auth: n.hub, 'auth/web': n.web, 'auth/native': n.native, 'auth/servers': n.servers, 'auth/tokens': n.tokens };
 const entries = AUTH_PAGES.map((page) => ({ page, title: title[page], href: pagePath(locale, page) }));
 const at = AUTH_PAGES.indexOf(slug);
 const prev = entries[at - 1];
