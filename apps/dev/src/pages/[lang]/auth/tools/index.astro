@@ -1,0 +1,94 @@
+---
+import Base from '../../../../layouts/Base.astro';
+import PageHero from '../../../../components/PageHero.astro';
+import AuthShell from '../../../../components/AuthShell.astro';
+import Rich from '../../../../components/Rich.astro';
+import { strings } from '../../../../i18n';
+import type { Locale } from '../../../../lib/pages';
+import { localePaths } from '../../../../lib/static-paths';
+
+export const getStaticPaths = localePaths;
+const locale = Astro.params.lang as Locale;
+const t = strings(locale);
+const p = t.auth.tools;
+const r = p.request;
+const k = p.token;
+const fields = [
+  { id: 'rq-issuer', label: r.issuer, value: 'https://auth.alummahnow.net', type: 'url' },
+  { id: 'rq-client', label: r.clientId, value: '', type: 'text' },
+  { id: 'rq-redirect', label: r.redirectUri, value: 'http://localhost:3000/callback', type: 'url' },
+] as const;
+---
+<Base locale={locale} slug="auth/tools" title={p.title} description={p.description}>
+  <PageHero title={p.heroTitle} lead={p.heroLead} section />
+  <AuthShell locale={locale} slug="auth/tools" t={t}>
+    <noscript><div class="band"><p class="wrap">{p.noScript}</p></div></noscript>
+    {/* shown by the script; nothing here is a form, so nothing can be submitted */}
+    <div data-auth-tools={JSON.stringify(p)} hidden>
+      <section class="band" aria-labelledby="request-h">
+        <div class="wrap">
+          <h2 id="request-h" class="h2">{r.title}</h2>
+          <p class="section-lead"><Rich text={r.lead} /></p>
+          <div class="tool">
+            {fields.map((f) => (
+              <div class="tool-field">
+                <label for={f.id}>{f.label}</label>
+                <input id={f.id} type={f.type} value={f.value} dir="ltr" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby={`${f.id}-err`} />
+                <p class="tool-err" id={`${f.id}-err`} hidden></p>
+              </div>
+            ))}
+            <div class="tool-field">
+              <label for="rq-prompt">{r.prompt}</label>
+              <select id="rq-prompt" autocomplete="off">
+                <option value="">{r.promptNone}</option>
+                {['login', 'select_account', 'none'].map((v) => <option value={v} lang="en" dir="ltr">{v}</option>)}
+              </select>
+            </div>
+            <div class="tool-actions">
+              <button type="button" class="tool-btn" id="rq-make">{r.make}</button>
+              <p id="rq-status" role="status" class="tool-status"></p>
+            </div>
+            <div id="rq-out" hidden>
+              {[['rq-url', r.url], ['rq-verifier', r.verifier], ['rq-exchange', r.exchange]].map(([id, label]) => (
+                <div class="tool-out">
+                  <h3 class="tool-out-title" id={`${id}-h`}>{label}</h3>
+                  <pre dir="ltr" tabindex="0" aria-labelledby={`${id}-h`} data-no-expand><code id={id} lang="en"></code></pre>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="band band-raised" aria-labelledby="token-h">
+        <div class="wrap">
+          <h2 id="token-h" class="h2">{k.title}</h2>
+          <p class="section-lead"><Rich text={k.lead} /></p>
+          <div class="tool">
+            <div class="tool-field">
+              <label for="tk-text">{k.label}</label>
+              <textarea id="tk-text" rows="4" dir="ltr" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="tk-hint tk-note"></textarea>
+              <p class="tool-hint" id="tk-hint">{k.hint}</p>
+              <p class="tool-err" id="tk-note" role="status" hidden></p>
+            </div>
+            <div class="tool-actions"><button type="button" class="tool-btn tool-btn-quiet" id="tk-clear">{k.clear}</button></div>
+            <div id="tk-out" hidden>
+              <div class="tool-out" aria-live="polite">
+                <h3 class="tool-out-title">{k.checks}</h3>
+                <ul id="tk-checks" class="tool-checks" role="list"></ul>
+              </div>
+              {[['tk-header', k.header], ['tk-payload', k.payload]].map(([id, label]) => (
+                <div class="tool-out">
+                  <h3 class="tool-out-title" id={`${id}-h`}>{label}</h3>
+                  <pre dir="ltr" tabindex="0" aria-labelledby={`${id}-h`} data-no-expand><code id={id} lang="en"></code></pre>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </AuthShell>
+</Base>
+<script>
+  import '../../../../scripts/auth-tools.ts';
+</script>

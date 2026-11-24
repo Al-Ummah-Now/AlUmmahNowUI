@@ -2280,3 +2280,129 @@ span.nb-wrap {
     padding-block-start: 48px;
   }
 }
+
+/* ---------- Sign-in tools ---------- */
+.tool {
+  display: grid;
+  gap: 18px;
+  margin-block-start: 18px;
+  max-width: 760px;
+}
+.tool [hidden] {
+  display: none;
+}
+.tool-field {
+  display: grid;
+  gap: 6px;
+}
+.tool-field label {
+  font-weight: 650;
+}
+.tool-field input,
+.tool-field select,
+.tool-field textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--outline);
+  border-radius: 10px;
+  background: var(--raised);
+  color: var(--text);
+  font: inherit;
+}
+.tool-field input,
+.tool-field textarea {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  text-align: left;
+}
+.tool-field textarea {
+  resize: vertical;
+  overflow-wrap: anywhere;
+}
+.tool-field [aria-invalid='true'] {
+  border-color: var(--fanous-color-error-text);
+}
+.tool-hint,
+.tool-status {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.tool-err {
+  margin: 0;
+  color: var(--fanous-color-error-text);
+  font-weight: 600;
+}
+.tool-err::before {
+  content: '! ';
+}
+.tool-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.tool-btn {
+  min-height: 44px;
+  padding: 10px 20px;
+  border: 1px solid var(--link);
+  border-radius: 10px;
+  background: var(--link);
+  color: var(--raised);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+.tool-btn-quiet {
+  background: transparent;
+  color: var(--link);
+}
+.tool-out {
+  display: grid;
+  gap: 8px;
+  margin-block-start: 18px;
+}
+.tool-out-title {
+  margin: 0;
+  font-size: 1rem;
+}
+.tool-out pre {
+  margin: 0;
+  padding: 14px 16px;
+  overflow-x: auto;
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  background: var(--night-1);
+  color: var(--night-text);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  text-align: left;
+}
+#rq-url,
+#rq-verifier {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.tool-checks {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tool-checks li::before {
+  display: inline-block;
+  width: 1.5em;
+  font-weight: 700;
+}
+.tool-ok::before {
+  content: '✓';
+}
+.tool-bad::before {
+  content: '✕';
+}
+.tool-bad {
+  font-weight: 650;
+}
