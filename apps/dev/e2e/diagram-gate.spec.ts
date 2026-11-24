@@ -11,8 +11,8 @@ import { AUTH_PAGES } from '../src/lib/pages';
  */
 const PAGES = [
   ...['', 'video-pipeline/', 'delivery-caching/', 'data/', 'async/', 'realtime/', 'identity/', 'ai/', 'cost/', 'scaling/', 'clients/', 'release/'].map((p) => `system-design/${p}`),
-  // the tools have no figures
-  ...AUTH_PAGES.filter((p) => p !== 'auth/tools').map((p) => `${p}/`),
+  // the reference and the tools have no figures
+  ...AUTH_PAGES.filter((p) => p !== 'auth/tools' && p !== 'auth/reference').map((p) => `${p}/`),
 ];
 /** Every page shows at least 3 diagrams (owner, 2026-11-19: 5–8 on the pages rewritten for developers). */
 const MIN_DIAGRAMS = 3;

@@ -1,6 +1,6 @@
 /** The Sign-in API section (wiki AUTH-R4, English). Same keys in auth.ar.ts. Facts: docs/SOURCES.md §13. Code samples: src/lib/auth/samples.ts. */
 export const authEn = {
-  nav: { label: 'Sign-in API pages', pager: 'Previous and next page', prev: 'Previous', next: 'Next', hub: 'Overview', web: 'Websites', native: 'Native and TV apps', servers: 'Servers', tokens: 'Tokens', tools: 'Tools' },
+  nav: { label: 'Sign-in API pages', pager: 'Previous and next page', prev: 'Previous', next: 'Next', hub: 'Overview', web: 'Websites', native: 'Native and TV apps', servers: 'Servers', tokens: 'Tokens', reference: 'Reference', tools: 'Tools' },
   hub: {
     title: 'Sign-in API',
     description: 'How an Al Ummah Now app signs people in, for developers: which flow each kind of app uses, what a token holds, and how sign-in carries from one app to the next.',
@@ -99,6 +99,29 @@ export const authEn = {
       { title: 'Kind', body: 'A refresh token or a server’s token is not a person’s access token.' },
       { title: 'Revocation list', body: 'Two keys in TOKEN_REVOCATIONS: one for the person, one for the sign-in. Refuse a token whose sign-in is older than the entry.' },
     ],
+  },
+  reference: {
+    title: 'API reference',
+    description: 'Every Al Ummah Now sign-in endpoint an app uses: what to send, what comes back, and samples for curl, TypeScript, Python and Go.',
+    heroTitle: 'API reference',
+    heroLead: 'Every endpoint an app of ours uses. It is drawn from the issuer’s own specification, which a test keeps equal to the code.',
+    find: 'Find an endpoint',
+    findHint: 'By path, name or what it does',
+    none: 'No endpoint matches.',
+    found: 'Endpoints shown: {n}',
+    sampleIn: 'Show samples in',
+    params: 'Parameters',
+    body: 'Send as',
+    json: 'JSON',
+    form: 'a form',
+    answers: 'What comes back',
+    required: 'required',
+    oneOf: 'One of',
+    in: { path: 'in the path', query: 'in the address', header: 'in a header' },
+    auth: { none: 'No token needed', user: 'The person’s access token', client: 'The client’s id and secret', session: 'The browser’s session' },
+    sample: 'Sample',
+    link: 'Link to {name}',
+    source: 'Drawn from AlUmmahNowAuth, commit {sha}',
   },
   tools: {
     title: 'Sign-in tools',
