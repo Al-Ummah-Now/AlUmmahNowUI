@@ -119,6 +119,8 @@ export const authAr: typeof authEn = {
     answers: 'ما يعود إليك',
     required: 'مطلوب',
     oneOf: 'واحد من',
+    exactlyOne: 'أرسل واحدًا فقط من:',
+    atLeastOne: 'أرسل حقلًا واحدًا منها على الأقل.',
     in: { path: 'في المسار', query: 'في العنوان', header: 'في ترويسة' },
     auth: { none: 'لا يحتاج رمزًا', user: 'رمز وصول الشخص', client: 'معرّف العميل وسرّه', session: 'جلسة المتصفح' },
     sample: 'مثال',

@@ -1,7 +1,7 @@
 {
  "source": {
   "repo": "Al-Ummah-Now/AlUmmahNowAuth",
-  "sha": "473fba7f50afe9b8933b73ae396a815eed472616"
+  "sha": "b2ff35754369a86883df7a1b6a0a8d046fd8da91"
  },
  "groups": [
   {
@@ -397,6 +397,7 @@
      "params": [],
      "body": {
       "type": "form",
+      "required": true,
       "shapes": [
        {
         "name": "authorization_code",
@@ -455,7 +456,39 @@
            "ar": "لتطبيقات الأجهزة: معرّف لهذا التثبيت، ليستطيع الفريق إخراج جهاز واحد"
           }
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "required": [
+          "grant_type",
+          "code",
+          "redirect_uri",
+          "client_id"
+         ],
+         "properties": {
+          "grant_type": {
+           "const": "authorization_code"
+          },
+          "code": {
+           "type": "string"
+          },
+          "redirect_uri": {
+           "type": "string"
+          },
+          "client_id": {
+           "type": "string"
+          },
+          "client_secret": {
+           "type": "string"
+          },
+          "code_verifier": {
+           "type": "string"
+          },
+          "install_id": {
+           "type": "string"
+          }
+         }
+        }
        },
        {
         "name": "refresh_token",
@@ -483,7 +516,28 @@
           "type": "string",
           "required": false
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "required": [
+          "grant_type",
+          "refresh_token"
+         ],
+         "properties": {
+          "grant_type": {
+           "const": "refresh_token"
+          },
+          "refresh_token": {
+           "type": "string"
+          },
+          "client_id": {
+           "type": "string"
+          },
+          "client_secret": {
+           "type": "string"
+          }
+         }
+        }
        },
        {
         "name": "client_credentials",
@@ -515,7 +569,27 @@
           "type": "string",
           "required": false
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "required": [
+          "grant_type"
+         ],
+         "properties": {
+          "grant_type": {
+           "const": "client_credentials"
+          },
+          "scope": {
+           "type": "string"
+          },
+          "client_id": {
+           "type": "string"
+          },
+          "client_secret": {
+           "type": "string"
+          }
+         }
+        }
        },
        {
         "name": "urn:ietf:params:oauth:grant-type:device_code",
@@ -542,7 +616,26 @@
           "type": "string",
           "required": true
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "required": [
+          "grant_type",
+          "device_code",
+          "client_id"
+         ],
+         "properties": {
+          "grant_type": {
+           "const": "urn:ietf:params:oauth:grant-type:device_code"
+          },
+          "device_code": {
+           "type": "string"
+          },
+          "client_id": {
+           "type": "string"
+          }
+         }
+        }
        }
       ]
      },
@@ -716,6 +809,7 @@
      "params": [],
      "body": {
       "type": "form",
+      "required": true,
       "shapes": [
        {
         "fields": [
@@ -728,7 +822,18 @@
            "ar": "رمز الوصول"
           }
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "required": [
+          "token"
+         ],
+         "properties": {
+          "token": {
+           "type": "string"
+          }
+         }
+        }
        }
       ]
      },
@@ -824,6 +929,7 @@
      "params": [],
      "body": {
       "type": "form",
+      "required": true,
       "shapes": [
        {
         "fields": [
@@ -854,7 +960,28 @@
            "access_token"
           ]
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "required": [
+          "token"
+         ],
+         "properties": {
+          "token": {
+           "type": "string"
+          },
+          "client_id": {
+           "type": "string"
+          },
+          "token_type_hint": {
+           "type": "string",
+           "enum": [
+            "refresh_token",
+            "access_token"
+           ]
+          }
+         }
+        }
        }
       ]
      },
@@ -963,6 +1090,7 @@
      "params": [],
      "body": {
       "type": "form",
+      "required": true,
       "shapes": [
        {
         "fields": [
@@ -984,7 +1112,21 @@
            "ar": "تفصلها مسافات"
           }
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "required": [
+          "client_id"
+         ],
+         "properties": {
+          "client_id": {
+           "type": "string"
+          },
+          "scope": {
+           "type": "string"
+          }
+         }
+        }
        }
       ]
      },
@@ -1078,6 +1220,7 @@
      "params": [],
      "body": {
       "type": "json",
+      "required": true,
       "shapes": [
        {
         "fields": [
@@ -1112,7 +1255,32 @@
            "ar": "عنوان عودة مسجّل، وأول عنوان للعميل إن تُرك"
           }
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "required": [
+          "client_id",
+          "code_challenge",
+          "code_challenge_method"
+         ],
+         "properties": {
+          "client_id": {
+           "type": "string"
+          },
+          "code_challenge": {
+           "type": "string"
+          },
+          "code_challenge_method": {
+           "type": "string",
+           "enum": [
+            "S256"
+           ]
+          },
+          "redirect_uri": {
+           "type": "string"
+          }
+         }
+        }
        }
       ]
      },
@@ -1170,6 +1338,7 @@
      "params": [],
      "body": {
       "type": "json",
+      "required": true,
       "shapes": [
        {
         "fields": [
@@ -1190,9 +1359,68 @@
           "description": {
            "en": "The WebAuthn PublicKeyCredential as JSON",
            "ar": "كائن PublicKeyCredential من WebAuthn بصيغة JSON"
+          },
+          "fields": [
+           {
+            "name": "id",
+            "type": "string",
+            "required": true
+           },
+           {
+            "name": "type",
+            "type": "string",
+            "required": true,
+            "values": [
+             "public-key"
+            ]
+           },
+           {
+            "name": "response",
+            "type": "object",
+            "required": true
+           }
+          ]
+         }
+        ],
+        "schema": {
+         "type": "object",
+         "required": [
+          "client_id",
+          "challenge_id",
+          "credential"
+         ],
+         "properties": {
+          "client_id": {
+           "type": "string"
+          },
+          "challenge_id": {
+           "type": "string",
+           "pattern": "^[A-Za-z0-9_-]{16,128}$",
+           "example": "CHALLENGE_ID_FROM_OPTIONS"
+          },
+          "credential": {
+           "type": "object",
+           "required": [
+            "id",
+            "type",
+            "response"
+           ],
+           "properties": {
+            "id": {
+             "type": "string",
+             "minLength": 1
+            },
+            "type": {
+             "type": "string",
+             "const": "public-key"
+            },
+            "response": {
+             "type": "object"
+            }
+           }
           }
          }
-        ]
+        }
        }
       ]
      },
@@ -1325,6 +1553,7 @@
      "params": [],
      "body": {
       "type": "json",
+      "required": true,
       "shapes": [
        {
         "fields": [
@@ -1340,7 +1569,27 @@
           "description": {
            "en": "The WebAuthn PublicKeyCredential as JSON",
            "ar": "كائن PublicKeyCredential من WebAuthn بصيغة JSON"
-          }
+          },
+          "fields": [
+           {
+            "name": "id",
+            "type": "string",
+            "required": true
+           },
+           {
+            "name": "type",
+            "type": "string",
+            "required": true,
+            "values": [
+             "public-key"
+            ]
+           },
+           {
+            "name": "response",
+            "type": "object",
+            "required": true
+           }
+          ]
          },
          {
           "name": "name",
@@ -1351,7 +1600,45 @@
            "ar": "اسم لمفتاح المرور"
           }
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "required": [
+          "challenge_id",
+          "credential"
+         ],
+         "properties": {
+          "challenge_id": {
+           "type": "string",
+           "pattern": "^[A-Za-z0-9_-]{16,128}$",
+           "example": "CHALLENGE_ID_FROM_OPTIONS"
+          },
+          "credential": {
+           "type": "object",
+           "required": [
+            "id",
+            "type",
+            "response"
+           ],
+           "properties": {
+            "id": {
+             "type": "string",
+             "minLength": 1
+            },
+            "type": {
+             "type": "string",
+             "const": "public-key"
+            },
+            "response": {
+             "type": "object"
+            }
+           }
+          },
+          "name": {
+           "type": "string"
+          }
+         }
+        }
        }
       ]
      },
@@ -1467,7 +1754,49 @@
         {
          "name": "accounts",
          "type": "object[]",
-         "required": true
+         "required": true,
+         "fields": [
+          {
+           "name": "userId",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "email",
+           "type": "string",
+           "required": false
+          },
+          {
+           "name": "name",
+           "type": "string | null",
+           "required": false
+          },
+          {
+           "name": "isActive",
+           "type": "boolean",
+           "required": true
+          },
+          {
+           "name": "authenticatedAt",
+           "type": "integer",
+           "required": false
+          },
+          {
+           "name": "lastUsed",
+           "type": "string",
+           "required": false
+          },
+          {
+           "name": "clientId",
+           "type": "string",
+           "required": false
+          },
+          {
+           "name": "subjectType",
+           "type": "string",
+           "required": false
+          }
+         ]
         }
        ]
       }
@@ -1485,6 +1814,7 @@
      "params": [],
      "body": {
       "type": "json",
+      "required": true,
       "shapes": [
        {
         "fields": [
@@ -1493,7 +1823,18 @@
           "type": "string",
           "required": true
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "required": [
+          "userId"
+         ],
+         "properties": {
+          "userId": {
+           "type": "string"
+          }
+         }
+        }
        }
       ]
      },
@@ -1758,6 +2099,7 @@
      "params": [],
      "body": {
       "type": "json",
+      "required": true,
       "shapes": [
        {
         "fields": [
@@ -1791,7 +2133,31 @@
           "type": "object",
           "required": false
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "minProperties": 1,
+         "properties": {
+          "displayName": {
+           "type": "string"
+          },
+          "firstName": {
+           "type": "string"
+          },
+          "lastName": {
+           "type": "string"
+          },
+          "displayNameLocalized": {
+           "type": "object"
+          },
+          "firstNameLocalized": {
+           "type": "object"
+          },
+          "lastNameLocalized": {
+           "type": "object"
+          }
+         }
+        }
        }
       ]
      },
@@ -1956,6 +2322,7 @@
      ],
      "body": {
       "type": "json",
+      "required": true,
       "shapes": [
        {
         "fields": [
@@ -1964,7 +2331,18 @@
           "type": "string",
           "required": true
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "required": [
+          "name"
+         ],
+         "properties": {
+          "name": {
+           "type": "string"
+          }
+         }
+        }
        }
       ]
      },
@@ -2158,6 +2536,7 @@
      "params": [],
      "body": {
       "type": "json",
+      "required": true,
       "shapes": [
        {
         "fields": [
@@ -2235,9 +2614,89 @@
          {
           "name": "actor",
           "type": "object",
-          "required": false
+          "required": false,
+          "fields": [
+           {
+            "name": "id",
+            "type": "string",
+            "required": false
+           },
+           {
+            "name": "email",
+            "type": "string",
+            "required": false
+           }
+          ]
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "required": [
+          "inviteId",
+          "userId",
+          "email"
+         ],
+         "properties": {
+          "inviteId": {
+           "type": "string",
+           "pattern": "^inv_[0-9a-f]{32}$",
+           "example": "inv_0123456789abcdef0123456789abcdef"
+          },
+          "userId": {
+           "type": "string",
+           "pattern": "^usr_[0-9a-f]{32}$",
+           "example": "usr_0123456789abcdef0123456789abcdef"
+          },
+          "email": {
+           "type": "string",
+           "format": "email",
+           "example": "person@example.com"
+          },
+          "name": {
+           "type": "string"
+          },
+          "locale": {
+           "type": "string",
+           "enum": [
+            "en",
+            "ar"
+           ]
+          },
+          "note": {
+           "type": "string"
+          },
+          "expiresInDays": {
+           "type": "integer"
+          },
+          "continueUrl": {
+           "type": "string",
+           "format": "uri"
+          },
+          "roles": {
+           "type": "array",
+           "items": {
+            "type": "string"
+           }
+          },
+          "details": {
+           "type": "object"
+          },
+          "sendEmail": {
+           "type": "boolean"
+          },
+          "actor": {
+           "type": "object",
+           "properties": {
+            "id": {
+             "type": "string"
+            },
+            "email": {
+             "type": "string"
+            }
+           }
+          }
+         }
+        }
        }
       ]
      },
@@ -2252,7 +2711,63 @@
         {
          "name": "invite",
          "type": "object",
-         "required": true
+         "required": true,
+         "fields": [
+          {
+           "name": "id",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "userId",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "email",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "name",
+           "type": "string | null",
+           "required": false
+          },
+          {
+           "name": "locale",
+           "type": "string",
+           "required": false,
+           "values": [
+            "en",
+            "ar"
+           ]
+          },
+          {
+           "name": "status",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "createdAt",
+           "type": "integer",
+           "required": false
+          },
+          {
+           "name": "expiresAt",
+           "type": "integer",
+           "required": false
+          },
+          {
+           "name": "acceptedAt",
+           "type": "integer | null",
+           "required": false
+          },
+          {
+           "name": "deletedAt",
+           "type": "integer | null",
+           "required": false
+          }
+         ]
         },
         {
          "name": "user",
@@ -2286,7 +2801,63 @@
         {
          "name": "invite",
          "type": "object",
-         "required": true
+         "required": true,
+         "fields": [
+          {
+           "name": "id",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "userId",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "email",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "name",
+           "type": "string | null",
+           "required": false
+          },
+          {
+           "name": "locale",
+           "type": "string",
+           "required": false,
+           "values": [
+            "en",
+            "ar"
+           ]
+          },
+          {
+           "name": "status",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "createdAt",
+           "type": "integer",
+           "required": false
+          },
+          {
+           "name": "expiresAt",
+           "type": "integer",
+           "required": false
+          },
+          {
+           "name": "acceptedAt",
+           "type": "integer | null",
+           "required": false
+          },
+          {
+           "name": "deletedAt",
+           "type": "integer | null",
+           "required": false
+          }
+         ]
         },
         {
          "name": "user",
@@ -2384,7 +2955,63 @@
         {
          "name": "invites",
          "type": "object[]",
-         "required": true
+         "required": true,
+         "fields": [
+          {
+           "name": "id",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "userId",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "email",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "name",
+           "type": "string | null",
+           "required": false
+          },
+          {
+           "name": "locale",
+           "type": "string",
+           "required": false,
+           "values": [
+            "en",
+            "ar"
+           ]
+          },
+          {
+           "name": "status",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "createdAt",
+           "type": "integer",
+           "required": false
+          },
+          {
+           "name": "expiresAt",
+           "type": "integer",
+           "required": false
+          },
+          {
+           "name": "acceptedAt",
+           "type": "integer | null",
+           "required": false
+          },
+          {
+           "name": "deletedAt",
+           "type": "integer | null",
+           "required": false
+          }
+         ]
         }
        ]
       },
@@ -2433,6 +3060,7 @@
      ],
      "body": {
       "type": "json",
+      "required": false,
       "shapes": [
        {
         "fields": [
@@ -2445,7 +3073,19 @@
            "ar"
           ]
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "properties": {
+          "locale": {
+           "type": "string",
+           "enum": [
+            "en",
+            "ar"
+           ]
+          }
+         }
+        }
        }
       ]
      },
@@ -2460,7 +3100,63 @@
         {
          "name": "invite",
          "type": "object",
-         "required": true
+         "required": true,
+         "fields": [
+          {
+           "name": "id",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "userId",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "email",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "name",
+           "type": "string | null",
+           "required": false
+          },
+          {
+           "name": "locale",
+           "type": "string",
+           "required": false,
+           "values": [
+            "en",
+            "ar"
+           ]
+          },
+          {
+           "name": "status",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "createdAt",
+           "type": "integer",
+           "required": false
+          },
+          {
+           "name": "expiresAt",
+           "type": "integer",
+           "required": false
+          },
+          {
+           "name": "acceptedAt",
+           "type": "integer | null",
+           "required": false
+          },
+          {
+           "name": "deletedAt",
+           "type": "integer | null",
+           "required": false
+          }
+         ]
         }
        ]
       },
@@ -2541,6 +3237,7 @@
      ],
      "body": {
       "type": "json",
+      "required": true,
       "shapes": [
        {
         "fields": [
@@ -2553,7 +3250,20 @@
            "ar": "بصمة الرمز في رابط التطبيق"
           }
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "required": [
+          "tokenHash"
+         ],
+         "properties": {
+          "tokenHash": {
+           "type": "string",
+           "pattern": "^[0-9a-f]{64}$",
+           "example": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+          }
+         }
+        }
        }
       ]
      },
@@ -2568,7 +3278,63 @@
         {
          "name": "invite",
          "type": "object",
-         "required": true
+         "required": true,
+         "fields": [
+          {
+           "name": "id",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "userId",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "email",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "name",
+           "type": "string | null",
+           "required": false
+          },
+          {
+           "name": "locale",
+           "type": "string",
+           "required": false,
+           "values": [
+            "en",
+            "ar"
+           ]
+          },
+          {
+           "name": "status",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "createdAt",
+           "type": "integer",
+           "required": false
+          },
+          {
+           "name": "expiresAt",
+           "type": "integer",
+           "required": false
+          },
+          {
+           "name": "acceptedAt",
+           "type": "integer | null",
+           "required": false
+          },
+          {
+           "name": "deletedAt",
+           "type": "integer | null",
+           "required": false
+          }
+         ]
         }
        ]
       },
@@ -2649,6 +3415,7 @@
      ],
      "body": {
       "type": "json",
+      "required": false,
       "shapes": [
        {
         "fields": [
@@ -2657,7 +3424,15 @@
           "type": "string",
           "required": false
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "properties": {
+          "reason": {
+           "type": "string"
+          }
+         }
+        }
        }
       ]
      },
@@ -2672,7 +3447,63 @@
         {
          "name": "invite",
          "type": "object",
-         "required": true
+         "required": true,
+         "fields": [
+          {
+           "name": "id",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "userId",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "email",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "name",
+           "type": "string | null",
+           "required": false
+          },
+          {
+           "name": "locale",
+           "type": "string",
+           "required": false,
+           "values": [
+            "en",
+            "ar"
+           ]
+          },
+          {
+           "name": "status",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "createdAt",
+           "type": "integer",
+           "required": false
+          },
+          {
+           "name": "expiresAt",
+           "type": "integer",
+           "required": false
+          },
+          {
+           "name": "acceptedAt",
+           "type": "integer | null",
+           "required": false
+          },
+          {
+           "name": "deletedAt",
+           "type": "integer | null",
+           "required": false
+          }
+         ]
         }
        ]
       },
@@ -2745,9 +3576,14 @@
      ],
      "body": {
       "type": "json",
+      "required": false,
       "shapes": [
        {
-        "fields": []
+        "fields": [],
+        "schema": {
+         "type": "object",
+         "properties": {}
+        }
        }
       ]
      },
@@ -2762,7 +3598,63 @@
         {
          "name": "invite",
          "type": "object",
-         "required": true
+         "required": true,
+         "fields": [
+          {
+           "name": "id",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "userId",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "email",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "name",
+           "type": "string | null",
+           "required": false
+          },
+          {
+           "name": "locale",
+           "type": "string",
+           "required": false,
+           "values": [
+            "en",
+            "ar"
+           ]
+          },
+          {
+           "name": "status",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "createdAt",
+           "type": "integer",
+           "required": false
+          },
+          {
+           "name": "expiresAt",
+           "type": "integer",
+           "required": false
+          },
+          {
+           "name": "acceptedAt",
+           "type": "integer | null",
+           "required": false
+          },
+          {
+           "name": "deletedAt",
+           "type": "integer | null",
+           "required": false
+          }
+         ]
         }
        ]
       },
@@ -2835,19 +3727,33 @@
      ],
      "body": {
       "type": "json",
+      "required": true,
       "shapes": [
        {
         "fields": [
          {
           "name": "confirm",
           "type": "string",
-          "required": false,
+          "required": true,
           "description": {
            "en": "The invited email, to confirm",
            "ar": "البريد المدعو، للتأكيد"
           }
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "required": [
+          "confirm"
+         ],
+         "properties": {
+          "confirm": {
+           "type": "string",
+           "format": "email",
+           "example": "person@example.com"
+          }
+         }
+        }
        }
       ]
      },
@@ -2862,7 +3768,63 @@
         {
          "name": "invite",
          "type": "object",
-         "required": true
+         "required": true,
+         "fields": [
+          {
+           "name": "id",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "userId",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "email",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "name",
+           "type": "string | null",
+           "required": false
+          },
+          {
+           "name": "locale",
+           "type": "string",
+           "required": false,
+           "values": [
+            "en",
+            "ar"
+           ]
+          },
+          {
+           "name": "status",
+           "type": "string",
+           "required": true
+          },
+          {
+           "name": "createdAt",
+           "type": "integer",
+           "required": false
+          },
+          {
+           "name": "expiresAt",
+           "type": "integer",
+           "required": false
+          },
+          {
+           "name": "acceptedAt",
+           "type": "integer | null",
+           "required": false
+          },
+          {
+           "name": "deletedAt",
+           "type": "integer | null",
+           "required": false
+          }
+         ]
         }
        ]
       },
@@ -2932,6 +3894,7 @@
      "params": [],
      "body": {
       "type": "json",
+      "required": true,
       "shapes": [
        {
         "fields": [
@@ -2954,7 +3917,39 @@
           "type": "string",
           "required": false
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "required": [
+          "user_id"
+         ],
+         "properties": {
+          "user_id": {
+           "type": "string",
+           "pattern": "^[A-Za-z0-9._-]{1,128}$"
+          },
+          "install_id": {
+           "type": "string",
+           "pattern": "^[A-Za-z0-9._-]{1,128}$"
+          },
+          "client_id": {
+           "type": "string",
+           "pattern": "^[A-Za-z0-9._-]{1,128}$"
+          }
+         },
+         "oneOf": [
+          {
+           "required": [
+            "install_id"
+           ]
+          },
+          {
+           "required": [
+            "client_id"
+           ]
+          }
+         ]
+        }
        }
       ]
      },
@@ -3036,6 +4031,7 @@
      ],
      "body": {
       "type": "json",
+      "required": true,
       "shapes": [
        {
         "fields": [
@@ -3081,14 +4077,139 @@
          {
           "name": "evidence",
           "type": "object[]",
-          "required": false
+          "required": false,
+          "fields": [
+           {
+            "name": "url",
+            "type": "string",
+            "required": true,
+            "description": {
+             "en": "An https address",
+             "ar": "عنوان يبدأ بـ https"
+            }
+           },
+           {
+            "name": "label",
+            "type": "string",
+            "required": false
+           }
+          ]
          },
          {
           "name": "requested_by",
           "type": "object",
-          "required": true
+          "required": true,
+          "fields": [
+           {
+            "name": "id",
+            "type": "string",
+            "required": true
+           },
+           {
+            "name": "display_name",
+            "type": "string",
+            "required": true
+           }
+          ]
+         },
+         {
+          "name": "idempotency_key",
+          "type": "string",
+          "required": false
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "required": [
+          "subject_user_id",
+          "action",
+          "reason_category",
+          "reason",
+          "requested_by"
+         ],
+         "properties": {
+          "subject_user_id": {
+           "type": "string",
+           "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "action": {
+           "type": "string",
+           "enum": [
+            "suspend_account",
+            "delete_account",
+            "revoke_sessions",
+            "require_password_reset",
+            "other"
+           ]
+          },
+          "reason_category": {
+           "type": "string",
+           "enum": [
+            "spam",
+            "harassment",
+            "hate_speech",
+            "violent_content",
+            "sexual_content",
+            "impersonation",
+            "copyright",
+            "fraud",
+            "compromised_account",
+            "other"
+           ]
+          },
+          "reason": {
+           "type": "string",
+           "minLength": 1,
+           "maxLength": 4000
+          },
+          "evidence": {
+           "type": "array",
+           "maxItems": 20,
+           "items": {
+            "type": "object",
+            "required": [
+             "url"
+            ],
+            "properties": {
+             "url": {
+              "type": "string",
+              "format": "uri",
+              "example": "https://example.com/evidence",
+              "maxLength": 2048
+             },
+             "label": {
+              "type": "string",
+              "maxLength": 200
+             }
+            }
+           }
+          },
+          "requested_by": {
+           "type": "object",
+           "required": [
+            "id",
+            "display_name"
+           ],
+           "properties": {
+            "id": {
+             "type": "string",
+             "minLength": 1,
+             "maxLength": 128
+            },
+            "display_name": {
+             "type": "string",
+             "minLength": 1,
+             "maxLength": 200
+            }
+           }
+          },
+          "idempotency_key": {
+           "type": "string",
+           "minLength": 8,
+           "maxLength": 128
+          }
+         }
+        }
        }
       ]
      },
@@ -3376,6 +4497,7 @@
      ],
      "body": {
       "type": "json",
+      "required": true,
       "shapes": [
        {
         "fields": [
@@ -3387,14 +4509,97 @@
          {
           "name": "evidence",
           "type": "object[]",
-          "required": false
+          "required": false,
+          "fields": [
+           {
+            "name": "url",
+            "type": "string",
+            "required": true,
+            "description": {
+             "en": "An https address",
+             "ar": "عنوان يبدأ بـ https"
+            }
+           },
+           {
+            "name": "label",
+            "type": "string",
+            "required": false
+           }
+          ]
          },
          {
           "name": "requested_by",
           "type": "object",
-          "required": true
+          "required": true,
+          "fields": [
+           {
+            "name": "id",
+            "type": "string",
+            "required": true
+           },
+           {
+            "name": "display_name",
+            "type": "string",
+            "required": true
+           }
+          ]
          }
-        ]
+        ],
+        "schema": {
+         "type": "object",
+         "required": [
+          "note",
+          "requested_by"
+         ],
+         "properties": {
+          "note": {
+           "type": "string",
+           "minLength": 1,
+           "maxLength": 4000
+          },
+          "evidence": {
+           "type": "array",
+           "maxItems": 20,
+           "items": {
+            "type": "object",
+            "required": [
+             "url"
+            ],
+            "properties": {
+             "url": {
+              "type": "string",
+              "format": "uri",
+              "example": "https://example.com/evidence",
+              "maxLength": 2048
+             },
+             "label": {
+              "type": "string",
+              "maxLength": 200
+             }
+            }
+           }
+          },
+          "requested_by": {
+           "type": "object",
+           "required": [
+            "id",
+            "display_name"
+           ],
+           "properties": {
+            "id": {
+             "type": "string",
+             "minLength": 1,
+             "maxLength": 128
+            },
+            "display_name": {
+             "type": "string",
+             "minLength": 1,
+             "maxLength": 200
+            }
+           }
+          }
+         }
+        }
        }
       ]
      },
