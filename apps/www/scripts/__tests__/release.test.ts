@@ -5,7 +5,7 @@ import { parseJsonc } from '../jsonc.ts';
 import { evaluateSecrets } from '../release/check-secrets.ts';
 import { currentVersion, parseVersionId, promote, releaseApp, type PromoteDeps } from '../release/promote.ts';
 import { parseRollbackArgs, previousFromResult, rollbackArgv, rollbackTarget } from '../release/rollback.ts';
-import { overrideHeader, runSmoke } from '../release/smoke.ts';
+import { overrideHeader, reason, runSmoke } from '../release/smoke.ts';
 import { readFileSync } from 'node:fs';
 
 const V1 = '11111111-1111-1111-1111-111111111111';
@@ -253,6 +253,16 @@ describe('smoke', () => {
       fetchImpl: site({ '/public/site-theme': () => new Response(JSON.stringify({ theme: 'nahas' }), { status: 200 }) }),
     });
     expect(wrong.find((r) => r.name === 'site theme')).toMatchObject({ ok: false, detail: 'renders lantern, the admin chose nahas' });
+  });
+  it('says why a request failed, not only that it did', async () => {
+    const reset = new TypeError('fetch failed', { cause: Object.assign(new Error('other side closed'), { code: 'UND_ERR_SOCKET' }) });
+    const answer = site();
+    const results = await runSmoke({ env: 'production', retryMs: 0, fetchImpl: (async (url: string, init?: RequestInit) => (String(url).includes('/ar/news/') ? Promise.reject(reset) : answer(url, init))) as typeof fetch });
+    expect(results.find((r) => r.name === 'news → articles')).toEqual({ name: 'news → articles', ok: false, detail: 'fetch failed (UND_ERR_SOCKET other side closed)' });
+    const both = new TypeError('fetch failed', { cause: new AggregateError([Object.assign(new Error('a'), { code: 'ECONNREFUSED' }), Object.assign(new Error('b'), { code: 'ETIMEDOUT' })]) });
+    expect(reason(both)).toBe('fetch failed (ECONNREFUSED a; ETIMEDOUT b)');
+    expect(reason(new Error('status 500'))).toBe('status 500');
+    expect(reason('odd')).toBe('odd');
   });
   it('fails when the apex does not redirect', async () => {
     const results = await runSmoke({ env: 'production', fetchImpl: site({ 'https://alummahnow.net': () => new Response('hi', { status: 200 }) }) });

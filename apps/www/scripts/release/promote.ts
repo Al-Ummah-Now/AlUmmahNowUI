@@ -13,7 +13,7 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ENVIRONMENTS, parseEnvArg, type EnvName } from '../environments.ts';
-import { runSmoke, type CheckResult } from './smoke.ts';
+import { reason, runSmoke, type CheckResult } from './smoke.ts';
 
 export type ReleaseEnv = Extract<EnvName, 'stage' | 'production'>;
 
@@ -209,7 +209,7 @@ export async function waitForWwwVersion(
       }
       last = `version ${body.version}`;
     } catch (error) {
-      last = (error as Error).message;
+      last = reason(error);
     }
     inARow = 0;
     await new Promise((r) => setTimeout(r, pauseMs));
@@ -242,7 +242,7 @@ export async function waitForWwwHosts(
         });
         break;
       } catch (error) {
-        last = (error as Error).message;
+        last = reason(error);
       }
       if (Date.now() >= deadline) throw new Error(`${host} did not answer within ${timeoutMs / 1000}s (last: ${last})`);
       log(`${host} does not answer yet (${last}); retrying in ${pauseMs / 1000}s`);

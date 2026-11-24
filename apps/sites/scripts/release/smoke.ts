@@ -35,7 +35,8 @@ for (let attempt = 0; attempt < 10; attempt++) {
       process.stdout.write(`::notice::SKIP sites smoke: ${host} has no certificate yet (Advanced Certificate pending, apps/sites/docs/DOMAINS.md §2)\n`);
       process.exit(0);
     }
-    last = String(error);
+    // fetch says only «fetch failed»: the reason is in its cause
+    last = [String(error), (error as { cause?: unknown }).cause ?? ''].map(String).filter(Boolean).join(': ') + (code ? ` (${code})` : '');
   }
   await new Promise((r) => setTimeout(r, 3_000));
 }

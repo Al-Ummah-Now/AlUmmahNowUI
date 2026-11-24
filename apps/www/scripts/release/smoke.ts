@@ -37,6 +37,16 @@ export function overrideHeader(overrides: Record<string, string>): string {
     .join(', ');
 }
 
+/** An error in words. fetch says only «fetch failed»: the reason (a reset, DNS, TLS, a timeout) is in its cause, or in each of the cause's errors. */
+export function reason(error: unknown): string {
+  if (!(error instanceof Error)) return String(error);
+  const { cause } = error;
+  if (!(cause instanceof Error)) return error.message;
+  const all = cause instanceof AggregateError && cause.errors.length ? (cause.errors as unknown[]) : [cause];
+  const why = all.map((c) => [(c as { code?: string }).code, c instanceof Error ? c.message : String(c)].filter(Boolean).join(' '));
+  return `${error.message} (${why.join('; ')})`;
+}
+
 export async function runSmoke(opts: SmokeOptions): Promise<CheckResult[]> {
   const e = ENVIRONMENTS[opts.env];
   const doFetch = opts.fetchImpl ?? fetch;
@@ -51,7 +61,7 @@ export async function runSmoke(opts: SmokeOptions): Promise<CheckResult[]> {
     try {
       results.push({ name, ok: true, detail: await fn() });
     } catch (error) {
-      results.push({ name, ok: false, detail: (error as Error).message });
+      results.push({ name, ok: false, detail: reason(error) });
     }
   };
   const assert = (cond: unknown, msg: string) => {
