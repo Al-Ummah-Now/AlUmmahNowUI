@@ -168,7 +168,7 @@ export const en: Builtin = {
         '',
         'Creators keep copyright in the videos, Shorts, thumbnails, titles, descriptions, and posts they upload. By uploading or posting content on Al Ummah Now, you grant us a non-exclusive, worldwide, royalty-free license to host, store, transcode, distribute, and display that content across our websites and apps for as long as it remains on the platform.',
         '',
-        'You must own or have permission to upload all video, audio, text, and artwork you publish. When you delete a video, it is hidden from public access immediately and its media is purged within 30 days. When we process a request to delete your account, we remove your content from public access and our media storage within 30 days.',
+        'You must own or have permission to upload all video, audio, text, and artwork you publish. When you delete a video, it is hidden from public access immediately and its media is purged within 30 days. When we process your request to delete your account, your Videos data is erased and your deleted sign-in account is purged within 30 days.',
         '',
         '## Prohibited content and behavior',
         '',
