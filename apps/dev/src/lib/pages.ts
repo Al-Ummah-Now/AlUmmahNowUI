@@ -35,6 +35,7 @@ export const PAGES = [
   'auth/native',
   'auth/servers',
   'auth/tokens',
+  'auth/tools',
   'open-source',
   'contact',
 ] as const;
