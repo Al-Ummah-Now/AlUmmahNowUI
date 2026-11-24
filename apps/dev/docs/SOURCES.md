@@ -292,3 +292,9 @@ Read at AUTH `origin/main` `82bb738` and openauth `origin/master` `07119c9` (202
 - Sign-out visits each app — `AUTH apps/auth/src/handlers/logout-handler.ts`.
 - Client key cache ten minutes; `verify` doesn't check the audience; `exchange`, `refresh` and `verify` throw when the server can't be reached — `openauth packages/openauth/src/client.ts`.
 - Rate limits and `Retry-After` — `AUTH apps/auth/src/router.ts` (`handleTokenRateLimit`).
+- Native apps: redirects, `install_id` — `openauth packages/openauth/src/client/native.ts`, `src/issuer.ts` (`parseInstallId`). Passkeys: accepted clients, two-minute single-use challenge, 15-minute fresh sign-in, staff first passkey on the web — `AUTH apps/auth/src/passkeys/native.ts`, `src/passkeys/session.ts`.
+- Device grant: ten-minute codes, five-second interval, tokens once — `AUTH apps/auth/src/index.ts` (`device:`), `openauth packages/openauth/src/device.ts`.
+- A server's own token lasts an hour, has `mode: m2m` and no refresh token — `openauth packages/openauth/src/m2m/token-generator.ts`.
+- APIs that take the secret: scopes and limits — `AUTH docs/USER_INVITES.md`, `docs/MODERATION_REQUESTS.md`, `docs/TOKEN_REVOCATIONS.md`, `apps/auth/wrangler.json` (`ADMIN_SENSITIVE_LIMITER` 10 in 60).
+- Key rotation: published one hour before signing, every 90 days, retired after the last token — `AUTH apps/auth/src/signing-keys/rotation.ts` (`PUBLISH_LEAD_MS`, `ROTATE_EVERY_MS`, `retireAfterMs`). Keys edge-cached five minutes — `src/well-known-cache.ts`.
+- Revocation entries `u:`, `s:`, `i:` and who reads them — `AUTH docs/TOKEN_REVOCATIONS.md`.
