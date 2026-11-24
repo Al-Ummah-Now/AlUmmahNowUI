@@ -275,3 +275,20 @@ zone ids.
 
 - Abbreviations are spelled out where each page first uses them by `src/middleware.ts` with the list in `src/lib/glossary.ts`; the browser gate (`e2e/diagram-gate.ts`, run by `diagram-gate.spec.ts`, `site.spec.ts` and the capture script) fails a page that uses one before its meaning, and any plan wording.
 - The Workers AI meter on the design diagrams is moderation only (the check every upload gets); captions run when a creator asks, so they sit in the cost figure's shared lane, not under "every upload".
+
+## 13. Sign-in API (`/{lang}/auth/`)
+
+Read at AUTH `origin/main` `82bb738` and openauth `origin/master` `07119c9` (2026-11-23).
+
+- Only our own apps and scholar sites use the sign-in (AR4-D1) — `WIKI epics/AUTH-R4-auth-docs-dx.md` §Owner decisions.
+- Discovery lists only what is served — `openauth packages/openauth/src/discovery.ts`, `test/discovery.test.ts`.
+- PKCE: S256 only, required of public clients and, at the exchange, of every first-party web client — `AUTH apps/auth/src/index.ts` (`pkce:`), `src/pkce-clients.ts`.
+- Codes live 10 minutes and work once; reuse revokes what they were exchanged for — `AUTH apps/auth/src/index.ts` (`code: 600`), `openauth packages/openauth/src/issuer.ts` (`revokeCodeGrant`).
+- Access tokens 15 minutes — `AUTH apps/auth/wrangler.json` (`ACCESS_TOKEN_TTL` 900). Refresh tokens 30 days from last use, rotated — `AUTH apps/auth/src/index.ts` (`REFRESH_TOKEN_TTL` comment).
+- Reuse window two minutes, then the family is revoked — `openauth packages/openauth/src/issuer.ts` (`DEFAULT_REFRESH_REUSE_WINDOW` 120).
+- Token subject `id`, `email`, `roles` — `AUTH apps/auth/src/index.ts` (`createSubjects`).
+- Single sign-on and prompts — `openauth packages/openauth/src/enterprise/session-integration.ts` (`handlePromptParameter`).
+- Revocation list in KV, `user` and `s:<sid>` keys — `AUTH docs/TOKEN_REVOCATIONS.md`.
+- Sign-out visits each app — `AUTH apps/auth/src/handlers/logout-handler.ts`.
+- Client key cache ten minutes; `verify` doesn't check the audience; `exchange`, `refresh` and `verify` throw when the server can't be reached — `openauth packages/openauth/src/client.ts`.
+- Rate limits and `Retry-After` — `AUTH apps/auth/src/router.ts` (`handleTokenRateLimit`).

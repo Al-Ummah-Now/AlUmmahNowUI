@@ -1,0 +1,46 @@
+---
+/** Every Sign-in API page below its hero: the section nav beside (or above) it and the pager after, as on System design. */
+import { formatNumber } from '../../../../packages/render/src/format.ts';
+import { AUTH_PAGES, pagePath, type AuthPage, type Locale } from '../lib/pages';
+import type { Strings } from '../i18n';
+interface Props {
+  locale: Locale;
+  slug: AuthPage;
+  t: Strings;
+}
+const { locale, slug, t } = Astro.props;
+const n = t.auth.nav;
+const title: Record<AuthPage, string> = { auth: n.hub, 'auth/web': n.web };
+const entries = AUTH_PAGES.map((page) => ({ page, title: title[page], href: pagePath(locale, page) }));
+const at = AUTH_PAGES.indexOf(slug);
+const prev = entries[at - 1];
+const next = entries[at + 1];
+---
+<div class="sd-shell">
+  <aside class="sd-aside">
+    <nav class="sd-nav" aria-label={n.label}>
+      <p class="sd-nav-title">{n.label}</p>
+      <ol role="list">
+        {entries.map((e, i) => (
+          <li>
+            <a href={e.href} aria-current={e.page === slug ? 'page' : undefined}>
+              <span class="sd-nav-n" aria-hidden="true">{formatNumber(i, locale)}</span>
+              <span>{e.title}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  </aside>
+  <div class="sd-main">
+    <slot />
+    <div class="band sd-pager-band">
+      <div class="wrap">
+        <nav class="sd-pager" aria-label={n.pager}>
+          {prev ? <a class="sd-pager-prev" href={prev.href} rel="prev"><span class="sd-pager-dir">{n.prev}</span><span class="sd-pager-title">{prev.title}</span></a> : <span />}
+          {next && <a class="sd-pager-next" href={next.href} rel="next"><span class="sd-pager-dir">{n.next}</span><span class="sd-pager-title">{next.title}</span></a>}
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>

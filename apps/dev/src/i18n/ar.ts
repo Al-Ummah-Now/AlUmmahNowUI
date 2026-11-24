@@ -4,6 +4,7 @@
  */
 import { WIKI, GH, VIDEOS, WWW, STATUS_PAGE } from '../lib/links.ts';
 import { diagramsAr } from './diagrams.ar.ts';
+import { authAr } from './auth.ar.ts';
 import type { Item, Strings } from './en.ts';
 
 export const ar: Strings = {
@@ -21,6 +22,7 @@ export const ar: Strings = {
     technology: 'التقنية',
     infrastructure: 'البنية التحتية',
     'system-design': 'تصميم النظام',
+    auth: 'واجهة تسجيل الدخول',
     'open-source': 'المصدر المفتوح',
     contact: 'تواصل معنا',
     /** The header lockup's second line (NAV.md: every app but www names itself) */
@@ -90,6 +92,7 @@ export const ar: Strings = {
         { label: 'التقنية', href: 'technology' },
         { label: 'البنية التحتية ومسار المرئيات', href: 'infrastructure' },
         { label: 'تصميم النظام', href: 'system-design' },
+        { label: 'واجهة تسجيل الدخول', href: 'auth' },
         { label: 'المستودعات والمساهمة', href: 'open-source' },
       ],
     },
@@ -574,5 +577,6 @@ export const ar: Strings = {
     home: 'اذهب إلى الصفحة الرئيسية',
     other: 'Home page in English',
   },
+  auth: authAr,
   diagrams: diagramsAr,
 };

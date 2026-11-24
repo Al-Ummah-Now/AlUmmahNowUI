@@ -1,0 +1,61 @@
+---
+import Base from '../../../../layouts/Base.astro';
+import PageHero from '../../../../components/PageHero.astro';
+import AuthShell from '../../../../components/AuthShell.astro';
+import CodeBlock from '../../../../components/CodeBlock.astro';
+import ItemGrid from '../../../../components/ItemGrid.astro';
+import Rich from '../../../../components/Rich.astro';
+import SdDiagram from '../../../../components/SdDiagram.astro';
+import { strings } from '../../../../i18n';
+import type { Locale } from '../../../../lib/pages';
+import { localePaths } from '../../../../lib/static-paths';
+import { SAMPLES } from '../../../../lib/auth/samples';
+
+export const getStaticPaths = localePaths;
+const locale = Astro.params.lang as Locale;
+const t = strings(locale);
+const p = t.auth.web;
+const d = t.diagrams.pages.auth;
+---
+<Base locale={locale} slug="auth/web" title={p.title} description={p.description}>
+  <PageHero title={p.heroTitle} lead={p.heroLead} section />
+  <AuthShell locale={locale} slug="auth/web" t={t}>
+    <SdDiagram id="auth-web" locale={locale} title={d.web.title} lead={d.web.lead} why={d.web.why} tradeoff={d.web.tradeoff} />
+    <section class="band band-raised" aria-labelledby="start-h">
+      <div class="wrap">
+        <h2 id="start-h" class="h2">{p.startTitle}</h2>
+        <p class="section-lead"><Rich text={p.startLead} /></p>
+        <CodeBlock code={SAMPLES.start} label={p.startTitle} t={t} locale={locale} />
+      </div>
+    </section>
+    <section class="band" aria-labelledby="verify-h">
+      <div class="wrap">
+        <h2 id="verify-h" class="h2">{p.verifyTitle}</h2>
+        <p class="section-lead"><Rich text={p.verifyLead} /></p>
+        <CodeBlock code={SAMPLES.verify} label={p.verifyTitle} t={t} locale={locale} />
+      </div>
+    </section>
+    <SdDiagram id="auth-race" locale={locale} title={d.race.title} lead={d.race.lead} why={d.race.why} tradeoff={d.race.tradeoff} raised />
+    <section class="band" aria-labelledby="refresh-h">
+      <div class="wrap">
+        <h2 id="refresh-h" class="h2">{p.refreshTitle}</h2>
+        <p class="section-lead"><Rich text={p.refreshLead} /></p>
+        <CodeBlock code={SAMPLES.refresh} label={p.refreshTitle} t={t} locale={locale} />
+      </div>
+    </section>
+    <SdDiagram id="auth-out" locale={locale} title={d.out.title} lead={d.out.lead} why={d.out.why} tradeoff={d.out.tradeoff} raised />
+    <section class="band" aria-labelledby="out-h">
+      <div class="wrap">
+        <h2 id="out-h" class="h2">{p.signOutTitle}</h2>
+        <p class="section-lead"><Rich text={p.signOutLead} /></p>
+        <CodeBlock code={SAMPLES.signOut} label={p.signOutTitle} t={t} locale={locale} />
+      </div>
+    </section>
+    <section class="band band-raised" aria-labelledby="mistakes-h">
+      <div class="wrap">
+        <h2 id="mistakes-h" class="h2">{p.mistakesTitle}</h2>
+        <ItemGrid items={p.mistakes} t={t} />
+      </div>
+    </section>
+  </AuthShell>
+</Base>

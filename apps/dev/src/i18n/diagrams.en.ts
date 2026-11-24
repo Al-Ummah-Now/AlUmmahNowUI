@@ -15,6 +15,7 @@ import { clientsEn } from './sd/clients.en.ts';
 import { releaseEn } from './sd/release.en.ts';
 import { hubEn } from './sd/hub.en.ts';
 import { pipelineEn } from './sd/pipeline.en.ts';
+import { authFiguresEn } from './sd/auth.en.ts';
 
 export const diagramsEn = {
   terms: 'In this figure:',
@@ -276,5 +277,6 @@ export const diagramsEn = {
     release: releaseEn,
     hub: hubEn,
     pipeline: pipelineEn,
+    auth: authFiguresEn,
   },
 };

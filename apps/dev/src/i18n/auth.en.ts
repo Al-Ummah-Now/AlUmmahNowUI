@@ -1,0 +1,48 @@
+/** The Sign-in API section (wiki AUTH-R4, English). Same keys in auth.ar.ts. Facts: docs/SOURCES.md §13. Code samples: src/lib/auth/samples.ts. */
+export const authEn = {
+  nav: { label: 'Sign-in API pages', pager: 'Previous and next page', prev: 'Previous', next: 'Next', hub: 'Overview', web: 'Websites' },
+  hub: {
+    title: 'Sign-in API',
+    description: 'How an Al Ummah Now app signs people in, for developers: which flow each kind of app uses, what a token holds, and how sign-in carries from one app to the next.',
+    heroTitle: 'One sign-in for every app',
+    heroLead: 'Our websites, native apps, TV apps and servers all sign in through one issuer, auth.alummahnow.net, with OAuth. This section is for the people who build and change those apps. Only our own apps and the scholar sites use it.',
+    factsTitle: 'What every app relies on',
+    facts: [
+      { title: 'Read the addresses, never write them down', body: 'The issuer publishes a discovery document. It lists every endpoint, grant and method the issuer serves, and nothing else.' },
+      { title: 'A proof with every code', body: 'Each sign-in carries PKCE, a one-time proof only the app that started it can answer. Only the S256 method is accepted, and an app with no secret can’t leave it out.' },
+      { title: 'Codes work once', body: 'A code lasts {N10} minutes and is exchanged once. Using it again revokes the tokens it was exchanged for.' },
+      { title: 'Access tokens last {accessTokenMinutes} minutes', body: 'They are signed, so an API checks one without calling the issuer. The person is in properties: id, email and roles.' },
+      { title: 'Refresh tokens change every time', body: 'Each refresh answers a new one, good for {N30} days from its last use. Using an old one after two minutes ends the whole sign-in.' },
+      { title: 'English unless asked', body: 'The sign-in pages are in English, and in Arabic when the address carries lang=ar.' },
+    ],
+    errorsTitle: 'When something is refused',
+    errors: [
+      { title: 'invalid_grant', body: 'The code or refresh token is used, expired or somebody else’s, or the proof doesn’t match. Start the sign-in again.' },
+      { title: 'invalid_client', body: 'The client id is unknown or the secret is wrong. Nothing the person can do: check the app’s settings.' },
+      { title: 'login_required', body: 'A silent check (prompt=none) found nobody signed in on this browser. Show the sign-in button.' },
+      { title: 'rate_limit_exceeded', body: 'Too many requests. Wait as many seconds as the Retry-After header says.' },
+    ],
+  },
+  web: {
+    title: 'Sign in on a website',
+    description: 'Sign people in on an Al Ummah Now website: start and finish a sign-in with PKCE, check a token on every request, refresh without races, and sign out of every app.',
+    heroTitle: 'Sign in on a website',
+    heroLead: 'Three calls make a sign-in, one check runs on every request, and one address signs the person out of everything. The samples use our TypeScript client, part of our [OpenAuth fork](https://github.com/Al-Ummah-Now/openauth).',
+    startTitle: 'Start and finish',
+    startLead: 'Keep the challenge in an HttpOnly cookie while the person is away. It holds the state to compare and the verifier to send.',
+    verifyTitle: 'Check a token on every request',
+    verifyLead: 'The client checks the signature, the issuer and the expiry with keys it keeps for ten minutes. Compare the audience yourself: it names the app the token was made for.',
+    refreshTitle: 'Refresh in one place',
+    refreshLead: 'Store both new tokens before using either. When the server can’t be reached the client throws, which is not a refusal: answer with a temporary error and keep the session.',
+    signOutTitle: 'Sign out of everything',
+    signOutLead: 'Clear your own session first, then send the browser to the issuer. A link on somebody else’s page gets a question instead of a sign-out.',
+    mistakesTitle: 'Mistakes to avoid',
+    mistakes: [
+      { title: 'Tokens in local storage', body: 'Any script on the page can read it. Keep tokens in HttpOnly, Secure cookies or on your server.' },
+      { title: 'Skipping the state check', body: 'Without it, somebody can finish their own sign-in in another person’s browser.' },
+      { title: 'A redirect address built from the request', body: 'It must match a registered address exactly. Take it from your settings.' },
+      { title: 'Email as the key', body: 'An email can change. Key your data by the id in properties.' },
+    ],
+  },
+  copy: { code: 'Code sample', copy: 'Copy', copied: 'Copied' },
+};
