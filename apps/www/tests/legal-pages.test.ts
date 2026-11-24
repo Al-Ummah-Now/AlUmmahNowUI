@@ -55,7 +55,7 @@ describe('Privacy Policy and Terms of Service pages (AlUmmahNow#1929)', () => {
       const pages = builtinContent(locale).pages;
       for (const slug of ['privacy', 'terms'] as const) {
         const text = `${pages[slug]!.title}\n${pages[slug]!.summary}\n${pages[slug]!.body}`;
-        expect(text).not.toMatch(/\$500|500\/month|budget|ميزانية/i);
+        expect(text).not.toMatch(/\$\d|\/month|budget|ميزانية/i);
       }
     }
   });
