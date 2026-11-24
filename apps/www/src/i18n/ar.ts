@@ -275,6 +275,8 @@ export const ar: Messages = {
   footer: {
     contact: 'اتصل بنا',
     help: 'المساعدة',
+    privacy: 'سياسة الخصوصية',
+    terms: 'شروط الاستخدام',
     rights: '© {year} الأمة الآن',
     status: 'حالة الخدمات',
     rss: 'خلاصة المقالات (RSS)',
