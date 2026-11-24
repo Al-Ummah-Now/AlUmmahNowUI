@@ -1,10 +1,10 @@
 /** The Sign-in API reference's data (scripts/auth-spec.ts) and the request samples drawn from it. */
 import data from '../../data/auth-reference.json';
 import { fill, formatNumber } from '../../../../../packages/render/src/format.ts';
-import type { Field, Operation, Reference, Text } from '../../../scripts/auth-spec.ts';
+import type { Field, Operation, Reference, Schema, Shape, Text } from '../../../scripts/auth-spec.ts';
 import type { Locale } from '../pages.ts';
 
-export type { Field, Operation, Reference, Text };
+export type { Field, Operation, Reference, Schema, Shape, Text };
 export const REFERENCE = data as Reference;
 export const ISSUER = 'https://auth.alummahnow.net';
 
@@ -20,10 +20,26 @@ export const LANGS = ['curl', 'ts', 'python', 'go'] as const;
 export type Lang = (typeof LANGS)[number];
 export const LANG_NAMES: Record<Lang, string> = { curl: 'curl', ts: 'TypeScript', python: 'Python', go: 'Go' };
 
-/** A stand-in for a field's value: the only one allowed, else its name in capitals. */
-const example = (f: Field): string => (f.values?.length ? f.values[0]! : f.name.replace(/([a-z])([A-Z])/g, '$1_$2').replace(/\W/g, '_').toUpperCase());
-/** …as JSON: the type the field has. */
-const jsonExample = (f: Field): unknown => (f.type === 'integer' ? 1 : f.type === 'boolean' ? true : f.type.endsWith('[]') ? [] : f.type === 'object' ? {} : example(f));
+const placeholder = (name: string) => name.replace(/([a-z])([A-Z])/g, '$1_$2').replace(/\W/g, '_').toUpperCase();
+
+/** A stand-in for a value the schema accepts: its example, the only value allowed, else the field's name in capitals. */
+export function exampleOf(s: Schema, name: string): unknown {
+  if (s.example !== undefined) return s.example;
+  if (s.const !== undefined) return s.const;
+  if (s.enum?.length) return s.enum[0];
+  const type = Array.isArray(s.type) ? s.type.find((t) => t !== 'null') : s.type;
+  if (type === 'integer') return 1;
+  if (type === 'boolean') return true;
+  if (type === 'array') return [];
+  if (type === 'object' || s.properties) {
+    const chosen = new Set([...(s.required ?? []), ...(s.properties ? (s.oneOf?.[0]?.required ?? []) : [])]);
+    for (const key of Object.keys(s.properties ?? {})) if (chosen.size < (s.minProperties ?? 0)) chosen.add(key);
+    return Object.fromEntries([...chosen].map((key) => [key, exampleOf(s.properties?.[key] ?? {}, key)]));
+  }
+  if (s.format === 'uri') return 'https://example.com';
+  if (s.format === 'email') return 'person@example.com';
+  return placeholder(name);
+}
 
 interface Parts {
   url: string;
@@ -34,22 +50,31 @@ interface Parts {
   session: boolean;
 }
 
+/** The body a sample sends: a JSON text or form fields; undefined when the body may be left out and the sample has nothing to put in it. */
+export function sampleBody(op: Operation): unknown {
+  const shape = op.body?.shapes[0];
+  if (!op.body || !shape) return undefined;
+  const value = exampleOf(shape.schema, 'body') as Record<string, unknown>;
+  if (!op.body.required && Object.keys(value).length === 0) return undefined;
+  // /token: the verifier too, which a public client must send
+  if (op.id === 'token' && shape.schema.properties?.code_verifier) value.code_verifier = exampleOf(shape.schema.properties.code_verifier, 'code_verifier');
+  return value;
+}
+
 function parts(op: Operation): Parts {
-  const path = op.path.replace(/\{(\w+)\}/g, (_m, name: string) => name.toUpperCase());
-  const query = op.params.filter((p) => p.in === 'query' && p.required).map((p) => `${p.name}=${encodeURIComponent(example(p))}`);
-  const headers: [string, string][] = op.params.filter((p) => p.in === 'header').map((p) => [p.name, example(p)]);
+  const text = (p: Field) => (p.values?.length ? p.values[0]! : placeholder(p.name));
+  const path = op.path.replace(/\{(\w+)\}/g, (_m, name: string) => placeholder(name));
+  const query = op.params.filter((p) => p.in === 'query' && p.required).map((p) => `${p.name}=${encodeURIComponent(text(p))}`);
+  const headers: [string, string][] = op.params.filter((p) => p.in === 'header').map((p) => [p.name, text(p)]);
   if (op.auth === 'user') headers.unshift(['Authorization', 'Bearer ACCESS_TOKEN']);
-  const required = op.body?.shapes[0]?.fields.filter((f) => f.required) ?? [];
-  // /token: the public client's fields too, or the sample would not work
-  const extra = op.id === 'token' ? (op.body?.shapes[0]?.fields.filter((f) => f.name === 'code_verifier') ?? []) : [];
-  const fields = [...required, ...extra];
+  const body = sampleBody(op) as Record<string, unknown> | undefined;
   return {
     url: `${ISSUER}${path}${query.length ? `?${query.join('&')}` : ''}`,
     headers,
     basic: op.auth === 'client',
     session: op.auth === 'session',
-    ...(op.body?.type === 'form' ? { form: fields.map((f): [string, string] => [f.name, example(f)]) } : {}),
-    ...(op.body?.type === 'json' ? { json: JSON.stringify(Object.fromEntries(fields.map((f) => [f.name, jsonExample(f)])), null, 2) } : {}),
+    ...(body && op.body?.type === 'form' ? { form: Object.entries(body).map(([k, v]): [string, string] => [k, String(v)]) } : {}),
+    ...(body && op.body?.type === 'json' ? { json: JSON.stringify(body, null, 2) } : {}),
   };
 }
 

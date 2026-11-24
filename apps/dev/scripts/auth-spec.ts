@@ -23,11 +23,37 @@ export interface Field {
   required: boolean;
   description?: Text;
   values?: string[];
+  /** an object's fields, or an array's items' */
+  fields?: Field[];
+}
+/** A request body's JSON Schema, every $ref followed and the texts left out: samples are drawn from it and checked against it. */
+export interface Schema {
+  type?: string | string[];
+  properties?: Record<string, Schema>;
+  required?: string[];
+  items?: Schema;
+  oneOf?: Schema[];
+  enum?: string[];
+  const?: string;
+  pattern?: string;
+  format?: string;
+  example?: unknown;
+  minLength?: number;
+  maxLength?: number;
+  minProperties?: number;
+  maxItems?: number;
+}
+export interface Shape {
+  name?: string;
+  description?: Text;
+  fields: Field[];
+  schema: Schema;
 }
 export interface Body {
   type: 'json' | 'form';
+  required: boolean;
   /** more than one: the caller picks by this field */
-  shapes: { name?: string; description?: Text; fields: Field[] }[];
+  shapes: Shape[];
 }
 export interface Answer {
   status: number;
@@ -51,16 +77,12 @@ export interface Reference {
 }
 
 type Json = Record<string, unknown>;
-interface Schema extends Json {
+interface Spec extends Schema {
   $ref?: string;
-  type?: string | string[];
   description?: string;
-  properties?: Record<string, Schema>;
-  required?: string[];
-  enum?: string[];
-  const?: string;
-  oneOf?: Schema[];
-  items?: Schema;
+  properties?: Record<string, Spec>;
+  oneOf?: Spec[];
+  items?: Spec;
 }
 
 const AUTH: Record<string, Operation['auth']> = { userToken: 'user', clientBasic: 'client', browserSession: 'session' };
@@ -74,44 +96,68 @@ export function reduce(doc: Json, arabic: Record<string, string>, sha: string): 
   };
   const must = (en: string): Text => text(en)!;
   const follow = <T extends { $ref?: string }>(node: T): T => (node.$ref ? (node.$ref.slice(2).split('/').reduce<unknown>((at, k) => (at as Json)[k], doc) as T) : node);
-  const typeOf = (raw: Schema): string => {
+  const typeOf = (raw: Spec): string => {
     const s = follow(raw);
     if (s.const !== undefined) return 'string';
     if (s.type === 'array') return `${s.items ? typeOf(s.items) : 'object'}[]`;
     return Array.isArray(s.type) ? s.type.join(' | ') : (s.type ?? 'object');
   };
-  const fields = (raw: Schema | undefined): Field[] => {
+  // `above`: the schemas this one is inside, so one that names itself ends
+  const fields = (raw: Spec | undefined, above: Spec[] = []): Field[] => {
     if (!raw) return [];
     const s = follow(raw);
+    if (above.includes(s)) return [];
     return Object.entries(s.properties ?? {}).map(([name, prop]) => {
       const p = follow(prop);
+      const description = prop.description ?? p.description;
+      const nested = fields(p.type === 'array' ? p.items : p, [...above, s]);
       return {
         name,
         type: typeOf(prop),
         required: s.required?.includes(name) ?? false,
-        ...(prop.description ? { description: must(prop.description) } : {}),
+        ...(description ? { description: must(description) } : {}),
         ...(p.enum ? { values: p.enum } : p.const !== undefined ? { values: [p.const] } : {}),
+        ...(nested.length ? { fields: nested } : {}),
       };
     });
   };
-  const contentOf = (node: Json | undefined, type: string): Schema | undefined => (node?.content as Record<string, { schema?: Schema }> | undefined)?.[type]?.schema;
+  const KEEP = ['type', 'required', 'enum', 'const', 'pattern', 'format', 'example', 'minLength', 'maxLength', 'minProperties', 'maxItems'] as const;
+  const plain = (raw: Spec, above: Spec[] = []): Schema => {
+    const s = follow(raw);
+    if (above.includes(s)) throw new Error('a request body that contains itself');
+    const inside = [...above, s];
+    const kept = Object.fromEntries(KEEP.filter((k) => s[k] !== undefined).map((k) => [k, s[k]])) as Schema;
+    // a keyword nothing here reads would let a wrong sample through
+    for (const k of Object.keys(s)) if (!(KEEP as readonly string[]).concat('description', 'properties', 'items', 'oneOf', 'default').includes(k)) throw new Error(`a request body uses ${k}`);
+    return {
+      ...kept,
+      ...(s.properties ? { properties: Object.fromEntries(Object.entries(s.properties).map(([k, v]) => [k, plain(v, inside)])) } : {}),
+      ...(s.items ? { items: plain(s.items, inside) } : {}),
+      ...(s.oneOf ? { oneOf: s.oneOf.map((v) => plain(v, inside)) } : {}),
+    };
+  };
+  const contentOf = (node: Json | undefined, type: string): Spec | undefined => (node?.content as Record<string, { schema?: Spec }> | undefined)?.[type]?.schema;
 
   const groups = new Map<string, Operation[]>();
   for (const [path, item] of Object.entries(doc.paths as Record<string, Record<string, Json>>)) {
     for (const [method, op] of Object.entries(item)) {
       if (op['x-audience'] !== 'public' && op['x-audience'] !== 'app') continue;
-      const scheme = Object.keys(((op.security as Json[]) ?? [])[0] ?? {})[0];
-      if (scheme && !(scheme in AUTH)) throw new Error(`${path}: ${scheme} is not for apps`);
+      // every alternative, not only the first
+      const schemes = ((op.security as Json[]) ?? []).flatMap((alternative) => Object.keys(alternative));
+      for (const name of schemes) if (!(name in AUTH)) throw new Error(`${path}: ${name} is not for apps`);
+      const scheme = schemes[0];
       const request = op.requestBody as Json | undefined;
       const form = contentOf(request, 'application/x-www-form-urlencoded');
       const raw = form ?? contentOf(request, 'application/json');
       const schema = raw && follow(raw);
       const body: Body | undefined = schema && {
         type: form ? 'form' : 'json',
-        shapes: (schema.oneOf ?? [schema]).map((shape) => {
+        required: request?.required === true,
+        // bodies to choose from; a body of its own with a oneOf has a rule on its fields instead
+        shapes: (schema.properties ? [schema] : (schema.oneOf ?? [schema])).map((shape) => {
           const s = follow(shape);
           const name = s.properties?.grant_type?.const;
-          return { ...(name ? { name } : {}), ...(s.description ? { description: must(s.description) } : {}), fields: fields(s) };
+          return { ...(name ? { name } : {}), ...(s.description ? { description: must(s.description) } : {}), fields: fields(s), schema: plain(s) };
         }),
       };
       const entry: Operation = {
@@ -121,7 +167,7 @@ export function reduce(doc: Json, arabic: Record<string, string>, sha: string): 
         summary: { en: op.summary as string, ar: op['x-summary-ar'] as string },
         ...(op.description ? { description: must(op.description as string) } : {}),
         auth: scheme ? AUTH[scheme]! : 'none',
-        params: ((op.parameters as (Schema & { name: string; in: 'path' | 'query' | 'header'; required?: boolean; schema: Schema })[]) ?? []).map((p) => ({
+        params: ((op.parameters as (Spec & { name: string; in: 'path' | 'query' | 'header'; required?: boolean; schema: Spec })[]) ?? []).map((p) => ({
           name: p.name,
           in: p.in,
           type: typeOf(p.schema),

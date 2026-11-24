@@ -26,10 +26,15 @@ if (root) {
   find.addEventListener('input', filter);
   filter();
 
-  for (const radio of root.querySelectorAll<HTMLInputElement>('input[name="ref-lang"]'))
-    radio.addEventListener('change', () => {
+  for (const radio of root.querySelectorAll<HTMLInputElement>('input[name="ref-lang"]')) {
+    const pick = () => {
       if (radio.checked) root.dataset.lang = radio.value;
-    });
+    };
+    radio.addEventListener('change', pick);
+    // a browser may have brought back another choice
+    pick();
+    window.addEventListener('pageshow', pick);
+  }
 
   const open = () => {
     const target = location.hash.length > 1 ? document.getElementById(decodeURIComponent(location.hash.slice(1))) : null;

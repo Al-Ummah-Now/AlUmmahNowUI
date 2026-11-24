@@ -2596,3 +2596,13 @@ span.nb-wrap {
 .ref-link {
   overflow-wrap: anywhere;
 }
+.ref-link bdi.lr {
+  white-space: normal;
+}
+.ref-rule {
+  margin: 0 0 8px;
+}
+.ref-fields .ref-fields {
+  margin-block: 4px 6px;
+  margin-inline-start: 18px;
+}

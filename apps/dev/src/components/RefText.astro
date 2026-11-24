@@ -1,0 +1,14 @@
+---
+/** A text of the reference in the page's language. One with no Arabic at all («BASE64URL(…)») is isolated whole, so its brackets stay put. */
+import Rich from './Rich.astro';
+import { hasArabic } from '../lib/arch/text.ts';
+import { say, type Text } from '../lib/auth/reference';
+import type { Locale } from '../lib/pages';
+interface Props {
+  text: Text;
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const text = say(Astro.props.text, locale);
+---
+{locale === 'ar' && !hasArabic(text) ? <bdi dir="ltr">{text}</bdi> : <Rich text={text} />}

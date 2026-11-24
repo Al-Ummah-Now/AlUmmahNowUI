@@ -4,19 +4,21 @@ import PageHero from '../../../../components/PageHero.astro';
 import AuthShell from '../../../../components/AuthShell.astro';
 import CodeBlock from '../../../../components/CodeBlock.astro';
 import FieldList from '../../../../components/FieldList.astro';
-import Rich from '../../../../components/Rich.astro';
+import RefText from '../../../../components/RefText.astro';
 import { strings } from '../../../../i18n';
 import { GH } from '../../../../lib/links';
 import { pagePath, type Locale } from '../../../../lib/pages';
 import { localePaths } from '../../../../lib/static-paths';
-import { LANGS, LANG_NAMES, REFERENCE, sample, say } from '../../../../lib/auth/reference';
+import { LANGS, LANG_NAMES, REFERENCE, sample, type Shape } from '../../../../lib/auth/reference';
 
 export const getStaticPaths = localePaths;
 const locale = Astro.params.lang as Locale;
 const t = strings(locale);
 const p = t.auth.reference;
-const other = locale === 'ar' ? 'en' : 'ar';
 const sha = REFERENCE.source.sha;
+/** What a body needs beyond its required fields. */
+const rule = ({ schema: s }: Shape): { text: string; names: string[] } | null =>
+  s.oneOf?.every((o) => o.required) ? { text: `${p.exactlyOne} `, names: s.oneOf.flatMap((o) => o.required ?? []) } : s.minProperties ? { text: p.atLeastOne, names: [] } : null;
 ---
 <Base locale={locale} slug="auth/reference" title={p.title} description={p.description}>
   <PageHero title={p.heroTitle} lead={p.heroLead} section />
@@ -40,9 +42,9 @@ const sha = REFERENCE.source.sha;
       {REFERENCE.groups.map((g, gi) => (
         <section class="band ref-group" aria-labelledby={`ref-g${gi}`} data-ref-group>
           <div class="wrap">
-            <h2 id={`ref-g${gi}`} class="h2">{g.name[locale]}</h2>
+            <h2 id={`ref-g${gi}`} class="h2"><RefText text={g.name} locale={locale} /></h2>
             {g.operations.map((op) => (
-              <article class="ref-op" id={op.id} data-ref-op data-find={`${op.method} ${op.path} ${op.id} ${op.summary.en} ${op.summary.ar} ${g.name[other]}`.toLowerCase()}>
+              <article class="ref-op" id={op.id} data-ref-op data-find={`${op.method} ${op.path} ${op.id} ${op.summary.en} ${op.summary.ar} ${g.name.en} ${g.name.ar}`.toLowerCase()}>
                 <details>
                   <summary>
                     <span class="ref-sum">
@@ -51,7 +53,7 @@ const sha = REFERENCE.source.sha;
                     </span>
                   </summary>
                   <div class="ref-body">
-                    {op.description && <p><Rich text={say(op.description, locale)} /></p>}
+                    {op.description && <p><RefText text={op.description} locale={locale} /></p>}
                     <p class="ref-note">{p.auth[op.auth]}</p>
                     {op.params.length > 0 && <><h3 class="ref-h">{p.params}</h3><FieldList fields={op.params} t={t} locale={locale} /></>}
                     {op.body && (
@@ -60,7 +62,8 @@ const sha = REFERENCE.source.sha;
                         {op.body.shapes.map((shape) => (
                           <div class="ref-shape">
                             {shape.name && <h4 class="ref-shape-h"><code lang="en" dir="ltr" data-no-expand>{shape.name.split(/(?=:)/).map((part, i) => <>{i > 0 && <wbr />}{part}</>)}</code></h4>}
-                            {shape.description && <p><Rich text={say(shape.description, locale)} /></p>}
+                            {shape.description && <p><RefText text={shape.description} locale={locale} /></p>}
+                            {rule(shape) && <p class="ref-rule">{rule(shape)!.text}{rule(shape)!.names.map((n, i) => <>{i > 0 && (locale === 'ar' ? '، ' : ', ')}<code lang="en" dir="ltr" data-no-expand>{n}</code></>)}</p>}
                             <FieldList fields={shape.fields} t={t} locale={locale} />
                           </div>
                         ))}
@@ -70,7 +73,7 @@ const sha = REFERENCE.source.sha;
                     <ul class="ref-answers" role="list">
                       {op.answers.map((a) => (
                         <li>
-                          <p class="ref-answer"><code lang="en" dir="ltr" data-no-expand class:list={['ref-status', a.status < 400 ? 'ref-good' : 'ref-fail']}>{a.status}</code> <span><Rich text={say(a.description, locale)} /></span></p>
+                          <p class="ref-answer"><code lang="en" dir="ltr" data-no-expand class:list={['ref-status', a.status < 400 ? 'ref-good' : 'ref-fail']}>{a.status}</code> <span><RefText text={a.description} locale={locale} /></span></p>
                           {a.fields.length > 0 && <FieldList fields={a.fields} t={t} locale={locale} />}
                         </li>
                       ))}

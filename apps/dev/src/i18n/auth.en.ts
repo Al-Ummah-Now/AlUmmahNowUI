@@ -117,6 +117,8 @@ export const authEn = {
     answers: 'What comes back',
     required: 'required',
     oneOf: 'One of',
+    exactlyOne: 'Send exactly one of:',
+    atLeastOne: 'Send at least one of these.',
     in: { path: 'in the path', query: 'in the address', header: 'in a header' },
     auth: { none: 'No token needed', user: 'The person’s access token', client: 'The client’s id and secret', session: 'The browser’s session' },
     sample: 'Sample',
