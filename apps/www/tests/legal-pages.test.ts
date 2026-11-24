@@ -50,6 +50,16 @@ describe('Privacy Policy and Terms of Service pages (AlUmmahNow#1929)', () => {
     }
   });
 
+  it('deleted accounts and videos are purged after 30 days, never "within" (the cleanup starts then)', () => {
+    for (const [locale, after, within] of [['en', 'after 30 days', /within (30|thirty) days/i], ['ar', 'بعد ٣٠ يومًا', /خلال ٣٠/]] as const) {
+      for (const slug of ['privacy', 'terms'] as const) {
+        const body = builtinContent(locale).pages[slug]!.body;
+        expect(body, `${locale}/${slug}`).toContain(after);
+        expect(body, `${locale}/${slug}`).not.toMatch(within);
+      }
+    }
+  });
+
   it('neither page mentions internal budget or cap figures', () => {
     for (const locale of ['en', 'ar'] as const) {
       const pages = builtinContent(locale).pages;
