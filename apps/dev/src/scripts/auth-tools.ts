@@ -69,9 +69,11 @@ if (root) {
     show();
     text.focus();
   });
-  // A page restored from the back-forward cache, or a form the browser refilled, keeps no token
+  // A page restored from the back-forward cache, or a form the browser refilled, keeps no token and no request
   window.addEventListener('pageshow', () => {
     text.value = '';
     show();
+    el('rq-out').hidden = true;
+    status.textContent = '';
   });
 }

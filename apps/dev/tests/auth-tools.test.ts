@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
+import { strings } from '../src/i18n';
 import { buildRequest, inspectToken, requestErrors, type Check } from '../src/lib/auth/tools.ts';
 
 const input = { issuer: 'https://auth.example.com', clientId: 'app', redirectUri: 'https://app.example.com/callback', prompt: '' };
@@ -73,6 +74,17 @@ describe('the token inspector', () => {
   it('names what is missing, and never more of a header than fits', () => {
     const r = inspectToken(token({ iss: 1 }, { alg: 'x'.repeat(500) }), NOW);
     expect(r.kind === 'token' && r.checks).toMatchObject([{ key: 'alg', alg: 'x'.repeat(20) }, {}, { key: 'fields', list: 'iss' }, {}]);
+  });
+  it('a missing or empty signature is a failed check, and no algorithm name stands for a checked one', () => {
+    const [h, p] = token().split('.');
+    for (const text of [`${h}.${p}.`, `${h}.${p}`, `${h}.${p}.!!`]) expect(failed(text), text).toEqual(['signature']);
+    const { tools } = strings('en').auth;
+    expect(tools.token.ok.alg).toContain('not checked');
+    expect(strings('ar').auth.tools.token.ok.alg).toContain('لا يُفحص');
+  });
+  it.each<{ alg: unknown }>([{ alg: { toString: 1 } }, { alg: { valueOf: 1, toString: 1 } }, { alg: ['ES256'] }, { alg: 7 }, { alg: null }, { alg: true }, { alg: '' }])('an alg that is no name (%j) fails its check and never throws', ({ alg }) => {
+    const r = inspectToken(token({}, { alg }), NOW);
+    expect(r.kind === 'token' && r.checks[0]).toEqual({ ok: false, key: 'alg', alg: '?' });
   });
   it('knows a refresh token, and what is no token at all', () => {
     expect(inspectToken('user:usr_1:6f1f0a52-0000-4000-8000-000000000000').kind).toBe('refresh');
