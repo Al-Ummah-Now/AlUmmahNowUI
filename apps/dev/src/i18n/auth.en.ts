@@ -136,13 +136,14 @@ export const authEn = {
       notToken: 'This is not an access token: three parts separated by dots, the first two in base64url.',
       refresh: 'This looks like a refresh token. Never paste one anywhere; revoke it if it is real.',
       ok: {
-        alg: 'Signed with ES256.',
+        alg: 'The header names ES256 (the signature is not checked here).',
         kind: 'A person’s access token.',
         live: 'Not expired. Minutes left: {n}.',
         fields: 'Names its issuer, app and person.',
       },
       bad: {
         alg: 'The header says {alg}. Only ES256 is accepted.',
+        signature: 'The signature is missing or unreadable. An API refuses the token.',
         kind: 'Not a person’s access token: mode and type are not access and user.',
         expired: 'Expired.',
         noExpiry: 'It has no expiry.',

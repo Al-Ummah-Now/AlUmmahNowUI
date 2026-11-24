@@ -60,7 +60,7 @@ export async function buildRequest(input: RequestInput, random: (n: number) => U
   return { url: url.toString(), state, verifier, exchange };
 }
 
-export type Check = { ok: true; key: 'alg' | 'kind' | 'live' | 'fields'; n?: number } | { ok: false; key: 'alg' | 'kind' | 'expired' | 'noExpiry' | 'notYet' | 'fields'; alg?: string; list?: string };
+export type Check = { ok: true; key: 'alg' | 'kind' | 'live' | 'fields'; n?: number } | { ok: false; key: 'alg' | 'signature' | 'kind' | 'expired' | 'noExpiry' | 'notYet' | 'fields'; alg?: string; list?: string };
 export type Inspected = { kind: 'empty' } | { kind: 'refresh' } | { kind: 'notToken' } | { kind: 'token'; header: string; payload: string; checks: Check[] };
 
 function part(value: string): Record<string, unknown> | null {
@@ -86,9 +86,11 @@ export function inspectToken(text: string, now = Date.now() / 1000): Inspected {
   const parts = token.split('.');
   const header = part(parts[0] ?? '');
   const payload = part(parts[1] ?? '');
-  if (parts.length !== 3 || !header || !payload) return { kind: 'notToken' };
+  if (parts.length > 3 || !header || !payload) return { kind: 'notToken' };
   const checks: Check[] = [];
-  checks.push(header.alg === 'ES256' ? { ok: true, key: 'alg' } : { ok: false, key: 'alg', alg: String(header.alg ?? '?').slice(0, 20) });
+  checks.push(header.alg === 'ES256' ? { ok: true, key: 'alg' } : { ok: false, key: 'alg', alg: (typeof header.alg === 'string' && header.alg ? header.alg : '?').slice(0, 20) });
+  // Present or not: no key is read here, so whether it is right isn't known
+  if (!/^[A-Za-z0-9_-]+$/.test(parts[2] ?? '')) checks.push({ ok: false, key: 'signature' });
   checks.push(payload.mode === 'access' && payload.type === 'user' ? { ok: true, key: 'kind' } : { ok: false, key: 'kind' });
   const missing = ['iss', 'aud', 'sub'].filter((c) => typeof payload[c] !== 'string' || !payload[c]);
   checks.push(missing.length ? { ok: false, key: 'fields', list: missing.join(', ') } : { ok: true, key: 'fields' });
