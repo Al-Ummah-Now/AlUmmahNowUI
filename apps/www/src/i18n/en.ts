@@ -275,6 +275,8 @@ export const en = {
   footer: {
     contact: 'Contact us',
     help: 'Help',
+    privacy: 'Privacy Policy',
+    terms: 'Terms of Service',
     rights: '© {year} Al Ummah Now',
     status: 'Service status',
     rss: 'Articles feed (RSS)',

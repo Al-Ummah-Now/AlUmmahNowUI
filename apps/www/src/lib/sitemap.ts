@@ -11,6 +11,7 @@
 import { escapeHtml as x } from './html';
 import { LOCALES, type Locale } from './locale';
 import type { SitemapResponse } from './cms-types';
+import { builtinContent } from '../content/fallback';
 import type { SiteLookup } from './scholar-site';
 import { mapLimit } from './scholar-site';
 
@@ -20,6 +21,8 @@ type Scholar = NonNullable<SitemapResponse['scholars']>[number];
 /** Static sections; a CMS page with one of these slugs is that section, listed once. */
 const STATIC_SECTIONS: Record<string, string> = { '': '/', articles: '/articles/', videos: '/videos/', scholars: '/scholars/' };
 const SKIP_PAGE_SLUGS = new Set(['home', 'articles', 'videos', 'scholars']);
+/** Built-in policy pages always present on www even before editors override them in the CMS. */
+const BUILTIN_LEGAL_SLUGS = ['privacy', 'terms'] as const;
 
 const day = (iso: string | null | undefined) => (iso && /^\d{4}-\d{2}-\d{2}/.test(iso) ? iso.slice(0, 10) : null);
 const newest = (dates: (string | null)[]) => dates.filter((d): d is string => !!d).sort().pop() ?? null;
@@ -61,6 +64,17 @@ export function buildSitemap(siteUrl: string, items: Item[], scholars: Scholar[]
     const alternates: Partial<Record<Locale, string>> = {};
     for (const i of group) alternates[i.locale] ??= `${siteUrl}${pathOf(i)}`;
     for (const i of group) urls.push(entry(`${siteUrl}${pathOf(i)}`, day(i.updated_at), alternates));
+  }
+
+  // Built-in policy pages (Privacy, Terms): emitted whenever the CMS has not published them yet
+  const cmsPageSlugs = new Set(listed.filter((i) => i.type === 'page').map((i) => `${i.locale}:${i.slug}`));
+  for (const slug of BUILTIN_LEGAL_SLUGS) {
+    if (LOCALES.some((l) => cmsPageSlugs.has(`${l}:${slug}`))) continue;
+    const alternates = Object.fromEntries(LOCALES.map((l) => [l, `${siteUrl}/${l}/${slug}/`])) as Record<Locale, string>;
+    for (const l of LOCALES) {
+      const page = builtinContent(l).pages[slug];
+      if (page) urls.push(entry(alternates[l], day(page.updated_at), alternates));
+    }
   }
 
   // Scholar pages: one slug, both languages
