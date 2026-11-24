@@ -289,3 +289,27 @@ test('the system design hub indexes every subpage, in both languages', async ({ 
     for (const locale2 of LOCALES) for (const h of hrefs) expect(h).toContain(`/${locale2}/`.replace(`/${locale2}/`, `/${locale}/`));
   }
 });
+
+test('the footer’s host names break only before a dot, at every phone width (UI#148)', async ({ page }) => {
+  for (const locale of LOCALES) {
+    for (const width of [320, 360, 390, 430]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto(pagePath(locale, ''));
+      await page.evaluate(() => document.fonts.ready);
+      const broken = await page.locator('.site-footer a[rel="external"]').evaluateAll((links) =>
+        links.flatMap((a) => {
+          const texts = [...a.childNodes].filter((n) => n.nodeType === Node.TEXT_NODE && n.textContent!.trim());
+          return texts
+            .filter((n) => {
+              const range = document.createRange();
+              range.selectNodeContents(n);
+              return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size > 1;
+            })
+            .map((n) => n.textContent);
+        }),
+      );
+      expect(broken, `${locale} ${width}px`).toEqual([]);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth), `${locale} ${width}px`).toBeLessThanOrEqual(0);
+    }
+  }
+});
