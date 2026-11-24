@@ -298,3 +298,4 @@ Read at AUTH `origin/main` `82bb738` and openauth `origin/master` `ed04cae` (202
 - APIs that take the secret: scopes and limits — `AUTH docs/USER_INVITES.md`, `docs/MODERATION_REQUESTS.md`, `docs/TOKEN_REVOCATIONS.md`, `apps/auth/wrangler.json` (`ADMIN_SENSITIVE_LIMITER` 10 in 60).
 - Key rotation: published one hour before signing, every 90 days, retired after the last token — `AUTH apps/auth/src/signing-keys/rotation.ts` (`PUBLISH_LEAD_MS`, `ROTATE_EVERY_MS`, `retireAfterMs`). Keys edge-cached five minutes — `src/well-known-cache.ts`.
 - Revocation entries `u:`, `s:`, `i:` and who reads them — `AUTH docs/TOKEN_REVOCATIONS.md`.
+- The reference (`/auth/reference/`): `src/data/auth-reference.json`, reduced by `scripts/auth-spec.ts` from `AUTH openapi.json` and `openapi.ar.json` at the commit the page names; nothing in it is written here. After the specification changes: `node --experimental-strip-types scripts/auth-spec.ts <commit>` and commit the result.

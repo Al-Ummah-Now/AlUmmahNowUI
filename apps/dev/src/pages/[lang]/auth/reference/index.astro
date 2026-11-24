@@ -1,0 +1,98 @@
+---
+import Base from '../../../../layouts/Base.astro';
+import PageHero from '../../../../components/PageHero.astro';
+import AuthShell from '../../../../components/AuthShell.astro';
+import CodeBlock from '../../../../components/CodeBlock.astro';
+import FieldList from '../../../../components/FieldList.astro';
+import Rich from '../../../../components/Rich.astro';
+import { strings } from '../../../../i18n';
+import { GH } from '../../../../lib/links';
+import { pagePath, type Locale } from '../../../../lib/pages';
+import { localePaths } from '../../../../lib/static-paths';
+import { LANGS, LANG_NAMES, REFERENCE, sample, say } from '../../../../lib/auth/reference';
+
+export const getStaticPaths = localePaths;
+const locale = Astro.params.lang as Locale;
+const t = strings(locale);
+const p = t.auth.reference;
+const other = locale === 'ar' ? 'en' : 'ar';
+const sha = REFERENCE.source.sha;
+---
+<Base locale={locale} slug="auth/reference" title={p.title} description={p.description}>
+  <PageHero title={p.heroTitle} lead={p.heroLead} section />
+  <AuthShell locale={locale} slug="auth/reference" t={t}>
+    <div class="ref" data-ref data-lang="curl">
+      <div class="band ref-band">
+        <div class="wrap ref-tools" data-ref-tools data-found={p.found} hidden>
+          <div class="tool-field">
+            <label for="ref-find">{p.find}</label>
+            <input id="ref-find" type="search" autocomplete="off" spellcheck="false" aria-describedby="ref-hint ref-count" />
+            <p class="tool-hint" id="ref-hint">{p.findHint}</p>
+          </div>
+          <fieldset class="ref-langs">
+            <legend>{p.sampleIn}</legend>
+            {LANGS.map((l, i) => <label><input type="radio" name="ref-lang" value={l} checked={i === 0} autocomplete="off" /><span lang="en" dir="ltr">{LANG_NAMES[l]}</span></label>)}
+          </fieldset>
+          <p class="tool-status" id="ref-count" role="status"></p>
+        </div>
+        <p class="wrap ref-none" data-ref-none hidden>{p.none}</p>
+      </div>
+      {REFERENCE.groups.map((g, gi) => (
+        <section class="band ref-group" aria-labelledby={`ref-g${gi}`} data-ref-group>
+          <div class="wrap">
+            <h2 id={`ref-g${gi}`} class="h2">{g.name[locale]}</h2>
+            {g.operations.map((op) => (
+              <article class="ref-op" id={op.id} data-ref-op data-find={`${op.method} ${op.path} ${op.id} ${op.summary.en} ${op.summary.ar} ${g.name[other]}`.toLowerCase()}>
+                <details>
+                  <summary>
+                    <span class="ref-sum">
+                      <span class="ref-call" dir="ltr" lang="en"><span class="ref-method">{op.method}</span> <code data-no-expand>{op.path.split(/(?=\/)/).map((part, i) => <>{i > 0 && <wbr />}{part}</>)}</code></span>
+                      <span class="ref-title">{op.summary[locale]}</span>
+                    </span>
+                  </summary>
+                  <div class="ref-body">
+                    {op.description && <p><Rich text={say(op.description, locale)} /></p>}
+                    <p class="ref-note">{p.auth[op.auth]}</p>
+                    {op.params.length > 0 && <><h3 class="ref-h">{p.params}</h3><FieldList fields={op.params} t={t} locale={locale} /></>}
+                    {op.body && (
+                      <>
+                        <h3 class="ref-h">{p.body}{locale === 'ar' ? ' ' : ' '}{p[op.body.type]}</h3>
+                        {op.body.shapes.map((shape) => (
+                          <div class="ref-shape">
+                            {shape.name && <h4 class="ref-shape-h"><code lang="en" dir="ltr" data-no-expand>{shape.name.split(/(?=:)/).map((part, i) => <>{i > 0 && <wbr />}{part}</>)}</code></h4>}
+                            {shape.description && <p><Rich text={say(shape.description, locale)} /></p>}
+                            <FieldList fields={shape.fields} t={t} locale={locale} />
+                          </div>
+                        ))}
+                      </>
+                    )}
+                    <h3 class="ref-h">{p.answers}</h3>
+                    <ul class="ref-answers" role="list">
+                      {op.answers.map((a) => (
+                        <li>
+                          <p class="ref-answer"><code lang="en" dir="ltr" data-no-expand class:list={['ref-status', a.status < 400 ? 'ref-good' : 'ref-fail']}>{a.status}</code> <span><Rich text={say(a.description, locale)} /></span></p>
+                          {a.fields.length > 0 && <FieldList fields={a.fields} t={t} locale={locale} />}
+                        </li>
+                      ))}
+                    </ul>
+                    <h3 class="ref-h">{p.sample}</h3>
+                    {LANGS.map((l) => (
+                      <div class="ref-sample" data-sample={l}>
+                        <CodeBlock code={sample(op, l)} label={`${op.method} ${op.path}${locale === 'ar' ? '، ' : ', '}${LANG_NAMES[l]}`} t={t} locale={locale} />
+                      </div>
+                    ))}
+                    <p class="ref-link-row"><a class="ref-link" href={`${pagePath(locale, 'auth/reference')}#${op.id}`}>{p.link.replace('{name}', `${op.method} ${op.path}`)}</a></p>
+                  </div>
+                </details>
+              </article>
+            ))}
+          </div>
+        </section>
+      ))}
+      <p class="wrap registry-source"><a href={`${GH}/AlUmmahNowAuth/blob/${sha}/openapi.json`} rel="external">{p.source.replace('{sha}', sha.slice(0, 7))}</a></p>
+    </div>
+  </AuthShell>
+</Base>
+<script>
+  import '../../../../scripts/auth-reference.ts';
+</script>

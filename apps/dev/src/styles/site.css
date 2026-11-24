@@ -2406,3 +2406,193 @@ span.nb-wrap {
 .tool-bad {
   font-weight: 650;
 }
+
+/* ---------- Sign-in API reference ---------- */
+.ref [hidden] {
+  display: none;
+}
+.ref-band,
+.ref-group {
+  padding-block: 28px;
+}
+.ref-tools {
+  display: grid;
+  gap: 18px;
+}
+.ref-tools .tool-field {
+  max-width: 560px;
+}
+.ref-tools .tool-field input {
+  font-family: inherit;
+  text-align: start;
+}
+.ref-langs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.ref-langs legend {
+  padding: 0;
+  margin-block-end: 8px;
+  font-weight: 650;
+}
+.ref-langs label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 6px 14px;
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  background: var(--raised);
+  cursor: pointer;
+}
+.ref-langs input {
+  accent-color: var(--link);
+}
+.ref-langs label:has(:checked) {
+  border-color: var(--link);
+  box-shadow: inset 0 0 0 1px var(--link);
+}
+.ref-op {
+  margin-block-start: 12px;
+  border: 1px solid var(--edge);
+  border-radius: 14px;
+  background: var(--raised);
+  scroll-margin-top: 96px;
+}
+.ref-op summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+.ref-op summary::-webkit-details-marker {
+  display: none;
+}
+.ref-op summary::after {
+  content: '';
+  flex: none;
+  width: 9px;
+  height: 9px;
+  margin-inline-start: auto;
+  border: solid var(--link);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.ref-op details[open] > summary::after {
+  transform: rotate(-135deg);
+}
+.ref-sum {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.ref-call {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+[dir='rtl'] .ref-call {
+  text-align: right;
+}
+.ref-method {
+  font-weight: 700;
+  color: var(--link);
+}
+.ref-title {
+  font-weight: 650;
+}
+.ref-body {
+  padding: 0 18px 18px;
+}
+.ref-h {
+  margin: 22px 0 8px;
+  font-size: 1rem;
+}
+.ref-shape + .ref-shape {
+  margin-block-start: 18px;
+}
+.ref-shape-h {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+.ref-note,
+.ref-type {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+.ref-fields,
+.ref-answers {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ref-field {
+  padding-block: 8px;
+  border-block-start: 1px solid var(--edge);
+}
+.ref-field p,
+.ref-answer {
+  margin: 0;
+}
+.ref-field-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+.ref-field code,
+.ref-status {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+.ref-req {
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+.ref-field-text {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+.ref-answers > li {
+  padding-block: 6px;
+}
+.ref-answers .ref-fields {
+  margin-inline-start: 18px;
+}
+.ref-answer {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+.ref-status {
+  flex: none;
+  font-weight: 700;
+}
+.ref-link-row {
+  margin-block-start: 14px;
+}
+.ref-fail {
+  color: var(--fanous-color-error-text);
+}
+.ref-sample[data-sample] {
+  display: none;
+}
+.ref[data-lang='curl'] .ref-sample[data-sample='curl'],
+.ref[data-lang='ts'] .ref-sample[data-sample='ts'],
+.ref[data-lang='python'] .ref-sample[data-sample='python'],
+.ref[data-lang='go'] .ref-sample[data-sample='go'] {
+  display: block;
+}
+.ref-link {
+  overflow-wrap: anywhere;
+}

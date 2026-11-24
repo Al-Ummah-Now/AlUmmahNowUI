@@ -1,0 +1,3675 @@
+{
+ "source": {
+  "repo": "Al-Ummah-Now/AlUmmahNowAuth",
+  "sha": "473fba7f50afe9b8933b73ae396a815eed472616"
+ },
+ "groups": [
+  {
+   "name": {
+    "en": "Discovery",
+    "ar": "الاكتشاف"
+   },
+   "operations": [
+    {
+     "id": "getAuthorizationServerMetadata",
+     "method": "GET",
+     "path": "/.well-known/oauth-authorization-server",
+     "summary": {
+      "en": "Server metadata (RFC 8414)",
+      "ar": "بيانات خادم التفويض الوصفية (RFC 8414)"
+     },
+     "description": {
+      "en": "Lists only endpoints, grants and methods this server supports. Cached for 5 minutes.",
+      "ar": "لا يسرد إلا ما يدعمه هذا الخادم من عناوين ومسارات وطرق. يُخزَّن مؤقتًا {N5} دقائق."
+     },
+     "auth": "none",
+     "params": [],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The metadata",
+        "ar": "البيانات الوصفية"
+       },
+       "fields": [
+        {
+         "name": "issuer",
+         "type": "string",
+         "required": true
+        },
+        {
+         "name": "authorization_endpoint",
+         "type": "string",
+         "required": true
+        },
+        {
+         "name": "token_endpoint",
+         "type": "string",
+         "required": true
+        },
+        {
+         "name": "userinfo_endpoint",
+         "type": "string",
+         "required": false
+        },
+        {
+         "name": "jwks_uri",
+         "type": "string",
+         "required": true
+        },
+        {
+         "name": "introspection_endpoint",
+         "type": "string",
+         "required": false
+        },
+        {
+         "name": "revocation_endpoint",
+         "type": "string",
+         "required": false
+        },
+        {
+         "name": "device_authorization_endpoint",
+         "type": "string",
+         "required": false
+        },
+        {
+         "name": "grant_types_supported",
+         "type": "string[]",
+         "required": false
+        },
+        {
+         "name": "response_types_supported",
+         "type": "string[]",
+         "required": false
+        },
+        {
+         "name": "code_challenge_methods_supported",
+         "type": "string[]",
+         "required": false
+        },
+        {
+         "name": "token_endpoint_auth_methods_supported",
+         "type": "string[]",
+         "required": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "getOpenIdConfiguration",
+     "method": "GET",
+     "path": "/.well-known/openid-configuration",
+     "summary": {
+      "en": "Server metadata at the OpenID Connect path",
+      "ar": "البيانات الوصفية على مسار OpenID Connect"
+     },
+     "description": {
+      "en": "The same metadata plus the fields OpenID Connect Discovery requires. This server signs no id_token. Cached for 5 minutes.",
+      "ar": "البيانات نفسها مع الحقول التي يشترطها اكتشاف OpenID Connect. ولا يوقّع هذا الخادم id_token. يُخزَّن مؤقتًا {N5} دقائق."
+     },
+     "auth": "none",
+     "params": [],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The metadata",
+        "ar": "البيانات الوصفية"
+       },
+       "fields": [
+        {
+         "name": "issuer",
+         "type": "string",
+         "required": true
+        },
+        {
+         "name": "authorization_endpoint",
+         "type": "string",
+         "required": true
+        },
+        {
+         "name": "token_endpoint",
+         "type": "string",
+         "required": true
+        },
+        {
+         "name": "userinfo_endpoint",
+         "type": "string",
+         "required": false
+        },
+        {
+         "name": "jwks_uri",
+         "type": "string",
+         "required": true
+        },
+        {
+         "name": "introspection_endpoint",
+         "type": "string",
+         "required": false
+        },
+        {
+         "name": "revocation_endpoint",
+         "type": "string",
+         "required": false
+        },
+        {
+         "name": "device_authorization_endpoint",
+         "type": "string",
+         "required": false
+        },
+        {
+         "name": "grant_types_supported",
+         "type": "string[]",
+         "required": false
+        },
+        {
+         "name": "response_types_supported",
+         "type": "string[]",
+         "required": false
+        },
+        {
+         "name": "code_challenge_methods_supported",
+         "type": "string[]",
+         "required": false
+        },
+        {
+         "name": "token_endpoint_auth_methods_supported",
+         "type": "string[]",
+         "required": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "getSigningKeys",
+     "method": "GET",
+     "path": "/.well-known/jwks.json",
+     "summary": {
+      "en": "Public signing keys",
+      "ar": "مفاتيح التوقيع العامة"
+     },
+     "description": {
+      "en": "ES256 keys to verify access tokens with, chosen by the token header’s kid. A new key is published before it signs, and a retired one is removed. Cached for 5 minutes: on an unknown kid, fetch again.",
+      "ar": "مفاتيح ES256 للتحقق من رموز الوصول، ويُختار المفتاح بحسب kid في ترويسة الرمز. يُنشر المفتاح الجديد قبل أن يوقّع، ويُحذف المتقاعد. يُخزَّن مؤقتًا {N5} دقائق: وعند kid غير معروف اجلبها من جديد."
+     },
+     "auth": "none",
+     "params": [],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "A JSON Web Key Set",
+        "ar": "مجموعة مفاتيح بصيغة JSON"
+       },
+       "fields": [
+        {
+         "name": "keys",
+         "type": "object[]",
+         "required": true
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": {
+    "en": "OAuth",
+    "ar": "OAuth"
+   },
+   "operations": [
+    {
+     "id": "authorize",
+     "method": "GET",
+     "path": "/authorize",
+     "summary": {
+      "en": "Start a sign-in",
+      "ar": "بدء تسجيل الدخول"
+     },
+     "description": {
+      "en": "Open this in the user’s browser. A browser already signed in to another of our apps comes straight back (single sign-on). Public clients must send a PKCE challenge, S256 only. An unknown client or an unregistered redirect_uri gets an error page, never a redirect. Without client_id and redirect_uri it redirects to the profile app’s sign-in.",
+      "ar": "افتحه في متصفح المستخدم. المتصفح المسجّل الدخول في تطبيق آخر من تطبيقاتنا يعود مباشرة (الدخول الموحّد). وعلى العملاء العامّين إرسال تحدّي PKCE بطريقة S256 وحدها. والعميل غير المعروف أو redirect_uri غير المسجّل يعرض صفحة خطأ ولا يعيد التوجيه أبدًا. ومن دون client_id وredirect_uri يعيد التوجيه إلى دخول تطبيق الملف الشخصي."
+     },
+     "auth": "none",
+     "params": [
+      {
+       "name": "client_id",
+       "in": "query",
+       "type": "string",
+       "required": true,
+       "description": {
+        "en": "Your client id",
+        "ar": "معرّف عميلك"
+       }
+      },
+      {
+       "name": "redirect_uri",
+       "in": "query",
+       "type": "string",
+       "required": true,
+       "description": {
+        "en": "One of the client’s registered redirect URIs, exactly",
+        "ar": "أحد عناوين العودة المسجّلة للعميل، مطابقًا تمامًا"
+       }
+      },
+      {
+       "name": "response_type",
+       "in": "query",
+       "type": "string",
+       "required": true,
+       "description": {
+        "en": "Use code",
+        "ar": "استعمل code"
+       },
+       "values": [
+        "code",
+        "token"
+       ]
+      },
+      {
+       "name": "state",
+       "in": "query",
+       "type": "string",
+       "required": false,
+       "description": {
+        "en": "A random value; compare it when the user returns",
+        "ar": "قيمة عشوائية تقارنها حين يعود المستخدم"
+       }
+      },
+      {
+       "name": "code_challenge",
+       "in": "query",
+       "type": "string",
+       "required": false,
+       "description": {
+        "en": "BASE64URL(SHA256(code_verifier))",
+        "ar": "BASE64URL(SHA256(code_verifier))"
+       }
+      },
+      {
+       "name": "code_challenge_method",
+       "in": "query",
+       "type": "string",
+       "required": false,
+       "description": {
+        "en": "S256",
+        "ar": "S256"
+       },
+       "values": [
+        "S256"
+       ]
+      },
+      {
+       "name": "prompt",
+       "in": "query",
+       "type": "string",
+       "required": false,
+       "description": {
+        "en": "With none there is no page: it fails with login_required. With login the person always signs in again. With select_account they choose an account",
+        "ar": "مع none لا صفحة، ويفشل بالخطأ login_required. ومع login يسجّل الشخص دخوله من جديد دائمًا. ومع select_account يختار حسابًا"
+       },
+       "values": [
+        "none",
+        "login",
+        "select_account"
+       ]
+      },
+      {
+       "name": "max_age",
+       "in": "query",
+       "type": "integer",
+       "required": false,
+       "description": {
+        "en": "Sign in again when the last sign-in is older than this many seconds",
+        "ar": "دخول جديد إذا كان آخر دخول أقدم من هذا العدد من الثواني"
+       }
+      },
+      {
+       "name": "login_hint",
+       "in": "query",
+       "type": "string",
+       "required": false,
+       "description": {
+        "en": "An email to suggest",
+        "ar": "بريد يُقترح"
+       }
+      },
+      {
+       "name": "lang",
+       "in": "query",
+       "type": "string",
+       "required": false,
+       "description": {
+        "en": "Page language; English by default",
+        "ar": "لغة الصفحة، والإنجليزية افتراضًا"
+       },
+       "values": [
+        "en",
+        "ar"
+       ]
+      },
+      {
+       "name": "theme",
+       "in": "query",
+       "type": "string",
+       "required": false,
+       "description": {
+        "en": "The id of a published theme",
+        "ar": "معرّف سمة منشورة"
+       }
+      }
+     ],
+     "answers": [
+      {
+       "status": 302,
+       "description": {
+        "en": "To the sign-in page, or to redirect_uri with code and state (or error and error_description)",
+        "ar": "إلى صفحة الدخول، أو إلى redirect_uri مع code وstate (أو error وerror_description)"
+       },
+       "fields": []
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "An error page: the client or redirect_uri is not registered, or a parameter is missing",
+        "ar": "صفحة خطأ: العميل أو redirect_uri غير مسجّل، أو مُعامِل ناقص"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "token",
+     "method": "POST",
+     "path": "/token",
+     "summary": {
+      "en": "Get or refresh tokens",
+      "ar": "الحصول على الرموز أو تحديثها"
+     },
+     "description": {
+      "en": "Four grants, chosen by grant_type. A confidential client sends its secret with HTTP Basic (recommended) or as client_secret. Each code works once; using it again revokes what it was exchanged for. Each refresh returns a new refresh token: keep the new one. CORS is open, so browser apps can call it.",
+      "ar": "أربعة مسارات يحدّدها grant_type. يرسل العميل السرّي سرّه عبر HTTP Basic، وهو الأفضل، أو في client_secret. يعمل كل رمز مرة واحدة، وإعادة استعماله تُبطل ما استُبدل به. ويعيد كل تحديث رمز تحديث جديدًا: احتفظ بالجديد. وCORS مفتوح، فتستطيع تطبيقات المتصفح استدعاءه."
+     },
+     "auth": "none",
+     "params": [],
+     "body": {
+      "type": "form",
+      "shapes": [
+       {
+        "name": "authorization_code",
+        "fields": [
+         {
+          "name": "grant_type",
+          "type": "string",
+          "required": true,
+          "values": [
+           "authorization_code"
+          ]
+         },
+         {
+          "name": "code",
+          "type": "string",
+          "required": true
+         },
+         {
+          "name": "redirect_uri",
+          "type": "string",
+          "required": true,
+          "description": {
+           "en": "The same as at /authorize",
+           "ar": "كما في /authorize"
+          }
+         },
+         {
+          "name": "client_id",
+          "type": "string",
+          "required": true
+         },
+         {
+          "name": "client_secret",
+          "type": "string",
+          "required": false,
+          "description": {
+           "en": "Confidential clients, when not using HTTP Basic",
+           "ar": "للعملاء السرّيين حين لا يُستعمل HTTP Basic"
+          }
+         },
+         {
+          "name": "code_verifier",
+          "type": "string",
+          "required": false,
+          "description": {
+           "en": "The PKCE verifier",
+           "ar": "مُحقِّق PKCE"
+          }
+         },
+         {
+          "name": "install_id",
+          "type": "string",
+          "required": false,
+          "description": {
+           "en": "Native apps: an id for this install, so staff can sign out one device",
+           "ar": "لتطبيقات الأجهزة: معرّف لهذا التثبيت، ليستطيع الفريق إخراج جهاز واحد"
+          }
+         }
+        ]
+       },
+       {
+        "name": "refresh_token",
+        "fields": [
+         {
+          "name": "grant_type",
+          "type": "string",
+          "required": true,
+          "values": [
+           "refresh_token"
+          ]
+         },
+         {
+          "name": "refresh_token",
+          "type": "string",
+          "required": true
+         },
+         {
+          "name": "client_id",
+          "type": "string",
+          "required": false
+         },
+         {
+          "name": "client_secret",
+          "type": "string",
+          "required": false
+         }
+        ]
+       },
+       {
+        "name": "client_credentials",
+        "fields": [
+         {
+          "name": "grant_type",
+          "type": "string",
+          "required": true,
+          "values": [
+           "client_credentials"
+          ]
+         },
+         {
+          "name": "scope",
+          "type": "string",
+          "required": false,
+          "description": {
+           "en": "Space-separated; only scopes the client is registered with",
+           "ar": "تفصلها مسافات، ولا تُقبل إلا الصلاحيات المسجّلة للعميل"
+          }
+         },
+         {
+          "name": "client_id",
+          "type": "string",
+          "required": false
+         },
+         {
+          "name": "client_secret",
+          "type": "string",
+          "required": false
+         }
+        ]
+       },
+       {
+        "name": "urn:ietf:params:oauth:grant-type:device_code",
+        "description": {
+         "en": "Until the user approves: 400 authorization_pending, or slow_down (wait 5 seconds longer from now on). Then access_denied or expired_token, or the tokens.",
+         "ar": "حتى يوافق المستخدم: 400 مع authorization_pending، أو slow_down (انتظر {N5} ثوانٍ أخرى من الآن). ثم access_denied أو expired_token، أو الرموز."
+        },
+        "fields": [
+         {
+          "name": "grant_type",
+          "type": "string",
+          "required": true,
+          "values": [
+           "urn:ietf:params:oauth:grant-type:device_code"
+          ]
+         },
+         {
+          "name": "device_code",
+          "type": "string",
+          "required": true
+         },
+         {
+          "name": "client_id",
+          "type": "string",
+          "required": true
+         }
+        ]
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The tokens. With client_credentials there is no refresh_token",
+        "ar": "الرموز. ولا refresh_token مع client_credentials"
+       },
+       "fields": [
+        {
+         "name": "access_token",
+         "type": "string",
+         "required": true,
+         "description": {
+          "en": "A JWT that lives 15 minutes",
+          "ar": "رمز JWT يدوم {N15} دقيقة"
+         }
+        },
+        {
+         "name": "token_type",
+         "type": "string",
+         "required": true
+        },
+        {
+         "name": "expires_in",
+         "type": "integer",
+         "required": true,
+         "description": {
+          "en": "Seconds",
+          "ar": "بالثواني"
+         }
+        },
+        {
+         "name": "refresh_token",
+         "type": "string",
+         "required": false,
+         "description": {
+          "en": "Opaque; replaced at each refresh; lives 30 days from its last use",
+          "ar": "رمز مبهم، يُستبدل مع كل تحديث، ويدوم {N30} يومًا من آخر استعمال"
+         }
+        },
+        {
+         "name": "scope",
+         "type": "string",
+         "required": false,
+         "description": {
+          "en": "client_credentials only",
+          "ar": "مع client_credentials فقط"
+         }
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "Client authentication failed",
+        "ar": "فشل التحقق من العميل"
+       },
+       "fields": []
+      },
+      {
+       "status": 403,
+       "description": {
+        "en": "Not allowed",
+        "ar": "غير مسموح"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "userinfo",
+     "method": "GET",
+     "path": "/userinfo",
+     "summary": {
+      "en": "Who an access token belongs to",
+      "ar": "صاحب رمز الوصول"
+     },
+     "description": {
+      "en": "The user’s fields from the token. To check a token on every request, verify it with the published keys instead.",
+      "ar": "حقول المستخدم من الرمز. وللتحقق من الرمز مع كل طلب استعمل المفاتيح المنشورة بدلًا من هذا."
+     },
+     "auth": "user",
+     "params": [],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The user",
+        "ar": "المستخدم"
+       },
+       "fields": [
+        {
+         "name": "id",
+         "type": "string",
+         "required": true,
+         "description": {
+          "en": "The stable id of the user: key your data by it",
+          "ar": "معرّف المستخدم الثابت: اربط بياناتك به"
+         }
+        },
+        {
+         "name": "email",
+         "type": "string",
+         "required": true
+        },
+        {
+         "name": "roles",
+         "type": "string[]",
+         "required": true
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "No token, or a token that is invalid or expired",
+        "ar": "لا رمز، أو رمز غير صالح أو منتهٍ"
+       },
+       "fields": []
+      },
+      {
+       "status": 500,
+       "description": {
+        "en": "The server could not read its keys; try again",
+        "ar": "تعذّر على الخادم قراءة مفاتيحه، أعد المحاولة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "introspect",
+     "method": "POST",
+     "path": "/token/introspect",
+     "summary": {
+      "en": "Check a token (RFC 7662)",
+      "ar": "فحص رمز (RFC 7662)"
+     },
+     "description": {
+      "en": "For confidential clients, and only for tokens issued to the calling client: any other token answers active: false.",
+      "ar": "للعملاء السرّيين، ولرموز العميل المُستدعي وحده: وأي رمز آخر يجيب active: false."
+     },
+     "auth": "client",
+     "params": [],
+     "body": {
+      "type": "form",
+      "shapes": [
+       {
+        "fields": [
+         {
+          "name": "token",
+          "type": "string",
+          "required": true,
+          "description": {
+           "en": "The access token",
+           "ar": "رمز الوصول"
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "Whether the token is active",
+        "ar": "هل الرمز فعّال"
+       },
+       "fields": [
+        {
+         "name": "active",
+         "type": "boolean",
+         "required": true
+        },
+        {
+         "name": "scope",
+         "type": "string",
+         "required": false
+        },
+        {
+         "name": "client_id",
+         "type": "string",
+         "required": false
+        },
+        {
+         "name": "sub",
+         "type": "string",
+         "required": false
+        },
+        {
+         "name": "iss",
+         "type": "string",
+         "required": false
+        },
+        {
+         "name": "aud",
+         "type": "string",
+         "required": false
+        },
+        {
+         "name": "exp",
+         "type": "integer",
+         "required": false
+        },
+        {
+         "name": "iat",
+         "type": "integer",
+         "required": false
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "Client authentication failed",
+        "ar": "فشل التحقق من العميل"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "revokeToken",
+     "method": "POST",
+     "path": "/token/revoke",
+     "summary": {
+      "en": "Revoke a refresh token (RFC 7009)",
+      "ar": "إلغاء رمز التحديث (RFC 7009)"
+     },
+     "description": {
+      "en": "Ends one sign-in. Public and confidential clients may call it, each for its own tokens. Answers 200 for a token it doesn’t know. An access token is accepted and ignored: it expires within 15 minutes.",
+      "ar": "يُنهي دخولًا واحدًا. يستدعيه العملاء العامّون والسرّيون، كلٌّ لرموزه. ويجيب 200 عن رمز لا يعرفه. ويُقبل رمز الوصول ويُتجاهل: فهو ينتهي خلال {N15} دقيقة."
+     },
+     "auth": "none",
+     "params": [],
+     "body": {
+      "type": "form",
+      "shapes": [
+       {
+        "fields": [
+         {
+          "name": "token",
+          "type": "string",
+          "required": true,
+          "description": {
+           "en": "The refresh token",
+           "ar": "رمز التحديث"
+          }
+         },
+         {
+          "name": "client_id",
+          "type": "string",
+          "required": false,
+          "description": {
+           "en": "Your client id",
+           "ar": "معرّف عميلك"
+          }
+         },
+         {
+          "name": "token_type_hint",
+          "type": "string",
+          "required": false,
+          "values": [
+           "refresh_token",
+           "access_token"
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "Revoked, or nothing to revoke",
+        "ar": "أُبطل، أو لا شيء لإبطاله"
+       },
+       "fields": []
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "logout",
+     "method": "GET",
+     "path": "/logout",
+     "summary": {
+      "en": "Sign out of every app",
+      "ar": "تسجيل الخروج من كل التطبيقات"
+     },
+     "description": {
+      "en": "Open this in the browser after clearing your own session. It ends the shared browser session, visits each of our apps’ sign-out addresses, and returns. A request that did not come from one of our apps gets a page that asks first.",
+      "ar": "افتحه في المتصفح بعد مسح جلستك. يُنهي جلسة المتصفح المشتركة، ويمرّ بعنوان الخروج في كل تطبيق من تطبيقاتنا، ثم يعود. والطلب الذي لم يأتِ من تطبيقاتنا تظهر له صفحة تسأل أولًا."
+     },
+     "auth": "none",
+     "params": [
+      {
+       "name": "return",
+       "in": "query",
+       "type": "string",
+       "required": false,
+       "description": {
+        "en": "Where to go after; must be one of our apps or a live scholar site",
+        "ar": "إلى أين بعدها، ويجب أن يكون تطبيقًا من تطبيقاتنا أو موقع عالِم يعمل"
+       }
+      },
+      {
+       "name": "lang",
+       "in": "query",
+       "type": "string",
+       "required": false,
+       "values": [
+        "en",
+        "ar"
+       ]
+      }
+     ],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The “Sign out?” page",
+        "ar": "صفحة «تسجيل الخروج؟»"
+       },
+       "fields": []
+      },
+      {
+       "status": 302,
+       "description": {
+        "en": "To the next app’s sign-out address, then to return",
+        "ar": "إلى عنوان الخروج في التطبيق التالي، ثم إلى return"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": {
+    "en": "Device",
+    "ar": "الأجهزة"
+   },
+   "operations": [
+    {
+     "id": "startDevice",
+     "method": "POST",
+     "path": "/device_authorization",
+     "summary": {
+      "en": "Start a sign-in on a device with no keyboard (RFC 8628)",
+      "ar": "بدء تسجيل الدخول على جهاز بلا لوحة مفاتيح (RFC 8628)"
+     },
+     "description": {
+      "en": "For clients registered with the device grant, like the TV apps. Show user_code and verification_uri, then poll /token every interval seconds. Codes live 10 minutes.",
+      "ar": "للعملاء المسجّلين بمسار الجهاز، كتطبيقات التلفاز. اعرض user_code وverification_uri، ثم اسأل /token كل interval من الثواني. وتدوم الرموز {N10} دقائق."
+     },
+     "auth": "none",
+     "params": [],
+     "body": {
+      "type": "form",
+      "shapes": [
+       {
+        "fields": [
+         {
+          "name": "client_id",
+          "type": "string",
+          "required": true,
+          "description": {
+           "en": "Your client id",
+           "ar": "معرّف عميلك"
+          }
+         },
+         {
+          "name": "scope",
+          "type": "string",
+          "required": false,
+          "description": {
+           "en": "Space-separated",
+           "ar": "تفصلها مسافات"
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The codes",
+        "ar": "الرموز"
+       },
+       "fields": [
+        {
+         "name": "device_code",
+         "type": "string",
+         "required": true,
+         "description": {
+          "en": "Secret: poll with it, never show it",
+          "ar": "سرّ: اسأل به ولا تعرضه أبدًا"
+         }
+        },
+        {
+         "name": "user_code",
+         "type": "string",
+         "required": true
+        },
+        {
+         "name": "verification_uri",
+         "type": "string",
+         "required": true
+        },
+        {
+         "name": "verification_uri_complete",
+         "type": "string",
+         "required": false,
+         "description": {
+          "en": "For a QR code",
+          "ar": "لرمز استجابة سريعة"
+         }
+        },
+        {
+         "name": "expires_in",
+         "type": "integer",
+         "required": true
+        },
+        {
+         "name": "interval",
+         "type": "integer",
+         "required": true
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": {
+    "en": "Native passkeys",
+    "ar": "مفاتيح المرور في التطبيقات"
+   },
+   "operations": [
+    {
+     "id": "nativePasskeyOptions",
+     "method": "POST",
+     "path": "/native/passkey/options",
+     "summary": {
+      "en": "Start a passkey sign-in in a native app",
+      "ar": "بدء تسجيل الدخول بمفتاح مرور في تطبيق أصلي"
+     },
+     "description": {
+      "en": "Studio and Admin apps only. Returns a challenge for the platform’s passkey sheet. The challenge lives 2 minutes and works once.",
+      "ar": "لتطبيقي الاستوديو والإدارة فقط. يعيد تحدّيًا لنافذة مفاتيح المرور في المنصة. ويدوم التحدّي دقيقتين ويعمل مرة واحدة."
+     },
+     "auth": "none",
+     "params": [],
+     "body": {
+      "type": "json",
+      "shapes": [
+       {
+        "fields": [
+         {
+          "name": "client_id",
+          "type": "string",
+          "required": true
+         },
+         {
+          "name": "code_challenge",
+          "type": "string",
+          "required": true,
+          "description": {
+           "en": "PKCE S256 challenge",
+           "ar": "تحدّي PKCE بطريقة S256"
+          }
+         },
+         {
+          "name": "code_challenge_method",
+          "type": "string",
+          "required": true,
+          "values": [
+           "S256"
+          ]
+         },
+         {
+          "name": "redirect_uri",
+          "type": "string",
+          "required": false,
+          "description": {
+           "en": "A registered redirect; the client’s first one when left out",
+           "ar": "عنوان عودة مسجّل، وأول عنوان للعميل إن تُرك"
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The challenge",
+        "ar": "التحدّي"
+       },
+       "fields": [
+        {
+         "name": "challenge_id",
+         "type": "string",
+         "required": true
+        },
+        {
+         "name": "publicKey",
+         "type": "object",
+         "required": true
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "nativePasskeyVerify",
+     "method": "POST",
+     "path": "/native/passkey/verify",
+     "summary": {
+      "en": "Finish a passkey sign-in in a native app",
+      "ar": "إتمام تسجيل الدخول بمفتاح مرور في تطبيق أصلي"
+     },
+     "description": {
+      "en": "Returns an authorization code to exchange at /token with the PKCE verifier.",
+      "ar": "يعيد رمز تفويض يُستبدل عند /token مع مُحقِّق PKCE."
+     },
+     "auth": "none",
+     "params": [],
+     "body": {
+      "type": "json",
+      "shapes": [
+       {
+        "fields": [
+         {
+          "name": "client_id",
+          "type": "string",
+          "required": true
+         },
+         {
+          "name": "challenge_id",
+          "type": "string",
+          "required": true
+         },
+         {
+          "name": "credential",
+          "type": "object",
+          "required": true,
+          "description": {
+           "en": "The WebAuthn PublicKeyCredential as JSON",
+           "ar": "كائن PublicKeyCredential من WebAuthn بصيغة JSON"
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The code",
+        "ar": "الرمز"
+       },
+       "fields": [
+        {
+         "name": "code",
+         "type": "string",
+         "required": true
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "No token, or a token that is invalid or expired",
+        "ar": "لا رمز، أو رمز غير صالح أو منتهٍ"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "nativePasskeyRegisterOptions",
+     "method": "POST",
+     "path": "/native/passkey/register/options",
+     "summary": {
+      "en": "Start adding a passkey in a native app",
+      "ar": "بدء إضافة مفتاح مرور في تطبيق أصلي"
+     },
+     "description": {
+      "en": "Needs a sign-in under 15 minutes old (else 401 step_up_required). A staff member’s first passkey is added on the web (403 email_code_required with setup_url).",
+      "ar": "يحتاج دخولًا لم تمضِ عليه {N15} دقيقة (وإلا 401 مع step_up_required). ويُضاف أول مفتاح مرور لعضو الفريق على الويب (403 مع email_code_required وsetup_url)."
+     },
+     "auth": "user",
+     "params": [],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The challenge",
+        "ar": "التحدّي"
+       },
+       "fields": [
+        {
+         "name": "challenge_id",
+         "type": "string",
+         "required": true
+        },
+        {
+         "name": "publicKey",
+         "type": "object",
+         "required": true
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "No token, or a token that is invalid or expired",
+        "ar": "لا رمز، أو رمز غير صالح أو منتهٍ"
+       },
+       "fields": []
+      },
+      {
+       "status": 403,
+       "description": {
+        "en": "Not allowed",
+        "ar": "غير مسموح"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "nativePasskeyRegisterVerify",
+     "method": "POST",
+     "path": "/native/passkey/register/verify",
+     "summary": {
+      "en": "Finish adding a passkey in a native app",
+      "ar": "إتمام إضافة مفتاح مرور في تطبيق أصلي"
+     },
+     "auth": "user",
+     "params": [],
+     "body": {
+      "type": "json",
+      "shapes": [
+       {
+        "fields": [
+         {
+          "name": "challenge_id",
+          "type": "string",
+          "required": true
+         },
+         {
+          "name": "credential",
+          "type": "object",
+          "required": true,
+          "description": {
+           "en": "The WebAuthn PublicKeyCredential as JSON",
+           "ar": "كائن PublicKeyCredential من WebAuthn بصيغة JSON"
+          }
+         },
+         {
+          "name": "name",
+          "type": "string",
+          "required": false,
+          "description": {
+           "en": "A name for the passkey",
+           "ar": "اسم لمفتاح المرور"
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The passkey",
+        "ar": "مفتاح المرور"
+       },
+       "fields": [
+        {
+         "name": "id",
+         "type": "string",
+         "required": true
+        },
+        {
+         "name": "name",
+         "type": "string",
+         "required": true
+        },
+        {
+         "name": "created_at",
+         "type": "integer",
+         "required": true,
+         "description": {
+          "en": "Milliseconds since 1970",
+          "ar": "بالميلي ثانية منذ {N=1970}"
+         }
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "No token, or a token that is invalid or expired",
+        "ar": "لا رمز، أو رمز غير صالح أو منتهٍ"
+       },
+       "fields": []
+      },
+      {
+       "status": 403,
+       "description": {
+        "en": "Not allowed",
+        "ar": "غير مسموح"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      },
+      {
+       "status": 409,
+       "description": {
+        "en": "Not possible in the current state",
+        "ar": "غير ممكن في الحالة الراهنة"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": {
+    "en": "Browser session",
+    "ar": "جلسة المتصفح"
+   },
+   "operations": [
+    {
+     "id": "listSessionAccounts",
+     "method": "GET",
+     "path": "/session/accounts",
+     "summary": {
+      "en": "Accounts signed in on this browser",
+      "ar": "الحسابات المسجلة على هذا المتصفح"
+     },
+     "description": {
+      "en": "Our web apps call it with credentials to fill the account menu. Signed out is an empty list, not an error.",
+      "ar": "تستدعيه تطبيقات الويب لدينا مع بيانات الاعتماد لملء قائمة الحساب. وعدم الدخول قائمة فارغة لا خطأ."
+     },
+     "auth": "session",
+     "params": [],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The accounts",
+        "ar": "الحسابات"
+       },
+       "fields": [
+        {
+         "name": "accounts",
+         "type": "object[]",
+         "required": true
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "switchAccount",
+     "method": "POST",
+     "path": "/session/switch",
+     "summary": {
+      "en": "Switch the active account",
+      "ar": "تبديل الحساب النشط"
+     },
+     "auth": "session",
+     "params": [],
+     "body": {
+      "type": "json",
+      "shapes": [
+       {
+        "fields": [
+         {
+          "name": "userId",
+          "type": "string",
+          "required": true
+         }
+        ]
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "Switched",
+        "ar": "تم التبديل"
+       },
+       "fields": [
+        {
+         "name": "success",
+         "type": "boolean",
+         "required": true
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "This browser is not signed in",
+        "ar": "هذا المتصفح غير مسجّل الدخول"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "removeSessionAccount",
+     "method": "DELETE",
+     "path": "/session/accounts/{userId}",
+     "summary": {
+      "en": "Sign out one account on this browser",
+      "ar": "تسجيل خروج حساب واحد من هذا المتصفح"
+     },
+     "auth": "session",
+     "params": [
+      {
+       "name": "userId",
+       "in": "path",
+       "type": "string",
+       "required": true
+      }
+     ],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "Signed out",
+        "ar": "تم الخروج"
+       },
+       "fields": [
+        {
+         "name": "success",
+         "type": "boolean",
+         "required": true
+        }
+       ]
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "This browser is not signed in",
+        "ar": "هذا المتصفح غير مسجّل الدخول"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "removeAllSessionAccounts",
+     "method": "DELETE",
+     "path": "/session/all",
+     "summary": {
+      "en": "Sign out every account on this browser",
+      "ar": "تسجيل خروج كل الحسابات من هذا المتصفح"
+     },
+     "auth": "session",
+     "params": [],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "Signed out",
+        "ar": "تم الخروج"
+       },
+       "fields": [
+        {
+         "name": "success",
+         "type": "boolean",
+         "required": true
+        }
+       ]
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "This browser is not signed in",
+        "ar": "هذا المتصفح غير مسجّل الدخول"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "checkSession",
+     "method": "GET",
+     "path": "/session/check",
+     "summary": {
+      "en": "Whether this browser is signed in",
+      "ar": "هل هذا المتصفح مسجل الدخول"
+     },
+     "description": {
+      "en": "A yes or no, with no account details.",
+      "ar": "نعم أو لا، بلا تفاصيل عن الحساب."
+     },
+     "auth": "none",
+     "params": [],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The answer",
+        "ar": "الجواب"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": {
+    "en": "Account",
+    "ar": "الحساب"
+   },
+   "operations": [
+    {
+     "id": "deleteAccount",
+     "method": "DELETE",
+     "path": "/account",
+     "summary": {
+      "en": "Delete the user’s own account",
+      "ar": "حذف المستخدم حسابه"
+     },
+     "description": {
+      "en": "Needs a sign-in at most 10 minutes old (auth_time); otherwise 401 insufficient_user_authentication, and the app signs in again with prompt=login. Restorable for 30 days by staff, then erased.",
+      "ar": "يحتاج دخولًا لم تمضِ عليه أكثر من {N10} دقائق (auth_time)، وإلا 401 مع insufficient_user_authentication، فيعيد التطبيق الدخول مع prompt=login. ويستطيع الفريق استعادته {N30} يومًا، ثم يُمحى."
+     },
+     "auth": "user",
+     "params": [],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "Deleted",
+        "ar": "حُذف"
+       },
+       "fields": [
+        {
+         "name": "deleted",
+         "type": "boolean",
+         "required": true
+        },
+        {
+         "name": "userId",
+         "type": "string",
+         "required": true
+        },
+        {
+         "name": "deletedAt",
+         "type": "integer",
+         "required": false
+        }
+       ]
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "No token, or a token that is invalid or expired",
+        "ar": "لا رمز، أو رمز غير صالح أو منتهٍ"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "exportAccount",
+     "method": "GET",
+     "path": "/account/export",
+     "summary": {
+      "en": "The user’s own sign-in data as a download",
+      "ar": "تنزيل المستخدم بيانات دخوله"
+     },
+     "auth": "user",
+     "params": [],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "Account, roles, identities, sessions, tokens (no secrets), passkeys and audit events",
+        "ar": "الحساب والأدوار والهويات والجلسات والرموز (بلا أسرار) ومفاتيح المرور وأحداث التدقيق"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "No token, or a token that is invalid or expired",
+        "ar": "لا رمز، أو رمز غير صالح أو منتهٍ"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "setAccountName",
+     "method": "PUT",
+     "path": "/account/name",
+     "summary": {
+      "en": "Set the user’s own names",
+      "ar": "تعيين المستخدم أسماءه"
+     },
+     "description": {
+      "en": "Only the fields sent change; null clears one. At most 100 characters each.",
+      "ar": "لا تتغيّر إلا الحقول المُرسلة، وnull يمسح حقلًا. ولا يزيد كل منها على {N100} حرف."
+     },
+     "auth": "user",
+     "params": [],
+     "body": {
+      "type": "json",
+      "shapes": [
+       {
+        "fields": [
+         {
+          "name": "displayName",
+          "type": "string",
+          "required": false
+         },
+         {
+          "name": "firstName",
+          "type": "string",
+          "required": false
+         },
+         {
+          "name": "lastName",
+          "type": "string",
+          "required": false
+         },
+         {
+          "name": "displayNameLocalized",
+          "type": "object",
+          "required": false
+         },
+         {
+          "name": "firstNameLocalized",
+          "type": "object",
+          "required": false
+         },
+         {
+          "name": "lastNameLocalized",
+          "type": "object",
+          "required": false
+         }
+        ]
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "Saved",
+        "ar": "حُفظ"
+       },
+       "fields": []
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "No token, or a token that is invalid or expired",
+        "ar": "لا رمز، أو رمز غير صالح أو منتهٍ"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "signOutAll",
+     "method": "POST",
+     "path": "/account/sign-out-all",
+     "summary": {
+      "en": "Sign out of all devices",
+      "ar": "تسجيل الخروج من كل الأجهزة"
+     },
+     "description": {
+      "en": "Ends every sign-in up to now, the caller’s included. Apps that check revocations refuse older access tokens at once.",
+      "ar": "يُنهي كل دخول حتى الآن، ومنه دخول المُستدعي. والتطبيقات التي تفحص الإبطال ترفض رموز الوصول الأقدم فورًا."
+     },
+     "auth": "user",
+     "params": [],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "Done",
+        "ar": "تم"
+       },
+       "fields": [
+        {
+         "name": "signedOut",
+         "type": "boolean",
+         "required": true
+        },
+        {
+         "name": "revokedBefore",
+         "type": "integer",
+         "required": false
+        }
+       ]
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "No token, or a token that is invalid or expired",
+        "ar": "لا رمز، أو رمز غير صالح أو منتهٍ"
+       },
+       "fields": []
+      },
+      {
+       "status": 503,
+       "description": {
+        "en": "Temporarily unavailable",
+        "ar": "غير متاح مؤقتًا"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "listPasskeys",
+     "method": "GET",
+     "path": "/account/passkeys",
+     "summary": {
+      "en": "The user’s own passkeys",
+      "ar": "مفاتيح مرور المستخدم"
+     },
+     "auth": "user",
+     "params": [],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The passkeys",
+        "ar": "مفاتيح المرور"
+       },
+       "fields": [
+        {
+         "name": "passkeys",
+         "type": "object[]",
+         "required": false
+        },
+        {
+         "name": "max",
+         "type": "integer",
+         "required": false
+        },
+        {
+         "name": "staff",
+         "type": "boolean",
+         "required": false
+        },
+        {
+         "name": "signedInWithPasskey",
+         "type": "boolean",
+         "required": false
+        },
+        {
+         "name": "canAdd",
+         "type": "boolean",
+         "required": false
+        }
+       ]
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "No token, or a token that is invalid or expired",
+        "ar": "لا رمز، أو رمز غير صالح أو منتهٍ"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "renamePasskey",
+     "method": "PATCH",
+     "path": "/account/passkeys/{id}",
+     "summary": {
+      "en": "Rename a passkey",
+      "ar": "إعادة تسمية مفتاح مرور"
+     },
+     "auth": "user",
+     "params": [
+      {
+       "name": "id",
+       "in": "path",
+       "type": "string",
+       "required": true
+      }
+     ],
+     "body": {
+      "type": "json",
+      "shapes": [
+       {
+        "fields": [
+         {
+          "name": "name",
+          "type": "string",
+          "required": true
+         }
+        ]
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "Renamed",
+        "ar": "أُعيدت التسمية"
+       },
+       "fields": [
+        {
+         "name": "ok",
+         "type": "boolean",
+         "required": false
+        },
+        {
+         "name": "name",
+         "type": "string",
+         "required": false
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "No token, or a token that is invalid or expired",
+        "ar": "لا رمز، أو رمز غير صالح أو منتهٍ"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "removePasskey",
+     "method": "DELETE",
+     "path": "/account/passkeys/{id}",
+     "summary": {
+      "en": "Remove a passkey",
+      "ar": "إزالة مفتاح مرور"
+     },
+     "description": {
+      "en": "Can be undone. A staff member can’t remove their last one (409 last_staff_passkey).",
+      "ar": "يمكن التراجع عنه. ولا يستطيع عضو الفريق إزالة مفتاحه الأخير (409 مع last_staff_passkey)."
+     },
+     "auth": "user",
+     "params": [
+      {
+       "name": "id",
+       "in": "path",
+       "type": "string",
+       "required": true
+      }
+     ],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "Removed",
+        "ar": "أُزيل"
+       },
+       "fields": [
+        {
+         "name": "ok",
+         "type": "boolean",
+         "required": false
+        }
+       ]
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "No token, or a token that is invalid or expired",
+        "ar": "لا رمز، أو رمز غير صالح أو منتهٍ"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      },
+      {
+       "status": 409,
+       "description": {
+        "en": "Not possible in the current state",
+        "ar": "غير ممكن في الحالة الراهنة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "restorePasskey",
+     "method": "POST",
+     "path": "/account/passkeys/{id}/restore",
+     "summary": {
+      "en": "Restore a removed passkey",
+      "ar": "استعادة مفتاح مرور محذوف"
+     },
+     "auth": "user",
+     "params": [
+      {
+       "name": "id",
+       "in": "path",
+       "type": "string",
+       "required": true
+      }
+     ],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "Restored",
+        "ar": "استُعيد"
+       },
+       "fields": [
+        {
+         "name": "ok",
+         "type": "boolean",
+         "required": false
+        }
+       ]
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "No token, or a token that is invalid or expired",
+        "ar": "لا رمز، أو رمز غير صالح أو منتهٍ"
+       },
+       "fields": []
+      },
+      {
+       "status": 403,
+       "description": {
+        "en": "Not allowed",
+        "ar": "غير مسموح"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": {
+    "en": "Server to server",
+    "ar": "بين الخوادم"
+   },
+   "operations": [
+    {
+     "id": "createInvite",
+     "method": "POST",
+     "path": "/provisioning/invites",
+     "summary": {
+      "en": "Invite someone to an account",
+      "ar": "دعوة شخص إلى حساب"
+     },
+     "description": {
+      "en": "Client scope invites:provision. The app makes both ids, so a retry with the same inviteId returns the same invite and sends no second email.",
+      "ar": "صلاحية العميل invites:provision. يصنع التطبيق المعرّفين، فإعادة المحاولة بالمعرّف inviteId نفسه تعيد الدعوة نفسها ولا ترسل بريدًا ثانيًا."
+     },
+     "auth": "client",
+     "params": [],
+     "body": {
+      "type": "json",
+      "shapes": [
+       {
+        "fields": [
+         {
+          "name": "inviteId",
+          "type": "string",
+          "required": true,
+          "description": {
+           "en": "inv_ and 32 hex digits",
+           "ar": "inv_ مع {N32} رقمًا ست عشريًا"
+          }
+         },
+         {
+          "name": "userId",
+          "type": "string",
+          "required": true,
+          "description": {
+           "en": "usr_ and 32 hex digits",
+           "ar": "usr_ مع {N32} رقمًا ست عشريًا"
+          }
+         },
+         {
+          "name": "email",
+          "type": "string",
+          "required": true
+         },
+         {
+          "name": "name",
+          "type": "string",
+          "required": false
+         },
+         {
+          "name": "locale",
+          "type": "string",
+          "required": false,
+          "values": [
+           "en",
+           "ar"
+          ]
+         },
+         {
+          "name": "note",
+          "type": "string",
+          "required": false
+         },
+         {
+          "name": "expiresInDays",
+          "type": "integer",
+          "required": false
+         },
+         {
+          "name": "continueUrl",
+          "type": "string",
+          "required": false
+         },
+         {
+          "name": "roles",
+          "type": "string[]",
+          "required": false
+         },
+         {
+          "name": "details",
+          "type": "object",
+          "required": false
+         },
+         {
+          "name": "sendEmail",
+          "type": "boolean",
+          "required": false,
+          "description": {
+           "en": "true unless set to false",
+           "ar": "قيمته true ما لم تُجعل false"
+          }
+         },
+         {
+          "name": "actor",
+          "type": "object",
+          "required": false
+         }
+        ]
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The same invite again",
+        "ar": "الدعوة نفسها مرة أخرى"
+       },
+       "fields": [
+        {
+         "name": "invite",
+         "type": "object",
+         "required": true
+        },
+        {
+         "name": "user",
+         "type": "object",
+         "required": false
+        },
+        {
+         "name": "created",
+         "type": "boolean",
+         "required": true
+        },
+        {
+         "name": "emailSent",
+         "type": "boolean",
+         "required": false
+        },
+        {
+         "name": "emailError",
+         "type": "string | null",
+         "required": false
+        }
+       ]
+      },
+      {
+       "status": 201,
+       "description": {
+        "en": "Created",
+        "ar": "أُنشئ"
+       },
+       "fields": [
+        {
+         "name": "invite",
+         "type": "object",
+         "required": true
+        },
+        {
+         "name": "user",
+         "type": "object",
+         "required": false
+        },
+        {
+         "name": "created",
+         "type": "boolean",
+         "required": true
+        },
+        {
+         "name": "emailSent",
+         "type": "boolean",
+         "required": false
+        },
+        {
+         "name": "emailError",
+         "type": "string | null",
+         "required": false
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "Client authentication failed",
+        "ar": "فشل التحقق من العميل"
+       },
+       "fields": []
+      },
+      {
+       "status": 403,
+       "description": {
+        "en": "Not allowed",
+        "ar": "غير مسموح"
+       },
+       "fields": []
+      },
+      {
+       "status": 409,
+       "description": {
+        "en": "Not possible in the current state",
+        "ar": "غير ممكن في الحالة الراهنة"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "listInvites",
+     "method": "GET",
+     "path": "/provisioning/invites",
+     "summary": {
+      "en": "Look up this client’s invites",
+      "ar": "الاطلاع على دعوات هذا العميل"
+     },
+     "auth": "client",
+     "params": [
+      {
+       "name": "ids",
+       "in": "query",
+       "type": "string",
+       "required": true,
+       "description": {
+        "en": "Comma-separated invite ids",
+        "ar": "معرّفات دعوات تفصلها فواصل"
+       }
+      }
+     ],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The invites",
+        "ar": "الدعوات"
+       },
+       "fields": [
+        {
+         "name": "invites",
+         "type": "object[]",
+         "required": true
+        }
+       ]
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "Client authentication failed",
+        "ar": "فشل التحقق من العميل"
+       },
+       "fields": []
+      },
+      {
+       "status": 403,
+       "description": {
+        "en": "Not allowed",
+        "ar": "غير مسموح"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "resendInvite",
+     "method": "POST",
+     "path": "/provisioning/invites/{id}/resend",
+     "summary": {
+      "en": "Send an invite again with a new link",
+      "ar": "إعادة إرسال الدعوة برابط جديد"
+     },
+     "auth": "client",
+     "params": [
+      {
+       "name": "id",
+       "in": "path",
+       "type": "string",
+       "required": true
+      }
+     ],
+     "body": {
+      "type": "json",
+      "shapes": [
+       {
+        "fields": [
+         {
+          "name": "locale",
+          "type": "string",
+          "required": false,
+          "values": [
+           "en",
+           "ar"
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The invite",
+        "ar": "الدعوة"
+       },
+       "fields": [
+        {
+         "name": "invite",
+         "type": "object",
+         "required": true
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "Client authentication failed",
+        "ar": "فشل التحقق من العميل"
+       },
+       "fields": []
+      },
+      {
+       "status": 403,
+       "description": {
+        "en": "Not allowed",
+        "ar": "غير مسموح"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      },
+      {
+       "status": 409,
+       "description": {
+        "en": "Not possible in the current state",
+        "ar": "غير ممكن في الحالة الراهنة"
+       },
+       "fields": []
+      },
+      {
+       "status": 410,
+       "description": {
+        "en": "No longer available",
+        "ar": "لم يعد متاحًا"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "linkInvite",
+     "method": "POST",
+     "path": "/provisioning/invites/{id}/link",
+     "summary": {
+      "en": "Replace an invite’s link with one the app made",
+      "ar": "استبدال رابط الدعوة برابط أنشأه التطبيق"
+     },
+     "auth": "client",
+     "params": [
+      {
+       "name": "id",
+       "in": "path",
+       "type": "string",
+       "required": true
+      }
+     ],
+     "body": {
+      "type": "json",
+      "shapes": [
+       {
+        "fields": [
+         {
+          "name": "tokenHash",
+          "type": "string",
+          "required": true,
+          "description": {
+           "en": "Hash of the token in the app’s own link",
+           "ar": "بصمة الرمز في رابط التطبيق"
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The invite",
+        "ar": "الدعوة"
+       },
+       "fields": [
+        {
+         "name": "invite",
+         "type": "object",
+         "required": true
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "Client authentication failed",
+        "ar": "فشل التحقق من العميل"
+       },
+       "fields": []
+      },
+      {
+       "status": 403,
+       "description": {
+        "en": "Not allowed",
+        "ar": "غير مسموح"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      },
+      {
+       "status": 409,
+       "description": {
+        "en": "Not possible in the current state",
+        "ar": "غير ممكن في الحالة الراهنة"
+       },
+       "fields": []
+      },
+      {
+       "status": 410,
+       "description": {
+        "en": "No longer available",
+        "ar": "لم يعد متاحًا"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "revokeInvite",
+     "method": "POST",
+     "path": "/provisioning/invites/{id}/revoke",
+     "summary": {
+      "en": "Withdraw an invite",
+      "ar": "سحب الدعوة"
+     },
+     "auth": "client",
+     "params": [
+      {
+       "name": "id",
+       "in": "path",
+       "type": "string",
+       "required": true
+      }
+     ],
+     "body": {
+      "type": "json",
+      "shapes": [
+       {
+        "fields": [
+         {
+          "name": "reason",
+          "type": "string",
+          "required": false
+         }
+        ]
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The invite",
+        "ar": "الدعوة"
+       },
+       "fields": [
+        {
+         "name": "invite",
+         "type": "object",
+         "required": true
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "Client authentication failed",
+        "ar": "فشل التحقق من العميل"
+       },
+       "fields": []
+      },
+      {
+       "status": 403,
+       "description": {
+        "en": "Not allowed",
+        "ar": "غير مسموح"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      },
+      {
+       "status": 409,
+       "description": {
+        "en": "Not possible in the current state",
+        "ar": "غير ممكن في الحالة الراهنة"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "restoreInvite",
+     "method": "POST",
+     "path": "/provisioning/invites/{id}/restore",
+     "summary": {
+      "en": "Restore a withdrawn invite",
+      "ar": "استعادة دعوة مسحوبة"
+     },
+     "auth": "client",
+     "params": [
+      {
+       "name": "id",
+       "in": "path",
+       "type": "string",
+       "required": true
+      }
+     ],
+     "body": {
+      "type": "json",
+      "shapes": [
+       {
+        "fields": []
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The invite",
+        "ar": "الدعوة"
+       },
+       "fields": [
+        {
+         "name": "invite",
+         "type": "object",
+         "required": true
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "Client authentication failed",
+        "ar": "فشل التحقق من العميل"
+       },
+       "fields": []
+      },
+      {
+       "status": 403,
+       "description": {
+        "en": "Not allowed",
+        "ar": "غير مسموح"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      },
+      {
+       "status": 409,
+       "description": {
+        "en": "Not possible in the current state",
+        "ar": "غير ممكن في الحالة الراهنة"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "purgeInvite",
+     "method": "POST",
+     "path": "/provisioning/invites/{id}/purge",
+     "summary": {
+      "en": "Erase a withdrawn invite before its 30 days end",
+      "ar": "محو دعوة مسحوبة قبل انتهاء مدتها"
+     },
+     "auth": "client",
+     "params": [
+      {
+       "name": "id",
+       "in": "path",
+       "type": "string",
+       "required": true
+      }
+     ],
+     "body": {
+      "type": "json",
+      "shapes": [
+       {
+        "fields": [
+         {
+          "name": "confirm",
+          "type": "string",
+          "required": false,
+          "description": {
+           "en": "The invited email, to confirm",
+           "ar": "البريد المدعو، للتأكيد"
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The invite",
+        "ar": "الدعوة"
+       },
+       "fields": [
+        {
+         "name": "invite",
+         "type": "object",
+         "required": true
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "Client authentication failed",
+        "ar": "فشل التحقق من العميل"
+       },
+       "fields": []
+      },
+      {
+       "status": 403,
+       "description": {
+        "en": "Not allowed",
+        "ar": "غير مسموح"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      },
+      {
+       "status": 409,
+       "description": {
+        "en": "Not possible in the current state",
+        "ar": "غير ممكن في الحالة الراهنة"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "revokeInstall",
+     "method": "POST",
+     "path": "/internal/token-revocations",
+     "summary": {
+      "en": "End one device’s sign-in, or a user’s sign-ins at one client",
+      "ar": "إنهاء دخول جهاز واحد أو دخول مستخدم لدى عميل واحد"
+     },
+     "description": {
+      "en": "Client scope tokens:revoke. Send exactly one of install_id and client_id. Refresh tokens are refused at their next use; access tokens expire within 15 minutes.",
+      "ar": "صلاحية العميل tokens:revoke. أرسل واحدًا فقط من install_id وclient_id. وتُرفض رموز التحديث عند استعمالها التالي، وتنتهي رموز الوصول خلال {N15} دقيقة."
+     },
+     "auth": "client",
+     "params": [],
+     "body": {
+      "type": "json",
+      "shapes": [
+       {
+        "fields": [
+         {
+          "name": "user_id",
+          "type": "string",
+          "required": true
+         },
+         {
+          "name": "install_id",
+          "type": "string",
+          "required": false,
+          "description": {
+           "en": "The id a native app sent at /token",
+           "ar": "المعرّف الذي أرسله تطبيق الجهاز عند /token"
+          }
+         },
+         {
+          "name": "client_id",
+          "type": "string",
+          "required": false
+         }
+        ]
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 204,
+       "description": {
+        "en": "Done",
+        "ar": "تم"
+       },
+       "fields": []
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "Client authentication failed",
+        "ar": "فشل التحقق من العميل"
+       },
+       "fields": []
+      },
+      {
+       "status": 403,
+       "description": {
+        "en": "Not allowed",
+        "ar": "غير مسموح"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "createModerationRequest",
+     "method": "POST",
+     "path": "/moderation/requests",
+     "summary": {
+      "en": "Ask Auth staff to act on an account",
+      "ar": "طلب إجراء من فريق الحسابات على حساب"
+     },
+     "description": {
+      "en": "Client scope moderation:request. The same Idempotency-Key with the same body returns the first request; with another body, 409.",
+      "ar": "صلاحية العميل moderation:request. والمفتاح Idempotency-Key نفسه مع المحتوى نفسه يعيد الطلب الأول، ومع محتوى آخر 409."
+     },
+     "auth": "client",
+     "params": [
+      {
+       "name": "Idempotency-Key",
+       "in": "header",
+       "type": "string",
+       "required": true,
+       "description": {
+        "en": "8 to 128 characters",
+        "ar": "من {N8} أحرف إلى {N128} حرفًا"
+       }
+      }
+     ],
+     "body": {
+      "type": "json",
+      "shapes": [
+       {
+        "fields": [
+         {
+          "name": "subject_user_id",
+          "type": "string",
+          "required": true
+         },
+         {
+          "name": "action",
+          "type": "string",
+          "required": true,
+          "values": [
+           "suspend_account",
+           "delete_account",
+           "revoke_sessions",
+           "require_password_reset",
+           "other"
+          ]
+         },
+         {
+          "name": "reason_category",
+          "type": "string",
+          "required": true,
+          "values": [
+           "spam",
+           "harassment",
+           "hate_speech",
+           "violent_content",
+           "sexual_content",
+           "impersonation",
+           "copyright",
+           "fraud",
+           "compromised_account",
+           "other"
+          ]
+         },
+         {
+          "name": "reason",
+          "type": "string",
+          "required": true
+         },
+         {
+          "name": "evidence",
+          "type": "object[]",
+          "required": false
+         },
+         {
+          "name": "requested_by",
+          "type": "object",
+          "required": true
+         }
+        ]
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The same request again",
+        "ar": "الطلب نفسه مرة أخرى"
+       },
+       "fields": [
+        {
+         "name": "request",
+         "type": "object",
+         "required": false
+        }
+       ]
+      },
+      {
+       "status": 201,
+       "description": {
+        "en": "Filed",
+        "ar": "سُجّل"
+       },
+       "fields": [
+        {
+         "name": "request",
+         "type": "object",
+         "required": false
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "Client authentication failed",
+        "ar": "فشل التحقق من العميل"
+       },
+       "fields": []
+      },
+      {
+       "status": 403,
+       "description": {
+        "en": "Not allowed",
+        "ar": "غير مسموح"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      },
+      {
+       "status": 409,
+       "description": {
+        "en": "Not possible in the current state",
+        "ar": "غير ممكن في الحالة الراهنة"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "listModerationRequests",
+     "method": "GET",
+     "path": "/moderation/requests",
+     "summary": {
+      "en": "This client’s requests",
+      "ar": "طلبات هذا العميل"
+     },
+     "auth": "client",
+     "params": [
+      {
+       "name": "status",
+       "in": "query",
+       "type": "string",
+       "required": false,
+       "values": [
+        "pending",
+        "info_requested",
+        "approved",
+        "rejected",
+        "actioned"
+       ]
+      },
+      {
+       "name": "action",
+       "in": "query",
+       "type": "string",
+       "required": false
+      },
+      {
+       "name": "subject_user_id",
+       "in": "query",
+       "type": "string",
+       "required": false,
+       "description": {
+        "en": "The account",
+        "ar": "الحساب"
+       }
+      },
+      {
+       "name": "limit",
+       "in": "query",
+       "type": "integer",
+       "required": false,
+       "description": {
+        "en": "1 to 100, 50 by default",
+        "ar": "من {N1} إلى {N100}، والافتراضي {N50}"
+       }
+      },
+      {
+       "name": "offset",
+       "in": "query",
+       "type": "integer",
+       "required": false
+      }
+     ],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The requests",
+        "ar": "الطلبات"
+       },
+       "fields": [
+        {
+         "name": "requests",
+         "type": "object[]",
+         "required": false
+        },
+        {
+         "name": "total",
+         "type": "integer",
+         "required": false
+        },
+        {
+         "name": "limit",
+         "type": "integer",
+         "required": false
+        },
+        {
+         "name": "offset",
+         "type": "integer",
+         "required": false
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "Client authentication failed",
+        "ar": "فشل التحقق من العميل"
+       },
+       "fields": []
+      },
+      {
+       "status": 403,
+       "description": {
+        "en": "Not allowed",
+        "ar": "غير مسموح"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "getModerationRequest",
+     "method": "GET",
+     "path": "/moderation/requests/{id}",
+     "summary": {
+      "en": "One request and its history",
+      "ar": "طلب واحد وسجله"
+     },
+     "auth": "client",
+     "params": [
+      {
+       "name": "id",
+       "in": "path",
+       "type": "string",
+       "required": true
+      }
+     ],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The request",
+        "ar": "الطلب"
+       },
+       "fields": [
+        {
+         "name": "request",
+         "type": "object",
+         "required": false
+        }
+       ]
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "Client authentication failed",
+        "ar": "فشل التحقق من العميل"
+       },
+       "fields": []
+      },
+      {
+       "status": 403,
+       "description": {
+        "en": "Not allowed",
+        "ar": "غير مسموح"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "answerModerationRequest",
+     "method": "POST",
+     "path": "/moderation/requests/{id}/info",
+     "summary": {
+      "en": "Answer a request for more information",
+      "ar": "الرد على طلب معلومات إضافية"
+     },
+     "auth": "client",
+     "params": [
+      {
+       "name": "id",
+       "in": "path",
+       "type": "string",
+       "required": true
+      }
+     ],
+     "body": {
+      "type": "json",
+      "shapes": [
+       {
+        "fields": [
+         {
+          "name": "note",
+          "type": "string",
+          "required": true
+         },
+         {
+          "name": "evidence",
+          "type": "object[]",
+          "required": false
+         },
+         {
+          "name": "requested_by",
+          "type": "object",
+          "required": true
+         }
+        ]
+       }
+      ]
+     },
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The request",
+        "ar": "الطلب"
+       },
+       "fields": [
+        {
+         "name": "request",
+         "type": "object",
+         "required": false
+        }
+       ]
+      },
+      {
+       "status": 400,
+       "description": {
+        "en": "The request is missing something or malformed",
+        "ar": "في الطلب نقص أو خطأ في صيغته"
+       },
+       "fields": []
+      },
+      {
+       "status": 401,
+       "description": {
+        "en": "Client authentication failed",
+        "ar": "فشل التحقق من العميل"
+       },
+       "fields": []
+      },
+      {
+       "status": 403,
+       "description": {
+        "en": "Not allowed",
+        "ar": "غير مسموح"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      },
+      {
+       "status": 409,
+       "description": {
+        "en": "Not possible in the current state",
+        "ar": "غير ممكن في الحالة الراهنة"
+       },
+       "fields": []
+      },
+      {
+       "status": 429,
+       "description": {
+        "en": "Too many requests",
+        "ar": "طلبات كثيرة"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": {
+    "en": "Themes",
+    "ar": "السمات"
+   },
+   "operations": [
+    {
+     "id": "listThemes",
+     "method": "GET",
+     "path": "/themes",
+     "summary": {
+      "en": "Published sign-in themes",
+      "ar": "سمات تسجيل الدخول المنشورة"
+     },
+     "auth": "none",
+     "params": [],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The themes",
+        "ar": "السمات"
+       },
+       "fields": [
+        {
+         "name": "themes",
+         "type": "object[]",
+         "required": false
+        },
+        {
+         "name": "default",
+         "type": "string",
+         "required": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "resolveTheme",
+     "method": "GET",
+     "path": "/themes/resolve",
+     "summary": {
+      "en": "The theme a client’s pages get",
+      "ar": "السمة التي تظهر بها صفحات العميل"
+     },
+     "auth": "none",
+     "params": [
+      {
+       "name": "client_id",
+       "in": "query",
+       "type": "string",
+       "required": false
+      },
+      {
+       "name": "theme",
+       "in": "query",
+       "type": "string",
+       "required": false,
+       "description": {
+        "en": "A published theme id",
+        "ar": "معرّف سمة منشورة"
+       }
+      }
+     ],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The theme and its CSS",
+        "ar": "السمة وملف CSS لها"
+       },
+       "fields": [
+        {
+         "name": "id",
+         "type": "string",
+         "required": false
+        },
+        {
+         "name": "version",
+         "type": "string",
+         "required": false
+        },
+        {
+         "name": "name",
+         "type": "object",
+         "required": false
+        },
+        {
+         "name": "source",
+         "type": "string",
+         "required": false
+        },
+        {
+         "name": "css",
+         "type": "string",
+         "required": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "themeAsset",
+     "method": "GET",
+     "path": "/themes/assets/{hash}",
+     "summary": {
+      "en": "A theme’s file",
+      "ar": "ملف من ملفات السمة"
+     },
+     "auth": "none",
+     "params": [
+      {
+       "name": "hash",
+       "in": "path",
+       "type": "string",
+       "required": true
+      }
+     ],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "The file; never changes",
+        "ar": "الملف، ولا يتغيّر أبدًا"
+       },
+       "fields": []
+      },
+      {
+       "status": 404,
+       "description": {
+        "en": "Not found",
+        "ar": "غير موجود"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": {
+    "en": "Status",
+    "ar": "الحالة"
+   },
+   "operations": [
+    {
+     "id": "health",
+     "method": "GET",
+     "path": "/health",
+     "summary": {
+      "en": "Whether the server is up",
+      "ar": "هل الخادم يعمل"
+     },
+     "auth": "none",
+     "params": [],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "Up",
+        "ar": "يعمل"
+       },
+       "fields": []
+      },
+      {
+       "status": 503,
+       "description": {
+        "en": "Temporarily unavailable",
+        "ar": "غير متاح مؤقتًا"
+       },
+       "fields": []
+      }
+     ]
+    },
+    {
+     "id": "healthHead",
+     "method": "HEAD",
+     "path": "/health",
+     "summary": {
+      "en": "Whether the server is up, without a body",
+      "ar": "هل الخادم يعمل (بلا محتوى)"
+     },
+     "auth": "none",
+     "params": [],
+     "answers": [
+      {
+       "status": 200,
+       "description": {
+        "en": "Up",
+        "ar": "يعمل"
+       },
+       "fields": []
+      },
+      {
+       "status": 503,
+       "description": {
+        "en": "Temporarily unavailable",
+        "ar": "غير متاح مؤقتًا"
+       },
+       "fields": []
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

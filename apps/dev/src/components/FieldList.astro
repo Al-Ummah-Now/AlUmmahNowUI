@@ -1,0 +1,31 @@
+---
+/** The fields of a request or an answer: name, type, whether it is required, what it means. */
+import Rich from './Rich.astro';
+import { say, type Field } from '../lib/auth/reference';
+import type { Locale } from '../lib/pages';
+import type { Strings } from '../i18n';
+interface Props {
+  fields: (Field & { in?: 'path' | 'query' | 'header' })[];
+  t: Strings;
+  locale: Locale;
+}
+const { fields, t, locale } = Astro.props;
+const p = t.auth.reference;
+---
+<ul class="ref-fields" role="list">
+  {fields.map((f) => (
+    <li class="ref-field">
+      <p class="ref-field-head">
+        <code lang="en" dir="ltr" data-no-expand>{f.name}</code>
+        <span class="ref-type" lang="en" dir="ltr" data-no-expand>{f.type}</span>
+        {f.in && <span class="ref-note">{p.in[f.in]}</span>}
+        {f.required && <span class="ref-req">{p.required}</span>}
+      </p>
+      {f.description && <p class="ref-field-text"><Rich text={say(f.description, locale)} /></p>}
+      {f.values && f.values.length > 1 && (
+        <p class="ref-field-text">{p.oneOf}{locale === 'ar' ? ': ' : ': '}{f.values.map((v, i) => <>{i > 0 && (locale === 'ar' ? '، ' : ', ')}<code lang="en" dir="ltr" data-no-expand>{v}</code></>)}</p>
+      )}
+      {f.values?.length === 1 && f.description?.en !== f.values[0] && <p class="ref-field-text"><code lang="en" dir="ltr" data-no-expand>{f.values[0]}</code></p>}
+    </li>
+  ))}
+</ul>
