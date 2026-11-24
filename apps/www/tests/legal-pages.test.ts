@@ -60,6 +60,13 @@ describe('Privacy Policy and Terms of Service pages (AlUmmahNow#1929)', () => {
     }
   });
 
+  it('Privacy does not say that sessions end the moment an account is deleted', () => {
+    expect(builtinContent('en').pages.privacy!.body).toContain('active sessions on other devices end shortly afterward');
+    expect(builtinContent('ar').pages.privacy!.body).toContain('وتنتهي الجلسات النشطة على الأجهزة الأخرى بعد ذلك بوقت قصير');
+    expect(builtinContent('en').pages.privacy!.body).not.toMatch(/signs you out of all active sessions immediately/);
+    expect(builtinContent('ar').pages.privacy!.body).not.toContain('تسجيل الخروج من جميع الجلسات النشطة فورًا');
+  });
+
   it('neither page mentions internal budget or cap figures', () => {
     for (const locale of ['en', 'ar'] as const) {
       const pages = builtinContent(locale).pages;
