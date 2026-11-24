@@ -278,7 +278,7 @@ zone ids.
 
 ## 13. Sign-in API (`/{lang}/auth/`)
 
-Read at AUTH `origin/main` `82bb738` and openauth `origin/master` `07119c9` (2026-11-23).
+Read at AUTH `origin/main` `82bb738` and openauth `origin/master` `ed04cae` (2026-11-23): the client flows (`1679441`..`ed04cae`) and the Python and Go examples (`c21c24c`).
 
 - Only our own apps and scholar sites use the sign-in (AR4-D1) — `WIKI epics/AUTH-R4-auth-docs-dx.md` §Owner decisions.
 - Discovery lists only what is served — `openauth packages/openauth/src/discovery.ts`, `test/discovery.test.ts`.

@@ -109,7 +109,7 @@ export const authFiguresEn = {
   },
   direct: {
     title: 'What takes the secret directly',
-    lead: 'Three APIs of the issuer are for our own servers. Each needs a client with its scope and answers only about what that client made.',
+    lead: 'Three APIs of the issuer are for our own servers. Each needs a client with its scope. Invites and staff requests answer only about what that client made; signing out an install reaches only people in the client’s own tenant.',
     why: 'These calls change accounts, so each one is audited under the client that made it.',
     tradeoff: 'The secret travels with each call, so they are few and limited to ten a minute for each client.',
     desc: 'The videos admin server calls the issuer with HTTP Basic for three things: inviting a person, asking staff to act on an account, and signing out one install. The issuer checks the secret and the scope, writes its database and the audit queue.',
