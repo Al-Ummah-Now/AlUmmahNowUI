@@ -1,0 +1,38 @@
+---
+/** A code sample: always left to right, scrolls inside itself, with a Copy button (shown when scripts run). */
+import type { Locale } from '../lib/pages';
+import type { Strings } from '../i18n';
+interface Props {
+  code: string;
+  label: string;
+  t: Strings;
+  locale: Locale;
+}
+const { code, label, t, locale } = Astro.props;
+const name = `${t.auth.copy.code}${locale === 'ar' ? '، ' : ', '}${label}`;
+---
+<figure class="code-block" aria-label={name}>
+  <button type="button" class="code-copy" hidden data-copied={t.auth.copy.copied}><span>{t.auth.copy.copy}</span></button>
+  <pre dir="ltr" tabindex="0" aria-label={name}><code lang="en" data-no-expand>{code}</code></pre>
+</figure>
+<script>
+  for (const block of document.querySelectorAll<HTMLElement>('.code-block')) {
+    const button = block.querySelector<HTMLButtonElement>('.code-copy');
+    const text = button?.querySelector('span');
+    const code = block.querySelector('code')?.textContent;
+    if (!button || !text || !code || !navigator.clipboard) continue;
+    const idle = text.textContent;
+    let timer: number | undefined;
+    button.hidden = false;
+    button.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(code);
+      } catch {
+        return; // no permission: the text can still be selected
+      }
+      text.textContent = button.dataset.copied ?? idle;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => (text.textContent = idle), 2000);
+    });
+  }
+</script>

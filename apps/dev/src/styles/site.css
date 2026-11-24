@@ -2223,3 +2223,60 @@ span.nb-wrap {
   white-space: normal;
   overflow-wrap: anywhere;
 }
+
+/* ---------- Code samples (CodeBlock) ---------- */
+.code-block {
+  position: relative;
+  margin: 18px 0 0;
+}
+.code-block pre {
+  margin: 0;
+  padding: 18px 20px;
+  overflow-x: auto;
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  background: var(--night-1);
+  color: var(--night-text);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  text-align: left;
+  tab-size: 2;
+}
+.code-block pre:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.code-block code {
+  font: inherit;
+}
+.code-copy {
+  position: absolute;
+  inset-block-start: 8px;
+  right: 8px;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 1px solid var(--night-3);
+  border-radius: 8px;
+  background: var(--night-2);
+  color: var(--night-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+.code-copy[hidden] {
+  display: none;
+}
+.code-copy:hover {
+  border-color: var(--gold);
+}
+.code-copy:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+/* the button's own row on phones: it never covers the first line */
+@media (max-width: 639px) {
+  .code-block pre {
+    padding-block-start: 48px;
+  }
+}

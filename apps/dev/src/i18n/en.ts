@@ -8,6 +8,7 @@
  */
 import { WIKI, GH, VIDEOS, WWW, STATUS_PAGE } from '../lib/links.ts';
 import { diagramsEn } from './diagrams.en.ts';
+import { authEn } from './auth.en.ts';
 
 export type Status = 'live' | 'ready' | 'rolling' | 'building' | 'planned';
 /** A feature's status is never written here: `feature` is its id in the wiki's feature registry (src/lib/registry.ts). */
@@ -36,6 +37,7 @@ export const en = {
     technology: 'Technology',
     infrastructure: 'Infrastructure',
     'system-design': 'System design',
+    auth: 'Sign-in API',
     'open-source': 'Open source',
     contact: 'Contact',
     /** The header lockup's second line (NAV.md: every app but www names itself) */
@@ -107,6 +109,7 @@ export const en = {
         { label: 'Technology', href: 'technology' },
         { label: 'Infrastructure and video pipeline', href: 'infrastructure' },
         { label: 'System design', href: 'system-design' },
+        { label: 'Sign-in API', href: 'auth' },
         { label: 'Repositories and contributing', href: 'open-source' },
       ],
     },
@@ -591,6 +594,7 @@ export const en = {
     home: 'Go to the home page',
     other: 'الصفحة الرئيسية بالعربية',
   },
+  auth: authEn,
   diagrams: diagramsEn,
 };
 

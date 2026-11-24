@@ -12,6 +12,7 @@ import { builders as clients } from './clients.ts';
 import { builders as release } from './release.ts';
 import { builders as hub } from './hub.ts';
 import { builders as pipeline } from './pipeline.ts';
+import { builders as auth } from './auth.ts';
 
 export const PAGE_BUILDERS: Record<string, Builder> = {
   ...delivery,
@@ -26,4 +27,5 @@ export const PAGE_BUILDERS: Record<string, Builder> = {
   ...release,
   ...hub,
   ...pipeline,
+  ...auth,
 };

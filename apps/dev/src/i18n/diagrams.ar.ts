@@ -16,6 +16,7 @@ import { clientsAr } from './sd/clients.ar.ts';
 import { releaseAr } from './sd/release.ar.ts';
 import { hubAr } from './sd/hub.ar.ts';
 import { pipelineAr } from './sd/pipeline.ar.ts';
+import { authFiguresAr } from './sd/auth.ar.ts';
 
 
 export const diagramsAr: typeof diagramsEn = {
@@ -278,5 +279,6 @@ export const diagramsAr: typeof diagramsEn = {
     release: releaseAr,
     hub: hubAr,
     pipeline: pipelineAr,
+    auth: authFiguresAr,
   },
 };
