@@ -62,39 +62,67 @@ for (const locale of LOCALES)
       expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
     });
 
-test('ar: every Latin token is isolated and reads left to right', async ({ page }) => {
-  await page.goto('/ar/auth/reference/', { waitUntil: 'networkidle' });
-  const bad = await page.evaluate(() => {
-    document.querySelectorAll<HTMLDetailsElement>('[data-ref-op] details').forEach((d) => (d.open = true));
-    const out: string[] = [];
-    const walk = document.createTreeWalker(document.querySelector('main')!, NodeFilter.SHOW_TEXT);
-    const range = document.createRange();
-    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
-      const text = n.textContent ?? '';
-      const el = n.parentElement!;
-      if (!el.getClientRects().length || el.closest('script, style, button, input')) continue;
-      for (const m of text.matchAll(/[A-Za-z][\w./:{}()-]*/g)) {
-        const alone = el.closest('bdi[dir="ltr"], code[dir="ltr"], [dir="ltr"], pre');
-        if (!alone) {
-          out.push(`not isolated: ${m[0]}`);
-          continue;
-        }
-        const at = (i: number) => {
-          range.setStart(n!, i);
-          range.setEnd(n!, i + 1);
-          return range.getBoundingClientRect();
-        };
-        // along one line, each character is right of the one before
-        for (let i = m.index! + 1; i < m.index! + m[0].length; i++) {
-          const [a, b] = [at(i - 1), at(i)];
-          if (Math.abs(a.top - b.top) < 2 && b.left < a.left - 0.5) {
-            out.push(`reversed: ${m[0]}`);
-            break;
-          }
+/** Run in the page: Latin tokens («/token», «inv_», «BASE64URL(…)») that are not isolated whole, or whose characters don't run left to right. */
+function bidiProblems(): string[] {
+  const out: string[] = [];
+  const main = document.querySelector('main')!;
+  const visible = (el: Element) => el.getClientRects().length > 0 && !el.closest('script, style, button, input');
+  const walk = document.createTreeWalker(main, NodeFilter.SHOW_TEXT);
+  const range = document.createRange();
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+    const el = n.parentElement!;
+    if (!visible(el)) continue;
+    // a leading «/» or «.» and a trailing «_» or «)» are part of the token: they are what the bidi algorithm moves
+    for (const m of (n.textContent ?? '').matchAll(/[/.]?[A-Za-z][\w./:{}()-]*/g)) {
+      if (!el.closest('[dir="ltr"]')) {
+        out.push(`not isolated: ${m[0]}`);
+        continue;
+      }
+      const at = (i: number) => {
+        range.setStart(n!, i);
+        range.setEnd(n!, i + 1);
+        return range.getBoundingClientRect();
+      };
+      for (let i = m.index + 1; i < m.index + m[0].length; i++) {
+        const [a, b] = [at(i - 1), at(i)];
+        if (Math.abs(a.top - b.top) < 2 && b.left < a.left - 0.5) {
+          out.push(`reversed: ${m[0]}`);
+          break;
         }
       }
     }
-    return [...new Set(out)];
-  });
-  expect(bad).toEqual([]);
+  }
+  // nothing that belongs to a token is left just outside its isolate
+  for (const bdi of main.querySelectorAll('bdi')) {
+    if (!visible(bdi)) continue;
+    if (/[/_]$/.test(bdi.previousSibling?.textContent ?? '') || /^[/_]/.test(bdi.nextSibling?.textContent ?? '')) out.push(`cut: ${bdi.textContent}`);
+  }
+  return [...new Set(out)];
+}
+
+test('ar: every Latin token, paths in sentences included, is isolated whole and reads left to right', async ({ page }) => {
+  await page.goto('/ar/auth/reference/', { waitUntil: 'networkidle' });
+  await page.evaluate(() => document.querySelectorAll<HTMLDetailsElement>('[data-ref-op] details').forEach((d) => (d.open = true)));
+  expect(await page.evaluate(bidiProblems)).toEqual([]);
+  // the check sees a path with no isolate, one without its slash, and one turned around
+  const path = page.locator('#nativePasskeyVerify .ref-body > p bdi', { hasText: '/token' });
+  await expect(path).toHaveText('/token');
+  const broken = (change: string) =>
+    path.evaluate((bdi, how) => {
+      const before = bdi.outerHTML;
+      const span = document.createElement('span');
+      span.innerHTML = how;
+      bdi.replaceWith(span);
+      (window as unknown as { undo: () => void }).undo = () => (span.outerHTML = before);
+    }, change);
+  for (const [change, problem] of [
+    ['/token', 'not isolated: /token'],
+    ['/<bdi dir="ltr">token</bdi>', 'cut: token'],
+    ['<bdi dir="ltr"><bdo dir="rtl">/token</bdo></bdi>', 'reversed: /token'],
+  ] as const) {
+    await broken(change);
+    expect(await page.evaluate(bidiProblems), change).toContain(problem);
+    await page.evaluate(() => (window as unknown as { undo: () => void }).undo());
+  }
+  expect(await page.evaluate(bidiProblems)).toEqual([]);
 });
