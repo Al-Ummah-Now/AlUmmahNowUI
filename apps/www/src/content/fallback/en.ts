@@ -127,7 +127,7 @@ export const en: Builtin = {
         '- **Consent and browser data:** you can change your consent preferences or clear on-device browser data in Privacy settings on the Videos site.',
         '- **Data export:** signed-in users can download a machine-readable JSON copy of their account and Videos data at any time.',
         '- **Delete your Videos data or full account:** you can request permanent deletion of your account through our [Contact us](/en/contact/) page. When we process your request to delete your account, we erase your Videos data (your profile, channels, videos, playlists, posts, watch history, subscriptions, and likes; comments and reports filed are anonymized) and stop showing your content on Al Ummah Now. Some stored media files, such as video files, thumbnails, and images, can remain in our storage for a time afterward.',
-        '- **Retention:** account deletion signs you out of all active sessions immediately, and we purge your deleted sign-in account after 30 days. Limited records may be retained where required by law or for security and child-safety reporting obligations.',
+        '- **Retention:** account deletion stops new sign-ins and session renewals immediately (active sessions on other devices end shortly afterward), and we purge your deleted sign-in account after 30 days. Limited records may be retained where required by law or for security and child-safety reporting obligations.',
         '',
         '## Children and age rating',
         '',
