@@ -9,6 +9,8 @@ interface Props {
 }
 const { locale, t } = Astro.props;
 const label = (p: NavSlug) => (p === '' ? t.nav.home : t.nav[p]);
+/** A host name breaks only before a dot: «videos» + «.alummahnow» + «.net», never inside a word. */
+const hostParts = (host: string) => host.split(/(?=\.)/);
 const year = formatYear(new Date().getUTCFullYear(), locale);
 ---
 <footer class="site-footer night">
@@ -26,8 +28,8 @@ const year = formatYear(new Date().getUTCFullYear(), locale);
     <nav aria-label={t.footer.sites}>
       <h2 class="footer-h">{t.footer.sites}</h2>
       <ul role="list">
-        <li><a href={WWW} rel="external">{t.footer.www}</a></li>
-        <li><a href={VIDEOS} rel="external">{t.footer.videos}</a></li>
+        <li><a href={WWW} rel="external" dir="ltr">{hostParts(t.footer.www).map((part, i) => <>{i > 0 && <wbr />}{part}</>)}</a></li>
+        <li><a href={VIDEOS} rel="external" dir="ltr">{hostParts(t.footer.videos).map((part, i) => <>{i > 0 && <wbr />}{part}</>)}</a></li>
         <li><a href={STATUS_PAGE} rel="external">{t.footer.status}</a></li>
         <li><a href={GH} rel="external">{t.footer.github}</a></li>
         <li><a href={`${GH}/AlUmmahNowWiki`} rel="external">{t.footer.wiki}</a></li>
