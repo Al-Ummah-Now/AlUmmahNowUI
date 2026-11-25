@@ -5,7 +5,7 @@ import { parseJsonc } from '../jsonc.ts';
 import { evaluateSecrets } from '../release/check-secrets.ts';
 import { currentVersion, parseVersionId, promote, releaseApp, type PromoteDeps } from '../release/promote.ts';
 import { parseRollbackArgs, previousFromResult, rollbackArgv, rollbackTarget } from '../release/rollback.ts';
-import { overrideHeader, reason, runSmoke } from '../release/smoke.ts';
+import { overrideHeader, reason, runSmoke, VERSION_PAUSE_MS, VERSION_WAIT_MS, type CheckResult } from '../release/smoke.ts';
 import { readFileSync } from 'node:fs';
 
 const V1 = '11111111-1111-1111-1111-111111111111';
@@ -243,6 +243,95 @@ describe('smoke', () => {
     const ok = await runSmoke({ env: 'production', overrides: { 'al-ummah-now-www': V2 }, fetchImpl: site() });
     expect(ok.find((r) => r.name === 'healthz')).toMatchObject({ ok: true, detail: expect.stringContaining(V2) });
     expect(overrideHeader({ a: V1, b: V2 })).toBe(`a="${V1}", b="${V2}"`);
+  });
+  /** A clock that moves only when somebody sleeps. */
+  const clock = () => {
+    let t = 0;
+    return { now: () => t, sleep: async (ms: number) => void (t += ms) };
+  };
+  const healthz = (results: CheckResult[]) => results.find((r) => r.name === 'healthz')!;
+  it('fails when overrides name no candidate of www', async () => {
+    const c = clock();
+    const results = await runSmoke({ env: 'production', overrides: { other: V2 }, fetchImpl: site(), ...c });
+    expect(healthz(results)).toMatchObject({ ok: false, detail: 'no candidate version of al-ummah-now-www given' });
+    expect(c.now()).toBe(0);
+  });
+  describe.each(['stage', 'production'] as const)('the version that answers on %s', (env) => {
+    const worker = ENVIRONMENTS[env].worker;
+    const overrides = { [worker]: V2 };
+    /** /healthz answers with these in turn (the last one from then on); the other checks are not under test. */
+    const answering = (...answers: (() => Response)[]) => {
+      let n = 0;
+      const fetchImpl = (async (input: RequestInfo | URL) =>
+        String(input) === `${ENVIRONMENTS[env].www}/healthz` ? answers[Math.min(n++, answers.length - 1)]!() : new Response('', { status: 500 })) as typeof fetch;
+      return { fetchImpl, asked: () => n };
+    };
+    const says = (version: string | null, over: object = {}, status = 200) => () =>
+      Response.json({ ok: true, version, env: ENVIRONMENTS[env].vars.APP_ENV, cms: 'ok', ...over }, { status });
+    const smoke = async (h: { fetchImpl: typeof fetch }, c: ReturnType<typeof clock>, o: Record<string, string> | undefined = overrides) =>
+      healthz(await runSmoke({ env, overrides: o, fetchImpl: h.fetchImpl, retryMs: 0, ...c }));
+
+    it('fails when the candidate never answers, after waiting as long as allowed and no longer', async () => {
+      const c = clock();
+      expect(await smoke(answering(says(V1)), c)).toMatchObject({ ok: false, detail: `served by ${V1}, expected candidate ${V2} (after 90 s)` });
+      expect(c.now()).toBe(VERSION_WAIT_MS);
+    });
+    it('waits for the candidate while an edge location still answers with the version before', async () => {
+      const c = clock();
+      const h = answering(says(V1), says(null), says(V2));
+      expect(await smoke(h, c)).toMatchObject({ ok: true, detail: expect.stringContaining(`version ${V2} (after ${(2 * VERSION_PAUSE_MS) / 1000} s), cms ok`) });
+      expect([h.asked(), c.now()]).toEqual([3, 2 * VERSION_PAUSE_MS]);
+    });
+    it('does not wait for an error, a status, an unhealthy answer or another environment, not even between tries', async () => {
+      const bad: [string, () => Response, RegExp][] = [
+        ['status', says(V2, {}, 500), /status 500/],
+        ['unhealthy', says(V2, { ok: false }), /ok is not true/],
+        ['unhealthy, old version', says(V1, { ok: false }), /ok is not true/],
+        ['environment', says(V2, { env: 'qa' }), /env qa/],
+        ['not JSON', () => new Response('<html>'), /./],
+        ['network', () => { throw new TypeError('fetch failed'); }, /fetch failed/],
+      ];
+      for (const [name, answer, detail] of bad) {
+        const first = clock();
+        const a = answering(answer, says(V2));
+        const atOnce = await smoke(a, first);
+        expect([atOnce.ok, a.asked(), first.now()], name).toEqual([false, 1, 0]);
+        expect(atOnce.detail, name).toMatch(detail);
+        const later = clock();
+        const b = answering(says(V1), answer, says(V2));
+        const afterOne = await smoke(b, later);
+        expect([afterOne.ok, b.asked(), later.now()], name).toEqual([false, 2, VERSION_PAUSE_MS]);
+        expect(afterOne.detail, name).toMatch(detail);
+      }
+    });
+    it('asks once without overrides (after the promotion waitForWwwVersion reads the version)', async () => {
+      const c = clock();
+      const h = answering(says(V1));
+      expect(healthz(await runSmoke({ env, fetchImpl: h.fetchImpl, retryMs: 0, ...c }))).toMatchObject({ ok: true, detail: expect.stringContaining(`version ${V1}, cms ok`) });
+      expect([h.asked(), c.now()]).toEqual([1, 0]);
+    });
+    it('promotes only when the candidate itself answered the pre-traffic smoke', async () => {
+      const release = async (version: string) => {
+        const calls: string[][] = [];
+        const deps: PromoteDeps = {
+          run: (_cwd, args) => {
+            calls.push(args);
+            if (args[0] === 'deployments') return JSON.stringify({ versions: [{ version_id: V1, percentage: 100 }] });
+            return args[1] === 'upload' ? `Worker Version ID: ${V2}` : 'ok';
+          },
+          smoke: async (_env, o) => [healthz(await runSmoke({ env, overrides: o, fetchImpl: answering(says(version)).fetchImpl, retryMs: 0, ...clock() }))],
+          waitForVersion: async () => undefined,
+          log: () => undefined,
+        };
+        return { calls, done: await promote(releaseApp('/repo', env), env, 'r', deps).catch((e: Error) => e) };
+      };
+      const stale = await release(V1);
+      expect(stale.done).toMatchObject({ rolledBack: true, message: expect.stringContaining(`expected candidate ${V2}`) });
+      expect(stale.calls.some((c) => c.includes(`${V2}@100%`))).toBe(false);
+      const fresh = await release(V2);
+      expect(fresh.done).toMatchObject({ candidate: V2 });
+      expect(fresh.calls.some((c) => c.includes(`${V2}@100%`))).toBe(true);
+    });
   });
   it('checks www renders the theme the admin chose', async () => {
     const ok = await runSmoke({ env: 'production', fetchImpl: site(), retryMs: 0 });
