@@ -189,7 +189,16 @@ async function stalling(run: (url: string) => Promise<void>): Promise<void> {
 describe('smoke', () => {
   afterEach(() => void vi.restoreAllMocks());
   const e = ENVIRONMENTS.production;
+  /** A healthy site whose candidate answers every request that asks for it (X-Release-Check). */
   function site(overrides: Partial<Record<string, () => Response>> = {}): typeof fetch {
+    const base = answers(overrides);
+    return (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const response = await base(input, init);
+      if (new Headers(init?.headers).has('X-Release-Check')) response.headers.set('X-Release-Check', 'ok');
+      return response;
+    }) as typeof fetch;
+  }
+  function answers(overrides: Partial<Record<string, () => Response>> = {}): typeof fetch {
     return (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const headers = new Headers(init?.headers);
@@ -273,6 +282,120 @@ describe('smoke', () => {
     expect(healthz(results)).toMatchObject({ ok: false, detail: 'no candidate version of al-ummah-now-www given' });
     expect(c.now()).toBe(0);
   });
+  describe('who answered the other checks (X-Release-Check)', () => {
+    const overrides = { 'al-ummah-now-www': V2 };
+    type Page = (url: URL, init: RequestInit | undefined, n: number) => Response | null | Promise<Response | null>;
+    const env = (page: Page = () => null) => {
+      const base = site();
+      const seen: { url: string; check: string | null }[] = [];
+      let n = 0;
+      const fetchImpl = (async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = new URL(String(input));
+        seen.push({ url: String(input), check: new Headers(init?.headers).get('X-Release-Check') });
+        return (url.pathname === '/healthz' ? null : await page(url, init, n++)) ?? base(input, init);
+      }) as typeof fetch;
+      return { fetchImpl, seen };
+    };
+    const isHome = (url: URL) => String(url) === `${e.www}/en/`;
+    const bare = answers();
+    const oldAnswer = (url: URL, init?: RequestInit) => bare(String(url), { ...init, headers: new Headers([...new Headers(init?.headers)].filter(([k]) => k !== 'x-release-check')) });
+    const smoke = (h: { fetchImpl: typeof fetch }, c: ReturnType<typeof clock>, o: Record<string, string> | undefined = overrides) => runSmoke({ env: 'production', overrides: o, fetchImpl: h.fetchImpl, retryMs: 0, ...c });
+    const result = (results: CheckResult[], name: string) => results.find((r) => r.name === name)!;
+
+    it('asks www for its candidate and passes at once when it answers; the admin API is not asked', async () => {
+      const c = clock();
+      const h = env();
+      expect((await smoke(h, c)).filter((r) => !r.ok)).toEqual([]);
+      expect(c.now()).toBe(0);
+      for (const { url, check } of h.seen.filter((x) => !x.url.endsWith('/healthz'))) expect(check, url).toBe(url.startsWith(e.vars.ADMIN_API_URL!) ? null : V2);
+    });
+    it('sends nothing and asks once without overrides', async () => {
+      const c = clock();
+      const h = env((url, init) => oldAnswer(url, init));
+      expect((await smoke(h, c, {})).filter((r) => !r.ok)).toEqual([]);
+      expect([c.now(), h.seen.every((x) => x.check === null)]).toEqual([0, true]);
+    });
+    it('an old version that would pass every check passes none, except production robots.txt with a warning', async () => {
+      const c = clock();
+      const results = await smoke(env((url, init) => oldAnswer(url, init)), c);
+      expect(c.now()).toBe(VERSION_WAIT_MS);
+      const robots = result(results, 'robots.txt');
+      expect(robots).toMatchObject({ ok: true, detail: expect.stringContaining('WARNING: no proof that candidate') });
+      const rest = results.filter((r) => r !== robots && r.name !== 'healthz');
+      expect(rest.length).toBeGreaterThan(7);
+      for (const r of rest) expect([r.ok, r.detail.startsWith(`not answered by candidate ${V2} of al-ummah-now-www (after 90 s; last answer, of another version:`)], `${r.name}: ${r.detail}`).toEqual([false, true]);
+    });
+    it('a check with two requests counts only when the candidate answered both', async () => {
+      const c = clock();
+      const h = env((url, init) => (url.pathname === '/.well-known/assetlinks.json' ? oldAnswer(url, init) : null));
+      expect(result(await smoke(h, c), 'passkey domain files')).toMatchObject({ ok: false, detail: expect.stringContaining('not answered by candidate') });
+      expect(c.now()).toBe(VERSION_WAIT_MS);
+    });
+    it('what an old version answers wrongly is asked again; what the candidate answers wrongly fails at once', async () => {
+      const c = clock();
+      let n = 0;
+      const late = await smoke(env((url) => (isHome(url) && n++ < 2 ? new Response('', { status: 500 }) : null)), c);
+      expect(late.filter((r) => !r.ok)).toEqual([]);
+      expect(result(late, 'home en').detail).toContain('(after 10 s)');
+      expect(c.now()).toBe(2 * VERSION_PAUSE_MS);
+      const d = clock();
+      const bad = await smoke(env((url) => (isHome(url) ? new Response('', { status: 503, headers: { 'X-Release-Check': 'ok' } }) : null)), d);
+      expect([result(bad, 'home en').detail, d.now()]).toEqual(['status 503', 0]);
+    });
+    it('a failed connection fails at once, and only an exact ok is proof', async () => {
+      const c = clock();
+      const broken = await smoke(env((url) => { if (isHome(url)) throw new TypeError('fetch failed'); return null; }), c);
+      expect([result(broken, 'home en').ok, result(broken, 'home en').detail, c.now()]).toEqual([false, 'fetch failed', 0]);
+      for (const value of ['OK', V2, 'ok, ok']) {
+        const r = await smoke(env(async (url, init) => { if (!isHome(url)) return null; const res = await oldAnswer(url, init); res.headers.set('X-Release-Check', value); return res; }), clock());
+        expect(result(r, 'home en').detail, value).toContain('not answered by candidate');
+      }
+    });
+    it('production robots.txt: a lost proof never fails, whatever is left of the 90 s; wrong content and stalls do', async () => {
+      const GOOD = 'User-agent: *\nAllow: /\n\nSitemap: x';
+      const run = async (used: number, ...robots: (string | null)[]) => {
+        const c = clock();
+        let asked = 0;
+        const h = env((url, init) => {
+          if (url.pathname === '/robots.txt') {
+            const body = robots[Math.min(asked++, robots.length - 1)]!;
+            if (body === null) throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+            if (body === 'broken') throw new TypeError('fetch failed');
+            return new Response(body);
+          }
+          return isHome(url) && c.now() < used ? oldAnswer(url, init) : null;
+        });
+        const results = await smoke(h, c);
+        expect(result(results, 'home en').ok, `home within ${used} ms`).toBe(true);
+        return { robots: result(results, 'robots.txt'), asked, end: c.now() };
+      };
+      for (const used of [0, 80_000, 85_000, VERSION_WAIT_MS]) {
+        const lost = await run(used, GOOD);
+        expect([lost.robots.ok, /WARNING: no proof/.test(lost.robots.detail), lost.end <= VERSION_WAIT_MS], `${used}: ${lost.robots.detail}`).toEqual([true, true, true]);
+        expect((await run(used, GOOD, null)).robots.ok, `${used}, then stalls`).toBe(true);
+        expect((await run(used, 'no sitemap')).robots, `${used}`).toMatchObject({ ok: false, detail: expect.stringContaining('no sitemap line') });
+        expect((await run(used, null)).robots, `${used}`).toMatchObject({ ok: false, detail: expect.stringContaining('no answer in time') });
+      }
+      expect((await run(0, GOOD, 'broken')).robots.ok).toBe(true);
+      expect((await run(0, 'broken')).robots).toMatchObject({ ok: false, detail: 'fetch failed' });
+      expect([(await run(0, GOOD)).asked, (await run(VERSION_WAIT_MS, GOOD)).asked]).toEqual([3, 1]);
+    });
+    it('an admin API that does not answer fails the site theme at once', async () => {
+      const c = clock();
+      const r = await smoke(env((url) => (url.pathname === '/public/site-theme' ? new Response('', { status: 503 }) : null)), c);
+      expect([result(r, 'site theme').ok, result(r, 'site theme').detail, c.now()]).toEqual([false, `${e.vars.ADMIN_API_URL}/public/site-theme: status 503`, 0]);
+    });
+    it('stage requires the proof of robots.txt too', async () => {
+      const r = await runSmoke({ env: 'stage', overrides: { [ENVIRONMENTS.stage.worker]: V2 }, retryMs: 0, ...clock(), fetchImpl: (async (input: RequestInfo | URL) => (String(input).endsWith('/robots.txt') ? new Response('User-agent: *\nDisallow: /\n') : new Response('', { status: 500, headers: { 'X-Release-Check': 'ok' } }))) as typeof fetch });
+      expect(result(r, 'robots.txt')).toMatchObject({ ok: false, detail: expect.stringContaining('not answered by candidate') });
+    });
+    it('the Worker entry answers through withReleaseCheck, last, and every env binds the version', () => {
+      const worker = readFileSync(new URL('../../src/worker.ts', import.meta.url), 'utf8');
+      expect(worker).toMatch(/export default \{\n {2}\/\/ [^\n]+\n {2}fetch: async \(request: Request, env: WwwEnv, ctx: ExecutionContext\): Promise<Response> => withReleaseCheck\(request, env, await site\.fetch\(request, env, ctx\)\),\n/);
+      const config = parseJsonc(readFileSync(new URL('../../wrangler.jsonc', import.meta.url), 'utf8')) as { version_metadata?: object; env: Record<string, { version_metadata?: object }> };
+      for (const block of [config, config.env.stage, config.env.qa]) expect(block!.version_metadata).toEqual({ binding: 'CF_VERSION_METADATA' });
+    });
+  });
   it('gives every request a timeout, and one that stalls in any other check is a failure', async () => {
     const signals: unknown[] = [];
     const base = site();
@@ -281,6 +404,7 @@ describe('smoke', () => {
       overrides: { 'al-ummah-now-www': V2 },
       requestTimeoutMs: 30,
       retryMs: 0,
+      ...clock(),
       fetchImpl: (async (input: RequestInfo | URL, init?: RequestInit) => {
         signals.push(init?.signal);
         if (String(input).endsWith('/healthz')) return base(input, init);
@@ -290,7 +414,7 @@ describe('smoke', () => {
     expect(signals.length).toBeGreaterThan(5);
     expect(signals.every((s) => s instanceof AbortSignal)).toBe(true);
     expect(healthz(results).ok).toBe(true);
-    for (const r of results.filter((x) => x.name !== 'healthz')) expect([r.ok, /timeout/i.test(r.detail)], `${r.name}: ${r.detail}`).toEqual([false, true]);
+    for (const r of results.filter((x) => x.name !== 'healthz')) expect([r.ok, /no answer in time/.test(r.detail)], `${r.name}: ${r.detail}`).toEqual([false, true]);
   });
   it.each(['/headers', '/body'])('a stalled answer (%s) is not yet while the candidate is waited for, and a failure otherwise', async (path) => {
     await stalling(async (url) => {
@@ -341,7 +465,7 @@ describe('smoke', () => {
     const answering = (...answers: (() => Response)[]) => {
       let n = 0;
       const fetchImpl = (async (input: RequestInfo | URL) =>
-        String(input) === `${ENVIRONMENTS[env].www}/healthz` ? answers[Math.min(n++, answers.length - 1)]!() : new Response('', { status: 500 })) as typeof fetch;
+        String(input) === `${ENVIRONMENTS[env].www}/healthz` ? answers[Math.min(n++, answers.length - 1)]!() : new Response('', { status: 500, headers: { 'X-Release-Check': 'ok' } })) as typeof fetch;
       return { fetchImpl, asked: () => n };
     };
     const says = (version: string | null, over: object = {}, status = 200) => () =>

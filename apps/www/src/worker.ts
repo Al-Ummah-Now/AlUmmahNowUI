@@ -8,6 +8,7 @@
  *      (src/lib/features.ts), handed to Astro in request headers
  *   4. HTML edge cache for locale pages (Cache API, s-maxage 60, SWR 600), keyed by version, theme and features
  *   5. security headers on every response, static assets included (run_worker_first)
+ *   6. the release's proof of which version answered (src/lib/release-check.ts), outermost
  * and the cron (wrangler.jsonc triggers): the single writer of the KV content snapshots.
  */
 import { handle } from '@astrojs/cloudflare/handler';
@@ -19,6 +20,7 @@ import { FEATURES_HEADER, featuresToken, resolveFeatures, withFeaturesHeader } f
 import { config, type WwwEnv } from './lib/env';
 import { writeSnapshots } from './lib/snapshot-writer';
 import { passkeyFilesResponse } from './lib/well-known';
+import { withReleaseCheck } from './lib/release-check';
 
 /** A client never chooses the theme or features header Astro reads. */
 function stripThemeHeader(request: Request): Request {
@@ -29,7 +31,7 @@ function stripThemeHeader(request: Request): Request {
   return new Request(request, { headers });
 }
 
-export default {
+const site = {
   async fetch(incoming: Request, env: WwwEnv, ctx: ExecutionContext): Promise<Response> {
     // The passkey RP ID is the apex host: Apple and Google fetch these there and never follow a redirect
     const wellKnown = await passkeyFilesResponse(incoming, env);
@@ -59,6 +61,11 @@ export default {
     const response = root ? rootResponse(served, new URL(request.url).pathname.split('/')[1] ?? 'en') : served;
     return applySecurityHeaders(response, cfg, new URL(request.url).pathname);
   },
+};
+
+export default {
+  // Outermost, after everything that may cache: proves to the release which version answered
+  fetch: async (request: Request, env: WwwEnv, ctx: ExecutionContext): Promise<Response> => withReleaseCheck(request, env, await site.fetch(request, env, ctx)),
   async scheduled(_controller: unknown, env: WwwEnv, ctx: ExecutionContext): Promise<void> {
     const kv = env.CONTENT_SNAPSHOT;
     if (!kv) return;
