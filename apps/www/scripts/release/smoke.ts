@@ -5,7 +5,8 @@
  *   node --experimental-strip-types scripts/release/smoke.ts --env production --override al-ummah-now-www=<version-id>
  *
  * With --override every request carries Cloudflare-Workers-Version-Overrides, so the
- * checks run on that 0%-traffic version, and /healthz must report it.
+ * checks run on that 0%-traffic version, and /healthz must report it, waited for up to
+ * VERSION_WAIT_MS. Every other check asks once (the site theme has its own retry).
  * Production also checks apex → www (301, path and query kept) and that both hosts
  * answer over HTTPS. Exit 1 on any failure.
  */
@@ -27,7 +28,13 @@ export interface SmokeOptions {
   fetchImpl?: typeof fetch;
   /** Wait between site-theme retries (tests: 0). */
   retryMs?: number;
+  now?: () => number;
+  sleep?: (ms: number) => Promise<void>;
 }
+
+/** How long /healthz may keep answering with another version than the candidate, and the pause between tries. */
+export const VERSION_WAIT_MS = 90_000;
+export const VERSION_PAUSE_MS = 5_000;
 
 const SITE_THEMES: readonly string[] = THEME_IDS;
 
@@ -50,6 +57,8 @@ export function reason(error: unknown): string {
 export async function runSmoke(opts: SmokeOptions): Promise<CheckResult[]> {
   const e = ENVIRONMENTS[opts.env];
   const doFetch = opts.fetchImpl ?? fetch;
+  const now = opts.now ?? Date.now;
+  const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const headers: Record<string, string> = { 'User-Agent': 'al-ummah-now-www-release-smoke' };
   const version = opts.overrides?.[e.worker];
   if (opts.overrides && Object.keys(opts.overrides).length) headers['Cloudflare-Workers-Version-Overrides'] = overrideHeader(opts.overrides);
@@ -69,14 +78,26 @@ export async function runSmoke(opts: SmokeOptions): Promise<CheckResult[]> {
   };
 
   await check('healthz', async () => {
-    const res = await get(`${e.www}/healthz`);
-    assert(res.status === 200, `status ${res.status}`);
-    const body = (await res.json()) as { ok?: boolean; version?: string; cms?: string; env?: string; feed?: string; feedBuiltAt?: string | null };
-    assert(body.ok === true, 'ok is not true');
-    assert(body.env === e.vars.APP_ENV, `env ${body.env}, expected ${e.vars.APP_ENV}`);
-    if (version) assert(body.version === version, `served by ${body.version}, expected candidate ${version}`);
-    // cms "degraded" and feed "missing" are reported, not fatal: www falls back by design (SPEC §5)
-    return `version ${body.version}, cms ${body.cms}, feed ${body.feed ?? 'unknown'}${body.feedBuiltAt ? ` (built ${body.feedBuiltAt})` : ''}`;
+    // With overrides the candidate itself has to answer: no version to ask for is no proof
+    assert(version || !Object.keys(opts.overrides ?? {}).length, `no candidate version of ${e.worker} given`);
+    const start = now();
+    for (;;) {
+      const res = await get(`${e.www}/healthz`);
+      assert(res.status === 200, `status ${res.status}`);
+      const body = (await res.json()) as { ok?: boolean; version?: string; cms?: string; env?: string; feed?: string; feedBuiltAt?: string | null };
+      assert(body.ok === true, 'ok is not true');
+      assert(body.env === e.vars.APP_ENV, `env ${body.env}, expected ${e.vars.APP_ENV}`);
+      const waited = Math.round((now() - start) / 1000);
+      if (!version || body.version === version) {
+        // cms "degraded" and feed "missing" are reported, not fatal: www falls back by design (SPEC §5)
+        return `version ${body.version}${waited >= 1 && version ? ` (after ${waited} s)` : ''}, cms ${body.cms}, feed ${body.feed ?? 'unknown'}${body.feedBuiltAt ? ` (built ${body.feedBuiltAt})` : ''}`;
+      }
+      // Edge locations learn of a new deployment at different times: one can still answer with the version
+      // before it, after waitForWwwVersion saw the candidate. Only that is waited for: an error, another status
+      // or an unhealthy answer fails above, at once, on every try.
+      assert(now() - start + VERSION_PAUSE_MS <= VERSION_WAIT_MS, `served by ${body.version}, expected candidate ${version} (after ${waited} s)`);
+      await sleep(VERSION_PAUSE_MS);
+    }
   });
 
   for (const l of ['en', 'ar'] as const) {
