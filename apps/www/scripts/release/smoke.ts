@@ -30,11 +30,17 @@ export interface SmokeOptions {
   retryMs?: number;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
+  /** How long one request may take (tests). */
+  requestTimeoutMs?: number;
 }
 
 /** How long /healthz may keep answering with another version than the candidate, and the pause between tries. */
 export const VERSION_WAIT_MS = 90_000;
 export const VERSION_PAUSE_MS = 5_000;
+
+/** One request may take this long (a stalled one must not outlive the waits around it). */
+export const REQUEST_TIMEOUT_MS = 15_000;
+export const isTimeout = (error: unknown): boolean => (error as Error)?.name === 'TimeoutError';
 
 const SITE_THEMES: readonly string[] = THEME_IDS;
 
@@ -62,8 +68,9 @@ export async function runSmoke(opts: SmokeOptions): Promise<CheckResult[]> {
   const headers: Record<string, string> = { 'User-Agent': 'al-ummah-now-www-release-smoke' };
   const version = opts.overrides?.[e.worker];
   if (opts.overrides && Object.keys(opts.overrides).length) headers['Cloudflare-Workers-Version-Overrides'] = overrideHeader(opts.overrides);
-  const get = (url: string, extra: Record<string, string> = {}) =>
-    doFetch(url, { headers: { ...headers, ...extra }, redirect: 'manual', signal: AbortSignal.timeout(15_000) });
+  const requestTimeout = opts.requestTimeoutMs ?? REQUEST_TIMEOUT_MS;
+  const get = (url: string, extra: Record<string, string> = {}, timeoutMs = requestTimeout) =>
+    doFetch(url, { headers: { ...headers, ...extra }, redirect: 'manual', signal: AbortSignal.timeout(timeoutMs) });
 
   const results: CheckResult[] = [];
   const check = async (name: string, fn: () => Promise<string>) => {
@@ -82,20 +89,29 @@ export async function runSmoke(opts: SmokeOptions): Promise<CheckResult[]> {
     assert(version || !Object.keys(opts.overrides ?? {}).length, `no candidate version of ${e.worker} given`);
     const start = now();
     for (;;) {
-      const res = await get(`${e.www}/healthz`);
-      assert(res.status === 200, `status ${res.status}`);
-      const body = (await res.json()) as { ok?: boolean; version?: string; cms?: string; env?: string; feed?: string; feedBuiltAt?: string | null };
-      assert(body.ok === true, 'ok is not true');
-      assert(body.env === e.vars.APP_ENV, `env ${body.env}, expected ${e.vars.APP_ENV}`);
-      const waited = Math.round((now() - start) / 1000);
-      if (!version || body.version === version) {
-        // cms "degraded" and feed "missing" are reported, not fatal: www falls back by design (SPEC §5)
-        return `version ${body.version}${waited >= 1 && version ? ` (after ${waited} s)` : ''}, cms ${body.cms}, feed ${body.feed ?? 'unknown'}${body.feedBuiltAt ? ` (built ${body.feedBuiltAt})` : ''}`;
+      let served: string;
+      try {
+        const res = await get(`${e.www}/healthz`, {}, Math.min(requestTimeout, Math.max(VERSION_PAUSE_MS, VERSION_WAIT_MS - (now() - start))));
+        assert(res.status === 200, `status ${res.status}`);
+        const body = (await res.json()) as { ok?: boolean; version?: string; cms?: string; env?: string; feed?: string; feedBuiltAt?: string | null };
+        assert(body.ok === true, 'ok is not true');
+        assert(body.env === e.vars.APP_ENV, `env ${body.env}, expected ${e.vars.APP_ENV}`);
+        const after = Math.round((now() - start) / 1000);
+        if (!version || body.version === version) {
+          // cms "degraded" and feed "missing" are reported, not fatal: www falls back by design (SPEC §5)
+          return `version ${body.version}${after >= 1 && version ? ` (after ${after} s)` : ''}, cms ${body.cms}, feed ${body.feed ?? 'unknown'}${body.feedBuiltAt ? ` (built ${body.feedBuiltAt})` : ''}`;
+        }
+        served = `served by ${body.version}`;
+      } catch (error) {
+        // A request that stalls says nothing about the candidate yet
+        if (!version || !isTimeout(error)) throw error;
+        served = 'no answer in time';
       }
       // Edge locations learn of a new deployment at different times: one can still answer with the version
-      // before it, after waitForWwwVersion saw the candidate. Only that is waited for: an error, another status
-      // or an unhealthy answer fails above, at once, on every try.
-      assert(now() - start + VERSION_PAUSE_MS <= VERSION_WAIT_MS, `served by ${body.version}, expected candidate ${version} (after ${waited} s)`);
+      // before it, after waitForWwwVersion saw the candidate. Only that (and a stalled request) is waited for: an
+      // error, another status or an unhealthy answer fails above, at once, on every try.
+      const waited = Math.round((now() - start) / 1000);
+      assert(now() - start + VERSION_PAUSE_MS <= VERSION_WAIT_MS, `${served}, expected candidate ${version} (after ${waited} s)`);
       await sleep(VERSION_PAUSE_MS);
     }
   });
@@ -118,7 +134,7 @@ export async function runSmoke(opts: SmokeOptions): Promise<CheckResult[]> {
 
   // The admin's site theme is what www renders (src/lib/site-theme.ts); read-only, never changes it
   await check('site theme', async () => {
-    const admin = await doFetch(`${e.vars.ADMIN_API_URL}/public/site-theme`, { headers, signal: AbortSignal.timeout(15_000) });
+    const admin = await doFetch(`${e.vars.ADMIN_API_URL}/public/site-theme`, { headers, signal: AbortSignal.timeout(requestTimeout) });
     assert(admin.ok, `${e.vars.ADMIN_API_URL}/public/site-theme: status ${admin.status}`);
     const wanted = ((await admin.json()) as { theme?: string }).theme;
     const rendered = async () => /<html[^>]*\sdata-theme="([a-z][a-z0-9-]*)"/.exec(await (await get(`${e.www}/en/`)).text())?.[1];

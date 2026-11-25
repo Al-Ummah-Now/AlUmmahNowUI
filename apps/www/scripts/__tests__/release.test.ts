@@ -1,11 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CI_ANDROID_CERT, checkWranglerConfig } from '../check-wrangler-config.ts';
 import { ENVIRONMENTS, parseEnvArg } from '../environments.ts';
 import { parseJsonc } from '../jsonc.ts';
 import { evaluateSecrets } from '../release/check-secrets.ts';
 import { currentVersion, parseVersionId, promote, releaseApp, type PromoteDeps } from '../release/promote.ts';
 import { parseRollbackArgs, previousFromResult, rollbackArgv, rollbackTarget } from '../release/rollback.ts';
-import { overrideHeader, reason, runSmoke, VERSION_PAUSE_MS, VERSION_WAIT_MS, type CheckResult } from '../release/smoke.ts';
+import { overrideHeader, reason, REQUEST_TIMEOUT_MS, runSmoke, VERSION_PAUSE_MS, VERSION_WAIT_MS, type CheckResult } from '../release/smoke.ts';
 import { readFileSync } from 'node:fs';
 
 const V1 = '11111111-1111-1111-1111-111111111111';
@@ -170,7 +172,22 @@ describe('rollback', () => {
   });
 });
 
+/** A real server whose answers stall: no headers, or headers and half a body, then nothing. */
+async function stalling(run: (url: string) => Promise<void>): Promise<void> {
+  const server = createServer((req, res) => {
+    if (req.url === '/body') res.writeHead(200, { 'Content-Type': 'application/json' }).write('{"status":');
+  });
+  await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+  try {
+    await run(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
+  } finally {
+    server.closeAllConnections();
+    server.close();
+  }
+}
+
 describe('smoke', () => {
+  afterEach(() => void vi.restoreAllMocks());
   const e = ENVIRONMENTS.production;
   function site(overrides: Partial<Record<string, () => Response>> = {}): typeof fetch {
     return (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -255,6 +272,67 @@ describe('smoke', () => {
     const results = await runSmoke({ env: 'production', overrides: { other: V2 }, fetchImpl: site(), ...c });
     expect(healthz(results)).toMatchObject({ ok: false, detail: 'no candidate version of al-ummah-now-www given' });
     expect(c.now()).toBe(0);
+  });
+  it('gives every request a timeout, and one that stalls in any other check is a failure', async () => {
+    const signals: unknown[] = [];
+    const base = site();
+    const results = await runSmoke({
+      env: 'production',
+      overrides: { 'al-ummah-now-www': V2 },
+      requestTimeoutMs: 30,
+      retryMs: 0,
+      fetchImpl: (async (input: RequestInfo | URL, init?: RequestInit) => {
+        signals.push(init?.signal);
+        if (String(input).endsWith('/healthz')) return base(input, init);
+        return new Promise((_, reject) => init!.signal!.addEventListener('abort', () => reject(init!.signal!.reason as Error)));
+      }) as typeof fetch,
+    });
+    expect(signals.length).toBeGreaterThan(5);
+    expect(signals.every((s) => s instanceof AbortSignal)).toBe(true);
+    expect(healthz(results).ok).toBe(true);
+    for (const r of results.filter((x) => x.name !== 'healthz')) expect([r.ok, /timeout/i.test(r.detail)], `${r.name}: ${r.detail}`).toEqual([false, true]);
+  });
+  it.each(['/headers', '/body'])('a stalled answer (%s) is not yet while the candidate is waited for, and a failure otherwise', async (path) => {
+    await stalling(async (url) => {
+      const base = site();
+      const run = async (overrides?: Record<string, string>) => {
+        let n = 0;
+        const results = await runSmoke({
+          env: 'production',
+          overrides,
+          requestTimeoutMs: 50,
+          retryMs: 0,
+          sleep: async () => {},
+          fetchImpl: (async (input: RequestInfo | URL, init?: RequestInit) =>
+            String(input).endsWith('/healthz') && n++ === 0 ? fetch(url + path, init) : base(input, init)) as typeof fetch,
+        });
+        return { health: healthz(results), asked: n };
+      };
+      expect(await run({ 'al-ummah-now-www': V2 })).toMatchObject({ health: { ok: true }, asked: 2 });
+      expect(await run()).toMatchObject({ health: { ok: false, detail: expect.stringMatching(/timeout/i) } });
+    });
+  });
+  it('never waits past the deadline when every answer stalls', async () => {
+    const c = clock();
+    let t = 0;
+    const timeouts: number[] = [];
+    vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms) => (timeouts.push(ms), new AbortController().signal));
+    const base = site();
+    const results = await runSmoke({
+      env: 'production',
+      overrides: { 'al-ummah-now-www': V2 },
+      retryMs: 0,
+      now: () => c.now() + t,
+      sleep: c.sleep,
+      fetchImpl: (async (input: RequestInfo | URL, init?: RequestInit) => {
+        if (String(input) !== `${e.www}/healthz`) return base(input, init);
+        t += timeouts.at(-1)!;
+        throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+      }) as typeof fetch,
+    });
+    expect(healthz(results)).toMatchObject({ ok: false, detail: `no answer in time, expected candidate ${V2} (after 90 s)` });
+    expect(c.now() + t).toBe(VERSION_WAIT_MS);
+    expect(Math.max(...timeouts)).toBe(REQUEST_TIMEOUT_MS);
   });
   describe.each(['stage', 'production'] as const)('the version that answers on %s', (env) => {
     const worker = ENVIRONMENTS[env].worker;
