@@ -204,6 +204,6 @@ never printed).
   the CMS E2E, polled ≤ 90 s); sign-in redirects to auth with the exact registered `redirect_uri`;
   axe on desktop and mobile; screenshots stored as artifacts.
 - Release: the same shape as AlUmmahNowAuth `release.yml`: build once → stage (deploy, smoke, E2E) →
-  production (candidate at 0 %, smoke through `Cloudflare-Workers-Version-Overrides`, 100 %, smoke,
+  production (candidate at 0 %, smoke through `Cloudflare-Workers-Version-Overrides` whose checks count only when the candidate answered (`X-Release-Check`, src/lib/release-check.ts), 100 %, smoke,
   auto-rollback) → rollback dry run, started by a `vYYYY.MM.DD` tag on `main` (a manual run is stage
   only). QA deploys from `main` on every push. Details in `docs/PLAN.md`.
