@@ -4,6 +4,8 @@ import Footer from '../src/components/Footer.astro';
 import PageArticle from '../src/components/PageArticle.astro';
 import { GET as privacyRedirect } from '../src/pages/privacy';
 import { GET as termsRedirect } from '../src/pages/terms';
+import { GET as deleteAccountRedirect } from '../src/pages/[locale]/delete-account';
+import { deleteAccountUrl } from '../src/lib/delete-account';
 import { builtinContent } from '../src/content/fallback';
 import { renderMarkdown } from '../src/lib/markdown';
 import { buildSitemap } from '../src/lib/sitemap';
@@ -65,6 +67,30 @@ describe('Privacy Policy and Terms of Service pages (AlUmmahNow#1929)', () => {
     expect(builtinContent('ar').pages.privacy!.body).toContain('وتنتهي الجلسات النشطة على الأجهزة الأخرى بعد ذلك بوقت قصير');
     expect(builtinContent('en').pages.privacy!.body).not.toMatch(/signs you out of all active sessions immediately/);
     expect(builtinContent('ar').pages.privacy!.body).not.toContain('تسجيل الخروج من جميع الجلسات النشطة فورًا');
+  });
+
+  it('account deletion is self-service on the account page, with Contact us as the other way, and promises no time for stored files', () => {
+    for (const [locale, link, contact, files, not] of [
+      ['en', '](/en/delete-account/)', '](/en/contact/)', 'Stored copies of video and image files are not removed at the same moment and can remain afterward.', /for a time|process your request/i],
+      ['ar', '](/ar/delete-account/)', '](/ar/contact/)', 'ولا تُزال النسخ المخزّنة من ملفات المرئيات والصور في اللحظة نفسها، وقد تبقى بعد ذلك.', /معالجة طلب|في التخزين مدة/],
+    ] as const) {
+      for (const slug of ['privacy', 'terms'] as const) {
+        const body = builtinContent(locale).pages[slug]!.body;
+        for (const text of [link, contact, files]) expect(body, `${locale}/${slug}`).toContain(text);
+        expect(body, `${locale}/${slug}`).not.toMatch(not);
+      }
+    }
+  });
+
+  it('/{locale}/delete-account goes to this environment\'s account page in the same language', () => {
+    const go = (locale: string) => deleteAccountRedirect({ params: { locale }, locals: {} } as never) as Response;
+    for (const [locale, query] of [['en', ''], ['ar', '?lang=ar']] as const) {
+      expect(deleteAccountUrl('https://profile.example', locale)).toBe(`https://profile.example/delete-account${query}`);
+      const res = go(locale);
+      expect(res.status).toBe(302);
+      expect(res.headers.get('Location')).toBe(`${config({}).profileUrl}/delete-account${query}`);
+    }
+    expect(go('fr').status).toBe(404);
   });
 
   it('neither page mentions internal budget or cap figures', () => {
