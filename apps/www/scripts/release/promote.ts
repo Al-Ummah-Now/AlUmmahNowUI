@@ -13,7 +13,7 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ENVIRONMENTS, parseEnvArg, type EnvName } from '../environments.ts';
-import { reason, runSmoke, type CheckResult } from './smoke.ts';
+import { reason, REQUEST_TIMEOUT_MS, runSmoke, type CheckResult } from './smoke.ts';
 
 export type ReleaseEnv = Extract<EnvName, 'stage' | 'production'>;
 
@@ -200,7 +200,7 @@ export async function waitForWwwVersion(
   let inARow = 0;
   while (Date.now() < deadline) {
     try {
-      const res = await doFetch(`${ENVIRONMENTS[env].www}/healthz`, { headers });
+      const res = await doFetch(`${ENVIRONMENTS[env].www}/healthz`, { headers, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
       const body = (await res.json()) as { version?: string | null };
       if (body.version === version) {
         if (++inARow >= steady) return;
@@ -238,7 +238,7 @@ export async function waitForWwwHosts(
         await doFetch(`${host}/healthz`, {
           headers: { 'User-Agent': 'al-ummah-now-www-release' },
           redirect: 'manual',
-          signal: AbortSignal.timeout(15_000),
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         });
         break;
       } catch (error) {
