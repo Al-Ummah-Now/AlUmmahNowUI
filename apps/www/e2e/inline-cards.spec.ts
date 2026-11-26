@@ -323,8 +323,15 @@ test.describe('an article in one language only (docs/SPEC.md §4)', () => {
     await expect(note.getByRole('link', { name: 'Read it in العربية' })).toHaveAttribute('href', '/ar/articles/rihla-ila-al-quds/');
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', /\/ar\/articles\/rihla-ila-al-quds\/$/);
-    await expect(page.locator('main')).toHaveAttribute('lang', 'ar');
-    await expect(page.locator('[data-cards] .cv-slide')).toHaveCount(4);
+    const main = page.getByRole('main');
+    await expect(main).not.toHaveAttribute('lang', 'ar');
+    await expect(main).not.toHaveAttribute('dir', 'rtl');
+    const cardStage = main.locator('[data-cards] .cv-stage');
+    for (const content of [main.getByRole('heading', { level: 1 }), cardStage]) {
+      await expect(content).toHaveAttribute('lang', 'ar');
+      await expect(content).toHaveAttribute('dir', 'rtl');
+    }
+    await expect(cardStage.locator('.cv-slide')).toHaveCount(4);
   });
 
   test('a translation under another slug: 301 to it (alternates)', async ({ request }) => {
