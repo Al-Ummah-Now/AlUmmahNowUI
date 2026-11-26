@@ -18,7 +18,8 @@ import { confirmDialog, type ConfirmOptions } from './confirm';
 import { initFacades } from './facade';
 import { initSearchBoxes } from './search-combobox';
 import { fitBrand } from '../../../../packages/render/src/brand-fit';
-import { fitToViewport } from '../../../../packages/render/src/menu-fit';
+import { coverBar, fitToViewport } from '../../../../packages/render/src/menu-fit';
+import { fitName } from '../../../../packages/render/src/name-fit';
 import { initTheme } from './theme';
 import { startStreet } from '../../../../packages/render/src/themes/fanous-street.generated.js';
 import {
@@ -220,6 +221,8 @@ function buildMenu(root: HTMLElement, me: Me, result: AccountsResult, focusButto
   button.append(avatarEl(avatar, name));
   const label = el('span', { class: 'account-label aun-acct-name', dir: 'auto' }, name);
   button.append(el('span', { class: 'visually-hidden' }, `${d.labelMenu}: `), label);
+  // cut by us, not by the ellipsis, so it sits 8px from the avatar in every theme (name-fit.ts)
+  fitName(label, name);
   const caret = document.getElementById('caret-icon') as HTMLTemplateElement | null;
   if (caret) {
     const svg = caret.content.cloneNode(true) as DocumentFragment;
@@ -503,6 +506,18 @@ rememberLocale();
 initTheme();
 initFacades();
 initSearchBoxes();
+
+// Below 1024px the header search is a sheet over the bar (the shared popover, NAV.md "Search"); opening,
+// Escape and the back arrow need no script. Script starts it where the bar starts and focuses its field.
+const searchSheet = document.getElementById('site-search-sheet');
+let releaseSheet = () => {};
+searchSheet?.addEventListener('toggle', (e) => {
+  releaseSheet();
+  releaseSheet = () => {};
+  if ((e as ToggleEvent).newState !== 'open') return;
+  releaseSheet = coverBar(searchSheet);
+  searchSheet.querySelector<HTMLInputElement>('.aun-search-input')?.focus();
+});
 startStreet();
 void initAccount();
 

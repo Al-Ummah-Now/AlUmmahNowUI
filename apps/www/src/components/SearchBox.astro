@@ -2,7 +2,12 @@
 /**
  * A search box: a plain GET form to /{l}/search (works without JS), enhanced into an ARIA 1.2
  * combobox with live suggestions and recent searches by src/scripts/search-combobox.ts.
+ * The header variant is the shared header search's form (AlUmmahNow NAV.md "Search", nav/header.js
+ * searchHtml): form.aun-search > .aun-search-field > .aun-search-input, then .aun-search-submit; the
+ * suggestions popup stays inside the form (src/styles/header.css lets it out of the pill).
  */
+import { MODE_ICON_ATTRS } from '../../../../packages/render/src/nav/mode-toggle.js';
+import { SEARCH_ICON_BODY } from '../../../../packages/render/src/nav/header.js';
 import { strings } from '../i18n';
 import type { Config } from '../lib/env';
 import type { Locale } from '../lib/locale';
@@ -27,11 +32,12 @@ const labels = {
   countMany: t.countMany,
   recentCount: t.recentCount,
 };
+const header = variant === 'header';
 const inputId = `${id}-input`;
 const listId = `${id}-list`;
 ---
 <form
-  class:list={['search', `search-${variant}`]}
+  class:list={['search', `search-${variant}`, header && 'aun-search']}
   role="search"
   action={`/${locale}/search`}
   method="get"
@@ -42,10 +48,12 @@ const listId = `${id}-list`;
   data-labels={JSON.stringify(labels)}
 >
   <label class="visually-hidden" for={inputId}>{t.label}</label>
-  <div class="search-field">
-    <svg class="search-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.6" /><path d="m10.5 10.5 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg>
+  <div class={header ? 'aun-search-field' : 'search-field'}>
+    {!header && <svg class="search-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.6" /><path d="m10.5 10.5 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg>}
     <input
       id={inputId}
+      class={header ? 'aun-search-input' : undefined}
+      data-testid={header ? 'header-search-input' : undefined}
       name="q"
       type="search"
       dir="auto"
@@ -64,6 +72,11 @@ const listId = `${id}-list`;
     />
     {variant === 'page' && <button class="button button-primary search-submit" type="submit">{t.submit}</button>}
   </div>
+  {header && (
+    <button type="submit" class="aun-search-submit" aria-label={t.submit} data-testid="header-search-submit">
+      <Fragment set:html={`<svg ${MODE_ICON_ATTRS} class="lucide lucide-search" aria-hidden="true" focusable="false">${SEARCH_ICON_BODY}</svg>`} />
+    </button>
+  )}
   <div class="search-popup" data-search-popup hidden>
     <ul class="search-list" id={listId} role="listbox" aria-label={t.suggestions}></ul>
     <button type="button" class="search-clear" data-search-clear hidden>{t.clearRecent}</button>

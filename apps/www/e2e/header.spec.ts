@@ -27,6 +27,14 @@ async function signedIn(page: Page) {
   await page.route(`${AUTH_URL}/session/accounts`, (r) => r.fulfill({ status: 200, headers: cors, body: JSON.stringify({ accounts: [{ userId: 'u1', isActive: true, email: 'm@example.com', name: 'Mahmoud' }] }) }));
 }
 
+
+/** The bar's visible controls never overlap: each starts at least 4px after the one before it. */
+async function controlsApart(page: Page, label: string) {
+  const boxes = await page.locator('.site-header :is(.aun-menu-collapse, .aun-brand-mark, .aun-brand-name, .aun-search-open, .aun-lang, .aun-mode, .aun-signin, .aun-acct-btn)').evaluateAll((els) =>
+    els.filter((e) => (e as HTMLElement).offsetParent && e.getBoundingClientRect().width > 2).map((e) => { const r = e.getBoundingClientRect(); return { c: e.className, l: r.left, r: r.right }; }).sort((a, b) => a.l - b.l));
+  boxes.slice(1).forEach((b, i) => { const a = boxes[i]!; expect(b.l - a.r, `${label}: ${a.c} | ${b.c}`).toBeGreaterThanOrEqual(4); });
+}
+
 for (const l of LOCALES) {
   const other = l === 'en' ? 'ar' : 'en';
 
@@ -50,6 +58,8 @@ for (const l of LOCALES) {
   });
 
   test(`${l}: one line on every screen, full width, one typeface; below 1024px the menu panel holds the links and search`, async ({ page }) => {
+    // 13 widths, each opening the sheet and the panel: a minute is not enough on WebKit
+    test.slow();
     const rtl = l === 'ar';
     for (const [w, bar] of [[1440, 64], [1280, 64], [1024, 64], [1023, 64], [800, 64], [640, 64], [639, 56], [480, 56], [430, 56], [412, 56], [390, 56], [360, 56], [320, 56]] as const) {
       await page.setViewportSize({ width: w, height: 844 });
@@ -64,22 +74,41 @@ for (const l of LOCALES) {
         await expect(menu).toBeHidden();
         await expect(page.locator('.site-header .primary-nav')).toBeVisible();
         await expect(page.locator('#site-search-input')).toBeVisible();
+        await expect(page.getByTestId('header-search-open')).toBeHidden();
         continue;
       }
       await expect(page.locator('.site-header .primary-nav')).toBeHidden();
       await expect(page.locator('#site-search-input')).toBeHidden();
+      await controlsApart(page, `${w}`);
+      // the search keeps its icon: it opens the sheet over the bar (same top and height), Escape closes it.
+      // Under 360px in Arabic, signed out, there is no room for it: the menu panel links to the search page.
+      const open = page.getByTestId('header-search-open');
+      const noRoom = rtl && w < 360;
+      if (noRoom) {
+        await expect(open).toBeHidden();
+      } else {
+        expect((await box(page, '[data-testid=header-search-open]')).height).toBe(40);
+        await open.click();
+        const sheet = await box(page, '[data-testid=header-search-sheet]');
+        expect([sheet.y, sheet.height, sheet.width], `${w} sheet`).toEqual([0, bar, w]);
+        await expect(page.locator('#site-search-input')).toBeFocused();
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#site-search-input')).toBeHidden();
+      }
       await expect(menu).toBeVisible();
       const mb = await box(page, '.aun-menu-collapse');
       expect([mb.width, mb.height]).toEqual([40, 40]);
       expect(rtl ? w - (mb.x + mb.width) : mb.x, `${w}`).toBe(w < 640 ? 12 : 16);
-      // the panel opens without script, right under the bar: the same links (aria-current kept) and the search
+      // the panel opens without script, right under the bar: the same links (aria-current kept)
       await menu.click();
       const panel = page.locator('#site-menu');
       await expect(panel).toBeVisible();
       expect((await panel.boundingBox())!.y).toBe(bar);
-      await expect(panel.getByRole('link')).toHaveText(await page.locator('.primary-nav a').allTextContents());
+      await expect(panel.locator('.panel-nav').getByRole('link')).toHaveText(await page.locator('.primary-nav a').allTextContents());
       await expect(panel.locator('a[aria-current="page"]')).toHaveCount(await page.locator('.primary-nav a[aria-current="page"]').count());
-      await expect(panel.getByRole('combobox', { name: rtl ? 'ابحث في المقالات' : 'Search articles' })).toBeVisible();
+      await expect(panel.getByRole('combobox')).toHaveCount(0);
+      if (noRoom) await expect(panel.getByTestId('panel-search-link')).toHaveAttribute('href', `/${l}/search`);
+      else await expect(panel.getByTestId('panel-search-link')).toBeHidden();
       await page.keyboard.press('Escape');
       await expect(panel).toBeHidden();
     }
@@ -94,6 +123,7 @@ for (const l of LOCALES) {
   });
 
   test(`${l}: signed in, still one line from 320px to 1440px`, async ({ page }) => {
+    test.slow();
     await signedIn(page);
     for (const [w, bar] of [[1440, 64], [1280, 64], [1024, 64], [1023, 64], [800, 64], [640, 64], [639, 56], [480, 56], [430, 56], [412, 56], [390, 56], [360, 56], [320, 56]] as const) {
       await page.setViewportSize({ width: w, height: 844 });
@@ -101,6 +131,7 @@ for (const l of LOCALES) {
       await expect(page.locator('#account .aun-acct-btn')).toBeVisible();
       expect((await box(page, '.site-header')).height, `${w}`).toBe(bar);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${w} no sideways scroll`).toBe(true);
+      await controlsApart(page, `${w} signed in`);
     }
   });
 
@@ -122,7 +153,7 @@ test('sizes: 40px controls, the bar 64px (56px on phones), sticky; Sign in is th
   const phone = (page.viewportSize()?.width ?? 1366) < 640;
   expect((await box(page, '.site-header')).height).toBe(phone ? 56 : 64);
   const wide = (page.viewportSize()?.width ?? 1366) >= 1024;
-  for (const sel of ['.aun-lang', '.aun-mode', '.aun-signin', wide ? '#site-search-input' : '.aun-menu-collapse']) expect((await box(page, sel)).height, sel).toBe(40);
+  for (const sel of ['.aun-lang', '.aun-mode', '.aun-signin', wide ? '.site-header form.aun-search' : '.aun-menu-collapse']) expect((await box(page, sel)).height, sel).toBe(40);
   expect((await box(page, '.aun-mode')).width).toBe(40);
   expect((await box(page, '.aun-brand-mark')).width).toBe(phone ? 32 : 36);
   const signin = page.locator('.aun-signin');
@@ -149,6 +180,28 @@ test('signed in: the account button (name hidden below 768px) opens the menu', a
   await expect(page.locator('#account-menu')).toBeVisible();
 });
 
+test('signed in: a long Arabic name on an English page is cut to fit, 8px from the avatar in every theme', async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 1366) < 768, 'the name is hidden below 768px');
+  const name = 'استوديو النور للبث والمرئيات الإسلامية';
+  await page.route((u) => u.origin === WWW_URL && u.pathname === '/auth/me', (r) =>
+    r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ signedIn: true, sub: 'u1', name, email: 'n@example.com', roles: [], canEditContent: false, profile: { displayName: name } }) }),
+  );
+  const cors = { 'access-control-allow-origin': WWW_URL, 'access-control-allow-credentials': 'true', 'content-type': 'application/json' };
+  await page.route(`${AUTH_URL}/session/accounts`, (r) => r.fulfill({ status: 200, headers: cors, body: JSON.stringify({ accounts: [{ userId: 'u1', isActive: true, email: 'n@example.com', name }] }) }));
+  await page.goto('/en/');
+  const button = page.locator('#account .aun-acct-btn');
+  await expect(button).toHaveAccessibleName(new RegExp(name));
+  for (const theme of ['fawanees', 'lantern', 'nahas', 'zujaj']) {
+    await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme);
+    await page.evaluate(() => document.fonts.ready);
+    // our cut, not the ellipsis: nothing overflows, so no slack collects beside the avatar
+    await expect.poll(() => button.locator('.aun-acct-name').evaluate((e) => e.scrollWidth - e.clientWidth), theme).toBeLessThanOrEqual(1);
+    const gap = await button.evaluate((b) => b.querySelector('.aun-acct-name')!.getBoundingClientRect().left - b.querySelector('.aun-avatar')!.getBoundingClientRect().right);
+    expect(gap, theme).toBeCloseTo(8, 0);
+    await expect(button.locator('.aun-acct-name [aria-hidden="true"]')).toHaveText(/…$/);
+  }
+});
+
 for (const scheme of ['light', 'dark'] as const) {
   for (const l of LOCALES) {
     test(`axe (WCAG 2.2 AA), header only: ${l} ${scheme}, signed out and signed in with the menu open`, async ({ page }) => {
@@ -164,6 +217,12 @@ for (const scheme of ['light', 'dark'] as const) {
         await expect(page.locator('#site-menu')).toBeVisible();
         const panel = await new AxeBuilder({ page }).include('.site-header').options(LABEL_IN_NAME).withTags(tags).analyze();
         expect(panel.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`), 'menu panel').toEqual([]);
+        await page.keyboard.press('Escape');
+        // and the search sheet
+        await page.getByTestId('header-search-open').click();
+        await expect(page.getByTestId('header-search-sheet')).toBeVisible();
+        const sheet = await new AxeBuilder({ page }).include('.site-header').options(LABEL_IN_NAME).withTags(tags).analyze();
+        expect(sheet.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`), 'search sheet').toEqual([]);
         await page.keyboard.press('Escape');
       }
 

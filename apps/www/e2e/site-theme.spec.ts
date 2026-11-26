@@ -16,8 +16,18 @@ const css = (page: Page, selector: string, prop: string) =>
 
 async function expectThemeColours(page: Page, theme: ThemeId, scheme: (typeof SCHEMES)[number]) {
   await expect.poll(() => css(page, 'html', 'background-color')).toBe(token(theme, scheme, '--fanous-color-background'));
-  // The header is dark in every theme and mode, in the theme's own colour
-  expect(await css(page, '.site-header', 'background-color')).toBe(token(theme, scheme, '--fanous-c-nav-bg'));
+  // The header is dark in every theme and mode: the shared contract's band for the theme (--aun-header-band,
+  // built from its --fanous-c-nav-* tokens), drawn on the bar's ::before (AlUmmahNow NAV.md "Theme")
+  const bar = await page.locator('.site-header').first().evaluate((el) => {
+    const probe = document.createElement('div');
+    probe.style.backgroundImage = 'var(--aun-header-band)';
+    el.append(probe);
+    const band = getComputedStyle(probe).backgroundImage;
+    probe.remove();
+    return { band, drawn: getComputedStyle(el, '::before').backgroundImage };
+  });
+  expect(bar.drawn).toMatch(/gradient/);
+  expect(bar.drawn).toBe(bar.band);
   expect(await css(page, '.site-header .aun-brand', 'color')).toBe(token(theme, scheme, '--fanous-c-nav-text'));
   // The footer's text is readable on the footer
   expect(await css(page, '.site-footer a', 'color')).toBe(token(theme, scheme, '--fanous-c-nav-text'));

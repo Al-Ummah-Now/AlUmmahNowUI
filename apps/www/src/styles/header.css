@@ -4,7 +4,8 @@
  * and Sign in / account controls are the shared contract (AlUmmahNow docs/design/NAV.md "Header":
  * aun-nav.generated.css, markup from packages/render/src/nav/header.js); this file holds only what
  * www adds: its header tokens, its own links and search in the primary slot and in the menu panel.
- * Page tokens it reads: --header-bg, --header-shadow, --color-lantern.
+ * Page tokens it reads: --color-lantern. The bar's band, edge and control font are the contract's
+ * (the theme header block of aun-nav.generated.css), the same as in every app.
  * Breakpoints are the contract's only: 1024, 768, 640 and 400px.
  */
 
@@ -32,11 +33,6 @@
 }
 
 /* ---------- bar (.aun-header: 64px, 56px below 640px, sticky, full width, one typeface) ---------- */
-.site-header {
-  /* the page's header material */
-  --aun-header-bg: var(--header-bg);
-  box-shadow: var(--header-shadow);
-}
 /* one typeface: the page's `:lang(ar) { font-family }` (global.css) would otherwise give every Arabic
    element in the header www's own stack; inside the header they keep the contract's (.aun-header) */
 .site-header :lang(ar) {
@@ -78,29 +74,78 @@
   outline: 2px solid var(--fanous-c-nav-active-text);
   outline-offset: -2px;
 }
-/* the header search is a header control: 40px, round, the header's search border */
-.site-header .search-header {
+/* the header search is the shared one (aun-nav.generated.css "header search"; NAV.md "Search"). From
+   1024px it shares the bar with the links: at least 12rem, at most the contract's 40rem. */
+.site-header .aun-header-primary > .aun-search-slot {
   flex: 1 1 12rem;
-  max-inline-size: 22rem;
 }
-.site-header .search-header .search-field input {
-  block-size: 2.5rem;
-  min-block-size: 0;
-  border-radius: var(--fanous-radius-full, 999px);
+/* the suggestions popup lives in the form (search-combobox.ts), so the pill lets it out; the submit
+   segment keeps the pill's round end itself */
+.site-header .aun-search {
+  overflow: visible;
 }
-.site-header .search-header .search-field input:focus-visible {
-  outline: 2px solid var(--fanous-c-nav-active-text);
-  outline-offset: 2px;
+/* the pill's :focus-within ring is the field's focus (contract); the site-wide :focus-visible outline
+   would draw a second ring on the input inside it */
+.site-header .aun-search-input:focus-visible {
+  outline: none;
+}
+/* The focused pill is one layer: the contract's border plus inset ring are two 1px strokes, and at a
+   fractional pixel ratio (Pixel 7, 2.625x) they draw as two thin lines with a seam (AUDIT-2 #143).
+   One 2px outline inside the edge covers the border in the same colour. */
+.site-header .aun-search:focus-within {
+  box-shadow: none;
+  outline: 2px solid var(--fanous-c-upload-focus);
+  outline-offset: -2px;
+}
+.site-header .aun-search-submit {
+  border-start-end-radius: var(--fanous-radius-full, 999px);
+  border-end-end-radius: var(--fanous-radius-full, 999px);
+}
+/* dir=auto (a Latin query on an Arabic page) resolves an empty field to LTR: the Arabic placeholder
+   still starts at the page's start */
+[dir='rtl'] .site-header .aun-search-input:placeholder-shown {
+  text-align: right;
+}
+/* below 1024px the links leave the bar for the menu panel; the search keeps its icon */
+@media (max-width: 63.99rem) {
+  .site-header .primary-nav {
+    display: none;
+  }
+  /* the icon is all that is left in the bar: the group keeps its width, so a long Arabic wordmark
+     shrinks (ellipsis) instead of the icon running under the language button */
+  .site-header .aun-header-primary {
+    min-width: min-content;
+  }
+}
+/* Under 360px an Arabic bar that is signed out has no room for the search icon: «تسجيل الدخول» is 34px
+   wider than "Sign in", and www's bar also holds the menu button. There the icon leaves the bar and the
+   menu panel links to the search page. Everywhere else the panel has no search entry. */
+.aun-header-panel .panel-search {
+  display: none;
+}
+@media (max-width: 22.49rem) {
+  .site-header:lang(ar):has(.aun-signin) .aun-search-open {
+    display: none;
+  }
+  .site-header:lang(ar):has(.aun-signin) .aun-header-panel .panel-search {
+    display: flex;
+    gap: var(--fanous-spacing-sm, 8px);
+  }
+  .panel-search svg {
+    inline-size: 1.25rem;
+    block-size: 1.25rem;
+    color: var(--fanous-c-nav-icon);
+  }
 }
 
 /* the bar is one line: the links and search share what the brand and tools leave (flex-basis 0: a
-   long list of links scrolls in place instead of pushing the tools down). Below 1024px they leave
-   the bar (.aun-collapse, aun-nav.generated.css) for the menu panel. */
+   long list of links scrolls in place instead of pushing the tools down). Below 1024px the links
+   leave the bar for the menu panel and the search for its icon. */
 .site-header .aun-header-primary {
   flex: 1 1 0;
 }
 
-/* ---------- the menu panel (.aun-header-panel popover, below 1024px): the same links and search ---------- */
+/* ---------- the menu panel (.aun-header-panel popover, below 1024px): the same links ---------- */
 .panel-nav ul {
   display: flex;
   flex-direction: column;
@@ -114,10 +159,6 @@
 }
 .panel-nav a[aria-current='page']:dir(rtl) {
   box-shadow: inset -3px 0 0 var(--color-lantern);
-}
-.site-header .aun-header-panel .search-header {
-  flex: none;
-  max-inline-size: none;
 }
 
 /* ---------- account (src/scripts/site.ts builds the button and menu once /auth/me answers) ---------- */

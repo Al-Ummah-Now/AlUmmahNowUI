@@ -54,7 +54,11 @@ describe('dev header = www header', () => {
   it('uses www’s frame, builders and Light / Dark button', () => {
     // the same full-width bar as www (the contract has no centring and no wide variant)
     expect(DEV_HEADER).toContain('<header class="site-header aun-header" data-env-badges={badges}>');
-    for (const cls of ['aun-header-row', 'aun-header-primary aun-collapse', 'primary-nav', 'aun-header-tools', 'aun-icon-btn aun-mode', 'aun-header-panel', 'panel-nav']) {
+    // the primary area: www's holds the search too (its own icon below 1024px), this site's only links, which
+    // leave the bar with it (aun-collapse)
+    expect(DEV_HEADER).toContain('<div class="aun-header-primary aun-collapse">');
+    expect(WWW_HEADER).toContain('<div class="aun-header-primary">');
+    for (const cls of ['aun-header-row', 'primary-nav', 'aun-header-tools', 'aun-icon-btn aun-mode', 'aun-header-panel', 'panel-nav']) {
       expect(tag(DEV_HEADER, cls), cls).toBe(tag(WWW_HEADER, cls));
     }
     for (const call of ['brandHtml(', 'langButtonHtml(', 'envBadgeHtml(']) expect(DEV_HEADER, call).toContain(call);
@@ -74,19 +78,17 @@ describe('dev header = www header', () => {
   it('keeps the contract order: menu, brand, env, links, language, then light/dark', () => {
     // www renders the badge in place; this static site inserts the same markup from the host, right after the brand
     for (const src of [DEV_HEADER.slice(DEV_HEADER.indexOf('<header')).replace('data-env-badges={badges}>', '>').replace('<div class="aun-header-primary aun-collapse"', 'envBadgeHtml(<div class="aun-header-primary aun-collapse"'), WWW_HEADER.slice(WWW_HEADER.indexOf('<header'))]) {
-      const order = ['menuButtonHtml(', 'brandHtml(', 'envBadgeHtml(', 'class="aun-header-primary aun-collapse"', 'langButtonHtml(', 'class="aun-icon-btn aun-mode"'].map((s) => at(src, s));
+      const order = ['menuButtonHtml(', 'brandHtml(', 'envBadgeHtml(', 'class="aun-header-primary', 'langButtonHtml(', 'class="aun-icon-btn aun-mode"'].map((s) => at(src, s));
       expect(order).toEqual([...order].sort((a, b) => a - b));
     }
   });
 
-  it('defines the page tokens header.css reads with www’s values, in both modes', () => {
-    const names = ['--header-bg', '--header-shadow', '--color-lantern'];
+  it('defines the page tokens header.css reads with www’s values', () => {
+    // the band, edge and control font are the shared contract's (aun-nav theme header block), not page tokens
+    const names = ['--color-lantern'];
     // www spreads them over @theme (fonts), :root (layout) and html[data-theme] (colour roles)
     const wwwRoot = { ...tokens(WWW_CSS, '@theme'), ...tokens(WWW_CSS, ':root'), ...tokens(WWW_CSS, 'html[data-theme]') };
     const devRoot = tokens(DEV_CSS, ':root');
     for (const n of names) expect(devRoot[n], n).toBe(wwwRoot[n]);
-    const wwwDark = tokens(WWW_CSS, "html[data-theme][data-mode='dark']")['--header-shadow'];
-    expect(tokens(DEV_CSS, "html[data-mode='dark']")['--header-shadow']).toBe(wwwDark);
-    expect(tokens(DEV_CSS.replace(/\n {2}/g, '\n'), "html:not([data-mode='light'])")['--header-shadow']).toBe(wwwDark);
   });
 });
