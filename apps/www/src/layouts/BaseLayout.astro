@@ -33,6 +33,8 @@ interface Props {
   noticeLink?: { href: string; label: string; lang: Locale } | null;
   /** Language of the main content when it differs from the UI (missing translation). */
   contentLocale?: Locale;
+  /** Locale for canonical selection when the content language is scoped inside the slot. */
+  canonicalLocale?: Locale;
   /** An extra feed for this page (a scholar's articles), listed after the site's. */
   feed?: { title: string; href: string } | null;
   /**
@@ -42,12 +44,12 @@ interface Props {
   seoLinks?: { canonical: string; hreflang: { hreflang: string; href: string }[] } | null;
 }
 
-const { cfg, locale, title, description, alternates, nav, settings, ogImage, ogType = 'website', jsonLd = [], noindex, errorPage, notice, noticeLink, contentLocale, feed, seoLinks } = Astro.props;
+const { cfg, locale, title, description, alternates, nav, settings, ogImage, ogType = 'website', jsonLd = [], noindex, errorPage, notice, noticeLink, contentLocale, canonicalLocale = contentLocale, feed, seoLinks } = Astro.props;
 const t = strings(locale);
 const siteName = settings?.site_title || t.meta.siteName;
 const fullTitle = title === siteName ? siteName : `${title} | ${siteName}`;
 const desc = (description || settings?.tagline || (cfg.signIn ? t.meta.defaultDescription : t.meta.watchDescription)).slice(0, 300);
-const { canonical, hreflang } = seoLinks && !errorPage ? seoLinks : headLinks(cfg, alternates, { locale, contentLocale, pathname: Astro.url.pathname, errorPage });
+const { canonical, hreflang } = seoLinks && !errorPage ? seoLinks : headLinks(cfg, alternates, { locale, contentLocale: canonicalLocale, pathname: Astro.url.pathname, errorPage });
 const other = otherLocale(locale);
 const switchHref = alternates[other] ?? `/${other}/`;
 const { url: image, card: isCard } = ogImageFor(cfg, ogImage);

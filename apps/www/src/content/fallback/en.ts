@@ -2,6 +2,7 @@ import type { SiteSettings } from '../../lib/cms-types';
 import type { Builtin } from './types';
 
 const LEGAL_UPDATED = '2026-11-24T00:00:00.000Z';
+const PRIVACY_UPDATED = '2026-11-26T00:00:00.000Z';
 
 const settings: SiteSettings = {
   locale: 'en',
@@ -76,7 +77,7 @@ export const en: Builtin = {
       title: 'Privacy Policy',
       summary: 'How Al Ummah Now collects, uses, stores, and deletes information across our websites and apps.',
       body: [
-        'Last updated: November 24, 2026.',
+        'Last updated: November 26, 2026.',
         '',
         'This Privacy Policy describes how Al Ummah Now handles information across our websites (www, Videos, and Account/Profile) and our native apps: Al Ummah Now (iOS, iPadOS, macOS, tvOS, Android, and Android TV), Al Ummah Now Studio (iOS, iPadOS, macOS, and Android), and Al Ummah Now Desktop.',
         '',
@@ -85,6 +86,12 @@ export const en: Builtin = {
         'Anyone can watch public videos without signing in. Our native viewer apps (iPhone, iPad, Mac, Apple TV, Android, and Android TV) do not require an account and do not collect personal data: they only read the public catalog, site theme, and video streams. Your language and theme choices stay on your device.',
         '',
         'On our websites, your language preference, theme choice, and consent settings are stored locally in your browser.',
+        '',
+        '## Reporting content without an account',
+        '',
+        'When you report content without signing in, we store which item you reported, the reason, and any details you enter. The form does not ask for your name or email address. We do not store your raw IP address with the report.',
+        '',
+        'To limit abuse, we count reporting attempts by network. We use daily keyed hashes (HMACs) of your IPv4 address or IPv6 network prefixes (/64 and /48) to store these counters separately from the report. We delete these counters within two days.',
         '',
         '## Information we collect when you use an account',
         '',
@@ -133,6 +140,8 @@ export const en: Builtin = {
         '',
         'Al Ummah Now apps are rated 13+ and are not directed to children under 13. If you believe a child under 13 has provided personal information, please contact us so we can remove it.',
         '',
+        'We prioritize child-safety reports and preserve them and related evidence for at least one year, or longer while a case is open or when required by law.',
+        '',
         '## Contact us',
         '',
         'For privacy questions, data requests, or complaints, reach us through our [Contact us](/en/contact/) page. You can also read our [Terms of Service](/en/terms/).',
@@ -141,7 +150,7 @@ export const en: Builtin = {
       seo_description: 'How Al Ummah Now collects, uses, stores, and deletes information across our websites and apps.',
       cover: null,
       published_at: LEGAL_UPDATED,
-      updated_at: LEGAL_UPDATED,
+      updated_at: PRIVACY_UPDATED,
       alternates: [{ locale: 'ar', slug: 'privacy' }],
     },
     terms: {
