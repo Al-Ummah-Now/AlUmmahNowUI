@@ -533,8 +533,30 @@ test('shared post cards and details keep the localized poll and quiz handoff', a
         await expect(body).toHaveAttribute('lang', locale);
         await expect(body).toHaveAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
         await expect(body.locator('li bdi')).toHaveCount(2);
-        await expect(body.getByRole('link')).toHaveAttribute('href', handoff);
-        await expect(post.locator('.post-engagement a')).toHaveAttribute('href', handoff);
+        const action = body.getByRole('link');
+        const discussion = post.locator('.post-engagement a');
+        await expect(action).toHaveAttribute('href', handoff);
+        await expect(action).toHaveCSS('justify-content', 'center');
+        await expect(discussion).toHaveAttribute('href', handoff);
+        await expect(discussion).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+        await expect(discussion).toHaveCSS('border-top-style', 'solid');
+        await expect(discussion).toHaveCSS('border-top-width', '1px');
+        const colors = await discussion.evaluate((el) => {
+          const probe = document.createElement('span');
+          probe.style.cssText = 'color: var(--text); border-color: var(--aun-btn-outline)';
+          el.append(probe);
+          const expected = getComputedStyle(probe);
+          const actual = getComputedStyle(el);
+          const colors = { text: actual.color === expected.color, outline: actual.borderTopColor === expected.borderTopColor };
+          probe.remove();
+          return colors;
+        });
+        expect(colors).toEqual({ text: true, outline: true });
+        await action.focus();
+        await page.keyboard.press('Tab');
+        await expect(discussion).toBeFocused();
+        await expect(discussion).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+        await discussion.blur();
         const layout = await post.evaluate((el) => {
           const tokens = ['--accent-text', '--heading', '--line', '--radius-media', '--surface', '--text', '--text-soft'];
           const style = getComputedStyle(el);
