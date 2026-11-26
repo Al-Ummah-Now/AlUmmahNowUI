@@ -420,6 +420,7 @@ html[data-signed-in] .site-header .aun-signin {
   /* flat Material filled (packages/render/src/styles/aun-surfaces.generated.css) */
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-height: 44px;
   padding-inline: 1.25rem;
   border-radius: var(--aun-radius-button, 999px);
@@ -431,4 +432,14 @@ html[data-signed-in] .site-header .aun-signin {
 .button:hover,
 .button:focus-visible {
   background: color-mix(in srgb, var(--button-text) 8%, var(--button-bg));
+}
+
+.button-quiet {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--aun-btn-outline);
+}
+.button-quiet:hover,
+.button-quiet:focus-visible {
+  background: color-mix(in srgb, currentColor 8%, transparent);
 }
