@@ -1,22 +1,25 @@
 /**
- * Helpers for the specs that sign in to real QA auth with the shared seed password.
+ * Helpers for the specs that sign in to real auth on QA and stage with the seed password.
  *
  * E2E output is uploaded as a public workflow artifact, and Playwright puts action arguments
  * in traces and in step titles (`Fill "<value>"`, embedded in the HTML report even with
  * tracing off). Specs using these helpers turn tracing off, and the password goes in through
- * fillSecret (an "Evaluate" step, no value in the title). deploy-qa.yml also scans the output
- * for the secret before uploading (scripts/scan-artifacts-for-secrets.py).
+ * fillSecret (an "Evaluate" step, no value in the title). deploy-qa.yml and release.yml also scan
+ * the output for the secret before uploading (scripts/scan-artifacts-for-secrets.py).
  */
 import { expect, type Locator, type Page } from '@playwright/test';
 import { AUTH_URL, WWW_URL } from './env';
 
 export const WWW_ORIGIN = new URL(WWW_URL).origin;
-export const AUTH_ORIGIN = new URL(AUTH_URL).origin;
+const authUrl = new URL(AUTH_URL);
+const stage = authUrl.hostname.includes('.stage.');
+export const AUTH_ORIGIN = authUrl.origin;
 /** auth.qa.alummahnow.net → profile.auth.qa.alummahnow.net (an app of the same auth, not www). */
 export const PROFILE_URL = (process.env.E2E_PROFILE_URL || AUTH_ORIGIN.replace('://', '://profile.')).replace(/\/+$/, '');
-export const SEED_PASSWORD = process.env.QA_SEED_PASSWORD;
-/** Real auth runs only against a deployed www with the seed password (deploy-qa.yml). */
+export const SEED_PASSWORD = stage ? process.env.STAGE_SEED_PASSWORD : process.env.QA_SEED_PASSWORD;
+/** Real auth runs only against a deployed www with the target's seed password. */
 export const REAL_AUTH = !!SEED_PASSWORD && !!process.env.WWW_URL && !WWW_URL.startsWith('http://localhost');
+export const REAL_AUTH_SKIP_REASON = 'needs a deployed WWW_URL and its seed password (QA_SEED_PASSWORD or STAGE_SEED_PASSWORD)';
 
 /**
  * A dedicated seed account for a spec that ends sessions (sign-out, revoke, password or role
@@ -29,7 +32,6 @@ export const REAL_AUTH = !!SEED_PASSWORD && !!process.env.WWW_URL && !WWW_URL.st
  */
 export function ssoAccount(local: `qa-sso-${string}`): string {
   if (!/^qa-sso-[a-z0-9-]+$/.test(local)) throw new Error(`not a dedicated qa-sso-* account: ${local}`);
-  const stage = new URL(AUTH_URL).hostname.includes('.stage.');
   return `${local}@${stage ? 'e2e.alummahnow.net' : 'delivered.resend.dev'}`;
 }
 

@@ -1,5 +1,5 @@
 /**
- * Real QA auth, end to end across apps (deploy-qa.yml):
+ * Real auth, end to end across apps on QA and stage:
  *
  * 1. Signed in elsewhere = signed in on www: the browser signs in at auth through another app
  *    (profile) and has never been on www; its first www page shows the account with no click.
@@ -11,10 +11,10 @@
  * Both tests sign out, which ends the account's sign-in everywhere: the spec signs in as its own
  * dedicated account (qa-sso-ui-chain), never a shared seed account, and runs its tests in order.
  *
- * Types the shared QA seed password: tracing is off (see real-auth.ts).
+ * Types the environment's seed password. Tracing is off (see real-auth.ts).
  */
 import { expect, test, type Page } from '@playwright/test';
-import { accountButton, AUTH_ORIGIN, authAccountCount, authForm, notSeededYet, openMenu, PROFILE_URL, REAL_AUTH, ssoAccount, WWW_ORIGIN } from './real-auth';
+import { accountButton, AUTH_ORIGIN, authAccountCount, authForm, notSeededYet, openMenu, PROFILE_URL, REAL_AUTH, REAL_AUTH_SKIP_REASON, ssoAccount, WWW_ORIGIN } from './real-auth';
 
 test.use({ trace: 'off' });
 
@@ -47,8 +47,8 @@ async function signInAtProfile(page: Page, email: string) {
   await authForm(page, email, PROFILE_ORIGIN);
 }
 
-test.describe('signed in across apps (real QA auth)', () => {
-  test.skip(!REAL_AUTH, 'needs WWW_URL on QA and QA_SEED_PASSWORD (deploy-qa.yml)');
+test.describe('signed in across apps (real auth)', () => {
+  test.skip(!REAL_AUTH, REAL_AUTH_SKIP_REASON);
   test.skip(({ browserName, isMobile }) => browserName === 'chromium' && isMobile, 'desktop Chromium and the iPhone (WebKit) project cover the engines');
 
   test.describe.configure({ mode: 'default' }); // in order, one worker, a failure does not skip the rest

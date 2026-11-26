@@ -11,10 +11,10 @@
  * account (qa-sso-ui, profile only), never a shared seed account other suites are signed in as.
  * Its tests run one after another so one test's sign-out does not end another's sign-in.
  *
- * Types the shared QA seed password: tracing is off (see real-auth.ts).
+ * Types the environment's seed password. Tracing is off (see real-auth.ts).
  */
 import { expect, test, type Page } from '@playwright/test';
-import { AUTH_ORIGIN, authAccountCount, authForm, REAL_AUTH, ssoAccount, WWW_ORIGIN } from './real-auth';
+import { AUTH_ORIGIN, authAccountCount, authForm, REAL_AUTH, REAL_AUTH_SKIP_REASON, ssoAccount, WWW_ORIGIN } from './real-auth';
 
 test.use({ trace: 'off' });
 
@@ -52,8 +52,8 @@ async function videosSignedIn(page: Page): Promise<boolean> {
   return signedIn;
 }
 
-test.describe('SSO journey from www (real QA auth)', () => {
-  test.skip(!REAL_AUTH, 'needs WWW_URL on QA and QA_SEED_PASSWORD (deploy-qa.yml)');
+test.describe('SSO journey from www (real auth)', () => {
+  test.skip(!REAL_AUTH, REAL_AUTH_SKIP_REASON);
   test.skip(({ browserName, isMobile }) => browserName === 'chromium' && isMobile, 'desktop Chromium and the iPhone (WebKit) project cover the engines');
 
   test.describe.configure({ mode: 'default' }); // in order, one worker, a failure does not skip the rest
