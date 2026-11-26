@@ -484,7 +484,7 @@ test('post counts agree with their nouns and Arabic uses ٠–٩: dates, duratio
   await page.goto(at(HOSTS.both, '/ar/posts/post-e2e-1/'));
   await expect(page.getByTestId('site-post').first()).toContainText('٣ إعجابات، تعليق واحد');
   // the author's English text keeps its own direction on the Arabic site (its full stop at the end, not the start)
-  const body = page.locator('[data-testid=site-post] .post-text').first();
+  const body = page.locator('[data-testid=site-post] .post-kind-text p').first();
   await expect(body).toHaveAttribute('dir', 'auto');
   expect(await body.evaluate((e) => getComputedStyle(e).direction)).toBe('ltr');
   expect(await page.locator('.post-date').first().innerText()).not.toMatch(/[0-9]/);
@@ -510,6 +510,40 @@ test('the About page shows its text and links in frosted-glass boxes with a gold
       expect(style.shadow, `${scheme} ${path}`).toMatch(/\) 0px 0px \d+px/);
       const out = await new AxeBuilder({ page }).include('[data-testid=site-about]').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
       expect(out.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`), `${scheme} ${path}`).toEqual([]);
+    }
+  }
+});
+
+test('shared post cards and details keep the localized poll and quiz handoff', async ({ page }) => {
+  for (const locale of ['en', 'ar'] as const) {
+    const handoff = `https://videos.qa.alummahnow.net/${locale}/@mustafa-e2e/community`;
+    await page.goto(at(HOSTS.both, `/${locale}/posts/`));
+    for (const kind of ['poll', 'quiz']) {
+      const card = page.locator(`.post-kind-summary[data-post-kind="${kind}"]`);
+      await expect(card.locator('.post-kind-options li')).toHaveCount(2);
+      await expect(card.getByRole('link')).toHaveAttribute('href', handoff);
+    }
+    for (const [kind, id] of [['poll', 'post-e2e-2'], ['quiz', 'post-e2e-old-1']] as const) {
+      for (const colorScheme of ['light', 'dark'] as const) {
+        await page.emulateMedia({ colorScheme });
+        await page.goto(at(HOSTS.both, `/${locale}/posts/${id}/`));
+        const post = page.getByTestId('site-post');
+        const body = post.locator('.post-kind');
+        await expect(body).toHaveAttribute('data-post-kind', kind);
+        await expect(body).toHaveAttribute('lang', locale);
+        await expect(body).toHaveAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
+        await expect(body.locator('li bdi')).toHaveCount(2);
+        await expect(body.getByRole('link')).toHaveAttribute('href', handoff);
+        await expect(post.locator('.post-engagement a')).toHaveAttribute('href', handoff);
+        const layout = await post.evaluate((el) => {
+          const tokens = ['--accent-text', '--heading', '--line', '--radius-media', '--surface', '--text', '--text-soft'];
+          const style = getComputedStyle(el);
+          return { missing: tokens.filter((token) => !style.getPropertyValue(token).trim()), fits: el.scrollWidth <= el.clientWidth };
+        });
+        expect(layout).toEqual({ missing: [], fits: true });
+        const contrast = await new AxeBuilder({ page }).include('.post-card').withRules(['color-contrast']).analyze();
+        expect(contrast.violations).toEqual([]);
+      }
     }
   }
 });

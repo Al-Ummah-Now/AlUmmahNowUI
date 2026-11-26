@@ -95,7 +95,7 @@ export const POSTS = [
   { id: 'post-e2e-1', channelId: CHANNEL_ID, type: 'text', content: 'A first post from the scholar.\n\nWith a second paragraph.', likes: 3, comments: 1, createdAt: '2026-11-10T10:00:00Z', status: 'published', visibility: 'public' },
   { id: 'post-e2e-2', channelId: CHANNEL_ID, type: 'poll', content: 'Which topic next?', poll: { options: [{ id: 'a', text: 'Fiqh' }, { id: 'b', text: 'Seerah' }] }, likes: 0, comments: 0, createdAt: '2026-11-09T10:00:00Z', status: 'published', visibility: 'public' },
   // Older posts past the first page of 50, so the sitemap has to follow the pages (#1215)
-  ...Array.from({ length: 60 }, (_, i) => ({ id: `post-e2e-old-${i + 1}`, channelId: CHANNEL_ID, type: 'text', content: `Older post ${i + 1}.`, likes: 0, comments: 0, createdAt: new Date(Date.UTC(2026, 9, 30 - Math.floor(i / 2), 10)).toISOString(), status: 'published', visibility: 'public' })),
+  ...Array.from({ length: 60 }, (_, i) => ({ id: `post-e2e-old-${i + 1}`, channelId: CHANNEL_ID, type: i === 0 ? 'quiz' : 'text', ...(i === 0 ? { quiz: { question: 'ما الجواب؟', options: [{ id: 'a', text: 'First answer' }, { id: 'b', text: 'الثاني' }], correctOptionId: 'b' } } : {}), content: `Older post ${i + 1}.`, likes: 0, comments: 0, createdAt: new Date(Date.UTC(2026, 9, 30 - Math.floor(i / 2), 10)).toISOString(), status: 'published', visibility: 'public' })),
 ];
 
 /** A site page with one of every Studio block type (SS16), rendered by the shared page-builder renderer. */

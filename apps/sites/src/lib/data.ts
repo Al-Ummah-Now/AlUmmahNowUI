@@ -12,7 +12,7 @@ import { normalizeImageUrl } from '../../../../packages/render/src/images';
 import type { Locale } from '../../../../packages/render/src/locale';
 import { formatDuration as formatDurationIn } from '../../../../packages/render/src/format';
 import { safeOutsideUrl } from '../../../../packages/render/src/posts/post-kinds';
-import type { PostLinkData } from '../../../../packages/render/src/posts/types';
+import type { PostKind, PostLinkData } from '../../../../packages/render/src/posts/types';
 import type { SitePage } from './site-types';
 
 export const CURSOR = /^[A-Za-z0-9._~:+/=-]{1,512}$/;
@@ -40,8 +40,6 @@ export interface SiteVideo {
   views: number | null;
 }
 
-export type PostKind = 'text' | 'image' | 'poll' | 'quiz' | 'video' | 'gif' | 'article' | 'cards' | 'link';
-
 export interface SitePost {
   id: string;
   kind: PostKind;
@@ -49,7 +47,8 @@ export interface SitePost {
   images: { url: string; alt: string; width: number | null; height: number | null }[];
   videoId: string | null;
   article: { title: string; excerpt: string | null; coverUrl: string | null; url: string | null } | null;
-  options: string[];
+  options: { id: string; text: string }[];
+  question: string | null;
   /** A link post's page (SS14): preview card with image, title and site name. */
   link: PostLinkData | null;
   gif: { url: string; width: number | null; height: number | null } | null;
@@ -128,7 +127,11 @@ export function toSitePost(body: unknown): SitePost | null {
     .filter((x): x is NonNullable<typeof x> => x !== null)
     .slice(0, 10);
   const a = b.article as Record<string, unknown> | undefined;
-  const optionsSource = (b.poll as { options?: unknown } | undefined)?.options ?? (b.quiz as { options?: unknown } | undefined)?.options;
+  const choices = (kind === 'quiz' ? b.quiz : b.poll) as { question?: unknown; options?: unknown } | undefined;
+  const options = (Array.isArray(choices?.options) ? choices.options : []).flatMap((option, index) => {
+    const text = str(option?.text);
+    return text ? [{ id: str(option?.id) ?? String(index), text }] : [];
+  }).slice(0, 10);
   return {
     id: b.id,
     kind,
@@ -147,7 +150,8 @@ export function toSitePost(body: unknown): SitePost | null {
       })
       .filter((x): x is NonNullable<typeof x> => x !== null)
       .slice(0, 40),
-    options: (Array.isArray(optionsSource) ? optionsSource : []).map((o) => str((o as Record<string, unknown>)?.text) ?? '').filter(Boolean).slice(0, 10),
+    options,
+    question: str(choices?.question),
     likes: num(b.likes) ?? 0,
     comments: num(b.comments) ?? 0,
     createdAt: str(b.createdAt) ?? '',
