@@ -24,15 +24,16 @@ const isCards = slides.length > 0;
 // A card post's first card is its image, so its cover isn't shown above it.
 const coverHtml = post.cover && !isCards && !communityKind ? pictureHtml(post.cover, cmsOrigin, { sizes: SIZES.cover, priority: true, className: 'cover' }) : null;
 const t = strings(locale);
+const contentDir = dir(post.locale);
 ---
 <article>
   <header class="page-head">
     <div class="wrap">
       <p><a class="more-link" href={`/${locale}/articles/`}><Icon name="chevron" class="flip" />{t.articles.backToArticles}</a></p>
-      <h1>{post.title}</h1>
-      {post.excerpt && !communityKind && <p class="lede">{post.excerpt}</p>}
+      <h1 lang={post.locale} dir={contentDir}>{post.title}</h1>
+      {post.excerpt && !communityKind && <p class="lede" lang={post.locale} dir={contentDir}>{post.excerpt}</p>}
       <p class="byline">
-        <time datetime={post.published_at}>{formatDate(post.published_at, post.locale)}</time>
+        <time datetime={post.published_at}>{formatDate(post.published_at, locale)}</time>
         {post.author ? (
           <span>{' '}<a rel="author" href={`/${locale}/scholars/${encodeURIComponent(post.author.slug)}/`} data-scholar-byline>{fmt(t.articles.by, { author: post.author.name }, locale)}</a></span>
         ) : (
@@ -49,12 +50,12 @@ const t = strings(locale);
       ) : isCards ? (
         <CardViewer slides={slides} title={post.title} contentLocale={post.locale} locale={locale} initial={Math.min(slide, slides.length - 1)} pathname={pathname} cmsOrigin={cmsOrigin} />
       ) : (
-        <div class="prose" lang={post.locale} dir={dir(post.locale)} set:html={html} />
+        <div class="prose" lang={post.locale} dir={contentDir} set:html={html} />
       )}
       {post.tags.length > 0 && (
         <div class="section-tags">
           <h2 class="visually-hidden">{t.articles.tags}</h2>
-          <ul class="tags">{post.tags.map((tag) => <li>{tag}</li>)}</ul>
+          <ul class="tags" lang={post.locale} dir={contentDir}>{post.tags.map((tag) => <li>{tag}</li>)}</ul>
         </div>
       )}
       {post.ref && (

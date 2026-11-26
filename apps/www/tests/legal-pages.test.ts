@@ -69,6 +69,16 @@ describe('Privacy Policy and Terms of Service pages (AlUmmahNow#1929)', () => {
     expect(builtinContent('ar').pages.privacy!.body).not.toContain('تسجيل الخروج من جميع الجلسات النشطة فورًا');
   });
 
+  it.each([
+    ['en', 'Reporting content without an account', 'daily keyed hashes (HMACs)', 'IPv6 network prefixes (/64 and /48)', 'do not store your raw IP address with the report', 'does not ask for your name or email address', 'counters within two days', 'at least one year, or longer while a case is open or when required by law'],
+    ['ar', 'الإبلاغ عن محتوى دون حساب', 'قيم تجزئة بمفتاح (HMAC) تتغيّر يوميًا', 'بطولي ٦٤ و٤٨ بتًا', 'لا نحفظ عنوان IP بصورته الأصلية مع البلاغ', 'لا يطلب النموذج اسمك أو عنوان بريدك الإلكتروني', 'العدّادات خلال يومين', 'سنة واحدة على الأقل، أو لمدة أطول ما دامت القضية مفتوحة أو إذا اقتضى القانون ذلك'],
+  ] as const)('%s Privacy explains guest network hashing and child-safety preservation', (locale, heading, hash, prefix, ip, contact, counters, retention) => {
+    const body = builtinContent(locale).pages.privacy!.body;
+    const guestSection = body.split(`## ${heading}\n`)[1]?.split('\n## ')[0];
+    for (const text of [hash, prefix, ip, contact, counters]) expect(guestSection).toContain(text);
+    expect(body).toContain(retention);
+  });
+
   it('account deletion is self-service on the account page, with Contact us as the other way, and promises no time for stored files', () => {
     for (const [locale, link, contact, files, not] of [
       ['en', '](/en/delete-account/)', '](/en/contact/)', 'Stored copies of video and image files are not removed at the same moment and can remain afterward.', /for a time|process your request/i],

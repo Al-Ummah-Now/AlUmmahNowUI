@@ -130,6 +130,33 @@ test.describe('pages built from blocks', () => {
 test.describe('card posts', () => {
   test.use({ reducedMotion: 'reduce' });
 
+  for (const [ui, content, slug, uiDir, contentDir, count] of [
+    ['en', 'ar', 'tawhid', 'ltr', 'rtl', '3 cards'],
+    ['ar', 'en', 'a-day-in-madinah', 'rtl', 'ltr', '٥ بطاقات'],
+  ] as const) {
+    test(`${ui}: borrowed ${content} cards keep the UI direction`, async ({ page }) => {
+      const response = await page.goto(`/${ui}/articles/${slug}/`);
+      expect(response?.status()).toBe(200);
+      const main = page.getByRole('main');
+      const back = main.locator(`a[href="/${ui}/articles/"]`);
+      const cardCount = main.locator('.cv-count');
+      const notice = page.getByRole('note');
+      for (const chrome of [main, back, cardCount, main.locator('.byline'), main.locator('.cv-nav'), notice]) {
+        await expect(chrome).toHaveCSS('direction', uiDir);
+      }
+      await expect(back.locator('svg')).toHaveCSS('transform', ui === 'en' ? 'matrix(-1, 0, 0, 1, 0, 0)' : 'none');
+      await expect(cardCount).toHaveText(count);
+      await expect(notice.getByRole('link')).toHaveAttribute('href', `/${content}/articles/${slug}/`);
+      for (const postContent of [main.getByRole('heading', { level: 1 }), main.locator('.cv-stage')]) {
+        await expect(postContent).toHaveAttribute('lang', content);
+        await expect(postContent).toHaveCSS('direction', contentDir);
+      }
+      const canonical = await page.locator('link[rel="canonical"]').getAttribute('href');
+      expect(new URL(canonical!).pathname).toBe(`/${content}/articles/${slug}/`);
+      await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+    });
+  }
+
   test('en: next and back, keys, dots, the address bar, no layout shift', async ({ page }, info) => {
     const res = await page.goto('/en/articles/a-day-in-madinah/');
     expect(res?.status()).toBe(200);

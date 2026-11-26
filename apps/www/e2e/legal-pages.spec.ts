@@ -7,6 +7,11 @@ const TITLES = {
   ar: { privacy: 'سياسة الخصوصية', terms: 'شروط الاستخدام' },
 } as const;
 
+const PRIVACY_DISCLOSURES = {
+  en: { guest: 'Reporting content without an account', hash: 'IPv6 network prefixes (/64 and /48)', retention: 'at least one year' },
+  ar: { guest: 'الإبلاغ عن محتوى دون حساب', hash: 'بطولي ٦٤ و٤٨ بتًا', retention: 'سنة واحدة على الأقل' },
+} as const;
+
 for (const l of LOCALES) {
   for (const slug of ['privacy', 'terms'] as const) {
     test(`${l}: /${l}/${slug}/ renders frosted-glass sections, canonical, hreflang, and passes a11y`, async ({ page }) => {
@@ -21,6 +26,11 @@ for (const l of LOCALES) {
 
       const cards = page.locator('[data-testid="page-sections"] .pb-glass');
       expect(await cards.count()).toBeGreaterThanOrEqual(5);
+      if (slug === 'privacy') {
+        const { guest, hash, retention } = PRIVACY_DISCLOSURES[l];
+        await expect(cards.filter({ has: page.getByRole('heading', { name: guest, exact: true }) })).toContainText(hash);
+        await expect(cards.filter({ hasText: retention })).toBeVisible();
+      }
 
       const canonical = await page.locator('link[rel="canonical"]').getAttribute('href');
       expect(new URL(canonical!).pathname).toBe(`/${l}/${slug}/`);
