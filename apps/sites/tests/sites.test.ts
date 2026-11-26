@@ -167,7 +167,7 @@ describe('content', () => {
     expect(toSiteVideo({ id: 'v1', title: 'A.mp4', channelId: 'ch' })?.title).toBe('A');
     expect(toSiteVideo({ id: 'v1', title: 'A', isPublic: false })).toBeNull();
     expect(toSitePost({ id: 'p1', type: 'text', content: 'x', visibility: 'subscribers' })).toBeNull();
-    expect(toSitePost({ id: 'p1', type: 'poll', content: 'Q', poll: { options: [{ text: 'a' }, { text: 'b' }] } })?.options).toEqual(['a', 'b']);
+    expect(toSitePost({ id: 'p1', type: 'poll', content: 'Q', poll: { options: [{ text: 'a' }, { text: 'b' }] } })?.options).toEqual([{ id: '0', text: 'a' }, { id: '1', text: 'b' }]);
     expect(toSitePost({ id: 'p1', type: 'image', images: [{ url: 'https://evil.example/x.png' }] })?.images).toEqual([]);
   });
 

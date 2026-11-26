@@ -1,20 +1,20 @@
 ---
 import type { SitePost } from '../lib/data';
 import type { PageContext } from '../lib/context';
-import { formatCountNoun } from '../../../../packages/render/src/count-nouns';
-import { formatDate, metaSeparator, plural } from '../../../../packages/render/src/format';
-import PostLinkCard from '../../../../packages/render/src/posts/PostLinkCard.astro';
+import { formatDate, plural } from '../../../../packages/render/src/format';
+import { isArticleKind } from '../../../../packages/render/src/posts/post-kinds';
+import PostKindBody from '../../../../packages/render/src/posts/PostKindBody.astro';
+import PostKindSummary from '../../../../packages/render/src/posts/PostKindSummary.astro';
+import PostEngagement from '../../../../packages/render/src/posts/PostEngagement.astro';
+import { sitePostRenderProps } from '../lib/post-render';
 
 interface Props { ctx: PageContext; post: SitePost; full?: boolean }
 const { ctx, post, full = false } = Astro.props;
 const { locale, t } = ctx;
 const date = post.createdAt ? new Date(post.createdAt) : null;
-const href = `/${locale}/posts/${post.id}/`;
-const paragraphs = (post.text ?? '').split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
-const shown = full ? paragraphs : paragraphs.slice(0, 2);
-const discussion = `${ctx.channelHref}/community`;
-// Arabic joins the parts with «،», never a dot (a dot beside Arabic digits reads as zero)
-const sep = metaSeparator(locale);
+const { body, summary, ref, href, videoHref, paragraphs, preview, hasMore } = sitePostRenderProps(post, ctx);
+const articleKind = isArticleKind(post.kind);
+const origin = ctx.data.apiUrl;
 ---
 <article class="post-card" data-testid="site-post" data-kind={post.kind}>
   {date && <p class="post-date"><a href={href}><time datetime={post.createdAt}>{formatDate(date, locale, { year: 'numeric', month: 'long', day: 'numeric' })}</time></a></p>}
@@ -26,14 +26,11 @@ const sep = metaSeparator(locale);
       {post.article.url && /^https:\/\//.test(post.article.url) && <p><a href={post.article.url}>{t.readArticle}</a></p>}
     </div>
   )}
-  {shown.map((p) => <p class="post-text" dir="auto">{p}</p>)}
-  {post.images.length > 0 && (
-    <div class="post-images">
-      {post.images.slice(0, full ? 10 : 4).map((img) => <img src={img.url} alt={img.alt} loading="lazy" width={img.width ?? undefined} height={img.height ?? undefined} />)}
-    </div>
-  )}
-  {post.gif && (
-    <div class="post-kind-gif"><img src={post.gif.url} alt="" loading="lazy" width={post.gif.width ?? undefined} height={post.gif.height ?? undefined} /></div>
+  {articleKind && (full ? paragraphs : preview).map((p) => <p dir="auto">{p}</p>)}
+  {articleKind && post.images.length > 0 && (
+    <ul class:list={['post-kind-images', post.images.length > 1 && 'post-kind-images-many']}>
+      {(full ? post.images : summary.v2.images).map((img) => <li><img src={img.url} alt={img.alt} loading="lazy" width={img.width ?? undefined} height={img.height ?? undefined} /></li>)}
+    </ul>
   )}
   {post.slides.length > 0 && (
     <ol class="post-slides" data-testid="site-post-slides">
@@ -51,19 +48,9 @@ const sep = metaSeparator(locale);
     </ol>
   )}
   {!full && post.slides.length > 3 && <p><a href={href}>{plural(post.slides.length - 3, t.moreCards, locale)}</a></p>}
-  {post.link && <PostLinkCard link={post.link} locale={locale} compact={!full} />}
-  {post.videoId && (
-    <p><a href={`/${locale}/watch/${post.videoId}/`} class="post-video-link">{t.watchOn}</a></p>
-  )}
-  {post.options.length > 0 && (
-    <div class="post-options">
-      <ul>{post.options.map((o) => <li><bdi>{o}</bdi></li>)}</ul>
-      <p><a href={discussion}>{post.kind === 'quiz' ? t.quizOnPlatform : t.pollOnPlatform}</a></p>
-    </div>
-  )}
-  <p class="post-meta">
-    <span>{formatCountNoun(locale, post.likes, 'like', { compact: true })}</span>{sep}<span>{formatCountNoun(locale, post.comments, 'comment', { compact: true })}</span>
-    {full && <>{sep}<a href={discussion}>{t.joinDiscussion}</a></>}
-    {!full && paragraphs.length > shown.length && <>{sep}<a href={href}>{t.more}</a></>}
-  </p>
+  {!articleKind && (full
+    ? <PostKindBody post={body} locale={locale} cmsOrigin={origin} videosWebUrl={ctx.cfg.videosWebUrl} localVideoHref={videoHref} />
+    : <PostKindSummary post={summary} locale={locale} cmsOrigin={origin} preview={{ paragraphs: preview, videoHref }} />)}
+  {!full && hasMore && <p class="post-kind-action"><a href={href}>{t.more}</a></p>}
+  <PostEngagement postRef={ref} locale={locale} likes={post.likes} comments={post.comments} discussion={full} />
 </article>

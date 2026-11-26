@@ -13,18 +13,22 @@ import { isArticleKind } from './post-kinds';
 import PostLinkCard from './PostLinkCard.astro';
 
 /** `images: false` where the list already shows the post's cover (the home timeline). */
-interface Props { post: PostSummaryLike; locale: Locale; cmsOrigin: string; images?: boolean }
-const { post, locale, cmsOrigin, images: withImages = true } = Astro.props;
+interface Props { post: PostSummaryLike; locale: Locale; cmsOrigin: string; images?: boolean; preview?: { paragraphs: string[]; videoHref: string | null } }
+const { post, locale, cmsOrigin, images: withImages = true, preview } = Astro.props;
 const t = postStrings(locale);
 const v2 = post.v2 ?? null;
 const kind = post.kind ?? 'article';
 const show = !!v2 && !isArticleKind(kind);
 const images = (v2?.images ?? []).map((m) => ({ url: normalizeImageUrl(m.url, [cmsOrigin]), alt: m.alt ?? '' })).filter((m): m is { url: string; alt: string } => !!m.url);
+const gif = preview && kind === 'gif' ? normalizeImageUrl(v2?.gif?.url, [cmsOrigin]) : null;
 const choices = kind === 'poll' ? v2?.poll : kind === 'quiz' ? v2?.quiz : null;
 const more = v2 ? v2.image_count - images.length : 0;
 ---
 {show && (
   <div class="post-kind-summary" lang={post.locale} dir={dir(post.locale)} data-post-kind={kind}>
+    {preview?.paragraphs.map((paragraph) => <p class="post-kind-preview" dir="auto">{paragraph}</p>)}
+    {gif && <p class="post-kind-gif"><img src={gif} alt="" width={v2?.gif?.width ?? undefined} height={v2?.gif?.height ?? undefined} loading="lazy" decoding="async" /></p>}
+    {kind === 'video' && preview?.videoHref && <p class="post-kind-action"><a href={preview.videoHref}>{t.watchVideo}</a></p>}
     {withImages && kind === 'image' && images.length > 0 && (
       <ul class:list={['post-kind-images', images.length > 1 && 'post-kind-images-many']}>
         {images.map((m) => <li><img src={m.url} alt={m.alt} loading="lazy" decoding="async" /></li>)}
@@ -33,7 +37,7 @@ const more = v2 ? v2.image_count - images.length : 0;
     )}
     {choices && choices.options.length > 0 && (
       <ul class="post-kind-options" aria-label={kind === 'poll' ? t.pollOptions : t.quizOptions}>
-        {choices.options.slice(0, 5).map((o) => <li>{o.text}</li>)}
+        {(preview ? choices.options : choices.options.slice(0, 5)).map((o) => <li><bdi>{o.text}</bdi></li>)}
       </ul>
     )}
     {kind === 'link' && v2?.link && <PostLinkCard link={{ ...v2.link, siteName: v2.link.site_name ?? null }} locale={locale} extra={[cmsOrigin]} compact images={withImages} />}
