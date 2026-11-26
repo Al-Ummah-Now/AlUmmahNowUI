@@ -1,22 +1,22 @@
 /**
- * Real QA auth (deploy-qa.yml: WWW_URL is QA and QA_SEED_PASSWORD is set): signed in to auth
- * → www shows the account without a click; two accounts → the menu lists both, switching
- * works, and Sign out walks auth's logout chain back to www.
+ * Real auth on QA and stage. When signed in to auth, www shows the account without a click.
+ * With two accounts, the menu lists both, switching works, and Sign out walks auth's logout
+ * chain back to www.
  *
  * Signing out of all accounts ends both accounts' sign-in everywhere: the spec signs in as its
  * own dedicated accounts (qa-sso-ui-multi-a/-b), never shared seed accounts.
  *
- * Types the shared QA seed password: tracing is off and the password goes in through
+ * Types the environment's seed password. Tracing is off and the password goes in through
  * fillSecret (see real-auth.ts for why).
  */
 import { expect, test } from '@playwright/test';
-import { accountButton, authAccountCount, authForm, notSeededYet, openMenu, REAL_AUTH, ssoAccount, WWW_ORIGIN } from './real-auth';
+import { accountButton, authAccountCount, authForm, notSeededYet, openMenu, REAL_AUTH, REAL_AUTH_SKIP_REASON, ssoAccount, WWW_ORIGIN } from './real-auth';
 import { WWW_URL } from './env';
 
 test.use({ trace: 'off' });
 
-test.describe('signed in to auth (real QA auth)', () => {
-  test.skip(!REAL_AUTH, 'needs WWW_URL on QA and QA_SEED_PASSWORD (deploy-qa.yml)');
+test.describe('signed in to auth (real auth)', () => {
+  test.skip(!REAL_AUTH, REAL_AUTH_SKIP_REASON);
   test.skip(({ browserName, isMobile }) => browserName !== 'chromium' || isMobile, 'one browser is enough');
 
   // This spec's own accounts: no other spec or suite signs in as them (see ssoAccount)
