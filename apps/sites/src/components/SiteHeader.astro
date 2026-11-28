@@ -17,13 +17,13 @@ import { libraryUrl } from '../../../../packages/render/src/embeds';
 import { envBadgeHtml, langButtonHtml, menuButtonHtml, signInHtml } from '../../../../packages/render/src/nav/header.js';
 import { modeIconSvg, modeToggleLabel } from '../../../../packages/render/src/nav/mode-toggle.js';
 import { siteBrandHtml } from '../../../../packages/render/src/site-brand';
-import { safeHttpsUrl, safeRelativeOrHttpsUrl } from '../../../../packages/render/src/urls';
+import { safeBrandImageUrl, safeHttpsUrl } from '../../../../packages/render/src/urls';
 
 interface Props { ctx: PageContext; alternates: Partial<Record<'en' | 'ar', string>>; active?: string }
 const { ctx, alternates, active } = Astro.props;
 const { site, locale, t, cfg } = ctx;
 const name = siteName(site, locale);
-const logo = safeRelativeOrHttpsUrl(site.site.logoUrl || site.channel.avatarUrl);
+const logo = safeBrandImageUrl(site.site.logoUrl || site.channel.avatarUrl);
 const PATHS: Record<Exclude<SiteNavItem['kind'], 'url' | 'page'>, string> = { home: '', videos: 'videos/', shorts: 'videos/?kind=shorts', posts: 'posts/', about: 'about/' };
 const pages = site.site.pages ?? [];
 interface Item { id: string; kind: SiteNavItem['kind']; label: string; href: string; external: boolean }

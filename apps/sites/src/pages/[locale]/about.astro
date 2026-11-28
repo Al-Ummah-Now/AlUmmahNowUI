@@ -3,7 +3,7 @@ import SiteLayout from '../../layouts/SiteLayout.astro';
 import { pageContext } from '../../lib/context';
 import { renderMarkdown } from '../../../../../packages/render/src/markdown';
 import { glassSectionParts } from '../../../../../packages/render/src/glass-sections';
-import { safeHttpsUrl, safeRelativeOrHttpsUrl } from '../../../../../packages/render/src/urls';
+import { safeBrandImageUrl, safeHttpsUrl } from '../../../../../packages/render/src/urls';
 import { alternates, canonicalUrl, siteName } from '../../lib/seo';
 
 const ctx = pageContext(Astro);
@@ -16,7 +16,7 @@ const links = (site.channel.links ?? []).flatMap((l) => {
   const url = safeHttpsUrl(l.url);
   return url ? [{ title: l.title, url }] : [];
 }).slice(0, 12);
-const logo = safeRelativeOrHttpsUrl(site.site.logoUrl || site.channel.avatarUrl);
+const logo = safeBrandImageUrl(site.site.logoUrl || site.channel.avatarUrl);
 ---
 <SiteLayout ctx={ctx} title={t.nav.about} alternates={alternates(site, 'about/')} canonical={canonicalUrl(site, locale, 'about/', ctx.scheme)} active="about">
   <section class="wrap section narrow" data-testid="site-about">

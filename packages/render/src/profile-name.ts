@@ -7,7 +7,7 @@
  * language (displayLabel), so an Arabic page shows the Arabic name.
  */
 import { normalizeImageUrl } from './images';
-import { sanitizeLogError } from './urls';
+import { sanitizeLogError } from './urls.ts';
 
 type Loc = 'en' | 'ar';
 const LOCS: readonly Loc[] = ['en', 'ar'];

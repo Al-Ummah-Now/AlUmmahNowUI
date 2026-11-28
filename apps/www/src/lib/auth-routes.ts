@@ -29,7 +29,7 @@ import type { Config } from './env';
 import { fetchOwnProfile, fetchProfile, mergeProfile } from '../../../../packages/render/src/profile-name';
 import { isLocale, localeFromPath, readCookie } from './locale';
 import { isValidSecret, seal, unseal } from './session';
-import { sanitizeLogError } from '../../../../packages/render/src/urls';
+import { sanitizeLogError } from '../../../../packages/render/src/urls.ts';
 
 const noStore = { 'Cache-Control': 'private, no-store' };
 /**

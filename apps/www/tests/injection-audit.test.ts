@@ -22,6 +22,7 @@ import { playable } from '../src/scripts/timeline-media';
 import { safeOutsideUrl } from '../../../packages/render/src/posts/post-kinds';
 import {
   isSafeRelativePath,
+  safeBrandImageUrl,
   safeHttpsUrl,
   safeHttpUrl,
   safeJsonLd,
@@ -205,6 +206,10 @@ describe('UI-4, UI-5, UI-6, UI-7, UI-8, UI-9, UI-10: Redirects, JSON-LD, images,
     expect(safeHttpsUrl('https://example.com/ok')).toBe('https://example.com/ok');
     expect(safeHttpsUrl('http://example.com/no')).toBeNull();
     expect(safeHttpUrl('http://localhost:8788/ok')).toBe('http://localhost:8788/ok');
+    expect(safeBrandImageUrl('data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=')).toBe('data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=');
+    expect(safeBrandImageUrl('data:image/svg+xml,<svg onload=alert(1)>')).toBeNull();
+    expect(safeBrandImageUrl('data:text/html;base64,PHNjcmlwdD4=')).toBeNull();
+    expect(safeBrandImageUrl('javascript:alert(1)')).toBeNull();
   });
 
   it('www CSP forbids unsafe-inline, unsafe-eval, object embeds, and framing', () => {

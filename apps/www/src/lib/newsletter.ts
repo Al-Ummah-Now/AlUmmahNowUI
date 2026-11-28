@@ -15,7 +15,7 @@
  */
 import type { Config, WwwEnv } from './env';
 import type { Locale } from './locale';
-import { sanitizeLogError } from '../../../../packages/render/src/urls';
+import { sanitizeLogError } from '../../../../packages/render/src/urls.ts';
 
 export type SecretBinding = string | { get(): Promise<string> } | undefined;
 

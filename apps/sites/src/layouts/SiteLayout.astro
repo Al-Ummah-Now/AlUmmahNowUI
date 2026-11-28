@@ -8,7 +8,7 @@ import { renderTheme, THEME_CHROME } from '../lib/theme';
 import { hreflangLinks, jsonLdText, siteJsonLd, siteName } from '../lib/seo';
 import type { PageContext } from '../lib/context';
 import { channelCardUrl, SHARE_CARD, shareCardUrl } from '../../../../packages/render/src/share-card';
-import { safeRelativeOrHttpsUrl } from '../../../../packages/render/src/urls';
+import { safeBrandImageUrl } from '../../../../packages/render/src/urls';
 
 interface Props {
   ctx: PageContext;
@@ -45,7 +45,7 @@ const robots = noindex || !cfg.isProduction || site.preview || site.site.status 
 // Always a 1200x630 card (large link previews): the page's picture, else the site's logo or the
 // channel's avatar, framed by the videos app; else the channel's own card (its banner or avatar)
 const image = shareCardUrl(cfg.videosWebUrl, ogImage || site.site.logoUrl || site.channel.avatarUrl, ogVideoId) || channelCardUrl(cfg.videosWebUrl, site.channel.id);
-const favicon = safeRelativeOrHttpsUrl(site.site.faviconUrl || site.site.logoUrl || site.channel.avatarUrl);
+const favicon = safeBrandImageUrl(site.site.faviconUrl || site.site.logoUrl || site.channel.avatarUrl);
 const ld = [...siteJsonLd(site, locale, ctx.channelHref, scheme), ...jsonLd];
 ---
 <!doctype html>
