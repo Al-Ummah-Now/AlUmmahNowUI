@@ -133,13 +133,15 @@ export const QAF_PASSAGE_URL = 'https://qaf.ai/passages/d9335f69-e54b-59ae-a78c-
 export const QAF_PASSAGE_TEXT = 'الصَّبْرُ عِنْدَ الصَّدْمَةِ الأُولَى، وَبِالصَّبْرِ يُفْتَحُ كُلُّ بَابٍ مُغْلَقٍ.';
 export const QAF_POSTS = (['en', 'ar'] as const).map((locale) => {
   const ar = locale === 'ar';
-  const label = ar ? 'فيض القدير — عبد الرؤوف المناوي، ج ٤، ص ٢٣٣' : 'Fayd al-Qadir — Abd al-Rauf al-Munawi, vol. 4, p. 233';
+  // Stored Studio citation for a passage that spans two printed pages.
+  const label = ar ? 'فيض القدير — عبد الرؤوف المناوي، ج ٤، ص ٢٣٣؛ ج ٤، ص ٢٣٤' : 'Fayd al-Qadir — Abd al-Rauf al-Munawi&#44; vol&#46; 4&#44; p&#46; 233&#59; vol&#46; 4&#44; p&#46; 234';
+  const url = ar ? QAF_PASSAGE_URL.replace('/passages/', '/ar/passages/') : QAF_PASSAGE_URL;
   return {
     id: `qaf-post-${locale}`, channelId: CHANNEL_ID, type: 'article', locale,
     article: {
       title: ar ? 'الصبر عند المصيبة' : 'Patience at the first shock',
       excerpt: ar ? 'نصٌّ من شروح الحديث.' : 'A passage from the hadith commentaries.',
-      body: `> ${QAF_PASSAGE_TEXT.replace('.', '&#46;')}\n\n[${label}](${QAF_PASSAGE_URL})`, locale,
+      body: `> ${QAF_PASSAGE_TEXT.replace('.', '&#46;')}\n\n[${label}](${url})`, locale,
     },
     likes: 0, comments: 0, createdAt: '2026-11-10T10:00:00Z', status: 'published', visibility: 'public',
   };
