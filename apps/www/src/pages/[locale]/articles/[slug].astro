@@ -51,7 +51,8 @@ const [body, site] = await Promise.all([
 const siteSeo = post && ref && site?.kind === 'live' ? sitePostSeo(site.link, post.locale, ref.post_id) : null;
 const alternates = post ? documentAlternates(post, post.alternates, (l, s) => `/${l}/articles/${encodeURIComponent(s)}/`) : {};
 const translated = post && post.locale !== locale;
-const cardSeo = post ? cardPostSeo(post) : null;
+const cardSeo = post && !post.community?.designedCard ? cardPostSeo(post) : null;
+if (post?.community?.designedCard?.quran) Astro.response.headers.set('Cache-Control', 'private, no-store');
 // Never the site's default text: a post with no text of its own is described by its title
 const description = post ? post.seo_description || post.excerpt || cardSeo?.text || plainText(post.body, 180) || post.title : '';
 // `?slide=3` opens a card post on its third card (the server renders it; `#3` is read by the script).

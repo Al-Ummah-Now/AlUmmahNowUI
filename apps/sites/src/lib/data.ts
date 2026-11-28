@@ -45,6 +45,7 @@ export interface SitePost {
   id: string;
   kind: PostKind;
   text: string | null;
+  designedCard?: { quran: boolean };
   images: { url: string; alt: string; width: number | null; height: number | null }[];
   videoId: string | null;
   article: { title: string; excerpt: string | null; coverUrl: string | null; url: string | null } | null;
@@ -136,7 +137,10 @@ export function toSitePost(body: unknown): SitePost | null {
   return {
     id: b.id,
     kind,
-    text: str(b.content),
+    text: typeof b.content === 'string' ? b.content : null,
+    ...(b.designedCard && typeof b.designedCard === 'object' ? {
+      designedCard: { quran: 'quran' in b.designedCard },
+    } : {}),
     images,
     videoId: typeof b.videoId === 'string' && VIDEO_ID.test(b.videoId) ? b.videoId : null,
     article: a && str(a.title) ? { title: str(a.title) as string, excerpt: str(a.excerpt), coverUrl: normalizeImageUrl(str(a.coverUrl)), url: str(a.url) } : null,
@@ -176,7 +180,7 @@ async function cachedJson(deps: DataDeps, url: string): Promise<unknown | null> 
       return null;
     }
     const body = await res.json();
-    if (deps.cache) deps.waitUntil(deps.cache.put(key, new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } })).catch(() => undefined));
+    if (deps.cache && !/\bno-store\b/i.test(res.headers.get('Cache-Control') ?? '')) deps.waitUntil(deps.cache.put(key, new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } })).catch(() => undefined));
     return body;
   } catch (error) {
     deps.log?.('sites: data read failed', { url, error: sanitizeLogError(error) });

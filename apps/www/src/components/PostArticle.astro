@@ -20,6 +20,7 @@ const { post, html, locale, cmsOrigin, slide = 0, pathname = Astro.url.pathname,
 const communityKind = !isArticleKind(post.kind);
 const slides = post.kind === 'cards' && Array.isArray(post.slides) ? post.slides : [];
 const isCards = slides.length > 0;
+const designed = post.community?.designedCard;
 // The cover is the article's LCP image: responsive, sized, eager and high priority (CMS-10).
 // A card post's first card is its image, so its cover isn't shown above it.
 const coverHtml = post.cover && !isCards && !communityKind ? pictureHtml(post.cover, cmsOrigin, { sizes: SIZES.cover, priority: true, className: 'cover' }) : null;
@@ -45,7 +46,13 @@ const contentDir = dir(post.locale);
   </header>
   <div class="section reading">
     <div class="wrap">
-      {communityKind ? (
+      {designed ? (
+        <figure lang={post.locale} dir="auto">
+          {slides[0]?.image.url && <img src={slides[0].image.url} alt={slides[0].image.alt ?? ''} width={slides[0].image.width ?? undefined} height={slides[0].image.height ?? undefined} style="max-width:100%;height:auto" />}
+          <figcaption style="white-space:pre-wrap">{slides[0]?.image.alt ?? post.community?.content}</figcaption>
+          {designed.quran && <a href="https://quran.foundation/">{locale === 'ar' ? 'مؤسسة القرآن' : 'Quran Foundation'}</a>}
+        </figure>
+      ) : communityKind ? (
         <PostKindBody post={post} locale={locale} cmsOrigin={cmsOrigin} videosWebUrl={videosWebUrl} />
       ) : isCards ? (
         <CardViewer slides={slides} title={post.title} contentLocale={post.locale} locale={locale} initial={Math.min(slide, slides.length - 1)} pathname={pathname} cmsOrigin={cmsOrigin} />

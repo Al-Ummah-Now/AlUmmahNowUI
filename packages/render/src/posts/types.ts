@@ -33,6 +33,7 @@ export interface CommunityPostData {
   id: string;
   type: PostKind;
   content?: string;
+  designedCard?: { quran?: { surah: number; ayah: number } };
   images?: { url: string; width?: number; height?: number; caption?: string }[];
   videoId?: string;
   gif?: { url: string; width?: number; height?: number };

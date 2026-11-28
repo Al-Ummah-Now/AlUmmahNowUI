@@ -27,7 +27,9 @@ const origin = ctx.data.apiUrl;
       {safeHttpsUrl(post.article.url) && <p><a href={safeHttpsUrl(post.article.url)!}>{t.readArticle}</a></p>}
     </div>
   )}
-  {articleKind && (full ? paragraphs : preview).map((p) => <p dir="auto">{p}</p>)}
+  {post.designedCard && (post.slides[0]?.alt || post.text) && <p dir="auto" style="white-space:pre-wrap">{post.slides[0]?.alt || post.text}</p>}
+  {post.designedCard?.quran && <p><a href="https://quran.foundation/">{locale === 'ar' ? 'مؤسسة القرآن' : 'Quran Foundation'}</a></p>}
+  {articleKind && !post.designedCard && (full ? paragraphs : preview).map((p) => <p dir="auto">{p}</p>)}
   {articleKind && post.images.length > 0 && (
     <ul class:list={['post-kind-images', post.images.length > 1 && 'post-kind-images-many']}>
       {(full ? post.images : summary.v2.images).map((img) => <li><img src={img.url} alt={img.alt} loading="lazy" width={img.width ?? undefined} height={img.height ?? undefined} /></li>)}
@@ -52,6 +54,6 @@ const origin = ctx.data.apiUrl;
   {!articleKind && (full
     ? <PostKindBody post={body} locale={locale} cmsOrigin={origin} videosWebUrl={ctx.cfg.videosWebUrl} localVideoHref={videoHref} />
     : <PostKindSummary post={summary} locale={locale} cmsOrigin={origin} preview={{ paragraphs: preview, videoHref }} />)}
-  {!full && hasMore && <p class="post-kind-action"><a href={href}>{t.more}</a></p>}
+  {!full && !post.designedCard && hasMore && <p class="post-kind-action"><a href={href}>{t.more}</a></p>}
   <PostEngagement postRef={ref} locale={locale} likes={post.likes} comments={post.comments} discussion={full} />
 </article>
