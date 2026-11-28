@@ -1,0 +1,9 @@
+---
+import type { QafQuote } from './qaf-quote';
+interface Props { quote: QafQuote }
+const { quote } = Astro.props;
+---
+<figure class="qaf-quotation">
+  <blockquote cite={quote.url} lang="ar" dir="rtl">{quote.text}</blockquote>
+  <figcaption dir="auto"><a href={quote.url} rel="noopener noreferrer nofollow">{quote.label}</a></figcaption>
+</figure>

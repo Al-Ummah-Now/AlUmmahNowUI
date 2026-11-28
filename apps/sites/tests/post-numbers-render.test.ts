@@ -98,3 +98,26 @@ describe.each(['en', 'ar'] as const)('shared post rendering in %s', (locale) => 
     expect(detail).toContain('ما السؤال؟');
   });
 });
+
+describe.each(['en', 'ar'] as const)('Qaf quotations in a scholar post (%s)', (locale) => {
+  it.each(['article', 'text'] as const)('renders literal Qaf text and escapes markup in a %s post', async (type) => {
+    const ctx = {
+      cfg: config({ APP_ENV: 'qa' }), site: fixtureSite(), locale, t: strings(locale),
+      data: { apiUrl: 'https://videos.example', cache: null, waitUntil: () => {} },
+      scheme: 'https', channelHref: `https://videos.example/${locale}/@scholar`,
+    };
+    const href = 'https://qaf.ai/passages/d9335f69-e54b-59ae-a78c-50db734b8d50';
+    const label = locale === 'ar' ? 'فيض القدير، ج ٤، ص ٢٣٣' : 'Fayd al-Qadir&#44; vol&#46; 4&#44; p&#46; 233';
+    const quote = `> الصَّبْرُ&#10;  &#60;img src&#61;x onerror&#61;alert&#40;1&#41;&#62; &#42;&#42;نص&#42;&#42;\n\n[${label}](${href})`;
+    const post = toSitePost({ id: 'pst_qaf', type, content: type === 'text' ? quote : '',
+      article: type === 'article' ? { title: 'A quotation', body: quote, locale } : undefined,
+      createdAt: '2026-11-15T10:00:00Z' });
+    const html = await container.renderToString(PostCard, { props: { ctx, post, full: true } });
+    expect(html).toMatch(/<blockquote[^>]*lang="ar"[^>]*dir="rtl"/);
+    expect(html).toContain('الصَّبْرُ\n  &lt;img src=x onerror=alert(1)&gt; **نص**');
+    expect(html).toContain(`href="${href}"`);
+    expect(html).toContain('rel="noopener noreferrer nofollow"');
+    expect(html).not.toContain('<img src=x');
+    expect(html).not.toContain('<strong>نص</strong>');
+  });
+});

@@ -7,6 +7,7 @@ import { safeHttpsUrl } from '../../../../packages/render/src/urls';
 import PostKindBody from '../../../../packages/render/src/posts/PostKindBody.astro';
 import PostKindSummary from '../../../../packages/render/src/posts/PostKindSummary.astro';
 import PostEngagement from '../../../../packages/render/src/posts/PostEngagement.astro';
+import { renderMarkdown } from '../../../../packages/render/src/markdown';
 import { sitePostRenderProps } from '../lib/post-render';
 
 interface Props { ctx: PageContext; post: SitePost; full?: boolean }
@@ -16,6 +17,12 @@ const date = post.createdAt ? new Date(post.createdAt) : null;
 const { body, summary, ref, href, videoHref, paragraphs, preview, hasMore } = sitePostRenderProps(post, ctx);
 const articleKind = isArticleKind(post.kind);
 const origin = ctx.data.apiUrl;
+const articleBody = full && post.article?.body ? renderMarkdown(post.article.body, {
+  renderVideo: (id) => {
+    const href = `/${locale}/watch/${id}/`;
+    return `<p><a href="${href}">${t.nav.videos}</a></p>`;
+  },
+}) : null;
 ---
 <article class="post-card" data-testid="site-post" data-kind={post.kind}>
   {date && <p class="post-date"><a href={href}><time datetime={post.createdAt}>{formatDate(date, locale, { year: 'numeric', month: 'long', day: 'numeric' })}</time></a></p>}
@@ -27,7 +34,8 @@ const origin = ctx.data.apiUrl;
       {safeHttpsUrl(post.article.url) && <p><a href={safeHttpsUrl(post.article.url)!}>{t.readArticle}</a></p>}
     </div>
   )}
-  {articleKind && (full ? paragraphs : preview).map((p) => <p dir="auto">{p}</p>)}
+  {articleBody && <div class="prose post-article-body" lang={post.article?.locale} dir="auto" set:html={articleBody} />}
+  {articleKind && !articleBody && (full ? paragraphs : preview).map((p) => <p dir="auto">{p}</p>)}
   {articleKind && post.images.length > 0 && (
     <ul class:list={['post-kind-images', post.images.length > 1 && 'post-kind-images-many']}>
       {(full ? post.images : summary.v2.images).map((img) => <li><img src={img.url} alt={img.alt} loading="lazy" width={img.width ?? undefined} height={img.height ?? undefined} /></li>)}

@@ -7,7 +7,7 @@
  */
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { exportJWK, generateKeyPair, SignJWT } from 'jose';
-import { STUB_PORT, stubSites, VIDEOS, SHORTS, POSTS, CHANNEL_ID, HOSTS, SITE_PAGE } from './stub-data.ts';
+import { STUB_PORT, stubSites, VIDEOS, SHORTS, POSTS, QAF_POSTS, CHANNEL_ID, HOSTS, SITE_PAGE } from './stub-data.ts';
 
 const ORIGIN = `http://localhost:${STUB_PORT}`;
 const { privateKey, publicKey } = await generateKeyPair('ES256');
@@ -69,7 +69,7 @@ createServer(async (req, res) => {
     if (m) {
       if (m[1] !== CHANNEL_ID) return send(res, 200, { posts: [], pagination: { hasNext: false } });
       if (m[2]) {
-        const post = POSTS.find((x) => x.id === m?.[2]);
+        const post = POSTS.find((x) => x.id === m?.[2]) ?? QAF_POSTS.find((x) => x.id === m?.[2]);
         return post ? send(res, 200, post) : send(res, 404, { error: 'Post not found' });
       }
       // Paged like api-videos (newest first, `total` and `hasNext`)
