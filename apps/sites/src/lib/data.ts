@@ -12,6 +12,7 @@ import { normalizeImageUrl } from '../../../../packages/render/src/images';
 import type { Locale } from '../../../../packages/render/src/locale';
 import { formatDuration as formatDurationIn } from '../../../../packages/render/src/format';
 import { safeOutsideUrl } from '../../../../packages/render/src/posts/post-kinds';
+import { sanitizeLogError } from '../../../../packages/render/src/urls';
 import type { PostKind, PostLinkData } from '../../../../packages/render/src/posts/types';
 import type { SitePage } from './site-types';
 
@@ -178,7 +179,7 @@ async function cachedJson(deps: DataDeps, url: string): Promise<unknown | null> 
     if (deps.cache) deps.waitUntil(deps.cache.put(key, new Response(JSON.stringify(body), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' } })).catch(() => undefined));
     return body;
   } catch (error) {
-    deps.log?.('sites: data read failed', { url, error: String(error) });
+    deps.log?.('sites: data read failed', { url, error: sanitizeLogError(error) });
     return null;
   }
 }
@@ -267,7 +268,7 @@ async function pageJson(deps: DataDeps, url: string, preview: string | null): Pr
       if (!res.ok) return null;
       return ((await res.json()) as { page?: SitePage | null }).page ?? null;
     } catch (error) {
-      deps.log?.('sites: page read failed', { error: String(error) });
+      deps.log?.('sites: page read failed', { error: sanitizeLogError(error) });
       return null;
     }
   }

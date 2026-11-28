@@ -9,7 +9,9 @@ import { DEFAULT_LOCALE, localeFromPath } from '../lib/locale';
 export const prerender = false;
 interface Props { error?: unknown }
 // Logged server-side only; the visitor never sees a stack trace
-console.error(JSON.stringify({ msg: 'render error', path: Astro.url.pathname, error: String(Astro.props.error ?? 'unknown') }));
+import { sanitizeLogError } from '../../../../packages/render/src/urls';
+
+console.error(JSON.stringify({ msg: 'render error', path: Astro.url.pathname, error: sanitizeLogError(Astro.props.error ?? 'unknown') }));
 const locale = localeFromPath(Astro.url.pathname) ?? Astro.locals.locale ?? DEFAULT_LOCALE;
 const { cfg } = runtime(Astro);
 const b = builtinContent(locale);

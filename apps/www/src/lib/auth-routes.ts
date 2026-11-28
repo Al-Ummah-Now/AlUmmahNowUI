@@ -29,6 +29,7 @@ import type { Config } from './env';
 import { fetchOwnProfile, fetchProfile, mergeProfile } from '../../../../packages/render/src/profile-name';
 import { isLocale, localeFromPath, readCookie } from './locale';
 import { isValidSecret, seal, unseal } from './session';
+import { sanitizeLogError } from '../../../../packages/render/src/urls';
 
 const noStore = { 'Cache-Control': 'private, no-store' };
 /**
@@ -74,7 +75,7 @@ export async function callback(request: Request, deps: AuthDeps): Promise<Respon
   if (!isValidSecret(deps.secret)) return notFound();
   const url = new URL(request.url);
   const login = await unseal<LoginState>(deps.secret, readCookie(request.headers.get('Cookie'), LOGIN_COOKIE));
-  const fallback = login?.returnTo ?? '/';
+  const fallback = safeReturnPath(login?.returnTo, '/');
   const clearLogin = clearCookie(LOGIN_COOKIE);
   // The user cancelled or auth refused (prompt=none → error=login_required): back where
   // they came from, unchanged. No error page and no retry, so a silent probe cannot loop.
@@ -107,7 +108,7 @@ export async function callback(request: Request, deps: AuthDeps): Promise<Respon
     if (!res.ok) throw new Error(`token endpoint ${res.status}`);
     tokenJson = (await res.json()) as { access_token?: string };
   } catch (error) {
-    console.warn(JSON.stringify({ msg: 'sign-in: token exchange failed', error: String(error) }));
+    console.warn(JSON.stringify({ msg: 'sign-in: token exchange failed', error: sanitizeLogError(error) }));
     // No answer (network) or auth's trouble (5xx, 429): ask again; a 4xx (bad or used code) is an answer
     return failed(tokenStatus === 0 || tokenStatus === 429 || tokenStatus >= 500);
   }
@@ -117,7 +118,7 @@ export async function callback(request: Request, deps: AuthDeps): Promise<Respon
   try {
     fields = await (deps.verify ?? ((t: string) => sessionFromAccessToken(t, deps.cfg)))(tokenJson.access_token);
   } catch (error) {
-    console.warn(JSON.stringify({ msg: 'sign-in: token rejected', error: String(error) }));
+    console.warn(JSON.stringify({ msg: 'sign-in: token rejected', error: sanitizeLogError(error) }));
     // The keys could not be fetched (auth unreachable) or the token is bad: let the page ask again (capped)
     return failed(true);
   }
@@ -125,7 +126,7 @@ export async function callback(request: Request, deps: AuthDeps): Promise<Respon
   const profile = await fetchOwnProfile(tokenJson.access_token, deps.cfg, deps.fetchImpl);
   const exp = Math.floor((deps.now?.() ?? Date.now()) / 1000) + SESSION_TTL_SEC;
   const session = await seal(deps.secret, { ...fields, exp, v: SESSION_VERSION, profile } satisfies Session);
-  return redirect(login.returnTo, 302, {}, [clearLogin, cookie(SESSION_COOKIE, session, SESSION_TTL_SEC), hintCookie(true)]);
+  return redirect(safeReturnPath(login.returnTo, '/'), 302, {}, [clearLogin, cookie(SESSION_COOKIE, session, SESSION_TTL_SEC), hintCookie(true)]);
 }
 
 export async function readSession(request: Request, secret: string | undefined): Promise<Session | null> {
@@ -164,7 +165,8 @@ export async function logout(request: Request, deps: AuthDeps): Promise<Response
   if (request.method === 'GET') {
     const url = new URL(request.url);
     const next = url.searchParams.get('next');
-    if (next) {
+    // eslint-disable-next-line no-control-regex
+    if (next && !/[\u0000-\u001f\u007f]/.test(next)) {
       try {
         const u = new URL(next);
         if (u.origin === new URL(deps.cfg.authUrl).origin && u.pathname === '/logout') return redirect(u.toString(), 302, {}, clear);

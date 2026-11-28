@@ -15,6 +15,7 @@ import PostCard from './PostCard.astro';
 import { renderMarkdown } from '../../../../packages/render/src/markdown';
 import { normalizeImageUrl } from '../../../../packages/render/src/images';
 import { embedUrl } from '../../../../packages/render/src/embeds';
+import { safeRelativeOrHttpsUrl } from '../../../../packages/render/src/urls';
 import { renderPageBlocks } from '../../../../packages/render/src/page-blocks/page-blocks.generated';
 import { slotHtml, splitSlots } from '../../../../packages/render/src/page-blocks/slots';
 import { channelPosts, channelVideos, playlistVideos, siteVideo, localizedTitle, type SitePost, type SiteVideo } from '../lib/data';
@@ -33,7 +34,7 @@ type Prepared =
   | { slot: true; id: string; kind: 'posts'; posts: SitePost[] }
   | { slot: true; id: string; kind: 'videos'; videos: SiteVideo[] };
 
-const SAFE_HREF = (h: string) => /^https:\/\//.test(h) || /^\/(?!\/)/.test(h);
+const SAFE_HREF = (h: string) => safeRelativeOrHttpsUrl(h) !== null;
 /** A Studio button is a button on the page, not a call-to-action panel. */
 const BUTTON = { align: 'start', width: 'content', tone: 'none', space: 's' } as const;
 /** Studio block ids are free text: the renderer takes [a-z0-9-] ids only, so each gets its position. */

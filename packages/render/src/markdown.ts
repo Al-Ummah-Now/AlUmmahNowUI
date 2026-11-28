@@ -6,6 +6,7 @@
  */
 import MarkdownIt from 'markdown-it';
 import { VIDEO_ID } from './embeds';
+import { safeMarkdownHref, safeMarkdownImgSrc } from './urls';
 
 const DIRECTIVE = /^::video\[([^\]\n]{1,80})\]\s*$/;
 
@@ -43,6 +44,7 @@ const videoRule: BlockRule = (state, startLine, _endLine, silent) => {
 
 export function renderMarkdown(markdown: string, opts: RenderOptions): string {
   const md = new MarkdownIt({ html: false, linkify: true, typographer: false, breaks: false });
+  md.validateLink = (url) => safeMarkdownHref(url);
   md.block.ruler.before('paragraph', 'video_embed', videoRule);
   md.renderer.rules.video_embed = (tokens, idx) => opts.renderVideo(String(tokens[idx]!.meta?.id ?? ''));
 
@@ -62,10 +64,12 @@ export function renderMarkdown(markdown: string, opts: RenderOptions): string {
   };
   md.renderer.rules.image = (tokens, idx, o, env, self) => {
     const token = tokens[idx]!;
+    const src = String(token.attrGet('src') ?? '');
+    if (!safeMarkdownImgSrc(src)) return '';
     // markdown-it's own image rule fills alt from the children; renderToken alone leaves it empty.
     const alt = self.renderInlineAsText(token.children ?? [], o, env);
     token.attrSet('alt', alt);
-    const custom = opts.renderImage?.(String(token.attrGet('src') ?? ''), alt);
+    const custom = opts.renderImage?.(src, alt);
     if (custom) return custom;
     tokens[idx]!.attrSet('loading', 'lazy');
     tokens[idx]!.attrSet('decoding', 'async');

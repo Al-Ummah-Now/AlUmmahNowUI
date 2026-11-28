@@ -5,6 +5,7 @@ import { embedUrl, watchUrl } from './embeds';
 import { isoDuration, type VideoItem } from './videos';
 import { itemThumb, stableImageUrl } from './images';
 import { BRAND_CARD_PATH, shareCardUrl } from './share-card';
+import { safeJsonLd } from '../../../../packages/render/src/urls';
 
 export type Alternates = Partial<Record<Locale, string>>;
 
@@ -168,8 +169,8 @@ export function videoObjectLd(cfg: Config, item: VideoItem, locale: Locale) {
   };
 }
 
-/** JSON for a <script type="application/ld+json">: `<` escaped so content can never close the tag. */
-export const jsonLdText = (data: unknown) => JSON.stringify(data).replace(/</g, '\\u003c');
+/** JSON for a <script type="application/ld+json">: `<`, `>`, `&`, U+2028/U+2029 escaped so content can never break out of the tag. */
+export const jsonLdText = (data: unknown) => safeJsonLd(data);
 
 /**
  * Training-only AI crawlers, blocked on every public host (owner decision D-SEO-8). AI search and

@@ -13,7 +13,7 @@ import type { PostPageLike } from './types';
 import { normalizeImageUrl } from '../images';
 import { watchUrl } from '../embeds';
 import { dir, type Locale } from '../locale';
-import { plainLines } from './post-kinds';
+import { plainLines, safeOutsideUrl } from './post-kinds';
 import PostLinkCard from './PostLinkCard.astro';
 
 interface Props { post: PostPageLike; locale: Locale; cmsOrigin: string; videosWebUrl: string; localVideoHref?: string | null }
@@ -39,6 +39,7 @@ try {
 } catch {
   videoHref = null;
 }
+const channelPostHref = safeOutsideUrl(post.ref?.videos_url);
 const totalVotes = typeof c?.poll?.totalVotes === 'number' ? c.poll.totalVotes : null;
 ---
 <div class="post-kind" lang={lang} dir={dir(lang)} data-post-kind={kind}>
@@ -63,7 +64,7 @@ const totalVotes = typeof c?.poll?.totalVotes === 'number' ? c.poll.totalVotes :
           return <li><bdi>{o.text}</bdi>{pct !== null && <span class="post-kind-pct" dir="ltr">{formatPercent(pct / 100, locale)}</span>}</li>;
         })}
       </ul>
-      <a class="button" href={post.ref?.videos_url}>{t.voteOnChannel}</a>
+      {channelPostHref && <a class="button" href={channelPostHref}>{t.voteOnChannel}</a>}
     </section>
   )}
 
@@ -71,7 +72,7 @@ const totalVotes = typeof c?.poll?.totalVotes === 'number' ? c.poll.totalVotes :
     <section class="post-kind-choices" aria-label={t.quizOptions}>
       {quiz.question && <p class="post-kind-question" dir="auto">{quiz.question}</p>}
       <ul>{quiz.options.map((o) => <li><bdi>{o.text}</bdi></li>)}</ul>
-      <a class="button" href={post.ref?.videos_url}>{t.answerOnChannel}</a>
+      {channelPostHref && <a class="button" href={channelPostHref}>{t.answerOnChannel}</a>}
     </section>
   )}
 

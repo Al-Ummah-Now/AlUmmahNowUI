@@ -21,6 +21,7 @@ import { config, type WwwEnv } from './lib/env';
 import { writeSnapshots } from './lib/snapshot-writer';
 import { passkeyFilesResponse } from './lib/well-known';
 import { withReleaseCheck } from './lib/release-check';
+import { sanitizeLogError } from '../../../packages/render/src/urls';
 
 /** A client never chooses the theme or features header Astro reads. */
 function stripThemeHeader(request: Request): Request {
@@ -73,7 +74,7 @@ export default {
     ctx.waitUntil(
       writeSnapshots({ fetchCms: deps.fetchCms, kv, log: deps.log }).then(
         (r) => console.log(JSON.stringify({ msg: 'content snapshots written', ...r })),
-        (error) => console.error(JSON.stringify({ msg: 'content snapshot run failed', error: String(error) })),
+        (error) => console.error(JSON.stringify({ msg: 'content snapshot run failed', error: sanitizeLogError(error) })),
       ),
     );
   },

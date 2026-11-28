@@ -7,6 +7,7 @@
 import { postStrings } from './strings';
 import { formatCountNoun } from '../count-nouns';
 import { metaSeparator } from '../format';
+import { safeOutsideUrl } from './post-kinds';
 import type { PostRef } from './types';
 import type { Locale } from '../locale';
 
@@ -16,6 +17,7 @@ const t = postStrings(locale);
 // Arabic number agreement, duals and the zero phrase (../count-nouns: the platform's formatCountNoun rules)
 const likeText = typeof likes === 'number' ? formatCountNoun(locale, likes, 'like', { compact: true }) : null;
 const commentText = commentsEnabled && typeof comments === 'number' ? formatCountNoun(locale, comments, 'comment', { compact: true }) : null;
+const discussionHref = safeOutsideUrl(postRef.videos_url);
 ---
 <aside class:list={['post-engagement', !discussion && 'post-engagement-compact']} aria-label={t.engagement} data-post-engagement={postRef.post_id}>
   {(likeText || commentText) && (
@@ -23,5 +25,5 @@ const commentText = commentsEnabled && typeof comments === 'number' ? formatCoun
       {likeText && <span>{likeText}</span>}{likeText && commentText && metaSeparator(locale)}{commentText && <span>{commentText}</span>}
     </p>
   )}
-  {discussion && <a class="button button-quiet" href={postRef.videos_url}>{t.joinDiscussion}</a>}
+  {discussion && discussionHref && <a class="button button-quiet" href={discussionHref}>{t.joinDiscussion}</a>}
 </aside>

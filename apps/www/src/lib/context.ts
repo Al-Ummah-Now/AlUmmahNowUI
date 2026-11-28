@@ -8,6 +8,7 @@ import { env as workerEnv } from 'cloudflare:workers';
 import { config, type WwwEnv } from './env';
 import { articlesPath, isLocale, type Locale } from './locale';
 import type { VideosDeps } from './videos';
+import { isSafeRelativePath, safeHttpsUrl } from '../../../../packages/render/src/urls';
 
 type Ctx = AstroGlobal | APIContext;
 
@@ -58,8 +59,9 @@ export function navigation(site: SiteResponse | null, locale: Locale): { header:
 
 /** CMS nav urls are www-relative without the locale ("/about/"); absolute https passes through. */
 export function navHref(url: string, locale: Locale): string | null {
-  if (/^https:\/\//i.test(url)) return url;
-  if (!url.startsWith('/') || url.startsWith('//')) return null;
+  const abs = safeHttpsUrl(url);
+  if (abs) return abs;
+  if (!isSafeRelativePath(url)) return null;
   // menus saved before News became Articles link "/news/": go straight to /articles/, no 301 hop
   const path = articlesPath(url) ?? url;
   if (/^\/(en|ar)(\/|$)/.test(path)) return path;

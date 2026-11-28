@@ -19,6 +19,7 @@ import { initFacades } from './facade';
 import { initSearchBoxes } from './search-combobox';
 import { fitBrand } from '../../../../packages/render/src/brand-fit';
 import { fitToViewport } from '../../../../packages/render/src/menu-fit';
+import { safeRelativeOrHttpsUrl } from '../../../../packages/render/src/urls';
 import { initTheme } from './theme';
 import { startStreet } from '../../../../packages/render/src/themes/fanous-street.generated.js';
 import {
@@ -212,8 +213,9 @@ function buildMenu(root: HTMLElement, me: Me, result: AccountsResult, focusButto
   // Avatar: the photo, else the name's first letter (docs/design/NAV.md in AlUmmahNow)
   const avatarEl = (src: string | null | undefined, text: string, size = '') => {
     const letter = el('span', { class: `account-avatar aun-avatar ${size}`.trim(), 'aria-hidden': 'true' }, (Array.from(text.trim())[0] ?? '?').toUpperCase());
-    if (!src) return letter;
-    const img = el('img', { class: `account-avatar aun-avatar ${size}`.trim(), src, alt: '', width: '24', height: '24', decoding: 'async', referrerpolicy: 'no-referrer' });
+    const safeSrc = safeRelativeOrHttpsUrl(src);
+    if (!safeSrc) return letter;
+    const img = el('img', { class: `account-avatar aun-avatar ${size}`.trim(), src: safeSrc, alt: '', width: '24', height: '24', decoding: 'async', referrerpolicy: 'no-referrer' });
     img.addEventListener('error', () => img.replaceWith(letter), { once: true });
     return img;
   };

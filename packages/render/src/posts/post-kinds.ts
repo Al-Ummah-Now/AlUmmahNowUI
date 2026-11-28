@@ -25,9 +25,10 @@ export function plainLines(content: string): string[] {
     .filter(Boolean);
 }
 
-/** An outside link's URL when it is http(s), else null (javascript:, data: and the like are dropped). */
+/** An outside link's URL when it is http(s) without control chars, else null (javascript:, data: and the like are dropped). */
 export function safeOutsideUrl(raw: string | null | undefined): string | null {
-  if (!raw) return null;
+  // eslint-disable-next-line no-control-regex
+  if (!raw || /[\u0000-\u001f\u007f]/.test(raw)) return null;
   try {
     const u = new URL(raw);
     return u.protocol === 'https:' || u.protocol === 'http:' ? u.toString() : null;

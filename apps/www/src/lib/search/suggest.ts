@@ -5,6 +5,7 @@
  * submits to the full search.
  */
 import type { Locale } from '../locale';
+import { safeHttpsUrl } from '../../../../../packages/render/src/urls';
 
 export interface SearchHit {
   id: number;
@@ -34,8 +35,9 @@ export const SEARCH_PAGE_SIZE = 10;
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
 const strOrNull = (v: unknown) => v === null || typeof v === 'string';
 
-/** A www-relative path (never another origin, never javascript:). */
-export const isSafeHref = (v: unknown): v is string => typeof v === 'string' && /^\/(?:en|ar)\/[^\s\\]*$/.test(v) && !v.startsWith('//');
+/** A www-relative path (never another origin, never javascript:, never control chars). */
+// eslint-disable-next-line no-control-regex
+export const isSafeHref = (v: unknown): v is string => typeof v === 'string' && !/[\u0000-\u001f\u007f]/.test(v) && /^\/(?:en|ar)\/[^\s\\]*$/.test(v) && !v.startsWith('//');
 
 export function isSearchHit(v: unknown): v is SearchHit {
   return (
@@ -46,7 +48,7 @@ export function isSearchHit(v: unknown): v is SearchHit {
     typeof v.slug === 'string' &&
     (v.locale === 'en' || v.locale === 'ar') &&
     isSafeHref(v.href) &&
-    (v.thumbnailUrl === null || (typeof v.thumbnailUrl === 'string' && v.thumbnailUrl.startsWith('https://'))) &&
+    (v.thumbnailUrl === null || (typeof v.thumbnailUrl === 'string' && safeHttpsUrl(v.thumbnailUrl) !== null)) &&
     strOrNull(v.excerpt) &&
     typeof v.publishedAt === 'string'
   );
@@ -95,7 +97,7 @@ export function scholarHitsOf(v: unknown, locale: Locale): SearchHit[] | null {
   const out: SearchHit[] = [];
   v.forEach((r, i) => {
     if (!isObj(r) || r.type !== 'scholar' || typeof r.slug !== 'string' || typeof r.title !== 'string' || !isSafeHref(r.href)) return;
-    const thumb = typeof r.thumbnailUrl === 'string' && r.thumbnailUrl.startsWith('https://') ? r.thumbnailUrl : null;
+    const thumb = typeof r.thumbnailUrl === 'string' ? safeHttpsUrl(r.thumbnailUrl) : null;
     out.push({ id: -(i + 1), type: 'scholar', title: r.title, slug: r.slug, locale, href: r.href, thumbnailUrl: thumb, excerpt: null, publishedAt: '' });
   });
   return out;

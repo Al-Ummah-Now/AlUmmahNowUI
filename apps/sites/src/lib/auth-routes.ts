@@ -80,20 +80,21 @@ export async function callback(ctx: Ctx, fetcher: typeof fetch = fetch, getKey?:
   const state = await unseal<LoginState>(env.SESSION_SECRET, readCookie(ctx.request.headers.get('Cookie'), LOGIN_COOKIE));
   const clearLogin = clearCookie(LOGIN_COOKIE);
   const code = ctx.url.searchParams.get('code');
-  if (!state || !code || ctx.url.searchParams.get('state') !== state.state) return redirect(state?.returnTo ?? home, [clearLogin]);
+  const back = safeReturnPath(state?.returnTo, home);
+  if (!state || !code || ctx.url.searchParams.get('state') !== state.state) return redirect(back, [clearLogin]);
   const tokens = await exchangeCode(cfg, ctx.url.origin, code, state.verifier, fetcher).catch(() => null);
-  if (!tokens) return redirect(state.returnTo, [clearLogin]);
+  if (!tokens) return redirect(back, [clearLogin]);
   let account: Awaited<ReturnType<typeof accountFromAccessToken>>;
   try {
     account = await accountFromAccessToken(tokens.access_token, cfg, getKey);
   } catch {
-    return redirect(state.returnTo, [clearLogin]);
+    return redirect(back, [clearLogin]);
   }
   // The user's own profile (names per language, as on www): best effort, never blocks sign-in
   const profile = await fetchOwnProfile(tokens.access_token, cfg, fetcher);
   const now = Math.floor(Date.now() / 1000);
   const session: SiteSession = { ...account, profile, rt: tokens.refresh_token, checked: now, exp: now + SESSION_TTL_SEC };
-  return redirect(state.returnTo, [clearLogin, cookie(SESSION_COOKIE, await seal(env.SESSION_SECRET, session as never), SESSION_TTL_SEC), hintCookie(true)], 303);
+  return redirect(back, [clearLogin, cookie(SESSION_COOKIE, await seal(env.SESSION_SECRET, session as never), SESSION_TTL_SEC), hintCookie(true)], 303);
 }
 
 /**

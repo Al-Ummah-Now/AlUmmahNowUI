@@ -19,6 +19,7 @@
  */
 
 import { fill as fillFor, pageLang } from '../../../../packages/render/src/format';
+import { safeHttpsUrl } from '../../../../packages/render/src/urls';
 
 /** The channel's name in the page's language, else its default name, else any language's. */
 export function channelNameFor(info: Pick<PlayInfo, 'channelName' | 'channelNameLocalized'>, lang: string): string {
@@ -66,7 +67,7 @@ const fill = (s: string, v: Record<string, string | number>) => fillFor(s, v, pa
 export function playable(info: unknown): info is PlayInfo & { mp4: { url: string } } {
   if (!info || typeof info !== 'object') return false;
   const i = info as Partial<PlayInfo>;
-  return typeof i.id === 'string' && typeof i.title === 'string' && !!i.mp4 && typeof i.mp4.url === 'string' && /^https:\/\//.test(i.mp4.url);
+  return typeof i.id === 'string' && typeof i.title === 'string' && !!i.mp4 && safeHttpsUrl(i.mp4.url) !== null;
 }
 
 /** The next page of Shorts: valid items only (the viewer skips anything it cannot play). */
@@ -119,7 +120,12 @@ function initPrefetch(root: HTMLElement, api: string) {
 function setMute(btn: HTMLButtonElement, muted: boolean, t: DOMStringMap, withLabel: boolean) {
   btn.setAttribute('aria-pressed', String(!muted));
   btn.setAttribute('aria-label', muted ? t.tUnmute ?? '' : t.tMute ?? '');
-  btn.innerHTML = (muted ? ICON.off : ICON.on) + (withLabel ? `<span>${muted ? t.tSoundOff ?? '' : t.tSoundOn ?? ''}</span>` : '');
+  btn.innerHTML = muted ? ICON.off : ICON.on;
+  if (withLabel) {
+    const span = document.createElement('span');
+    span.textContent = muted ? t.tSoundOff ?? '' : t.tSoundOn ?? '';
+    btn.append(span);
+  }
 }
 function setPlay(btn: HTMLButtonElement, playing: boolean, playLabel: string, pauseLabel: string) {
   btn.setAttribute('aria-label', playing ? pauseLabel : playLabel);
@@ -161,7 +167,8 @@ function initPreview(root: HTMLElement, api: string) {
     v.preload = 'auto';
     v.setAttribute('aria-hidden', 'true');
     v.disablePictureInPicture = true;
-    if (info.poster) v.poster = info.poster;
+    const safePoster = safeHttpsUrl(info.poster);
+    if (safePoster) v.poster = safePoster;
     v.src = info.mp4.url;
     // A file the CDN does not have (an old import without that rendition): keep the poster, no
     // controls; a click then opens the videos site's player in place (the facade)
@@ -379,13 +386,19 @@ function initShorts(root: HTMLElement, api: string) {
           <span class="sv-prog" aria-hidden="true"><i></i></span></div>`;
         const v = item.querySelector('video')!;
         v.src = info.mp4!.url;
-        if (info.poster) v.poster = info.poster;
+        const safePoster = safeHttpsUrl(info.poster);
+        if (safePoster) v.poster = safePoster;
         item.querySelector('.sv-title')!.textContent = info.title;
         item.querySelector('.sv-meta span')!.textContent = channelNameFor(info, document.documentElement.lang);
         const watch = item.querySelector<HTMLAnchorElement>('.sv-watch')!;
         // the API's watch link is English; the viewer speaks the page's language
-        watch.href = document.documentElement.lang === 'ar' ? info.watchUrl.replace('/en/', '/ar/') : info.watchUrl;
-        watch.textContent = this.s.tWatchOn ?? '';
+        const safeWatch = safeHttpsUrl(info.watchUrl);
+        if (safeWatch) {
+          watch.href = document.documentElement.lang === 'ar' ? safeWatch.replace('/en/', '/ar/') : safeWatch;
+          watch.textContent = this.s.tWatchOn ?? '';
+        } else {
+          watch.remove();
+        }
         const bar = item.querySelector<HTMLElement>('.sv-prog i')!;
         v.addEventListener('timeupdate', () => {
           if (v.duration) bar.style.inlineSize = `${(v.currentTime / v.duration) * 100}%`;
