@@ -6,7 +6,7 @@
  */
 import MarkdownIt from 'markdown-it';
 import { VIDEO_ID } from './embeds';
-import { safeMarkdownHref, safeMarkdownImgSrc } from './urls';
+import { safeMarkdownHref, safeMarkdownImgSrc } from './urls.ts';
 
 const DIRECTIVE = /^::video\[([^\]\n]{1,80})\]\s*$/;
 

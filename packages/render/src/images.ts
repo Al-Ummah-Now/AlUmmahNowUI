@@ -3,7 +3,7 @@
  * so an image either renders or is dropped; it never trips the CSP).
  * Video thumbnails come from the videos platform's CDNs.
  */
-import { safeRelativeOrHttpUrl } from './urls';
+import { safeRelativeOrHttpUrl } from './urls.ts';
 
 // media.* are the platform's own R2 media domains: the play API answers posters (thumb.jpg) there
 // once a video has R2 renditions (AlUmmahNow r2-delivery); without them the browser blocks the poster.

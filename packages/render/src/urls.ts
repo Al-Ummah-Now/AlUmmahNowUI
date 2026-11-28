@@ -66,6 +66,22 @@ export function safeRelativeOrHttpUrl(raw: string | null | undefined): string | 
   return safeHttpUrl(v);
 }
 
+const SAFE_DATA_IMAGE_BASE64 = /^data:image\/(?:png|jpeg|webp|avif|gif|svg\+xml);base64,[A-Za-z0-9+/=]+$/;
+
+/**
+ * Safe image URL for scholar site brand logos/favicons rendered only inside `<img src>` or
+ * `<link rel="icon">` (matching sites CSP `img-src 'self' data: https://...`): clean relative
+ * path, `https://`, or strictly base64-encoded `data:image/*;base64,...` (never `data:text/html`,
+ * never raw unencoded SVG, never `javascript:`, no control chars).
+ */
+export function safeBrandImageUrl(raw: string | null | undefined): string | null {
+  if (typeof raw !== 'string' || CTRL.test(raw)) return null;
+  const v = raw.trim();
+  if (!v || /\s/.test(v)) return null;
+  if (v.length <= 32_768 && SAFE_DATA_IMAGE_BASE64.test(v)) return v;
+  return safeRelativeOrHttpsUrl(v);
+}
+
 /**
  * Strict Markdown link allowlist (UI-1): `http:`, `https:`, `mailto:`, safe relative path `/...`,
  * or fragment `#...` only. Drops `javascript:`, `vbscript:`, `data:`, `file:`, `ftp:`, `tel:`,
