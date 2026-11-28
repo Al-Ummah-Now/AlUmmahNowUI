@@ -47,7 +47,7 @@ export interface SitePost {
   text: string | null;
   images: { url: string; alt: string; width: number | null; height: number | null }[];
   videoId: string | null;
-  article: { title: string; excerpt: string | null; coverUrl: string | null; url: string | null } | null;
+  article: { title: string; excerpt: string | null; coverUrl: string | null; url: string | null; body?: string; locale?: Locale } | null;
   options: { id: string; text: string }[];
   question: string | null;
   /** A link post's page (SS14): preview card with image, title and site name. */
@@ -139,7 +139,10 @@ export function toSitePost(body: unknown): SitePost | null {
     text: str(b.content),
     images,
     videoId: typeof b.videoId === 'string' && VIDEO_ID.test(b.videoId) ? b.videoId : null,
-    article: a && str(a.title) ? { title: str(a.title) as string, excerpt: str(a.excerpt), coverUrl: normalizeImageUrl(str(a.coverUrl)), url: str(a.url) } : null,
+    article: a && str(a.title) ? {
+      title: str(a.title) as string, excerpt: str(a.excerpt), coverUrl: normalizeImageUrl(str(a.coverUrl)), url: str(a.url),
+      body: typeof a.body === 'string' ? a.body : undefined, locale: a.locale === 'ar' || a.locale === 'en' ? a.locale : undefined,
+    } : null,
     link: toLink(b.link),
     gif: toGif(b.gif),
     slides: (Array.isArray(b.slides) ? b.slides : [])

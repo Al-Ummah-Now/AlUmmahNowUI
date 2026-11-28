@@ -26,3 +26,25 @@
 .post-kind-action { margin: 0; }
 .post-engagement { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-block-start: 2rem; padding-block-start: 1rem; border-block-start: 1px solid var(--line); }
 .post-engagement-counts { margin: 0; color: var(--text-soft); }
+
+.qaf-quotation {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-media);
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+figure.qaf-quotation blockquote {
+  margin: 0;
+  padding-inline-start: 0.75rem;
+  border-inline-start: 3px solid var(--line);
+  white-space: pre-wrap;
+  text-align: start;
+}
+.qaf-quotation figcaption {
+  font-size: 0.875rem;
+  text-align: start;
+}

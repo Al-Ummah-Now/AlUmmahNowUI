@@ -128,3 +128,19 @@ export const SITE_PAGE = {
     ],
   },
 };
+
+export const QAF_PASSAGE_URL = 'https://qaf.ai/passages/d9335f69-e54b-59ae-a78c-50db734b8d50';
+export const QAF_PASSAGE_TEXT = 'الصَّبْرُ عِنْدَ الصَّدْمَةِ الأُولَى، وَبِالصَّبْرِ يُفْتَحُ كُلُّ بَابٍ مُغْلَقٍ.';
+export const QAF_POSTS = (['en', 'ar'] as const).map((locale) => {
+  const ar = locale === 'ar';
+  const label = ar ? 'فيض القدير — عبد الرؤوف المناوي، ج ٤، ص ٢٣٣' : 'Fayd al-Qadir — Abd al-Rauf al-Munawi, vol. 4, p. 233';
+  return {
+    id: `qaf-post-${locale}`, channelId: CHANNEL_ID, type: 'article', locale,
+    article: {
+      title: ar ? 'الصبر عند المصيبة' : 'Patience at the first shock',
+      excerpt: ar ? 'نصٌّ من شروح الحديث.' : 'A passage from the hadith commentaries.',
+      body: `> ${QAF_PASSAGE_TEXT.replace('.', '&#46;')}\n\n[${label}](${QAF_PASSAGE_URL})`, locale,
+    },
+    likes: 0, comments: 0, createdAt: '2026-11-10T10:00:00Z', status: 'published', visibility: 'public',
+  };
+});

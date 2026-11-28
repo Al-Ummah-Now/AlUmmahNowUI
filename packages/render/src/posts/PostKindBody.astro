@@ -14,6 +14,8 @@ import { normalizeImageUrl } from '../images';
 import { watchUrl } from '../embeds';
 import { dir, type Locale } from '../locale';
 import { plainLines, safeOutsideUrl } from './post-kinds';
+import { splitQafQuotes, type QafQuote } from './qaf-quote';
+import QafQuotation from './QafQuotation.astro';
 import PostLinkCard from './PostLinkCard.astro';
 
 interface Props { post: PostPageLike; locale: Locale; cmsOrigin: string; videosWebUrl: string; localVideoHref?: string | null }
@@ -24,7 +26,9 @@ const v2 = post.v2 ?? null;
 const kind = post.kind ?? 'text';
 const lang = post.locale;
 const extra = [cmsOrigin];
-const text = c?.content ? plainLines(c.content) : v2?.text ? [v2.text] : [];
+const text = splitQafQuotes(c?.content ?? v2?.text ?? '').flatMap<string | QafQuote>(
+  (part) => typeof part === 'string' ? (c?.content ? plainLines(part) : [part]) : [part],
+);
 const images = (c?.images ?? v2?.images ?? [])
   .map((i) => ({ url: normalizeImageUrl(i.url, extra), alt: ('caption' in i ? i.caption : 'alt' in i ? i.alt : null) ?? '', width: i.width ?? null, height: i.height ?? null }))
   .filter((i): i is { url: string; alt: string; width: number | null; height: number | null } => !!i.url);
@@ -43,7 +47,7 @@ const channelPostHref = safeOutsideUrl(post.ref?.videos_url);
 const totalVotes = typeof c?.poll?.totalVotes === 'number' ? c.poll.totalVotes : null;
 ---
 <div class="post-kind" lang={lang} dir={dir(lang)} data-post-kind={kind}>
-  {text.length > 0 && <div class="prose post-kind-text">{text.map((p) => <p dir="auto">{p}</p>)}</div>}
+  {text.length > 0 && <div class="prose post-kind-text">{text.map((p) => typeof p === 'string' ? <p dir="auto">{p}</p> : <QafQuotation quote={p} />)}</div>}
 
   {kind === 'image' && images.length > 0 && (
     <ul class:list={['post-kind-images', images.length > 1 && 'post-kind-images-many']}>

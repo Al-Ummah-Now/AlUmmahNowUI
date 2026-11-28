@@ -46,3 +46,18 @@ describe('markdown', () => {
     expect(plainText('a'.repeat(300), 10)).toHaveLength(10);
   });
 });
+
+it('renders a Qaf citation from Markdown as an escaped, literal quotation', () => {
+  const qaf = 'https://qaf.ai/passages/d9335f69-e54b-59ae-a78c-50db734b8d50';
+  const markdown = `> &#60;script&#62;نَصٌّ&#60;&#47;script&#62; &#38; &#42;نص&#42;\n\n[كتاب &#60;اسم&#62;](${qaf})`;
+  const html = render(markdown);
+  expect(html).toContain('&lt;script&gt;نَصٌّ&lt;/script&gt; &amp; *نص*');
+  expect(html).toContain('كتاب &lt;اسم&gt;');
+  expect(html).not.toContain('<script>');
+  expect(html).toContain('rel="noopener noreferrer nofollow"');
+  for (const url of ['javascript:alert(1)', 'data:text/html,a', 'https://qaf.ai.example/bad']) {
+    const untrusted = render(`> نص\n\n[المصدر](${url})`);
+    expect(untrusted).not.toContain('class="qaf-quotation"');
+    if (!url.startsWith('https:')) expect(untrusted).not.toContain(`href="${url}"`);
+  }
+});

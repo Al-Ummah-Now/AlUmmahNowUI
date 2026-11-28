@@ -1,4 +1,5 @@
 import { plainLines } from '../../../../packages/render/src/posts/post-kinds';
+import { splitQafQuotes } from '../../../../packages/render/src/posts/qaf-quote';
 import type { PostPageLike, PostRef } from '../../../../packages/render/src/posts/types';
 import type { PageContext } from './context';
 import type { SitePost } from './data';
@@ -12,7 +13,8 @@ export function sitePostRenderProps(post: SitePost, ctx: PageContext) {
   };
   const href = `/${locale}/posts/${post.id}/`;
   const videoHref = post.videoId ? `/${locale}/watch/${post.videoId}/` : null;
-  const paragraphs = plainLines(post.text ?? '');
+  const paragraphs = splitQafQuotes(post.text ?? '').flatMap((part) =>
+    typeof part === 'string' ? plainLines(part) : [part.text, part.label]);
   const preview = paragraphs.slice(0, 2);
   const choices = post.options.length ? { question: post.question ?? '', options: post.options } : null;
   const link = post.link && { ...post.link, site_name: post.link.siteName };
@@ -35,5 +37,5 @@ export function sitePostRenderProps(post: SitePost, ctx: PageContext) {
 
   const summary = { locale, kind: post.kind, ref, v2: { ...body.v2, images: post.images.slice(0, 4) } };
 
-  return { body, summary, ref, href, videoHref, paragraphs, preview, hasMore: paragraphs.length > preview.length };
+  return { body, summary, ref, href, videoHref, paragraphs, preview, hasMore: !!post.article?.body || paragraphs.length > preview.length };
 }

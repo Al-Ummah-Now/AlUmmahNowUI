@@ -5,6 +5,7 @@
  * Heading levels shift down by one: the page title is the only h1.
  */
 import MarkdownIt from 'markdown-it';
+import { parseQafQuote } from './posts/qaf-quote.ts';
 import { VIDEO_ID } from './embeds';
 import { safeMarkdownHref, safeMarkdownImgSrc } from './urls.ts';
 
@@ -42,9 +43,39 @@ const videoRule: BlockRule = (state, startLine, _endLine, silent) => {
   return true;
 };
 
+const qafRule: BlockRule = (state, start, end, silent) => {
+  if (start + 2 >= end) return false;
+  const line = (i: number) => state.src.slice(state.bMarks[i]! + state.tShift[i]!, state.eMarks[i]);
+  if (!line(start).startsWith('> ') || line(start + 1) || (start + 3 < end && line(start + 3))) return false;
+  const quote = parseQafQuote(`${line(start)}\n\n${line(start + 2)}`);
+  if (!quote || !state.md.validateLink(quote.url)) return false;
+  if (silent) return true;
+
+  // Use MarkdownIt's standard text and link renderers so decoded entities stay literal.
+  const push = (type: string, tag: string, nesting: -1 | 0 | 1) => {
+    const token = state.push(type, tag, nesting);
+    token.block = false;
+    return token;
+  };
+  push('figure_open', 'figure', 1).attrSet('class', 'qaf-quotation');
+  const blockquote = push('blockquote_open', 'blockquote', 1);
+  blockquote.attrs = [['cite', quote.url], ['lang', 'ar'], ['dir', 'rtl']];
+  push('text', '', 0).content = quote.text;
+  push('blockquote_close', 'blockquote', -1);
+  push('figcaption_open', 'figcaption', 1).attrSet('dir', 'auto');
+  push('link_open', 'a', 1).attrs = [['href', quote.url], ['rel', 'noopener noreferrer nofollow']];
+  push('text', '', 0).content = quote.label;
+  push('link_close', 'a', -1);
+  push('figcaption_close', 'figcaption', -1);
+  push('figure_close', 'figure', -1);
+  state.line = start + 3;
+  return true;
+};
+
 export function renderMarkdown(markdown: string, opts: RenderOptions): string {
   const md = new MarkdownIt({ html: false, linkify: true, typographer: false, breaks: false });
   md.validateLink = (url) => safeMarkdownHref(url);
+  md.block.ruler.before('blockquote', 'qaf_quotation', qafRule);
   md.block.ruler.before('paragraph', 'video_embed', videoRule);
   md.renderer.rules.video_embed = (tokens, idx) => opts.renderVideo(String(tokens[idx]!.meta?.id ?? ''));
 
@@ -59,7 +90,7 @@ export function renderMarkdown(markdown: string, opts: RenderOptions): string {
   };
   md.renderer.rules.link_open = (tokens, idx, o, _env, self) => {
     const href = String(tokens[idx]!.attrGet('href') ?? '');
-    if (/^https?:\/\//i.test(href)) tokens[idx]!.attrSet('rel', 'noopener noreferrer');
+    if (/^https?:\/\//i.test(href) && !tokens[idx]!.attrGet('rel')) tokens[idx]!.attrSet('rel', 'noopener noreferrer');
     return self.renderToken(tokens, idx, o);
   };
   md.renderer.rules.image = (tokens, idx, o, env, self) => {
