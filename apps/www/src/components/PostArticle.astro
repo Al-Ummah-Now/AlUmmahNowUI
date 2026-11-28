@@ -6,6 +6,7 @@ import { fmt, formatDate, strings } from '../i18n';
 import type { Post } from '../lib/cms-types';
 import { dir, type Locale } from '../lib/locale';
 import { pictureHtml, SIZES } from '../lib/picture';
+import { quranCardCredit } from '../../../../packages/render/src/posts/quran-card-credit';
 import { isArticleKind } from '../../../../packages/render/src/posts/post-kinds';
 import PostEngagement from '../../../../packages/render/src/posts/PostEngagement.astro';
 import PostKindBody from '../../../../packages/render/src/posts/PostKindBody.astro';
@@ -21,6 +22,7 @@ const communityKind = !isArticleKind(post.kind);
 const slides = post.kind === 'cards' && Array.isArray(post.slides) ? post.slides : [];
 const isCards = slides.length > 0;
 const designed = post.community?.designedCard;
+const quran = designed?.quran ? quranCardCredit(post.community?.content, post.locale) : null;
 // The cover is the article's LCP image: responsive, sized, eager and high priority (CMS-10).
 // A card post's first card is its image, so its cover isn't shown above it.
 const coverHtml = post.cover && !isCards && !communityKind ? pictureHtml(post.cover, cmsOrigin, { sizes: SIZES.cover, priority: true, className: 'cover' }) : null;
@@ -47,10 +49,10 @@ const contentDir = dir(post.locale);
   <div class="section reading">
     <div class="wrap">
       {designed ? (
-        <figure lang={post.locale} dir="auto">
-          {slides.map(({ image }) => <img src={image.url} alt={image.alt ?? ''} width={image.width ?? undefined} height={image.height ?? undefined} style="max-width:100%;height:auto" />)}
-          <figcaption style="white-space:pre-wrap">{designed.quran ? post.community?.content : slides.map(({ image }) => image.alt).join("\n\n") || post.community?.content}</figcaption>
-          {designed.quran && <a href="https://quran.foundation/">{locale === 'ar' ? 'مؤسسة القرآن' : 'Quran Foundation'}</a>}
+        <figure class="designed-card" lang={post.locale} dir="auto">
+          {slides.map(({ image }) => <img src={image.url} alt={image.alt ?? ''} width={image.width ?? undefined} height={image.height ?? undefined} />)}
+          <figcaption>{quran?.body ?? (slides.map(({ image }) => image.alt).join("\n\n") || post.community?.content)}</figcaption>
+          {quran?.body && <a href="https://quran.foundation/"><bdi>{quran.label}</bdi></a>}
         </figure>
       ) : communityKind ? (
         <PostKindBody post={post} locale={locale} cmsOrigin={cmsOrigin} videosWebUrl={videosWebUrl} />
@@ -71,3 +73,9 @@ const contentDir = dir(post.locale);
     </div>
   </div>
 </article>
+
+<style>
+  .designed-card { margin: 0; }
+  .designed-card img { display: block; width: 100%; height: auto; }
+  .designed-card figcaption { white-space: pre-wrap; }
+</style>

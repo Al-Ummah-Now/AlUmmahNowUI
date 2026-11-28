@@ -7,6 +7,7 @@ import { safeHttpsUrl } from '../../../../packages/render/src/urls';
 import PostKindBody from '../../../../packages/render/src/posts/PostKindBody.astro';
 import PostKindSummary from '../../../../packages/render/src/posts/PostKindSummary.astro';
 import PostEngagement from '../../../../packages/render/src/posts/PostEngagement.astro';
+import { quranCardCredit } from '../../../../packages/render/src/posts/quran-card-credit';
 import { sitePostRenderProps } from '../lib/post-render';
 
 interface Props { ctx: PageContext; post: SitePost; full?: boolean }
@@ -16,6 +17,8 @@ const date = post.createdAt ? new Date(post.createdAt) : null;
 const { body, summary, ref, href, videoHref, paragraphs, preview, hasMore } = sitePostRenderProps(post, ctx);
 const articleKind = isArticleKind(post.kind);
 const origin = ctx.data.apiUrl;
+const quran = post.designedCard?.quran ? quranCardCredit(post.text, locale) : null;
+const generatedText = quran?.body ?? (post.slides.map((slide) => slide.alt).join('\n\n') || post.text);
 ---
 <article class="post-card" data-testid="site-post" data-kind={post.kind}>
   {date && <p class="post-date"><a href={href}><time datetime={post.createdAt}>{formatDate(date, locale, { year: 'numeric', month: 'long', day: 'numeric' })}</time></a></p>}
@@ -27,8 +30,8 @@ const origin = ctx.data.apiUrl;
       {safeHttpsUrl(post.article.url) && <p><a href={safeHttpsUrl(post.article.url)!}>{t.readArticle}</a></p>}
     </div>
   )}
-  {post.designedCard && (post.designedCard.quran ? post.text : post.slides.map((slide) => slide.alt).join("\n\n") || post.text) && <p dir="auto" style="white-space:pre-wrap">{post.designedCard.quran ? post.text : post.slides.map((slide) => slide.alt).join("\n\n") || post.text}</p>}
-  {post.designedCard?.quran && <p><a href="https://quran.foundation/">{locale === 'ar' ? 'مؤسسة القرآن' : 'Quran Foundation'}</a></p>}
+  {post.designedCard && generatedText && <p class="designed-card-copy" dir="auto">{generatedText}</p>}
+  {quran?.body && <p><a href="https://quran.foundation/"><bdi>{quran.label}</bdi></a></p>}
   {articleKind && !post.designedCard && (full ? paragraphs : preview).map((p) => <p dir="auto">{p}</p>)}
   {articleKind && post.images.length > 0 && (
     <ul class:list={['post-kind-images', post.images.length > 1 && 'post-kind-images-many']}>
@@ -36,7 +39,7 @@ const origin = ctx.data.apiUrl;
     </ul>
   )}
   {post.slides.length > 0 && (
-    <ol class="post-slides" data-testid="site-post-slides">
+    <ol class:list={["post-slides", post.designedCard && "designed-card-slides"]} data-testid="site-post-slides">
       {post.slides.slice(0, full ? 40 : 3).map((sl) => (
         <li class="post-slide">
           <img src={sl.url} alt={sl.alt} loading="lazy" />
@@ -57,3 +60,8 @@ const origin = ctx.data.apiUrl;
   {!full && !post.designedCard && hasMore && <p class="post-kind-action"><a href={href}>{t.more}</a></p>}
   <PostEngagement postRef={ref} locale={locale} likes={post.likes} comments={post.comments} discussion={full} />
 </article>
+
+<style>
+  .designed-card-copy { white-space: pre-wrap; }
+  .designed-card-slides { margin-inline: calc(-0.5 * var(--gutter)); }
+</style>
