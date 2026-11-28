@@ -8,6 +8,7 @@
  */
 import type { Locale } from '../../../../packages/render/src/locale';
 import { watchUrl } from '../../../../packages/render/src/embeds';
+import { safeHttpsUrl, safeJsonLd } from '../../../../packages/render/src/urls';
 import type { PublicSite } from './site-types';
 
 export const siteOrigin = (site: PublicSite, scheme = 'https') => `${scheme}://${site.site.primaryHost}`;
@@ -64,10 +65,10 @@ export function siteJsonLd(site: PublicSite, locale: Locale, channelUrl: string,
       name,
       url: `${origin}/${locale}/about/`,
       ...(site.site.logoUrl || site.channel.avatarUrl ? { image: site.site.logoUrl || site.channel.avatarUrl } : {}),
-      sameAs: [channelUrl, ...(site.channel.links ?? []).map((l) => l.url).filter((u) => /^https:\/\//.test(u)).slice(0, 10)],
+      sameAs: [channelUrl, ...(site.channel.links ?? []).map((l) => safeHttpsUrl(l.url)).filter((u): u is string => u !== null).slice(0, 10)],
     },
   ];
 }
 
-/** JSON for a <script type="application/ld+json">: `<` escaped so it can never close the tag. */
-export const jsonLdText = (data: unknown) => JSON.stringify(data).replace(/</g, '\\u003c');
+/** JSON for a <script type="application/ld+json">: `<`, `>`, `&`, U+2028/U+2029 escaped so it can never close the tag. */
+export const jsonLdText = (data: unknown) => safeJsonLd(data);

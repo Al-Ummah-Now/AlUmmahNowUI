@@ -14,6 +14,7 @@
 import type { Page, Post } from './cms-types';
 import { validate } from './cms-types';
 import type { Config, WwwEnv } from './env';
+import { safeHttpUrl } from '../../../../packages/render/src/urls';
 
 export type PreviewKind = 'pages' | 'posts';
 export interface PreviewClaims {
@@ -94,10 +95,11 @@ export function parsePreview(kind: PreviewKind, body: unknown): PreviewData | nu
   if (!body || typeof body !== 'object') return null;
   const b = body as Record<string, unknown>;
   const want = kind === 'pages' ? 'page' : 'post';
-  if (b.kind !== want || !STATUSES.includes(b.status) || typeof b.expires_at !== 'string' || typeof b.edit_url !== 'string') return null;
+  const editUrl = typeof b.edit_url === 'string' ? safeHttpUrl(b.edit_url) : null;
+  if (b.kind !== want || !STATUSES.includes(b.status) || typeof b.expires_at !== 'string' || !editUrl) return null;
   const ok = kind === 'pages' ? validate.page(b.content) : validate.post(b.content);
   if (!ok) return null;
-  return { kind: want, status: b.status, expiresAt: b.expires_at, editUrl: b.edit_url, content: b.content } as PreviewData;
+  return { kind: want, status: b.status, expiresAt: b.expires_at, editUrl, content: b.content } as PreviewData;
 }
 
 export type FetchPreview = (path: string, token: string, signal: AbortSignal) => Promise<Response>;

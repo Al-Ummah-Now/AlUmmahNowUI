@@ -3,9 +3,11 @@
 import { fmt, strings } from '../i18n';
 import type { Locale } from '../lib/locale';
 import type { PreviewStatus } from '../lib/preview';
+import { safeHttpUrl } from '../../../../packages/render/src/urls';
 
 interface Props { locale: Locale; status: PreviewStatus; minutes: number; editUrl: string }
 const { locale, status, minutes, editUrl } = Astro.props;
+const safeEditUrl = safeHttpUrl(editUrl);
 const t = strings(locale).preview;
 const live = status === 'published';
 ---
@@ -21,6 +23,6 @@ const live = status === 'published';
         <span>{fmt(t.expiresIn, { minutes }, locale)}</span>
       </p>
     </div>
-    <a class="button button-primary preview-bar-action" href={editUrl} rel="noreferrer">{t.backToEditor}</a>
+    {safeEditUrl && <a class="button button-primary preview-bar-action" href={safeEditUrl} rel="noreferrer">{t.backToEditor}</a>}
   </div>
 </section>

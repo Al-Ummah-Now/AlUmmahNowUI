@@ -1,11 +1,13 @@
 /** Video facade: replace the thumbnail with the embed iframe on click (SPEC §6). */
+import { safeRelativeOrHttpUrl } from '../../../../packages/render/src/urls';
+
 export function initFacades(root: ParentNode = document) {
   root.querySelectorAll<HTMLElement>('.facade[data-embed-src]').forEach((figure) => {
     const button = figure.querySelector<HTMLButtonElement>('.facade-play');
     const frame = figure.querySelector<HTMLElement>('.facade-frame');
     if (!button || !frame) return;
     button.addEventListener('click', () => {
-      const src = figure.dataset.embedSrc;
+      const src = safeRelativeOrHttpUrl(figure.dataset.embedSrc);
       if (!src) return;
       const iframe = document.createElement('iframe');
       iframe.className = 'facade-iframe';

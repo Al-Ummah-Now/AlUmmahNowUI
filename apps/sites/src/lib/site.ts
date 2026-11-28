@@ -9,6 +9,7 @@
  */
 import type { PublicSite } from './site-types';
 import type { KVNamespace } from './env';
+import { safeHttpUrl, sanitizeLogError } from '../../../../packages/render/src/urls';
 
 export const SITE_FRESH_MS = 60_000;
 export const NOT_FOUND_FRESH_MS = 15_000;
@@ -79,12 +80,13 @@ export async function lookupSite(rawHost: string, preview: string | null, deps: 
     else if (res.ok) {
       const body = (await res.json()) as unknown;
       const redirect = (body as { redirectTo?: unknown } | null)?.redirectTo;
-      if (typeof redirect === 'string' && /^https?:\/\//.test(redirect)) result = { kind: 'redirect', location: redirect };
+      const safeRedirect = typeof redirect === 'string' ? safeHttpUrl(redirect) : null;
+      if (safeRedirect) result = { kind: 'redirect', location: safeRedirect };
       else if (isPublicSite(body)) result = { kind: 'site', site: body, source: 'api' };
     }
     if (!result) deps.log?.('sites: lookup answered badly', { host, status: res.status });
   } catch (error) {
-    deps.log?.('sites: lookup failed', { host, error: String(error) });
+    deps.log?.('sites: lookup failed', { host, error: sanitizeLogError(error) });
   }
   if (token) return result ?? { kind: 'unavailable' };
   if (result) {

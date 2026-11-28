@@ -7,6 +7,7 @@
  * language (displayLabel), so an Arabic page shows the Arabic name.
  */
 import { normalizeImageUrl } from './images';
+import { sanitizeLogError } from './urls';
 
 type Loc = 'en' | 'ar';
 const LOCS: readonly Loc[] = ['en', 'ar'];
@@ -78,7 +79,7 @@ export async function fetchOwnProfile(accessToken: string, cfg: { videosApiUrl: 
     const p = body?.result?.profile;
     return p && typeof p === 'object' ? profileNames(p as Record<string, unknown>) : null;
   } catch (error) {
-    console.warn(JSON.stringify({ msg: 'sign-in: own profile failed', error: String(error) }));
+    console.warn(JSON.stringify({ msg: 'sign-in: own profile failed', error: sanitizeLogError(error) }));
     return null;
   }
 }

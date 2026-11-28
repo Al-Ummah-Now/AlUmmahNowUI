@@ -7,6 +7,7 @@ import type { NavItem, SiteSettings } from '../lib/cms-types';
 import { statusPageUrl, type Locale } from '../lib/locale';
 import NewsletterForm from './NewsletterForm.astro';
 import { featuresFromRequest } from '../lib/features';
+import { safeHttpsUrl } from '../../../../packages/render/src/urls';
 
 interface Props { locale: Locale; nav: NavItem[]; settings: SiteSettings | null; videosWebUrl: string }
 const { locale, nav, settings, videosWebUrl } = Astro.props;
@@ -19,7 +20,10 @@ const privacyHref = `/${locale}/privacy/`;
 const termsHref = `/${locale}/terms/`;
 const hasPrivacy = items.some((i) => i.href === privacyHref || i.href === `/${locale}/privacy`);
 const hasTerms = items.some((i) => i.href === termsHref || i.href === `/${locale}/terms`);
-const social = (settings?.social ?? []).filter((s) => /^https:\/\//.test(s.url)).slice(0, 8);
+const social = (settings?.social ?? []).flatMap((s) => {
+  const url = safeHttpsUrl(s.url);
+  return url ? [{ kind: s.kind, url }] : [];
+}).slice(0, 8);
 const socialLabel = (kind: string) => kind.charAt(0).toUpperCase() + kind.slice(1);
 const year = formatYear(new Date().getUTCFullYear(), locale);
 // Off or unconfigured: no newsletter section at all (src/lib/features.ts)

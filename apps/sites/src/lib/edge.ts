@@ -7,6 +7,7 @@ import { channelUrl, embedOrigin } from '../../../../packages/render/src/embeds'
 import { VIDEO_IMAGE_HOSTS } from '../../../../packages/render/src/images';
 import { isLocale } from '../../../../packages/render/src/locale';
 import { cacheKeyUrl } from '../../../../packages/render/src/html-cache';
+import { safeRelativeOrHttpsUrl } from '../../../../packages/render/src/urls';
 import { HOST_SUFFIX, type Config } from './env';
 import type { PublicSite } from './site-types';
 import { MODE_SCRIPT_HASH } from './theme-mode';
@@ -34,9 +35,9 @@ export function pathRedirect(url: URL, site: PublicSite): Response | null {
   const path = norm(url.pathname);
   const hit = (site.site.redirects ?? []).find((r) => typeof r.from === 'string' && r.from.startsWith('/') && norm(r.from) === path);
   if (!hit) return null;
-  const to = hit.to;
-  // Only our own paths or https:// addresses (api-videos validates; checked again here)
-  if (!(/^\/(?!\/)/.test(to) || /^https:\/\//.test(to))) return null;
+  const to = safeRelativeOrHttpsUrl(hit.to);
+  // Only our own clean relative paths or https:// addresses without control chars/backslashes
+  if (!to) return null;
   return new Response(null, { status: 301, headers: { Location: to, 'Cache-Control': 'public, max-age=300' } });
 }
 

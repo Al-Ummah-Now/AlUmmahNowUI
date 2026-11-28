@@ -9,6 +9,7 @@
  */
 import type { MediaRef, MediaVariants } from './cms-types';
 import { escapeHtml } from './html';
+import { safeRelativeOrHttpUrl } from '../../../../packages/render/src/urls';
 
 /** Layout widths (src/styles/global.css): .cover is ≤ 56rem, .prose ≤ 42rem; gutters ≥ 1rem a side. */
 export const SIZES = {
@@ -48,13 +49,15 @@ export function usableVariants(v: MediaVariants | null | undefined, cmsOrigin: s
 const dim = (n: number | null | undefined) => (typeof n === 'number' && Number.isInteger(n) && n > 0 ? n : null);
 
 export function pictureHtml(ref: MediaRef, cmsOrigin: string, opts: PictureOptions): string {
+  const safeSrc = safeRelativeOrHttpUrl(ref.url);
+  if (!safeSrc) return '';
   const a = (s: string) => escapeHtml(s);
   const alt = opts.alt ?? ref.alt ?? '';
   const w = dim(ref.width);
   const h = w ? dim(ref.height) : null;
   const attrs = [
     opts.className ? `class="${a(opts.className)}"` : '',
-    `src="${a(ref.url)}"`,
+    `src="${a(safeSrc)}"`,
     `alt="${a(alt)}"`,
     w && h ? `width="${w}" height="${h}"` : '',
     opts.priority ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"',

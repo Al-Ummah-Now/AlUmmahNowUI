@@ -3,6 +3,7 @@ import type { SitePost } from '../lib/data';
 import type { PageContext } from '../lib/context';
 import { formatDate, plural } from '../../../../packages/render/src/format';
 import { isArticleKind } from '../../../../packages/render/src/posts/post-kinds';
+import { safeHttpsUrl } from '../../../../packages/render/src/urls';
 import PostKindBody from '../../../../packages/render/src/posts/PostKindBody.astro';
 import PostKindSummary from '../../../../packages/render/src/posts/PostKindSummary.astro';
 import PostEngagement from '../../../../packages/render/src/posts/PostEngagement.astro';
@@ -23,7 +24,7 @@ const origin = ctx.data.apiUrl;
       {post.article.coverUrl && <img src={post.article.coverUrl} alt="" loading="lazy" width="640" height="360" />}
       <h2 class="post-title" dir="auto">{post.article.title}</h2>
       {post.article.excerpt && <p dir="auto">{post.article.excerpt}</p>}
-      {post.article.url && /^https:\/\//.test(post.article.url) && <p><a href={post.article.url}>{t.readArticle}</a></p>}
+      {safeHttpsUrl(post.article.url) && <p><a href={safeHttpsUrl(post.article.url)!}>{t.readArticle}</a></p>}
     </div>
   )}
   {articleKind && (full ? paragraphs : preview).map((p) => <p dir="auto">{p}</p>)}

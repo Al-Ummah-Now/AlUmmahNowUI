@@ -3,6 +3,8 @@
  * so an image either renders or is dropped; it never trips the CSP).
  * Video thumbnails come from the videos platform's CDNs.
  */
+import { safeRelativeOrHttpUrl } from './urls';
+
 // media.* are the platform's own R2 media domains: the play API answers posters (thumb.jpg) there
 // once a video has R2 renditions (AlUmmahNow r2-delivery); without them the browser blocks the poster.
 export const VIDEO_IMAGE_HOSTS = ['images.alummahnow.net', '*.b-cdn.net', 'media.alummahnow.net', 'media.stage.alummahnow.net', 'media.qa.alummahnow.net'] as const;
@@ -104,7 +106,7 @@ function videoIdInUrl(raw: string): string | null {
  */
 export function stableImageUrl(videosWebUrl: string, url: string | null | undefined, ownerVideoId?: string | null): string | null {
   if (!url) return null;
-  if (!isSignedImageUrl(url)) return url;
+  if (!isSignedImageUrl(url)) return safeRelativeOrHttpUrl(url);
   const id = ownerVideoId && UUID.test(ownerVideoId) ? ownerVideoId.toLowerCase() : videoIdInUrl(url);
   return id ? `${videosWebUrl.replace(/\/+$/, '')}/thumb/${id}.jpg` : null;
 }

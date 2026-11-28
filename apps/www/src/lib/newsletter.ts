@@ -15,6 +15,7 @@
  */
 import type { Config, WwwEnv } from './env';
 import type { Locale } from './locale';
+import { sanitizeLogError } from '../../../../packages/render/src/urls';
 
 export type SecretBinding = string | { get(): Promise<string> } | undefined;
 
@@ -91,15 +92,16 @@ async function post(deps: NewsletterDeps, path: string, body: unknown, ip: strin
     console.warn(JSON.stringify({ msg: 'newsletter: not configured', adminApi: !!deps.adminApiUrl, key: !!key }));
     return null;
   }
+  const safeIp = typeof ip === 'string' && /^[0-9a-fA-F:., ]{1,64}$/.test(ip.trim()) ? ip.trim() : null;
   try {
     return await (deps.fetchImpl ?? fetch)(`${deps.adminApiUrl}/internal/newsletter${path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-API-Key': key, ...(ip ? { 'X-Client-IP': ip } : {}) },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-API-Key': key, ...(safeIp ? { 'X-Client-IP': safeIp } : {}) },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(deps.timeoutMs ?? 5000),
     });
   } catch (error) {
-    console.warn(JSON.stringify({ msg: 'newsletter: admin API unreachable', path, error: String(error) }));
+    console.warn(JSON.stringify({ msg: 'newsletter: admin API unreachable', path, error: sanitizeLogError(error) }));
     return null;
   }
 }

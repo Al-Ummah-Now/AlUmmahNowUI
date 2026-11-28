@@ -9,7 +9,7 @@ import { fill as fmt, postStrings } from './strings';
 import type { PostSummaryLike } from './types';
 import { normalizeImageUrl } from '../images';
 import { dir, type Locale } from '../locale';
-import { isArticleKind } from './post-kinds';
+import { isArticleKind, safeOutsideUrl } from './post-kinds';
 import PostLinkCard from './PostLinkCard.astro';
 
 /** `images: false` where the list already shows the post's cover (the home timeline). */
@@ -23,6 +23,7 @@ const images = (v2?.images ?? []).map((m) => ({ url: normalizeImageUrl(m.url, [c
 const gif = preview && kind === 'gif' ? normalizeImageUrl(v2?.gif?.url, [cmsOrigin]) : null;
 const choices = kind === 'poll' ? v2?.poll : kind === 'quiz' ? v2?.quiz : null;
 const more = v2 ? v2.image_count - images.length : 0;
+const channelPostHref = safeOutsideUrl(post.ref?.videos_url);
 ---
 {show && (
   <div class="post-kind-summary" lang={post.locale} dir={dir(post.locale)} data-post-kind={kind}>
@@ -41,8 +42,8 @@ const more = v2 ? v2.image_count - images.length : 0;
       </ul>
     )}
     {kind === 'link' && v2?.link && <PostLinkCard link={{ ...v2.link, siteName: v2.link.site_name ?? null }} locale={locale} extra={[cmsOrigin]} compact images={withImages} />}
-    {post.ref && (kind === 'poll' || kind === 'quiz') && (
-      <p class="post-kind-action"><a href={post.ref.videos_url}>{kind === 'poll' ? t.voteOnChannel : t.answerOnChannel}</a></p>
+    {channelPostHref && (kind === 'poll' || kind === 'quiz') && (
+      <p class="post-kind-action"><a href={channelPostHref}>{kind === 'poll' ? t.voteOnChannel : t.answerOnChannel}</a></p>
     )}
   </div>
 )}
