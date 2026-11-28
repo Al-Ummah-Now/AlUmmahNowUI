@@ -48,8 +48,8 @@ const contentDir = dir(post.locale);
     <div class="wrap">
       {designed ? (
         <figure lang={post.locale} dir="auto">
-          {slides[0]?.image.url && <img src={slides[0].image.url} alt={slides[0].image.alt ?? ''} width={slides[0].image.width ?? undefined} height={slides[0].image.height ?? undefined} style="max-width:100%;height:auto" />}
-          <figcaption style="white-space:pre-wrap">{slides[0]?.image.alt ?? post.community?.content}</figcaption>
+          {slides.map(({ image }) => <img src={image.url} alt={image.alt ?? ''} width={image.width ?? undefined} height={image.height ?? undefined} style="max-width:100%;height:auto" />)}
+          <figcaption style="white-space:pre-wrap">{designed.quran ? post.community?.content : slides.map(({ image }) => image.alt).join("\n\n") || post.community?.content}</figcaption>
           {designed.quran && <a href="https://quran.foundation/">{locale === 'ar' ? 'مؤسسة القرآن' : 'Quran Foundation'}</a>}
         </figure>
       ) : communityKind ? (
